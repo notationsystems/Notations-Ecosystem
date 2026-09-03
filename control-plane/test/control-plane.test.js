@@ -10,6 +10,7 @@ import { observePayloadTerminal } from '../src/adapters/payload-terminal.js';
 import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 import { securityConstellationProfile } from '../src/profiles/security-constellation.js';
 import { attestationPayload } from '../src/security/attestation.js';
+import { buildOperationalIndex, queryOperationalIndex } from '../src/indexing/operational-index.js';
 
 const NOW = '2026-09-02T00:00:00.000Z';
 
@@ -157,6 +158,27 @@ test('materializes independently signed, bounded internal security posture', asy
     assert.equal(posture.attestations[0].status, 'healthy');
     assert.equal(posture.attestations[0].freshness, 'current');
     assert.equal(posture.attestations[0].signerId, 'security-collector-1');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('rebuilds a narrow searchable operational index from existing control-plane state', async () => {
+  const { directory, plane } = await fixture();
+  try {
+    await plane.applyProfile({ requestId: 'bootstrap-payload-index', actorId: 'operator:local', submittedAt: NOW, expectedRevision: null }, payloadTerminalProfile());
+    const snapshot = await plane.snapshot();
+    await plane.command({
+      requestId: 'index-purpose-boundary', actorId: 'reasoner:one', submittedAt: NOW, expectedRevision: snapshot.revision, action: 'request_capability',
+      coordinationId: 'coord-index-purpose', requesterNodeId: 'payload-mcp', targetNodeId: 'payload-terminal', capabilityId: 'physical-economy.query', requestedMode: 'observe', purpose: 'unique private reasoning purpose that must not enter the index',
+    });
+    const index = buildOperationalIndex(await plane.snapshot(), NOW);
+    assert.equal(index.schema, 'notations.control-plane.operational-index.v1');
+    assert.equal(index.capabilities.some(capability => capability.capabilityId === 'physical-economy.query'), true);
+    assert.equal(index.signals.unobservedNodeIds.includes('payload-terminal'), true);
+    const result = queryOperationalIndex(index, 'physical economy');
+    assert.equal(result.results.some(node => node.nodeId === 'payload-terminal'), true);
+    assert.equal(JSON.stringify(index).includes('unique private reasoning purpose'), false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

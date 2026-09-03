@@ -93,3 +93,20 @@ of Ed25519 **public** keys. The journal stores the signed, bounded statement;
 the dock receives only category, posture status, freshness, signer identity,
 and a short summary. It never receives private keys, credentials, raw
 vulnerability findings, unrestricted network topology, or offensive tooling.
+
+## Internal mining and indexing
+
+The Control Plane can rebuild a disposable operational index from the
+hash-linked journal it already processes:
+
+```sh
+npm run index:rebuild
+npm run index:query -- payload
+```
+
+The index is intentionally narrower than Payload’s corpus. It mines declared
+nodes, capabilities, relationships, current health, bounded security posture,
+and the approval queue. It produces signals for unobserved or stale nodes,
+critical security posture, missing attestations, and pending approvals. It does
+not crawl upstream services, duplicate Payload records, index coordination
+purpose text, or copy raw security evidence.
