@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Drift, Fidelity, TimePoint } from '../../model/twin';
+import type { OperationalIndex } from '../../model/types';
 
 const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums', color: 'var(--text)', fontWeight: 600 };
 const short = (id: string) => (id.includes(':') ? id.split(':')[1]!.slice(0, 10) : id.slice(0, 10));
@@ -12,7 +13,7 @@ const short = (id: string) => (id.includes(':') ? id.split(':')[1]!.slice(0, 10)
  * into a score. "Fidelity 40%" would be a number nobody can act on; "27 bodies never
  * observed" is the work.
  */
-export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, drift, blueprintLoaded, travelling }: {
+export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, drift, blueprintLoaded, travelling, index }: {
   axis: TimePoint[];
   cursor: string | null;
   onCursor: (eventId: string | null) => void;
@@ -23,13 +24,16 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
   drift: Drift | null;
   blueprintLoaded: boolean;
   travelling: boolean;
+  /** The plane's own index of what needs attention; null in sample mode or while it loads. */
+  index: OperationalIndex | null;
 }) {
   const [driftOpen, setDriftOpen] = useState(false);
-  const index = cursor ? axis.findIndex((p) => p.eventId === cursor) : axis.length - 1;
-  const point = index >= 0 ? axis[index] : null;
+  // Where on the axis the sky drawn is; not to be confused with the plane's index below.
+  const position = cursor ? axis.findIndex((p) => p.eventId === cursor) : axis.length - 1;
+  const point = position >= 0 ? axis[position] : null;
 
   return (
-    <div className="overlay" style={{ bottom: 12, left: 52, width: 420, fontSize: 12 }}>
+    <div className="overlay" style={{ bottom: 12, right: 12, width: 420, fontSize: 12, maxHeight: 'calc(100% - 24px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' }}>Twin</span>
         <span style={{ marginLeft: 'auto', color: cursor ? 'var(--amber)' : 'var(--muted)' }}>
@@ -49,7 +53,7 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
               type="range"
               min={0}
               max={axis.length - 1}
-              value={index < 0 ? axis.length - 1 : index}
+              value={position < 0 ? axis.length - 1 : position}
               onChange={(e) => {
                 const i = Number(e.target.value);
                 onCursor(i >= axis.length - 1 ? null : axis[i]!.eventId);
@@ -72,9 +76,11 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
       {/* What the twin knows. */}
       <div style={{ marginTop: 8, borderTop: '1px solid var(--line)', paddingTop: 6 }}>
         <div style={{ color: 'var(--muted)', fontSize: 11 }}>what this twin knows</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginTop: 4 }}>
           <div><div style={num}>{fidelity.observed}</div><div style={{ color: 'var(--muted)' }}>observed</div></div>
           <div><div style={num}>{fidelity.attested}</div><div style={{ color: 'var(--muted)' }}>attested</div></div>
+          <div title="Attestations an independent collector signed for, verified by the plane against a public key it holds. The rest rest on the submitting principal's word."><div style={{ ...num, color: fidelity.attested && !fidelity.signed ? '#F5B942' : undefined }}>{fidelity.signed}</div><div style={{ color: 'var(--muted)' }}>signed</div></div>
+          <div title="Systems bound to the data platform under an authority the plane checked against their corpus role. A contract, not a flow."><div style={num}>{fidelity.bound}</div><div style={{ color: 'var(--muted)' }}>bound</div></div>
           <div><div style={{ ...num, color: fidelity.blind ? '#F5B942' : undefined }}>{fidelity.blind}</div><div style={{ color: 'var(--muted)' }}>blind</div></div>
           <div><div style={num}>{fidelity.syncAgeSeconds === null ? '—' : `${fidelity.syncAgeSeconds}s`}</div><div style={{ color: 'var(--muted)' }}>sync age</div></div>
         </div>
@@ -82,6 +88,7 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
           {fidelity.blind > 0
             ? <>{fidelity.blind} of {fidelity.total} bodies have never been observed or attested. They are drawn grey and without a halo; the twin knows they exist and nothing else.</>
             : <>Every body has been observed or attested at least once.</>}
+          {fidelity.attested > 0 && fidelity.signed === 0 && <> No attestation carries an independent signature: every halo rests on the submitting principal's word, which the plane vouched for and nobody else did.</>}
         </div>
         {fidelity.proofRoot && (
           <div style={{ color: 'var(--muted)', marginTop: 4 }} title={fidelity.reference ?? undefined}>
@@ -89,6 +96,32 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
           </div>
         )}
       </div>
+
+      {/* What needs attention — the plane's derivation, shown and never recomputed here. */}
+      {index && (
+        <div style={{ marginTop: 8, borderTop: '1px solid var(--line)', paddingTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--muted)', fontSize: 11 }}>needs attention · the plane's index</span>
+            <span className="mono" style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 11 }} title="The snapshot revision the index was built from">{index.sourceRevision ? index.sourceRevision.slice(0, 12) : '—'}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 4 }}>
+            <div><div style={{ ...num, color: index.signals.unobservedNodeIds.length ? '#F5B942' : undefined }}>{index.signals.unobservedNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>unobserved</div></div>
+            <div><div style={{ ...num, color: index.signals.staleObservationNodeIds.length + index.signals.stalePostureNodeIds.length ? '#F5B942' : undefined }}>{index.signals.staleObservationNodeIds.length + index.signals.stalePostureNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>stale</div></div>
+            <div><div style={{ ...num, color: index.signals.unavailableNodeIds.length ? '#E8536A' : undefined }}>{index.signals.unavailableNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>unavailable</div></div>
+            <div><div style={{ ...num, color: index.signals.failingPostureNodeIds.length ? '#E8536A' : undefined }}>{index.signals.failingPostureNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>failing posture</div></div>
+            <div><div style={{ ...num, color: index.signals.unsignedPostureNodeIds.length ? '#F5B942' : undefined }}>{index.signals.unsignedPostureNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>unsigned posture</div></div>
+            <div><div style={num}>{index.signals.unattestedNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>unattested</div></div>
+            <div><div style={{ ...num, color: index.signals.unboundSystemNodeIds.length ? '#F5B942' : undefined }}>{index.signals.unboundSystemNodeIds.length}</div><div style={{ color: 'var(--muted)' }}>unbound</div></div>
+            <div><div style={{ ...num, color: index.signals.pendingApproval.length ? '#F5B942' : undefined }}>{index.signals.pendingApproval.length}</div><div style={{ color: 'var(--muted)' }}>awaiting decision</div></div>
+          </div>
+          <div style={{ color: 'var(--muted)', marginTop: 4 }}>
+            Judged by the plane at thresholds it states — {Math.round(index.thresholds.observationStaleAfterMs / 3_600_000)} h for an observation, {Math.round(index.thresholds.attestationStaleAfterMs / 86_400_000)} d for an attestation — and rebuilt from the snapshot, never reconciled. The dock keeps no second derivation of any of these.
+          </div>
+          {index.sourceRevision !== atRevision && (
+            <div style={{ color: 'var(--amber)', marginTop: 4 }}>{cursor ? 'The index is of now; the sky drawn is of then.' : 'The index is of a revision other than the sky drawn; it catches up on the next poll.'}</div>
+          )}
+        </div>
+      )}
 
       {/* Drift from the blueprint. */}
       <div style={{ marginTop: 8, borderTop: '1px solid var(--line)', paddingTop: 6 }}>
@@ -104,16 +137,19 @@ export function TwinPanel({ axis, cursor, onCursor, atRevision, live, fidelity, 
         {drift && drift.clean && <div style={{ color: '#5AC77A', marginTop: 4 }}>{live ? 'The estate is the catalog: nothing missing, nothing unplanned, no capability changed.' : 'The sample is the blueprint; drift needs a live plane to measure.'}</div>}
         {drift && !drift.clean && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginTop: 4 }}>
               <div><div style={{ ...num, color: drift.missing.length ? '#E8536A' : undefined }}>{drift.missing.length}</div><div style={{ color: 'var(--muted)' }}>missing</div></div>
               <div><div style={{ ...num, color: drift.unplanned.length ? '#F5B942' : undefined }}>{drift.unplanned.length}</div><div style={{ color: 'var(--muted)' }}>unplanned</div></div>
               <div><div style={{ ...num, color: drift.changed.length ? '#F5B942' : undefined }}>{drift.changed.length}</div><div style={{ color: 'var(--muted)' }}>changed</div></div>
               <div><div style={num}>{drift.relationsMissing + drift.relationsUnplanned}</div><div style={{ color: 'var(--muted)' }}>relations</div></div>
+              <div><div style={{ ...num, color: drift.syncsMissing.length + drift.syncsUnplanned.length ? '#F5B942' : undefined }}>{drift.syncsMissing.length + drift.syncsUnplanned.length}</div><div style={{ color: 'var(--muted)' }}>bindings</div></div>
             </div>
             {driftOpen && (
               <div style={{ marginTop: 6, maxHeight: 160, overflow: 'auto', display: 'grid', gap: 3 }}>
                 {drift.missing.map((id) => <div key={`m-${id}`}><span style={{ color: '#E8536A' }}>missing</span> <span className="mono">{id}</span></div>)}
                 {drift.unplanned.map((id) => <div key={`u-${id}`}><span style={{ color: '#F5B942' }}>unplanned</span> <span className="mono">{id}</span></div>)}
+                {drift.syncsMissing.map((k) => <div key={`sm-${k}`}><span style={{ color: '#E8536A' }}>binding missing</span> <span className="mono">{k.replace(/\|/g, ' → ')}</span></div>)}
+                {drift.syncsUnplanned.map((k) => <div key={`su-${k}`}><span style={{ color: '#F5B942' }}>binding unplanned</span> <span className="mono">{k.replace(/\|/g, ' → ')}</span></div>)}
                 {drift.changed.map((c) => (
                   <div key={`c-${c.nodeId}`}>
                     <span style={{ color: '#F5B942' }}>changed</span> <span className="mono">{c.nodeId}</span> <span style={{ color: 'var(--muted)' }}>{c.blueprint} → {c.live} capabilities{c.added.length ? `, +${c.added.length}` : ''}{c.removed.length ? `, −${c.removed.length}` : ''}</span>

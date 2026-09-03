@@ -2,10 +2,16 @@ import { invalid } from './errors.js';
 import { assertNoWeaponisedText, parseSignals } from './security/evidence.js';
 import { assertBoundedStructure, assertNoPollutedKeys, safeText } from './security/text.js';
 import { CAPABILITY_MATURITY_SET } from './governance/maturity.js';
-import { SIGNATURE } from './security/attestation.js';
 import { INFORMATION_CLASSES, nodeUri, parseUri, tryUri } from './identity/uri.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
+/**
+ * 64 bytes of Ed25519 signature, base64url without padding. Defined here and not in the
+ * attestation module because this file is also bundled into the dock's console, where the
+ * plane's own validator drafts commands: the shape check must not drag node:crypto into a
+ * browser. The verification stays in security/attestation.js, which imports this.
+ */
+export const SIGNATURE = /^[A-Za-z0-9_-]{86}$/;
 const HASH = /^[a-f0-9]{64}$/;
 const METADATA_KEY = /^[a-z][a-z0-9_.-]{0,80}$/;
 const SENSITIVE_METADATA_KEY = /(token|secret|password|credential|authorization|cookie|email|phone|contact)/i;

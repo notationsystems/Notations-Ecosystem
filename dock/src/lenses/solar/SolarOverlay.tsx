@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import type { DockState } from '../../api/useControlPlane';
 import type { ConsoleIntent } from '../../App';
-import { HEALTH_COLOR, HEALTHS, type Snapshot, type SnapshotNode } from '../../model/types';
-import type { SolarLayout } from '../../model/solar';
+import { FABRIC_AUTHORITY_LABEL, HEALTH_COLOR, HEALTHS, MATURITY_COLOR, PERSON_DATA_LABEL, POSTURE_STATE_COLOR, collectionStanding, corpusStanding, type FabricAuthority, type Snapshot, type SnapshotNode } from '../../model/types';
+import { FABRIC_AUTHORITY_MAP, MOON_COLOURINGS, MOON_COLOUR_MAPS, weakestState, type MoonColouring, type SolarLayout } from '../../model/solar';
 import { downloadJson, exportName } from '../ops/download';
 
 const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums', color: 'var(--text)', fontWeight: 600 };
 const MODE_COLOR: Record<string, string> = { observe: '#39C6D8', propose: '#8B7CF6', execute: '#F5B942' };
+const plain: React.CSSProperties = { background: 'transparent', border: 'none', padding: 0, color: 'var(--cyan)' };
 
 /**
  * The legend and the command palette.
@@ -18,11 +19,14 @@ const MODE_COLOR: Record<string, string> = { observe: '#39C6D8', propose: '#8B7C
  * coordination ledger as `not_dispatched`, which is the plane's whole model of control.
  * The palette says so on the buttons rather than in a footnote.
  */
-export function SolarOverlay({ dock, snapshot, layout, arcs, selected, selectedNode, onSelect, onFit, onFocus, onIntent }: {
+export function SolarOverlay({ dock, snapshot, layout, arcs, fabric, moonsBy, onMoonsBy, selected, selectedNode, onSelect, onFit, onFocus, onIntent }: {
   dock: DockState;
   snapshot: Snapshot;
   layout: SolarLayout;
   arcs: number;
+  fabric: number;
+  moonsBy: MoonColouring;
+  onMoonsBy: (m: MoonColouring) => void;
   selected: string | null;
   selectedNode: SnapshotNode | null;
   onSelect: (nodeId: string | null) => void;
@@ -56,15 +60,16 @@ export function SolarOverlay({ dock, snapshot, layout, arcs, selected, selectedN
 
   return (
     <>
-      <div className="overlay" style={{ top: 12, left: 52, width: 262, fontSize: 12 }}>
+      <div className="overlay" style={{ top: 12, left: 52, width: 262, fontSize: 12, maxHeight: 'calc(100% - 24px)', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' }}>Solar system</span>
           <button className="btn small" style={{ marginLeft: 'auto' }} onClick={onFit} title="Fit the whole system in view">Fit</button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
           <div><div style={num}>{layout.bodies.length}</div><div style={{ color: 'var(--muted)' }}>bodies</div></div>
           <div><div style={num}>{layout.moons.length}</div><div style={{ color: 'var(--muted)' }}>moons</div></div>
           <div><div style={num}>{arcs}</div><div style={{ color: 'var(--muted)' }}>arcs</div></div>
+          <div title="Declared bindings to the data platform, checked against each system's corpus role. Contracts, not flows."><div style={num}>{fabric}</div><div style={{ color: 'var(--muted)' }}>bindings</div></div>
         </div>
         <div style={{ color: 'var(--muted)', marginTop: 6 }}>
           {layout.sun
@@ -91,10 +96,22 @@ export function SolarOverlay({ dock, snapshot, layout, arcs, selected, selectedN
                 </div>
               </div>
               <div>
-                <div style={{ color: 'var(--muted)', fontSize: 11 }}>moons · one per capability, colour is what it may do</div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
-                  {Object.entries(MODE_COLOR).map(([mode, color]) => <span key={mode} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />{mode}</span>)}
+                <div style={{ color: 'var(--muted)', fontSize: 11, display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span>moons · one per capability, colour is</span>
+                  {MOON_COLOURINGS.map((m) => (
+                    <button key={m} className="btn small" style={{ ...plain, color: m === moonsBy ? 'var(--text)' : 'var(--cyan)', textDecoration: m === moonsBy ? 'underline' : 'none' }} onClick={() => onMoonsBy(m)} title={m === 'mode' ? 'What the capability may do to the world' : m === 'maturity' ? 'How far it is from being relied on; undeclared is its own colour, never a guess' : 'Whether an operator stands between a request and its effect'}>{m}</button>
+                  ))}
                 </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+                  {MOON_COLOUR_MAPS[moonsBy].map(([value, color]) => <span key={value} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />{value}</span>)}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--muted)', fontSize: 11 }}>fabric · arcs to the platform, colour is the authority the plane accepted</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+                  {FABRIC_AUTHORITY_MAP.map(([authority, color]) => <span key={authority} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span style={{ width: 14, height: 2, background: color }} />{FABRIC_AUTHORITY_LABEL[authority as FabricAuthority]}</span>)}
+                </div>
+                <div style={{ color: 'var(--muted)', marginTop: 2 }}>A binding is a contract: a projection is never accepted as canonical state, and no arc means bytes moved.</div>
               </div>
               <div style={{ color: 'var(--muted)' }}>Nothing here is a place. Positions are domain and registration order, laid out the same for everyone.</div>
             </div>
@@ -110,14 +127,49 @@ export function SolarOverlay({ dock, snapshot, layout, arcs, selected, selectedN
       </div>
 
       {selectedNode && (
-        <ActionPalette node={selectedNode} live={live} writeTitle={writeTitle} isSun={layout.sun?.nodeId === selectedNode.nodeId} onFocus={onFocus} onIntent={onIntent} onDownload={() => downloadBody(selectedNode)} onClose={() => onSelect(null)} selectedId={selected} />
+        <ActionPalette node={selectedNode} snapshot={snapshot} live={live} writeTitle={writeTitle} isSun={layout.sun?.nodeId === selectedNode.nodeId} onFocus={onFocus} onIntent={onIntent} onDownload={() => downloadBody(selectedNode)} onClose={() => onSelect(null)} selectedId={selected} />
       )}
     </>
   );
 }
 
-function ActionPalette({ node, live, writeTitle, isSun, onFocus, onIntent, onDownload, onClose, selectedId }: {
-  node: SnapshotNode; live: boolean; writeTitle: string | undefined; isSun: boolean;
+/**
+ * Every facet of a body the estate records, in one place: what it is to the corpus
+ * program, which planes serve it, where it sits under the collection policy, the
+ * methodology its answers are produced under, how it is bound to the fabric, and who
+ * vouched for its posture. Each line is a fact from the snapshot, not a summary of one.
+ */
+function Facets({ node, snapshot }: { node: SnapshotNode; snapshot: Snapshot }) {
+  const md = node.metadata;
+  const corpus = corpusStanding(node);
+  const collection = collectionStanding(node);
+  const bindings = (snapshot.fabric?.syncs ?? []).filter((s) => s.systemNodeId === node.nodeId);
+  const anchored = (snapshot.fabric?.syncs ?? []).filter((s) => s.fabricNodeId === node.nodeId);
+  const weakest = weakestState(node);
+  const row = (label: string, value: React.ReactNode, title?: string) => (
+    <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }} title={title}>
+      <span style={{ color: 'var(--muted)', width: 78, flex: 'none', fontSize: 11 }}>{label}</span>
+      <span style={{ minWidth: 0 }}>{value}</span>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 8, display: 'grid', gap: 3, fontSize: 11 }}>
+      {corpus && row('corpus', <>{corpus.grade}{corpus.role ? ` · ${corpus.role}` : ''}{corpus.ownerOf.length ? ` · owns ${corpus.ownerOf.join(', ')}` : ''}{corpus.fails.length ? <span style={{ color: '#F5B942' }}> · fails {corpus.fails.join(' ')}</span> : ''}</>, 'Corpus standing (docs/CORPUS.md): grade, role, the domains it owns, the invariants it declares it fails')}
+      {typeof md.api_planes === 'string' && row('planes', <>{md.api_planes}{md.api_writes ? ` · ${md.api_writes} writes` : ''}{md.api_operator_only ? ` · ${md.api_operator_only} operator-local` : ''}</>, 'The API planes this body is served on (docs/API_PLANES.md)')}
+      {collection && row('people', <>{collection.standing} · {PERSON_DATA_LABEL[collection.standing].toLowerCase()}</>, 'Where the body sits under the collection policy (docs/COLLECTION_POLICY.md)')}
+      {typeof md.methodology === 'string' && row('method', <span className="mono">{md.methodology}{md.methodology_status ? ` · ${md.methodology_status}` : ''}</span>, 'The versioned methodology its answers are produced under, declared in its catalog entry; every capability carries it')}
+      {row('fabric', bindings.length
+        ? bindings.map((b) => <span key={b.syncId} style={{ marginRight: 8 }}>{FABRIC_AUTHORITY_LABEL[b.authority]} <span style={{ color: 'var(--muted)' }}>({b.mode}; declared, not synced)</span></span>)
+        : anchored.length ? <>anchor · {anchored.length} systems bound here{typeof md.fabric_layers === 'string' ? ` · layers ${md.fabric_layers}` : ''}</> : <span style={{ color: 'var(--muted)' }}>unbound — no declared binding to the platform</span>, 'How this body participates in the canonical fabric. A binding is a contract the plane checked against its corpus role, not a flow of bytes.')}
+      {row('posture', weakest
+        ? <><span style={{ color: POSTURE_STATE_COLOR[weakest] }}>{weakest}</span> at weakest · {node.security!.signer ? <>signed by <span className="mono">{node.security!.signer.signerId}</span></> : <span style={{ color: '#F5B942' }}>unsigned: the principal's word</span>}</>
+        : <span style={{ color: 'var(--muted)' }}>never attested</span>, 'The weakest dimension of the last attestation, and who vouched for it beyond the submitting principal')}
+    </div>
+  );
+}
+
+function ActionPalette({ node, snapshot, live, writeTitle, isSun, onFocus, onIntent, onDownload, onClose, selectedId }: {
+  node: SnapshotNode; snapshot: Snapshot; live: boolean; writeTitle: string | undefined; isSun: boolean;
   onFocus: (nodeId: string) => void; onIntent: (intent: ConsoleIntent) => void; onDownload: () => void; onClose: () => void; selectedId: string | null;
 }) {
   const byMode = (mode: string) => node.capabilities.filter((c) => c.mode === mode);
@@ -125,7 +177,7 @@ function ActionPalette({ node, live, writeTitle, isSun, onFocus, onIntent, onDow
   const [showAll, setShowAll] = useState(false);
   const shown = showAll ? acting : acting.slice(0, 6);
   return (
-    <div className="overlay" style={{ top: 12, right: 12, width: 300, fontSize: 12 }}>
+    <div className="overlay" style={{ top: 12, right: 12, width: 300, fontSize: 12, maxHeight: 'calc(100% - 380px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'start', gap: 8 }}>
         <div>
           <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' }}>{isSun ? 'sun' : 'body'}</div>
@@ -134,6 +186,8 @@ function ActionPalette({ node, live, writeTitle, isSun, onFocus, onIntent, onDow
         </div>
         <button className="btn small" style={{ marginLeft: 'auto' }} onClick={onClose}>×</button>
       </div>
+
+      <Facets node={node} snapshot={snapshot} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10 }}>
         <button className="btn small" onClick={() => onFocus(node.nodeId)} title="Fly the view to this body">navigate</button>
@@ -153,7 +207,8 @@ function ActionPalette({ node, live, writeTitle, isSun, onFocus, onIntent, onDow
           {shown.map((c) => (
             <li key={c.capabilityId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: MODE_COLOR[c.mode], flex: 'none' }} />
-              <span className="mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={`${c.label} — ${c.description}`}>{c.capabilityId}</span>
+              <span className="mono" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={`${c.label} — ${c.description}${c.methodologyVersion ? ` · under ${c.methodologyVersion}` : ''}`}>{c.capabilityId}</span>
+              <span className="badge" style={{ margin: 0, color: MATURITY_COLOR[c.maturity ?? 'undeclared'], borderColor: MATURITY_COLOR[c.maturity ?? 'undeclared'] }} title={c.maturity ? `Declared maturity: ${c.maturity}` : 'No one has declared how far this capability is from being relied on; the plane does not guess'}>{c.maturity ?? 'undeclared'}</span>
               <span className={`badge ${c.approval === 'operator' ? 'operator' : ''}`} style={{ margin: 0 }}>{c.approval}</span>
               <button className="btn small" onClick={() => onIntent({ action: 'request_capability', nodeId: node.nodeId, capabilityId: c.capabilityId })} disabled={!live} title={writeTitle ?? `Request ${c.mode} of ${c.capabilityId}`}>request</button>
             </li>

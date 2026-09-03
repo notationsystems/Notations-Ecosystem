@@ -19,6 +19,14 @@ describe('fidelity: what the twin knows and does not', () => {
     // A blind body is one the twin knows exists and nothing else — most of a fresh estate.
     expect(f.blind).toBeGreaterThan(f.total / 2);
     expect(f.syncAgeSeconds).toBeNull();
+    // Who vouched, and who is bound: counted, never assumed. The sample's attestations are
+    // the generator's word alone, and its bindings are the declared manifests.
+    expect(f.signed).toBe(sample.nodes.filter((n) => n.security?.signer).length);
+    expect(f.signed).toBe(0);
+    expect(f.bound).toBe(new Set(sample.fabric!.syncs.map((s) => s.systemNodeId)).size);
+    expect(f.bound).toBeGreaterThan(0);
+    const signed: Snapshot = { ...sample, nodes: sample.nodes.map((n, i) => (i === 0 && n.security ? { ...n, security: { ...n.security, signer: { signerId: 'collector:ci', verifiedAt: '2026-09-03T00:00:00Z' } } } : n)) };
+    expect(fidelityOf(signed, null).signed).toBe(sample.nodes[0]!.security ? 1 : 0);
   });
 
   it('reports sync age in whole seconds and never negative', () => {
@@ -58,6 +66,23 @@ describe('drift: the blueprint against the twin', () => {
     expect(d.changed[0]!.removed).toEqual([second!.capabilities[0]!.capabilityId]);
     expect(d.relationsMissing).toBe(1);
     expect(d.relationsUnplanned).toBe(0);
+  });
+
+  it('counts a binding as drift when it is declared and not registered, or registered under another authority', () => {
+    const [first, ...rest] = sample.fabric!.syncs;
+    const dropped: Snapshot = { ...sample, fabric: { ...sample.fabric!, syncs: rest } };
+    const d = driftBetween(sample, dropped);
+    expect(d.clean).toBe(false);
+    expect(d.syncsMissing).toEqual([`${first!.systemNodeId}|${first!.authority}|${first!.fabricNodeId}`]);
+    expect(d.syncsUnplanned).toEqual([]);
+    // The same system bound as something else is a different contract, not the same one renamed.
+    const rebound: Snapshot = { ...sample, fabric: { ...sample.fabric!, syncs: [{ ...first!, authority: first!.authority === 'projection' ? 'evidence_source' : 'projection' }, ...rest] } };
+    const r = driftBetween(sample, rebound);
+    expect(r.syncsMissing).toHaveLength(1);
+    expect(r.syncsUnplanned).toHaveLength(1);
+    // A live plane from before the registry drifts by every declared binding, and says which.
+    const { fabric: _none, ...before } = sample;
+    expect(driftBetween(sample, before as Snapshot).syncsMissing).toHaveLength(sample.fabric!.syncs.length);
   });
 
   it('treats a relation as the same only when source, kind and target all match', () => {

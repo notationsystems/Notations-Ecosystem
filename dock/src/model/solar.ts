@@ -1,5 +1,5 @@
 import type { KeplerDataset } from './kepler';
-import { HEALTH_COLOR, HEALTHS, POSTURE_STATE_COLOR, RELATION_COLOR, RELATION_KINDS, type PostureState, type Snapshot, type SnapshotNode } from './types';
+import { FABRIC_AUTHORITIES, FABRIC_AUTHORITY_COLOR, HEALTH_COLOR, HEALTHS, MATURITIES, MATURITY_COLOR, POSTURE_STATE_COLOR, RELATION_COLOR, RELATION_KINDS, type FabricAuthority, type PostureState, type Snapshot, type SnapshotNode } from './types';
 import { domainOf } from './graph';
 
 /**
@@ -26,6 +26,16 @@ export const SOLAR_ARCS = 'solar-arcs';
 export const SOLAR_SELECTED = 'solar-selected';
 export const SOLAR_COORDINATION = 'solar-coordination';
 export const SOLAR_HALOS = 'solar-halos';
+export const SOLAR_FABRIC = 'solar-fabric';
+
+/**
+ * What a moon's colour may mean. `mode` is what the capability may do to the world;
+ * `maturity` is how far it is from being relied on, with undeclared drawn as its own
+ * colour rather than folded into a guess; `approval` is whether an operator stands
+ * between a request and its effect.
+ */
+export const MOON_COLOURINGS = ['mode', 'maturity', 'approval'] as const;
+export type MoonColouring = (typeof MOON_COLOURINGS)[number];
 
 /**
  * Orbit order, inner to outer. Platform first because the sun is a platform node and the
@@ -45,13 +55,15 @@ const MOON_RADIUS = 0.62;
 const ORBIT_VERTICES = 96;
 
 export interface Body { node: SnapshotNode; lon: number; lat: number; orbit: number; domain: string; isSun: boolean }
-export interface Moon { node: SnapshotNode; capabilityId: string; label: string; mode: string; approval: string; lon: number; lat: number }
+export interface Moon { node: SnapshotNode; capabilityId: string; label: string; mode: string; approval: string; maturity: string; methodology: string | null; lon: number; lat: number }
 export interface SolarLayout {
   sun: SnapshotNode | null;
   bodies: Body[];
   moons: Moon[];
   /** One entry per orbit actually drawn, with the domain it carries. */
   orbits: Array<{ index: number; domain: string; radius: number; bodies: number }>;
+  /** The fabric authorities each system is bound under, from the snapshot's sync registry. */
+  fabric: Map<string, FabricAuthority[]>;
 }
 
 /**
@@ -113,11 +125,14 @@ export function solarLayout(snapshot: Snapshot): SolarLayout {
     const radius = body.isSun ? MOON_RADIUS * 2.2 : MOON_RADIUS;
     caps.forEach((c, i) => {
       const theta = Math.PI / 2 + (2 * Math.PI * i) / caps.length;
-      moons.push({ node: body.node, capabilityId: c.capabilityId, label: c.label, mode: c.mode, approval: c.approval, lon: body.lon + radius * Math.cos(theta), lat: body.lat + radius * Math.sin(theta) });
+      moons.push({ node: body.node, capabilityId: c.capabilityId, label: c.label, mode: c.mode, approval: c.approval, maturity: c.maturity ?? 'undeclared', methodology: c.methodologyVersion ?? null, lon: body.lon + radius * Math.cos(theta), lat: body.lat + radius * Math.sin(theta) });
     });
   }
 
-  return { sun, bodies, moons, orbits };
+  const fabric = new Map<string, FabricAuthority[]>();
+  for (const sync of snapshot.fabric?.syncs ?? []) fabric.set(sync.systemNodeId, [...(fabric.get(sync.systemNodeId) ?? []), sync.authority]);
+
+  return { sun, bodies, moons, orbits, fabric };
 }
 
 const round = (n: number) => Math.round(n * 1e5) / 1e5;
@@ -127,13 +142,14 @@ export function bodiesDataset(layout: SolarLayout): KeplerDataset {
     { name: 'node_id', type: 'string' }, { name: 'name', type: 'string' }, { name: 'kind', type: 'string' },
     { name: 'domain', type: 'string' }, { name: 'health', type: 'string' }, { name: 'corpus_grade', type: 'string' },
     { name: 'corpus_role', type: 'string' }, { name: 'capabilities', type: 'integer' }, { name: 'writes', type: 'integer' },
-    { name: 'api_planes', type: 'string' }, { name: 'body', type: 'string' },
+    { name: 'api_planes', type: 'string' }, { name: 'fabric', type: 'string' }, { name: 'methodology', type: 'string' }, { name: 'body', type: 'string' },
     { name: 'latitude', type: 'real' }, { name: 'longitude', type: 'real' },
   ];
   const rows = layout.bodies.map((b) => [
     b.node.nodeId, b.node.name, b.node.kind, b.domain, b.node.health,
     String(b.node.metadata.corpus_grade ?? 'undeclared'), String(b.node.metadata.corpus_role ?? ''),
     b.node.capabilities.length, Number(b.node.metadata.api_writes ?? 0), String(b.node.metadata.api_planes ?? ''),
+    (layout.fabric.get(b.node.nodeId) ?? []).join(' ') || 'unbound', String(b.node.metadata.methodology ?? ''),
     b.isSun ? 'sun' : 'planet', round(b.lat), round(b.lon),
   ]);
   return { info: { id: SOLAR_BODIES, label: 'Bodies' }, data: { fields, rows } };
@@ -142,10 +158,10 @@ export function bodiesDataset(layout: SolarLayout): KeplerDataset {
 export function moonsDataset(layout: SolarLayout): KeplerDataset {
   const fields: KeplerDataset['data']['fields'] = [
     { name: 'node_id', type: 'string' }, { name: 'capability_id', type: 'string' }, { name: 'label', type: 'string' },
-    { name: 'mode', type: 'string' }, { name: 'approval', type: 'string' },
+    { name: 'mode', type: 'string' }, { name: 'approval', type: 'string' }, { name: 'maturity', type: 'string' }, { name: 'methodology', type: 'string' },
     { name: 'latitude', type: 'real' }, { name: 'longitude', type: 'real' },
   ];
-  const rows = layout.moons.map((m) => [m.node.nodeId, m.capabilityId, m.label, m.mode, m.approval, round(m.lat), round(m.lon)]);
+  const rows = layout.moons.map((m) => [m.node.nodeId, m.capabilityId, m.label, m.mode, m.approval, m.maturity, m.methodology ?? '', round(m.lat), round(m.lon)]);
   return { info: { id: SOLAR_MOONS, label: 'Capabilities' }, data: { fields, rows } };
 }
 
@@ -208,6 +224,32 @@ export function coordinationDataset(snapshot: Snapshot, layout: SolarLayout): Ke
   return { info: { id: SOLAR_COORDINATION, label: 'Coordination' }, data: { fields, rows } };
 }
 
+/**
+ * The fabric, drawn. An arc from each bound system to the platform node it binds to,
+ * coloured by the authority the plane accepted — evidence, canonical state, projection,
+ * derived compute. A contract, not a flow: the tooltip says "declared" because no bytes
+ * have moved, and the arc exists because the system's corpus role entitled it to the
+ * authority it claimed (SEC-046). A system with no arc is one nobody has bound.
+ */
+export const FABRIC_AUTHORITY_MAP = FABRIC_AUTHORITIES.map((a) => [a, FABRIC_AUTHORITY_COLOR[a]] as [string, string]);
+
+export function fabricDataset(snapshot: Snapshot, layout: SolarLayout): KeplerDataset {
+  const at = new Map(layout.bodies.map((b) => [b.node.nodeId, b]));
+  const fields: KeplerDataset['data']['fields'] = [
+    { name: 'sync_id', type: 'string' }, { name: 'system', type: 'string' }, { name: 'anchor', type: 'string' }, { name: 'authority', type: 'string' },
+    { name: 'mode', type: 'string' }, { name: 'identity_kinds', type: 'string' }, { name: 'representations', type: 'string' }, { name: 'standing', type: 'string' },
+    { name: 'source_lat', type: 'real' }, { name: 'source_lng', type: 'real' }, { name: 'target_lat', type: 'real' }, { name: 'target_lng', type: 'real' },
+  ];
+  const rows: unknown[][] = [];
+  for (const sync of snapshot.fabric?.syncs ?? []) {
+    const s = at.get(sync.systemNodeId);
+    const t = at.get(sync.fabricNodeId);
+    if (!s || !t) continue;
+    rows.push([sync.syncId, sync.systemNodeId, sync.fabricNodeId, sync.authority, sync.mode, sync.identityKinds.join(' '), sync.representations.join(' '), 'declared, not synced', round(s.lat), round(s.lon), round(t.lat), round(t.lon)]);
+  }
+  return { info: { id: SOLAR_FABRIC, label: 'Fabric' }, data: { fields, rows } };
+}
+
 /** Weakest link first: the state a body's halo takes is the worst any dimension reports. */
 const WORST_FIRST: PostureState[] = ['failing', 'weak', 'unknown', 'adequate', 'strong'];
 
@@ -226,14 +268,17 @@ export function weakestState(node: SnapshotNode): PostureState | null {
 export function haloDataset(layout: SolarLayout): KeplerDataset {
   const fields: KeplerDataset['data']['fields'] = [
     { name: 'node_id', type: 'string' }, { name: 'name', type: 'string' }, { name: 'weakest', type: 'string' },
-    { name: 'dimensions', type: 'integer' }, { name: 'attested_at', type: 'string' }, { name: 'method', type: 'string' },
+    { name: 'dimensions', type: 'integer' }, { name: 'attested_at', type: 'string' }, { name: 'method', type: 'string' }, { name: 'vouched_by', type: 'string' },
     { name: 'latitude', type: 'real' }, { name: 'longitude', type: 'real' },
   ];
   const rows: unknown[][] = [];
   for (const b of layout.bodies) {
     const weakest = weakestState(b.node);
     if (!weakest) continue;
-    rows.push([b.node.nodeId, b.node.name, weakest, b.node.security!.signals.length, b.node.security!.attestedAt, b.node.security!.method, round(b.lat), round(b.lon)]);
+    // Who vouched: an independent collector whose signature the plane verified, or the
+    // submitting principal alone. Both honest; the halo's tooltip says which.
+    const vouched = b.node.security!.signer ? `${b.node.security!.signer.signerId} (signed)` : `${b.node.security!.attestedBy} (principal, unsigned)`;
+    rows.push([b.node.nodeId, b.node.name, weakest, b.node.security!.signals.length, b.node.security!.attestedAt, b.node.security!.method, vouched, round(b.lat), round(b.lon)]);
   }
   return { info: { id: SOLAR_HALOS, label: 'Posture' }, data: { fields, rows } };
 }
@@ -243,6 +288,9 @@ const POSTURE_MAP = WORST_FIRST.map((s) => [s, POSTURE_STATE_COLOR[s]] as [strin
 const rgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 const HEALTH_MAP = HEALTHS.map((h) => [h, HEALTH_COLOR[h]] as [string, string]);
 const MODE_MAP: Array<[string, string]> = [['observe', '#39C6D8'], ['propose', '#8B7CF6'], ['execute', '#F5B942']];
+const APPROVAL_MAP: Array<[string, string]> = [['automatic', '#39C6D8'], ['operator', '#F5B942']];
+const MATURITY_MAP: Array<[string, string]> = [...MATURITIES, 'undeclared' as const].map((m) => [m, MATURITY_COLOR[m]] as [string, string]);
+export const MOON_COLOUR_MAPS: Record<MoonColouring, Array<[string, string]>> = { mode: MODE_MAP, maturity: MATURITY_MAP, approval: APPROVAL_MAP };
 const RELATION_MAP = RELATION_KINDS.map((k) => [k, RELATION_COLOR[k]] as [string, string]);
 
 /**
@@ -253,7 +301,8 @@ const RELATION_MAP = RELATION_KINDS.map((k) => [k, RELATION_COLOR[k]] as [string
  * assigns palette colours by the sorted values present, so a filter that removed every
  * offline node would silently recolour healthy ones.
  */
-export function solarConfig() {
+export function solarConfig({ moonsBy = 'mode' }: { moonsBy?: MoonColouring } = {}) {
+  const moonMap = MOON_COLOUR_MAPS[moonsBy];
   return {
     version: 'v1',
     config: {
@@ -277,6 +326,15 @@ export function solarConfig() {
             visualChannels: { colorField: { name: 'kind', type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear' },
           },
           {
+            id: 'solar-fabric-arcs', type: 'arc',
+            config: {
+              dataId: SOLAR_FABRIC, label: 'Fabric', color: [245, 185, 66],
+              columns: { lat0: 'source_lat', lng0: 'source_lng', lat1: 'target_lat', lng1: 'target_lng' }, isVisible: true,
+              visConfig: { opacity: 0.7, thickness: 2.2, colorRange: { name: 'Fabric', type: 'qualitative', category: 'Custom', colors: FABRIC_AUTHORITY_MAP.map(([, c]) => c), colorMap: FABRIC_AUTHORITY_MAP }, sizeRange: [0, 10], targetColor: [90, 100, 118] },
+            },
+            visualChannels: { colorField: { name: 'authority', type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear' },
+          },
+          {
             id: 'solar-coordination-arcs', type: 'arc',
             config: {
               dataId: SOLAR_COORDINATION, label: 'Coordination', color: [245, 185, 66],
@@ -297,9 +355,9 @@ export function solarConfig() {
             id: 'solar-moons-points', type: 'point',
             config: {
               dataId: SOLAR_MOONS, label: 'Capabilities', color: [57, 198, 216], columns: { lat: 'latitude', lng: 'longitude', altitude: null }, isVisible: true,
-              visConfig: { radius: 9, fixedRadius: false, opacity: 0.85, outline: false, thickness: 1, radiusRange: [4, 12], colorRange: { name: 'Modes', type: 'qualitative', category: 'Custom', colors: MODE_MAP.map(([, c]) => c), colorMap: MODE_MAP } },
+              visConfig: { radius: 9, fixedRadius: false, opacity: 0.85, outline: false, thickness: 1, radiusRange: [4, 12], colorRange: { name: `Moons by ${moonsBy}`, type: 'qualitative', category: 'Custom', colors: moonMap.map(([, c]) => c), colorMap: moonMap } },
             },
-            visualChannels: { colorField: { name: 'mode', type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear', strokeColorField: null, strokeColorScale: 'quantile' },
+            visualChannels: { colorField: { name: moonsBy, type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear', strokeColorField: null, strokeColorScale: 'quantile' },
           },
           {
             id: 'solar-bodies-points', type: 'point',
@@ -315,12 +373,13 @@ export function solarConfig() {
           tooltip: {
             enabled: true, compareMode: false, compareType: 'absolute',
             fieldsToShow: {
-              [SOLAR_BODIES]: [{ name: 'name', format: null }, { name: 'domain', format: null }, { name: 'health', format: null }, { name: 'corpus_grade', format: null }, { name: 'capabilities', format: null }, { name: 'writes', format: null }, { name: 'api_planes', format: null }],
-              [SOLAR_MOONS]: [{ name: 'capability_id', format: null }, { name: 'label', format: null }, { name: 'mode', format: null }, { name: 'approval', format: null }],
+              [SOLAR_BODIES]: [{ name: 'name', format: null }, { name: 'domain', format: null }, { name: 'health', format: null }, { name: 'corpus_grade', format: null }, { name: 'capabilities', format: null }, { name: 'writes', format: null }, { name: 'api_planes', format: null }, { name: 'fabric', format: null }, { name: 'methodology', format: null }],
+              [SOLAR_MOONS]: [{ name: 'capability_id', format: null }, { name: 'label', format: null }, { name: 'mode', format: null }, { name: 'approval', format: null }, { name: 'maturity', format: null }, { name: 'methodology', format: null }],
+              [SOLAR_FABRIC]: [{ name: 'system', format: null }, { name: 'authority', format: null }, { name: 'anchor', format: null }, { name: 'mode', format: null }, { name: 'identity_kinds', format: null }, { name: 'representations', format: null }, { name: 'standing', format: null }],
               [SOLAR_ARCS]: [{ name: 'source', format: null }, { name: 'kind', format: null }, { name: 'target', format: null }, { name: 'description', format: null }],
               [SOLAR_ORBITS]: [{ name: 'domain', format: null }, { name: 'bodies', format: null }],
               [SOLAR_COORDINATION]: [{ name: 'requester', format: null }, { name: 'capability', format: null }, { name: 'target', format: null }, { name: 'status', format: null }, { name: 'dispatch', format: null }, { name: 'purpose', format: null }],
-              [SOLAR_HALOS]: [{ name: 'name', format: null }, { name: 'weakest', format: null }, { name: 'dimensions', format: null }, { name: 'method', format: null }, { name: 'attested_at', format: null }],
+              [SOLAR_HALOS]: [{ name: 'name', format: null }, { name: 'weakest', format: null }, { name: 'dimensions', format: null }, { name: 'method', format: null }, { name: 'vouched_by', format: null }, { name: 'attested_at', format: null }],
             },
           },
           brush: { enabled: false, size: 0.5 }, geocoder: { enabled: false }, coordinate: { enabled: false },
@@ -359,18 +418,21 @@ export function solarSelection(layout: SolarLayout, nodeId: string): { datasets:
 }
 
 /** Which dataset column names the node a click should select. Moons select their body; arcs their source. */
-export const SOLAR_CLICK_FIELD: Record<string, string> = { [SOLAR_BODIES]: 'node_id', [SOLAR_MOONS]: 'node_id', [SOLAR_ARCS]: 'source', [SOLAR_SELECTED]: 'node_id', [SOLAR_COORDINATION]: 'target', [SOLAR_HALOS]: 'node_id' };
+export const SOLAR_CLICK_FIELD: Record<string, string> = { [SOLAR_BODIES]: 'node_id', [SOLAR_MOONS]: 'node_id', [SOLAR_ARCS]: 'source', [SOLAR_SELECTED]: 'node_id', [SOLAR_COORDINATION]: 'target', [SOLAR_HALOS]: 'node_id', [SOLAR_FABRIC]: 'system' };
 
-export interface SolarBundle { datasets: KeplerDataset[]; config: ReturnType<typeof solarConfig>; layout: SolarLayout; arcs: number; coordination: number; halos: number }
+export interface SolarBundle { datasets: KeplerDataset[]; config: ReturnType<typeof solarConfig>; layout: SolarLayout; arcs: number; fabric: number; coordination: number; halos: number }
 
-export function solarBundle(snapshot: Snapshot): SolarBundle {
+export function solarBundle(snapshot: Snapshot, options: { moonsBy?: MoonColouring } = {}): SolarBundle {
   const layout = solarLayout(snapshot);
   const arcs = arcsDataset(snapshot, layout);
+  const fabric = fabricDataset(snapshot, layout);
   const coordination = coordinationDataset(snapshot, layout);
   const halos = haloDataset(layout);
   return {
-    datasets: [orbitsDataset(layout), arcs, coordination, halos, moonsDataset(layout), bodiesDataset(layout)],
-    config: solarConfig(), layout, arcs: arcs.data.rows.length, coordination: coordination.data.rows.length, halos: halos.data.rows.length,
+    // Draw order: orbits under everything; relations, then the fabric, then coordination on
+    // top of both; halos; moons; bodies last so a label is never under an arc.
+    datasets: [orbitsDataset(layout), arcs, fabric, coordination, halos, moonsDataset(layout), bodiesDataset(layout)],
+    config: solarConfig(options), layout, arcs: arcs.data.rows.length, fabric: fabric.data.rows.length, coordination: coordination.data.rows.length, halos: halos.data.rows.length,
   };
 }
 

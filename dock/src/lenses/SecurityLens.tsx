@@ -216,7 +216,7 @@ export function SecurityLens({ snapshot, filtered, onSelect, dock }: LensProps) 
                   <td style={{ color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                     {new Date(node.security!.attestedAt).toLocaleString()}
                     <div style={{ fontSize: 11 }}>
-                      {node.security!.method.replace(/_/g, ' ')} · {node.security!.attestedBy}
+                      {node.security!.method.replace(/_/g, ' ')} · {node.security!.attestedBy}{node.security!.signer ? ` · signed by ${node.security!.signer.signerId}` : ' · unsigned'}
                     </div>
                   </td>
                 </tr>

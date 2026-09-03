@@ -13,6 +13,10 @@ export interface Fidelity {
   observed: number;
   /** Bodies whose security posture has been attested. */
   attested: number;
+  /** Of those, the ones an independent collector signed for — not only the submitting principal. */
+  signed: number;
+  /** Systems bound to the fabric under an authority the plane accepted. */
+  bound: number;
   /** Bodies with neither — the twin knows they exist and nothing else. */
   blind: number;
   total: number;
@@ -27,8 +31,10 @@ export function fidelityOf(snapshot: Snapshot, lastSync: string | null, now = Da
   const observed = snapshot.nodes.filter((n) => n.lastObservedAt !== null).length;
   const attested = snapshot.nodes.filter((n) => n.security !== null).length;
   const blind = snapshot.nodes.filter((n) => n.lastObservedAt === null && n.security === null).length;
+  const signed = snapshot.nodes.filter((n) => n.security?.signer).length;
+  const bound = new Set((snapshot.fabric?.syncs ?? []).map((s) => s.systemNodeId)).size;
   const syncAgeSeconds = lastSync ? Math.max(0, Math.round((now - new Date(lastSync).getTime()) / 1000)) : null;
-  return { observed, attested, blind, total: snapshot.nodes.length, syncAgeSeconds, proofRoot: snapshot.proofRoot ?? null, reference: snapshot.reference ?? null };
+  return { observed, attested, signed, bound, blind, total: snapshot.nodes.length, syncAgeSeconds, proofRoot: snapshot.proofRoot ?? null, reference: snapshot.reference ?? null };
 }
 
 export interface Drift {
@@ -41,6 +47,9 @@ export interface Drift {
   /** Relations in exactly one of the two. */
   relationsMissing: number;
   relationsUnplanned: number;
+  /** Fabric bindings declared in the blueprint and not registered, or registered and not declared. */
+  syncsMissing: string[];
+  syncsUnplanned: string[];
   /** True when nothing differs — the twin is the blueprint. */
   clean: boolean;
 }
@@ -79,9 +88,17 @@ export function driftBetween(blueprint: Snapshot, live: Snapshot): Drift {
   const relationsMissing = [...plannedRelations].filter((k) => !actualRelations.has(k)).length;
   const relationsUnplanned = [...actualRelations].filter((k) => !plannedRelations.has(k)).length;
 
+  // A binding is the same binding when system, authority and anchor agree; a system bound
+  // under a different authority is a different contract, and the drift should say so.
+  const syncKey = (s: { systemNodeId: string; authority: string; fabricNodeId: string }) => `${s.systemNodeId}|${s.authority}|${s.fabricNodeId}`;
+  const plannedSyncs = new Set((blueprint.fabric?.syncs ?? []).map(syncKey));
+  const actualSyncs = new Set((live.fabric?.syncs ?? []).map(syncKey));
+  const syncsMissing = [...plannedSyncs].filter((k) => !actualSyncs.has(k)).sort();
+  const syncsUnplanned = [...actualSyncs].filter((k) => !plannedSyncs.has(k)).sort();
+
   return {
-    missing, unplanned, changed, relationsMissing, relationsUnplanned,
-    clean: !missing.length && !unplanned.length && !changed.length && !relationsMissing && !relationsUnplanned,
+    missing, unplanned, changed, relationsMissing, relationsUnplanned, syncsMissing, syncsUnplanned,
+    clean: !missing.length && !unplanned.length && !changed.length && !relationsMissing && !relationsUnplanned && !syncsMissing.length && !syncsUnplanned.length,
   };
 }
 

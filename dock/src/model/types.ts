@@ -4,16 +4,32 @@ export type NodeKind = 'api' | 'world_model' | 'information_library' | 'reasonin
 export type CapabilityMode = 'observe' | 'propose' | 'execute';
 export type Approval = 'automatic' | 'operator';
 export type RelationKind = 'supplies_context_to' | 'coordinates' | 'visualizes' | 'governs' | 'depends_on';
-export type Health = 'unknown' | 'healthy' | 'degraded' | 'offline';
+export type Health = 'unknown' | 'healthy' | 'degraded' | 'critical' | 'offline';
 export type CoordinationStatus = 'approval_required' | 'ready' | 'approved' | 'rejected';
 export type ObservationSource = 'operator' | 'health_check' | 'webhook';
 
 export const NODE_KINDS: NodeKind[] = ['api', 'world_model', 'information_library', 'reasoning_engine', 'visual_dock', 'operator_surface'];
 export const RELATION_KINDS: RelationKind[] = ['supplies_context_to', 'coordinates', 'visualizes', 'governs', 'depends_on'];
 export const CAPABILITY_MODES: CapabilityMode[] = ['observe', 'propose', 'execute'];
-export const HEALTHS: Health[] = ['unknown', 'healthy', 'degraded', 'offline'];
+export const HEALTHS: Health[] = ['unknown', 'healthy', 'degraded', 'critical', 'offline'];
 
 export type MetadataValue = string | number | boolean;
+
+/**
+ * How far a capability is from being relied on. Declared by whoever assessed the code and
+ * absent otherwise — the plane defaults nothing, so `undefined` here means "nobody has
+ * said", not "research". An empty repository's capabilities are `planned` by construction.
+ */
+export type CapabilityMaturity = 'production' | 'beta' | 'experimental' | 'research' | 'planned';
+export const MATURITIES: CapabilityMaturity[] = ['production', 'beta', 'experimental', 'research', 'planned'];
+export const MATURITY_COLOR: Record<CapabilityMaturity | 'undeclared', string> = {
+  production: '#5AC77A',
+  beta: '#39C6D8',
+  experimental: '#8B7CF6',
+  research: '#F5B942',
+  planned: '#6B7280',
+  undeclared: '#3B4252',
+};
 
 export interface Capability {
   capabilityId: string;
@@ -21,6 +37,9 @@ export interface Capability {
   description: string;
   mode: CapabilityMode;
   approval: Approval;
+  maturity?: CapabilityMaturity;
+  /** `<methodology_id>/<version>` the capability answers under, e.g. `payload-methodology/0.1.0`. */
+  methodologyVersion?: string;
 }
 
 export interface Location { longitude: number; latitude: number }
@@ -63,6 +82,54 @@ export interface NodeSecurity {
   attestedBy: string;
   method: AttestationMethod;
   signals: PostureSignal[];
+  /**
+   * Who vouched beyond the submitting principal: an independent collector whose Ed25519
+   * signature the plane verified against a public key it holds, or null when the
+   * statement rests on the principal's authority alone. Both are honest; this says which.
+   */
+  signer?: { signerId: string; verifiedAt: string } | null;
+}
+
+/**
+ * The fabric: which systems participate in the canonical data platform, under which
+ * authority. A binding is a contract the plane checked against the system's corpus role —
+ * a projection never binds as canonical state — and not an observation that bytes moved.
+ */
+export type FabricAuthority = 'evidence_source' | 'canonical_state' | 'projection' | 'derived_compute';
+export const FABRIC_AUTHORITIES: FabricAuthority[] = ['evidence_source', 'canonical_state', 'projection', 'derived_compute'];
+export const FABRIC_AUTHORITY_COLOR: Record<FabricAuthority, string> = {
+  evidence_source: '#39C6D8',
+  canonical_state: '#F5B942',
+  projection: '#5AC77A',
+  derived_compute: '#8B7CF6',
+};
+export const FABRIC_AUTHORITY_LABEL: Record<FabricAuthority, string> = {
+  evidence_source: 'supplies evidence',
+  canonical_state: 'is canonical state',
+  projection: 'projects',
+  derived_compute: 'returns derived compute',
+};
+
+export interface FabricSync {
+  schema: 'notations.fabric-sync-manifest.v1';
+  syncId: string;
+  systemNodeId: string;
+  systemIdentity: string;
+  fabricNodeId: string;
+  mode: 'append_only' | 'snapshot' | 'event_stream';
+  authority: FabricAuthority;
+  identityKinds: string[];
+  representations: string[];
+  provenanceRequired: true;
+  knownAtRequired: true;
+  /** Null on a record written by the plane this one was merged with. */
+  registeredBy: string | null;
+  registeredAt: string;
+}
+
+export interface Fabric {
+  identityScheme: string;
+  syncs: FabricSync[];
 }
 
 export interface ConstellationDimension {
@@ -284,12 +351,15 @@ export interface Snapshot extends Partial<Referenced> {
   relations: Relation[];
   coordination: Coordination[];
   constellation?: Constellation;
+  /** Absent on a snapshot written before the fabric registry existed. */
+  fabric?: Fabric;
   /** Present only on the bundled offline sample, never on live control-plane state. */
   sample?: boolean;
   sampleNote?: string;
 }
 
-export type EventKind = 'node_registered' | 'relation_declared' | 'observation_recorded' | 'security_posture_recorded' | 'coordination_requested' | 'coordination_resolved';
+/** The last two are never written by this plane; a journal the merged plane wrote may carry them, and the fold reads them. */
+export type EventKind = 'node_registered' | 'relation_declared' | 'observation_recorded' | 'security_posture_recorded' | 'coordination_requested' | 'coordination_resolved' | 'fabric_sync_registered' | 'profile_applied' | 'security_attested';
 
 export interface JournalEvent {
   eventId: string;
@@ -301,6 +371,9 @@ export interface JournalEvent {
   observation?: { nodeId: string; health: Health; observedAt: string; source: ObservationSource; detail: string };
   posture?: { nodeId: string; attestedAt: string; attestedBy: string; method: AttestationMethod; signals: PostureSignal[] };
   request?: Coordination;
+  manifest?: Omit<FabricSync, 'registeredBy' | 'registeredAt'>;
+  registeredBy?: string;
+  registeredAt?: string;
   coordinationId?: string;
   decision?: 'approved' | 'rejected';
   resolvedAt?: string;
@@ -347,6 +420,32 @@ export interface CommandResult {
   snapshot: Snapshot;
 }
 
+/**
+ * GET /v1/index: the plane's own projection of what needs attention, built from the
+ * snapshot at `sourceRevision` so there is one derivation of "stale", "unattested" and
+ * "unbound" rather than one per client. An observation under API-000: rebuildable,
+ * judged by thresholds it states, and carrying no purpose text and no signature bytes.
+ */
+export interface OperationalIndex extends OperationalObservation {
+  schema: 'notations.control-plane.operational-index.v1';
+  sourceRevision: string | null;
+  sourceEventCursor: string | null;
+  builtAt: string;
+  thresholds: { observationStaleAfterMs: number; attestationStaleAfterMs: number };
+  facets: Record<string, Record<string, number>>;
+  signals: {
+    unobservedNodeIds: string[];
+    staleObservationNodeIds: string[];
+    unavailableNodeIds: string[];
+    failingPostureNodeIds: string[];
+    stalePostureNodeIds: string[];
+    unattestedNodeIds: string[];
+    unsignedPostureNodeIds: string[];
+    unboundSystemNodeIds: string[];
+    pendingApproval: Array<{ coordinationId: string; requesterNodeId: string; targetNodeId: string; capabilityId: string; requestedMode: CapabilityMode; requestedAt: string }>;
+  };
+}
+
 export interface HealthResponse {
   status: 'operational';
   service: string;
@@ -378,6 +477,8 @@ export const KIND_COLOR: Record<NodeKind, string> = {
 export const HEALTH_COLOR: Record<Health, string> = {
   healthy: '#5AC77A',
   degraded: '#F5B942',
+  // Answers, and what it answers says do not rely on it: between degraded and offline.
+  critical: '#F0642F',
   offline: '#E8536A',
   unknown: '#6B7280',
 };

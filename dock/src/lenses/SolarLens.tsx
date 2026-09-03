@@ -3,9 +3,9 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { KeplerGl } from '@kepler.gl/components';
 import { addDataToMap, fitBounds, removeDataset, wrapTo } from '@kepler.gl/actions';
 import type { ConsoleIntent } from '../App';
-import { SOLAR_CLICK_FIELD, SOLAR_MAP_ID, SOLAR_SELECTED, solarBounds, solarBundle, solarSelection } from '../model/solar';
+import { SOLAR_CLICK_FIELD, SOLAR_MAP_ID, SOLAR_SELECTED, solarBounds, solarBundle, solarSelection, type MoonColouring } from '../model/solar';
 import { driftBetween, fidelityOf, timeAxis } from '../model/twin';
-import type { Snapshot } from '../model/types';
+import type { OperationalIndex, Snapshot } from '../model/types';
 import { applyFilters, type LensProps } from './types';
 import { TwinPanel } from './solar/TwinPanel';
 import { resolveClickedNodeId, withAnalyzerTypes, type KeplerInstanceState, type PickedInfo } from './map/keplerBridge';
@@ -79,11 +79,27 @@ export function SolarLens({ dock, snapshot, filtered, filters, selected, selecte
     return () => { stopped = true; };
   }, []);
 
+  // What needs attention, as the plane derives it. Fetched when the head moves and never
+  // recomputed here: one derivation of "stale", "unattested" and "unbound", the plane's.
+  const [index, setIndex] = useState<OperationalIndex | null>(null);
+  useEffect(() => {
+    if (dock.mode !== 'live') { setIndex(null); return; }
+    let stale = false;
+    dock.client.index()
+      .then((i) => { if (!stale) setIndex(i); })
+      .catch(() => { if (!stale) setIndex(null); });
+    return () => { stale = true; };
+  }, [dock.client, dock.mode, snapshot.revision]);
+
+  // What a moon's colour means. A choice about the picture, not about the data, so it lives
+  // here and re-feeds the same datasets to Kepler with a different colour field.
+  const [moonsBy, setMoonsBy] = useState<MoonColouring>('mode');
+
   const axis = useMemo(() => timeAxis(dock.events), [dock.events]);
   const fidelity = useMemo(() => fidelityOf(shownSnapshot, dock.lastSync), [shownSnapshot, dock.lastSync]);
   const drift = useMemo(() => (blueprint ? driftBetween(blueprint, snapshot) : null), [blueprint, snapshot]);
 
-  const bundle = useMemo(() => solarBundle(shown), [shown]);
+  const bundle = useMemo(() => solarBundle(shown, { moonsBy }), [shown, moonsBy]);
   const bounds = useMemo(() => solarBounds(bundle.layout), [bundle]);
   const fit = useCallback(() => dispatch(wrapTo(SOLAR_MAP_ID, fitBounds(bounds))), [bounds, dispatch]);
   const focus = useCallback((nodeId: string) => {
@@ -150,12 +166,16 @@ export function SolarLens({ dock, snapshot, filtered, filters, selected, selecte
         drift={drift}
         blueprintLoaded={blueprint !== null}
         travelling={travelling}
+        index={index}
       />
       <SolarOverlay
         dock={dock}
         snapshot={shownSnapshot}
         layout={bundle.layout}
         arcs={bundle.arcs}
+        fabric={bundle.fabric}
+        moonsBy={moonsBy}
+        onMoonsBy={setMoonsBy}
         selected={selected}
         selectedNode={selectedInView}
         onSelect={onSelect}

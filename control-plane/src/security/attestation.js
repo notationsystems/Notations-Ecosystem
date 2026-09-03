@@ -19,11 +19,10 @@
 import { createPublicKey, verify } from 'node:crypto';
 import { ControlPlaneError } from '../errors.js';
 import { canonicalize } from '../journal.js';
+import { SIGNATURE } from '../validation.js';
 
 /** 32 bytes of Ed25519 public key, base64url without padding. */
 const PUBLIC_KEY_X = /^[A-Za-z0-9_-]{43}$/;
-/** 64 bytes of Ed25519 signature, base64url without padding. */
-export const SIGNATURE = /^[A-Za-z0-9_-]{86}$/;
 const SIGNER_ID = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 
 /**

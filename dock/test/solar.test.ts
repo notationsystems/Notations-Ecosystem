@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ORBIT_ORDER, SOLAR_CLICK_FIELD, arcsDataset, moonsDataset, orbitsDataset, solarBundle, solarLayout, solarSelection, sunOf } from '../src/model/solar';
-import type { Snapshot } from '../src/model/types';
+import { MOON_COLOURINGS, MOON_COLOUR_MAPS, ORBIT_ORDER, SOLAR_CLICK_FIELD, arcsDataset, fabricDataset, moonsDataset, orbitsDataset, solarBundle, solarConfig, solarLayout, solarSelection, sunOf } from '../src/model/solar';
+import { MATURITIES, type Snapshot } from '../src/model/types';
 
 const sample = JSON.parse(readFileSync(path.resolve(__dirname, '../public/sample-snapshot.json'), 'utf8')) as Snapshot;
 
@@ -65,7 +65,7 @@ describe('the solar layout', () => {
 
   it('bundles a no-basemap config with pinned colour maps on every coloured layer', () => {
     const bundle = solarBundle(sample);
-    expect(bundle.datasets.length).toBe(6);
+    expect(bundle.datasets.length).toBe(7);
     expect(bundle.config.config.mapStyle.styleType).toBe('no_map');
     // customOrdinal with an explicit map, never ordinal: an ordinal scale recolours healthy
     // nodes the moment a filter removes every offline one.
@@ -158,11 +158,68 @@ describe('the twin\'s coordination arcs and posture halos', () => {
     expect(sampleAttested).toBeLessThan(sample.nodes.length);
   });
 
-  it('bundles six datasets in draw order: orbits under everything, bodies on top', () => {
+  it('bundles seven datasets in draw order: orbits under everything, bodies on top', () => {
     const bundle = solarBundle(sample);
-    expect(bundle.datasets.map((d) => d.info.id)).toEqual(['solar-orbits', 'solar-arcs', 'solar-coordination', 'solar-halos', 'solar-moons', 'solar-bodies']);
+    expect(bundle.datasets.map((d) => d.info.id)).toEqual(['solar-orbits', 'solar-arcs', 'solar-fabric', 'solar-coordination', 'solar-halos', 'solar-moons', 'solar-bodies']);
     expect(bundle.coordination).toBe(sample.coordination.length);
     expect(bundle.halos).toBe(sample.nodes.filter((n) => n.security !== null).length);
+    expect(bundle.fabric).toBe(sample.fabric!.syncs.length);
     expect(SOLAR_CLICK_FIELD['solar-coordination']).toBe('target');
+    expect(SOLAR_CLICK_FIELD['solar-fabric']).toBe('system');
+  });
+});
+
+describe('the twin\'s fabric arcs and moon colourings', () => {
+  it('draws one arc per declared binding, from the system to the platform it binds to, coloured by authority', () => {
+    const layout = solarLayout(sample);
+    const ds = fabricDataset(sample, layout);
+    expect(ds.data.rows).toHaveLength(sample.fabric!.syncs.length);
+    expect(ds.data.rows.length).toBeGreaterThan(0);
+    const at = new Map(layout.bodies.map((b) => [b.node.nodeId, b]));
+    const authority = ds.data.fields.findIndex((f) => f.name === 'authority');
+    const standing = ds.data.fields.findIndex((f) => f.name === 'standing');
+    for (const row of ds.data.rows) {
+      const system = at.get(row[1] as string)!;
+      const anchor = at.get(row[2] as string)!;
+      expect(anchor.node.nodeId).toBe('notations-platform');
+      // The arc starts at the system and ends at the anchor — a binding points at the platform.
+      expect([row[8], row[9]]).toEqual([Math.round(system.lat * 1e5) / 1e5, Math.round(system.lon * 1e5) / 1e5]);
+      expect([row[10], row[11]]).toEqual([Math.round(anchor.lat * 1e5) / 1e5, Math.round(anchor.lon * 1e5) / 1e5]);
+      expect(['evidence_source', 'canonical_state', 'projection', 'derived_compute']).toContain(row[authority]);
+      // A contract, not a flow, and the tooltip says so.
+      expect(row[standing]).toBe('declared, not synced');
+    }
+    // The bodies carry their authorities, and an unbound body says it is unbound.
+    const bodies = solarBundle(sample).datasets.find((d) => d.info.id === 'solar-bodies')!;
+    const fabric = bodies.data.fields.findIndex((f) => f.name === 'fabric');
+    const terminal = bodies.data.rows.find((r) => r[0] === 'payload-terminal')!;
+    expect(terminal[fabric]).toBe('canonical_state');
+    expect(bodies.data.rows.some((r) => r[fabric] === 'unbound')).toBe(true);
+    // A snapshot from before the registry existed draws no fabric and does not throw.
+    const { fabric: _absent, ...before } = sample;
+    expect(fabricDataset(before as Snapshot, solarLayout(before as Snapshot)).data.rows).toHaveLength(0);
+  });
+
+  it('recolours moons by mode, maturity or approval with pinned maps, and never guesses an undeclared maturity', () => {
+    expect([...MOON_COLOURINGS]).toEqual(['mode', 'maturity', 'approval']);
+    // Every maturity the plane admits has a colour, and undeclared has its own — not research's.
+    for (const m of MATURITIES) expect(MOON_COLOUR_MAPS.maturity.some(([v]) => v === m)).toBe(true);
+    expect(MOON_COLOUR_MAPS.maturity.some(([v]) => v === 'undeclared')).toBe(true);
+    const layout = solarLayout(sample);
+    const moons = moonsDataset(layout);
+    const maturity = moons.data.fields.findIndex((f) => f.name === 'maturity');
+    const values = new Set(moons.data.rows.map((r) => r[maturity]));
+    // The sample carries the platform's declared maturity, the empty repositories' derived one, and the undeclared rest.
+    expect(values.has('experimental')).toBe(true);
+    expect(values.has('planned')).toBe(true);
+    expect(values.has('undeclared')).toBe(true);
+    for (const by of MOON_COLOURINGS) {
+      const moonLayer = solarConfig({ moonsBy: by }).config.visState.layers.find((l) => l.id === 'solar-moons-points')!;
+      expect((moonLayer.visualChannels as { colorField: { name: string } }).colorField.name).toBe(by);
+      expect((moonLayer.config.visConfig as { colorRange: { colorMap: unknown[] } }).colorRange.colorMap).toEqual(MOON_COLOUR_MAPS[by]);
+    }
+    // The methodology a capability answers under rides with its moon.
+    const methodology = moons.data.fields.findIndex((f) => f.name === 'methodology');
+    expect(moons.data.rows.filter((r) => r[0] === 'payload-terminal').every((r) => r[methodology] === 'payload-methodology/0.1.0')).toBe(true);
   });
 });

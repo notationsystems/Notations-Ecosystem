@@ -1,4 +1,4 @@
-import type { Command, CommandResult, ControlPlaneErrorBody, EventsResponse, HealthResponse, Snapshot } from '../model/types';
+import type { Command, CommandResult, ControlPlaneErrorBody, EventsResponse, HealthResponse, OperationalIndex, Snapshot } from '../model/types';
 
 export interface Connection {
   /** Base URL of the control plane. `/cp` in development (Vite proxy), or an absolute origin for a deployed dock. */
@@ -172,6 +172,16 @@ export class ControlPlaneClient {
       fetched += 1;
     }
     return { ...page, events, truncated: Boolean(page.truncated), nextCursor: page.nextCursor ?? null };
+  }
+
+  /**
+   * The plane's operational index. One derivation of "stale", "unattested" and "unbound",
+   * made by the plane and not by each client; the dock shows it and never recomputes it.
+   */
+  async index(): Promise<OperationalIndex> {
+    const res = await this.fetchImpl(this.url('/v1/index'), { headers: this.headers() });
+    if (!res.ok) throw await parseError(res);
+    return (await res.json()) as OperationalIndex;
   }
 
   async command(cmd: Command): Promise<CommandResult> {
