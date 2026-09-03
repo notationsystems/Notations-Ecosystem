@@ -304,6 +304,10 @@
       "domain": "physical-economy",
       "description": "Individual consignments and their lifecycle"
     },
+    "site-content": {
+      "domain": "platform",
+      "description": "Published pages, collections and assets of a public website"
+    },
     "space": {
       "domain": "geospatial",
       "description": "Orbital objects, launches and their predicted positions"

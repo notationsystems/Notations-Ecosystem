@@ -13,7 +13,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/health",
-      "evidence": "intel/server.js; intel/Dockerfile"
+      "evidence": "intel/server.js; intel/Dockerfile",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "intel.resolve.aircraft",
@@ -24,7 +25,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=aircraft",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "aviation"
     },
     {
       "capabilityId": "intel.resolve.vessel",
@@ -35,7 +37,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=vessel",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "maritime"
     },
     {
       "capabilityId": "intel.resolve.company",
@@ -46,7 +49,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=company",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "intel.resolve.person",
@@ -57,7 +61,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=person",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "person-intelligence"
     },
     {
       "capabilityId": "intel.resolve.ip",
@@ -68,7 +73,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=ip",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "intel.resolve.country",
@@ -79,7 +85,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/resolve?type=country",
-      "evidence": "intel/server.js"
+      "evidence": "intel/server.js",
+      "data_domain": "local-context"
     },
     {
       "capabilityId": "intel.graph.contract",
@@ -88,7 +95,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "contract",
-      "evidence": "intel/server.js; src/app/api/entity/expand/route.ts"
+      "evidence": "intel/server.js; src/app/api/entity/expand/route.ts",
+      "data_domain": "ontology"
     }
   ],
   "metadata": {

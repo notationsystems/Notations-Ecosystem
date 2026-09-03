@@ -31,7 +31,8 @@
       "path": "<corpus> [--json]",
       "evidence": "ncg/cli.py (_validate); ncg/graph.py (validate); ncg/schema/edges.py (RELATION_RULES)",
       "cost": "free",
-      "latency": "~seconds"
+      "latency": "~seconds",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "cli.summary",
@@ -44,7 +45,8 @@
       "path": "<corpus> [--json]",
       "evidence": "ncg/cli.py (_summary); ncg/graph.py (summary)",
       "cost": "free",
-      "latency": "~seconds"
+      "latency": "~seconds",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "cli.show",
@@ -57,7 +59,8 @@
       "path": "<corpus> <sample> [--json]",
       "evidence": "ncg/cli.py (_show); ncg/graph.py (measurements_of, signals_of, properties_of)",
       "cost": "free",
-      "latency": "~seconds"
+      "latency": "~seconds",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "cli.detect",
@@ -70,7 +73,8 @@
       "path": "<paths...>",
       "evidence": "ncg/cli.py (_detect); ncg/ingest/base.py (ParserRegistry.candidates)",
       "cost": "free",
-      "latency": "ms per file"
+      "latency": "ms per file",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "cli.formats",
@@ -83,7 +87,8 @@
       "path": "[--json]",
       "evidence": "ncg/cli.py (_formats); ncg/ingest/parsers/*.py; .github/workflows/ci.yml",
       "cost": "free",
-      "latency": "ms"
+      "latency": "ms",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "cli.terms",
@@ -96,7 +101,8 @@
       "path": "[--json]",
       "evidence": "ncg/cli.py (_terms); ncg/schema/vocab.py (PROPERTY_TERMS)",
       "cost": "free",
-      "latency": "ms"
+      "latency": "ms",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "api.ingest",
@@ -109,7 +115,8 @@
       "evidence": "ncg/ingest/pipeline.py",
       "cost": "free",
       "latency": "seconds",
-      "side_effects": "mutates the passed or new CorpusGraph in memory"
+      "side_effects": "mutates the passed or new CorpusGraph in memory",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "api.graph.query",
@@ -121,7 +128,8 @@
       "method": "ncg.CorpusGraph",
       "evidence": "ncg/graph.py",
       "cost": "free",
-      "latency": "ms"
+      "latency": "ms",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "api.graph.mutate",
@@ -134,7 +142,8 @@
       "evidence": "ncg/graph.py; ncg/schema/identity.py",
       "cost": "free",
       "latency": "ms",
-      "side_effects": "mutates the in-memory graph"
+      "side_effects": "mutates the in-memory graph",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "api.graph.persist",
@@ -147,7 +156,8 @@
       "evidence": "ncg/graph.py (to_jsonl, save, load)",
       "cost": "free",
       "latency": "seconds",
-      "side_effects": "writes the corpus file"
+      "side_effects": "writes the corpus file",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "contract.corpus_jsonl",
@@ -168,7 +178,8 @@
       "approval": "automatic",
       "surface": "file",
       "path": "samples.json",
-      "evidence": "ncg/ingest/sample_keys.py; README.md (Joining techniques to one sample)"
+      "evidence": "ncg/ingest/sample_keys.py; README.md (Joining techniques to one sample)",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "parser.jcamp_dx",
@@ -266,7 +277,8 @@
       "approval": "automatic",
       "surface": "python",
       "method": "ncg.derive.properties.derive_for_run",
-      "evidence": "ncg/derive/properties.py; ncg/derive/signal_ops.py; ncg/schema/vocab.py"
+      "evidence": "ncg/derive/properties.py; ncg/derive/signal_ops.py; ncg/schema/vocab.py",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "api.units",
@@ -276,7 +288,8 @@
       "approval": "automatic",
       "surface": "python",
       "method": "ncg.units",
-      "evidence": "ncg/units.py; ncg/__init__.py"
+      "evidence": "ncg/units.py; ncg/__init__.py",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "contract.schema",
@@ -286,7 +299,8 @@
       "approval": "automatic",
       "surface": "python",
       "method": "ncg.schema",
-      "evidence": "ncg/schema/nodes.py; ncg/schema/vocab.py; ncg/schema/edges.py; ncg/schema/codec.py; ncg/schema/identity.py"
+      "evidence": "ncg/schema/nodes.py; ncg/schema/vocab.py; ncg/schema/edges.py; ncg/schema/codec.py; ncg/schema/identity.py",
+      "data_domain": "ontology"
     }
   ],
   "metadata": {

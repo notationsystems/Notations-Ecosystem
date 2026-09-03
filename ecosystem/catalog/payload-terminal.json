@@ -446,7 +446,7 @@
       "method": "GET",
       "path": "/api/{retired}",
       "evidence": "src/app/api/[...retired]/route.ts; src/lib/routeGate.ts",
-      "data_domain": "person-intelligence"
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "ops.github_webhook",

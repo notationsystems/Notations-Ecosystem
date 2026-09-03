@@ -13,7 +13,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/v2/sites/{site_id}",
-      "evidence": "Webflow Data API v2 (data_sites_tool)"
+      "evidence": "Webflow Data API v2 (data_sites_tool)",
+      "data_domain": "site-content"
     },
     {
       "capabilityId": "pages.read",
@@ -24,7 +25,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/v2/sites/{site_id}/pages",
-      "evidence": "Webflow Data API v2 (data_pages_tool)"
+      "evidence": "Webflow Data API v2 (data_pages_tool)",
+      "data_domain": "site-content"
     },
     {
       "capabilityId": "cms.read",
@@ -35,7 +37,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/v2/collections/{collection_id}/items",
-      "evidence": "Webflow Data API v2 (data_cms_tool)"
+      "evidence": "Webflow Data API v2 (data_cms_tool)",
+      "data_domain": "site-content"
     },
     {
       "capabilityId": "cms.write",
@@ -46,7 +49,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v2/collections/{collection_id}/items",
-      "evidence": "Webflow Data API v2 (data_cms_tool)"
+      "evidence": "Webflow Data API v2 (data_cms_tool)",
+      "data_domain": "site-content"
     },
     {
       "capabilityId": "site.publish",
@@ -57,7 +61,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v2/sites/{site_id}/publish",
-      "evidence": "Webflow Data API v2 (data_sites_tool)"
+      "evidence": "Webflow Data API v2 (data_sites_tool)",
+      "data_domain": "site-content"
     },
     {
       "capabilityId": "webhooks.observe",
@@ -66,7 +71,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "webhook",
-      "evidence": "Webflow Data API v2 (data_webhook_tool)"
+      "evidence": "Webflow Data API v2 (data_webhook_tool)",
+      "data_domain": "site-content"
     }
   ],
   "metadata": {

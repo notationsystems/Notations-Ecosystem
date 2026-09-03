@@ -233,6 +233,35 @@ export function checkEntry(entry, file, known = new Set()) {
     errors.push('metadata.person_data_exception is set but person_data is not "serves"');
   }
 
+  // The collection standing and the subject vocabulary are two records of one fact, and
+  // they must not be able to disagree. `payload-terminal` declared `person_data: refused`
+  // while annotating its retired-route contract `person-intelligence` — the capability
+  // whose entire function is that those routes are *gone*. The annotation aggregates into
+  // `metadata.data_domains`, so it crossed into the snapshot and told an operator the
+  // terminal touches person data.
+  const personal = (entry.capabilities ?? []).filter((c) => c.data_domain === 'person-intelligence').map((c) => c.capabilityId);
+  if (personal.length && md.person_data !== 'serves') {
+    errors.push(`capabilities ${personal.join(', ')} name data_domain "person-intelligence" while metadata.person_data is "${md.person_data}" — a system that answers questions about people declares "serves" (docs/COLLECTION_POLICY.md), and one that does not must not name the subject`);
+  }
+
+  // A capability's subject is what makes the estate queryable across systems, so on a
+  // node this repository speaks for it is required rather than encouraged: 66% coverage
+  // was 66% of the estate's questions answerable, and nothing said which third was
+  // missing. An upstream mirror is exempt — annotating someone else's 53 capabilities is
+  // a claim about a repository nobody here reads.
+  //
+  // An `empty` node is exempt in the other direction, and may not carry one at all: it
+  // has no code, so it touches no subject, and a placeholder that named one would be the
+  // catalog inventing a holding out of a repository name.
+  if (md.maturity === 'empty') {
+    for (const c of entry.capabilities ?? []) {
+      if (c.data_domain) errors.push(`capability ${c.capabilityId}: an empty repository touches no subject — remove data_domain "${c.data_domain}" until there is code`);
+    }
+  } else if (md.maturity !== 'upstream-mirror') {
+    const bare = (entry.capabilities ?? []).filter((c) => !c.data_domain).map((c) => c.capabilityId);
+    if (bare.length) errors.push(`${bare.length} capabilit${bare.length === 1 ? 'y' : 'ies'} on a first-party node declare no data_domain: ${bare.slice(0, 6).join(', ')}${bare.length > 6 ? '…' : ''}`);
+  }
+
   // Disclosure and durability are different questions, and one enum could answer only
   // one. `unreconstructable` was a value of the disclosure enum, so a public capture that
   // cannot be refetched had to give up saying it was public in order to say it was

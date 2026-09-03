@@ -283,3 +283,67 @@ test('a count of what is in the file may not also be asserted in it', async () =
   assert.equal(typeof observed.entry.metadata.api_route_count, 'number');
   assert.equal(checkEntry(observed.entry, observed.file).errors.length, 0);
 });
+
+test('every first-party capability names its subject, and an empty repository names none', async () => {
+  const entries = await loadCatalog();
+  const caps = entries.flatMap(({ entry }) => entry.capabilities);
+  const annotated = caps.filter((c) => c.data_domain).length;
+
+  // 487 of 634. The remainder are on upstream mirrors, where annotating someone else's
+  // capabilities would be a claim about a repository nobody here reads.
+  assert.ok(annotated / caps.length > 0.75, `data_domain coverage fell to ${Math.round((annotated / caps.length) * 100)}%`);
+
+  for (const { entry } of entries) {
+    const maturity = entry.metadata.maturity;
+    if (maturity === 'upstream-mirror') continue;
+    if (maturity === 'empty') {
+      // The six placeholder repositories. A `charter.observe` that named a subject would
+      // be the catalog inventing a holding out of a repository name.
+      for (const c of entry.capabilities) assert.equal(c.data_domain, undefined, `${entry.nodeId}: an empty repository claims ${c.data_domain}`);
+      continue;
+    }
+    for (const c of entry.capabilities) assert.ok(c.data_domain, `${entry.nodeId}/${c.capabilityId}: no data_domain`);
+  }
+
+  // And the validator refuses both directions rather than leaving them to review.
+  const gap = structuredClone(entries.find((e) => e.entry.nodeId === 'pythia-oracle-engine'));
+  delete gap.entry.capabilities[0].data_domain;
+  assert.ok(checkEntry(gap.entry, gap.file).errors.some((e) => /declare no data_domain/.test(e)));
+
+  const invented = structuredClone(entries.find((e) => e.entry.nodeId === 'payload-corpus-graph'));
+  invented.entry.capabilities[0].data_domain = 'trade-flows';
+  assert.ok(checkEntry(invented.entry, invented.file).errors.some((e) => /an empty repository touches no subject/.test(e)));
+});
+
+test('osiris-intel names person-intelligence, because a refusal has to be nameable', async () => {
+  const entries = await loadCatalog();
+  const intel = entries.find((e) => e.entry.nodeId === 'osiris-intel').entry;
+  const person = intel.capabilities.find((c) => c.capabilityId === 'intel.resolve.person');
+
+  // The subject exists in the vocabulary so it can be refused by name. The one capability
+  // in the estate that resolves natural persons now says so in the same word the policy
+  // uses, and the three records — vocabulary, collection standing, corpus grade — agree.
+  assert.equal(person.data_domain, 'person-intelligence');
+  assert.equal(intel.metadata.person_data, 'serves');
+  assert.equal(intel.reference.corpus.standing['COR-010'].standing, 'fails');
+
+  // Two capabilities in the estate name this subject, and they are on exactly the two
+  // nodes the collection policy records as serving. A third would mean a system started
+  // answering questions about people without the policy hearing about it, and this is
+  // where it surfaces.
+  const naming = entries.flatMap(({ entry }) => entry.capabilities.filter((c) => c.data_domain === 'person-intelligence').map((c) => `${entry.nodeId}/${c.capabilityId}`)).sort();
+  assert.deepEqual(naming, ['osiris-dashboard/osint.person_recon', 'osiris-intel/intel.resolve.person']);
+  const serving = entries.filter(({ entry }) => entry.metadata.person_data === 'serves').map(({ entry }) => entry.nodeId).sort();
+  assert.deepEqual([...new Set(naming.map((n) => n.split('/')[0]))].sort(), serving);
+
+  // The check that found the third: payload-terminal declared `person_data: refused` and
+  // annotated its retired-route contract `person-intelligence` — the capability whose
+  // whole function is that those routes are gone. The annotation aggregates into
+  // `metadata.data_domains`, so it crossed into the snapshot and told an operator the
+  // terminal touches person data.
+  const [{ entry: terminal, file }] = entries.filter((e) => e.entry.nodeId === 'payload-terminal');
+  assert.equal(terminal.capabilities.find((c) => c.capabilityId === 'ops.retired_routes').data_domain, 'architecture-invariants');
+  const contradiction = structuredClone(terminal);
+  contradiction.capabilities.find((c) => c.capabilityId === 'ops.retired_routes').data_domain = 'person-intelligence';
+  assert.ok(checkEntry(contradiction, file).errors.some((e) => /while metadata\.person_data is "incidental"/.test(e)));
+});

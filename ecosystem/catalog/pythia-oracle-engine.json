@@ -13,7 +13,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/health",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "oracle.config",
@@ -24,7 +25,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/config",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "oracle.world.read",
@@ -35,7 +37,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/world",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc",
+      "data_domain": "news"
     },
     {
       "capabilityId": "oracle.state.stream",
@@ -46,7 +49,8 @@
       "surface": "sse",
       "method": "GET",
       "path": "/state/stream",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/state.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/state.cpython-314.pyc",
+      "data_domain": "news"
     },
     {
       "capabilityId": "oracle.agent.view",
@@ -57,7 +61,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/agent/view",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc",
+      "data_domain": "news"
     },
     {
       "capabilityId": "oracle.predictions.read",
@@ -68,7 +73,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/predictions",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; runs/ledger.jsonl"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; runs/ledger.jsonl",
+      "data_domain": "prediction-markets"
     },
     {
       "capabilityId": "oracle.predict.run",
@@ -79,7 +85,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/predict",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/pipeline.cpython-314.pyc; engine/__pycache__/oracle.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/pipeline.cpython-314.pyc; engine/__pycache__/oracle.cpython-314.pyc",
+      "data_domain": "prediction-markets"
     },
     {
       "capabilityId": "oracle.scorecard.read",
@@ -90,7 +97,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/scorecard",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/ledger.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/ledger.cpython-314.pyc",
+      "data_domain": "evaluation"
     },
     {
       "capabilityId": "oracle.scorecard.resolve",
@@ -101,7 +109,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/scorecard/resolve",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
+      "data_domain": "evaluation"
     },
     {
       "capabilityId": "oracle.whatif",
@@ -112,7 +121,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/whatif",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc",
+      "data_domain": "prediction-markets"
     },
     {
       "capabilityId": "oracle.chat",
@@ -123,7 +133,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/chat",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc",
+      "data_domain": "news"
     },
     {
       "capabilityId": "oracle.models",
@@ -134,7 +145,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/model",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/swarm.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/swarm.cpython-314.pyc",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "oracle.loop",
@@ -145,7 +157,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/loop",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "oracle.webhooks",
@@ -156,7 +169,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/webhooks",
-      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/webhooks.cpython-314.pyc"
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/webhooks.cpython-314.pyc",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "oracle.ledger",
@@ -165,7 +179,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "file",
-      "evidence": "runs/ledger.jsonl; engine/__pycache__/ledger.cpython-314.pyc"
+      "evidence": "runs/ledger.jsonl; engine/__pycache__/ledger.cpython-314.pyc",
+      "data_domain": "prediction-markets"
     }
   ],
   "metadata": {

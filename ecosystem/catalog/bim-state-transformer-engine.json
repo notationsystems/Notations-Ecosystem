@@ -44,7 +44,8 @@
       "path": "<model> [--json]",
       "evidence": "gat/cli.py (_run_verify); gat/engine/verify.py; gat/geometry/compliance.py",
       "cost": "free",
-      "latency": "~seconds"
+      "latency": "~seconds",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "cli.inspect",
@@ -57,7 +58,8 @@
       "path": "<model> [--var Entity.Quantity] [--json]",
       "evidence": "gat/cli.py (_run_inspect); gat/engine/sensitivity.py",
       "cost": "free",
-      "latency": "~seconds"
+      "latency": "~seconds",
+      "data_domain": "bim-geometry-uncertainty"
     },
     {
       "capabilityId": "cli.splats",
@@ -85,7 +87,8 @@
       "path": "<model> [--n N] [--json]",
       "evidence": "gat/cli.py (_run_sample); gat/engine/sampling.py",
       "cost": "free",
-      "latency": "seconds"
+      "latency": "seconds",
+      "data_domain": "bim-geometry-uncertainty"
     },
     {
       "capabilityId": "cli.report",
@@ -98,7 +101,8 @@
       "path": "<response.json|-> [--html] [-o out.html]",
       "evidence": "gat/cli.py (_run_report); gat/report.py; docs/design-language-v1.md",
       "cost": "free",
-      "latency": "~100 ms"
+      "latency": "~100 ms",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "cli.ledger",
@@ -111,7 +115,8 @@
       "path": "<ledger.json> [--html] [-o out.html]",
       "evidence": "gat/cli.py (_run_ledger); gat/report.py (decode_ledger); docs/execution-ledger-v1.md",
       "cost": "free",
-      "latency": "~100 ms"
+      "latency": "~100 ms",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "cli.view",
@@ -125,7 +130,8 @@
       "evidence": "gat/cli.py (_run_view); gat/geometry/viewer.py",
       "cost": "free",
       "latency": "seconds",
-      "side_effects": "writes one HTML file"
+      "side_effects": "writes one HTML file",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "headless.summary",
@@ -139,7 +145,8 @@
       "evidence": "gat/headless.py (handle_request, _summary); docs/workflow-deployment-v1.md",
       "cost": "free",
       "latency": "~seconds",
-      "workflow": "construction-acceptance"
+      "workflow": "construction-acceptance",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "headless.acceptance",
@@ -153,7 +160,8 @@
       "evidence": "gat/headless.py (_acceptance); gat/workflows/acceptance.py; docs/workflow-deployment-v1.md",
       "cost": "free",
       "latency": "~seconds",
-      "workflow": "construction-acceptance"
+      "workflow": "construction-acceptance",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "headless.beam_assurance",
@@ -168,7 +176,8 @@
       "cost": "free",
       "latency": "~seconds",
       "provenance": "AISC V16.0 Companion Example F.1-1B oracle; validation/aisc360-22-f1-1b-v1.json",
-      "workflow": "beam-assurance"
+      "workflow": "beam-assurance",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "headless.change_impact",
@@ -182,7 +191,8 @@
       "evidence": "gat/headless.py (_change_impact); gat/workflows/change_impact.py",
       "cost": "free",
       "latency": "~seconds",
-      "workflow": "rfi-impact"
+      "workflow": "rfi-impact",
+      "data_domain": "bim-ifc"
     },
     {
       "capabilityId": "session.load",
@@ -194,7 +204,8 @@
       "method": "gat.GatSession.load_ifc | load_snapshot | load_openusd | load_usd",
       "evidence": "gat/session.py; gat/adapters/ifc; gat/adapters/openusd.py; gat/adapters/usd_io.py; docs/openusd-carrier-v0.md",
       "cost": "free",
-      "latency": "seconds"
+      "latency": "seconds",
+      "data_domain": "bim-ifc"
     },
     {
       "capabilityId": "session.run",
@@ -207,7 +218,8 @@
       "evidence": "gat/session.py (run); gat/engine/executor.py; gat/engine/transform.py; gat/engine/dynamics.py; gat/ledger.py",
       "cost": "free",
       "latency": "ms to seconds (dense covariance cliff measured in docs/incremental-propagation-v1.md)",
-      "side_effects": "mutates in-process canonical belief and appends ledger events"
+      "side_effects": "mutates in-process canonical belief and appends ledger events",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "session.record_causal",
@@ -220,7 +232,8 @@
       "evidence": "gat/session.py; gat/causal.py; docs/causal-events-v1.md",
       "cost": "free",
       "latency": "ms",
-      "side_effects": "appends ledger events"
+      "side_effects": "appends ledger events",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "session.export",
@@ -233,7 +246,8 @@
       "evidence": "gat/session.py; gat/state_snapshot.py; gat/adapters/openusd.py; docs/openusd-carrier-v0.md",
       "cost": "free",
       "latency": "seconds",
-      "side_effects": "writes files"
+      "side_effects": "writes files",
+      "data_domain": "bim-ifc"
     },
     {
       "capabilityId": "ledger.replay",
@@ -245,7 +259,8 @@
       "method": "gat.read_ledger / gat.replay_ledger",
       "evidence": "gat/ledger.py; gat/demo/ledger_replay.py; docs/execution-ledger-v1.md",
       "cost": "free",
-      "latency": "seconds"
+      "latency": "seconds",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "decision.plan_evidence",
@@ -257,7 +272,8 @@
       "method": "gat.assess_decision / gat.plan_decision_evidence",
       "evidence": "gat/engine/decision.py; gat/engine/active_inference.py; gat/demo/active_inference.py",
       "cost": "free",
-      "latency": "ms"
+      "latency": "ms",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "geometry.scan_registration",
@@ -283,7 +299,8 @@
       "evidence": "gat/geometry/assurance.py; gat/geometry/scan_likelihood.py",
       "cost": "free",
       "latency": "seconds",
-      "workflow": "construction-acceptance"
+      "workflow": "construction-acceptance",
+      "data_domain": "point-cloud-evidence"
     },
     {
       "capabilityId": "analysis.sensitivity_stability",
@@ -295,7 +312,8 @@
       "method": "gat.engine.sensitivity / stability / configuration / dynamics",
       "evidence": "gat/engine/sensitivity.py; gat/engine/stability.py; gat/engine/configuration.py; gat/engine/dynamics.py; docs/temporal-dynamics-v1.md",
       "cost": "free",
-      "latency": "ms"
+      "latency": "ms",
+      "data_domain": "bim-geometry-uncertainty"
     },
     {
       "capabilityId": "proof.manifest",
@@ -307,7 +325,8 @@
       "method": "gat.create_computation_proof_manifest / verify_computation_proof_manifest",
       "evidence": "gat/proof_manifest.py; docs/proof-carrying-state-v1.md",
       "cost": "free",
-      "latency": "ms (plus backend verify)"
+      "latency": "ms (plus backend verify)",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "proof.sp1_beam",
@@ -321,7 +340,8 @@
       "cost": "CPU prover minutes (CI timeout 2400 s)",
       "latency": "minutes",
       "side_effects": "writes beam.sp1-proof, beam_sp1_receipt.json, beam_sp1_manifest.json",
-      "workflow": "beam-assurance"
+      "workflow": "beam-assurance",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "contract.sp1_beam_request",
@@ -331,7 +351,8 @@
       "approval": "automatic",
       "surface": "file",
       "path": "beam_sp1_request.json / beam_sp1_receipt.json",
-      "evidence": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs; docs/sp1-beam-guest-v1.md"
+      "evidence": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs; docs/sp1-beam-guest-v1.md",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "contract.material_certificate",
@@ -341,7 +362,8 @@
       "approval": "automatic",
       "surface": "file",
       "path": "material_certificate.json",
-      "evidence": "gat/engineering/material_certificate.py; gat/demo/material_certificate.json"
+      "evidence": "gat/engineering/material_certificate.py; gat/demo/material_certificate.json",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "demo.beam_assurance",
@@ -355,7 +377,8 @@
       "evidence": "gat/demo/beam_assurance.py; gat/demo/__main__.py; docs/beam-assurance-reference-chain.md; .github/workflows/ci.yml",
       "cost": "free",
       "latency": "seconds",
-      "side_effects": "writes demo artifacts under out_dir"
+      "side_effects": "writes demo artifacts under out_dir",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "validation.fetch_ifc_corpus",
@@ -370,7 +393,8 @@
       "cost": "network download (up to ~85 MB)",
       "latency": "minutes",
       "provenance": "buildingSMART/Sample-Test-Files and public IFC models at pinned commits (CC-BY-4.0)",
-      "side_effects": "outbound HTTPS to raw.githubusercontent.com; writes IFC files"
+      "side_effects": "outbound HTTPS to raw.githubusercontent.com; writes IFC files",
+      "data_domain": "bim-ifc"
     },
     {
       "capabilityId": "integration.blender_panel",
@@ -384,7 +408,8 @@
       "evidence": "integrations/blender/gat_assurance/__init__.py; integrations/blender/gat_assurance/bridge.py; integrations/blender/gat_assurance/blender_manifest.toml; docs/workflow-deployment-v1.md",
       "cost": "free",
       "latency": "interactive",
-      "workflow": "construction-acceptance"
+      "workflow": "construction-acceptance",
+      "data_domain": "visualisation"
     }
   ],
   "metadata": {
