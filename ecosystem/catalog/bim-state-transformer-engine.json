@@ -405,7 +405,8 @@
     "test_runner": "python -m unittest discover (41 test modules)",
     "ci_lanes": "test, test-openusd, test-public-ifc, test-extras, test-sp1-beam",
     "state_formats": "IFC STEP, GatStateSnapshot v1 JSON, gat-execution-ledger v1, OpenUSD carrier v3 (usda/usdc, optional Ed25519), USDA subset fallback, 3DGS PLY",
-    "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)"
+    "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)",
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

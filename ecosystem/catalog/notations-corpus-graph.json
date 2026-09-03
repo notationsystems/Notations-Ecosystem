@@ -308,7 +308,9 @@
     "techniques": "nmr_1h, nmr_13c, nmr_dosy, sec, dsc, tga, ftir, raman, maldi",
     "corpus_format": "JSONL(.gz) format_version 1",
     "ci": "ruff + pytest on Python 3.10-3.13; ncg formats/terms smoke",
-    "committed_corpus": false
+    "committed_corpus": false,
+    "person_data": "incidental",
+    "person_data_note": "Instrument files carry operator names in their headers; they are preserved with the measurement and are not a query key."
   },
   "location": null,
   "relations": [],

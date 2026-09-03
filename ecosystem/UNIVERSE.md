@@ -222,7 +222,15 @@ Provenance of the estate itself
   `metadata.derived_from` (ancestry, carrying none). Ten mirrors, five descendants.
 
 Policy
-- `osiris-intel` still resolves natural persons and returns RIPE abuse contacts as person nodes; `osiris-dashboard` still serves person-targeting routes; `osint-war-room` hardcodes an AIS key and pins scraping libraries no route uses. The universe-level collection policy should be declared once and applied to the forks.
+- The universe-level collection policy is now declared once, in
+  [docs/COLLECTION_POLICY.md](../docs/COLLECTION_POLICY.md), and every node states where
+  it sits: 18 refused, 10 incidental, 2 serving. The two that serve —
+  `osiris-intel` (`intel.resolve.person`, RIPE abuse contacts as person nodes) and
+  `osiris-dashboard` (the full upstream username/phone/leaks surface) — carry a declared
+  exception naming what would end it, and both are recorded as COR-010 failures.
+  `osiris-intel` is the sharper case: Payload Terminal gates person routes in its own CI
+  and then forwards `type=person` to it, so the gate is routed around by its dependency.
+- `osint-war-room` hardcodes an AIS key and pins scraping libraries no route uses.
 - Licence constraints on map layers: OpenSky (non-commercial), TeleGeography cables (CC BY-NC-SA), Westmetall (republisher scrape, licensed LME feed is the remedy), CanadaBuys (ca-ogl-lgo).
 - Freight paperwork is sent to Mistral in live OCR mode; no platform-level data-handling policy is recorded.
 - Where is the dock hosted, which origin goes into `CONTROL_PLANE_ALLOWED_ORIGINS`, and should the control plane publish a public catalogue into the Webflow CMS?

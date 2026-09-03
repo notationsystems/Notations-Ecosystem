@@ -9,6 +9,7 @@ must never hold what would let someone do it.**
 - [Substrate](docs/SUBSTRATE.md) — the identity space and why the projection is not the database
 - [Data classification](docs/DATA_CLASSIFICATION.md) — every class held, and what is deliberately refused
 - [Corpus doctrine](docs/CORPUS.md) — what the company builds, and the ten invariants that decide whether a system is one
+- [Collection policy](docs/COLLECTION_POLICY.md) — what the estate collects about people, and what it refuses
 
 ## Reporting a vulnerability
 

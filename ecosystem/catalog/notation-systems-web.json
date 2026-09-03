@@ -80,7 +80,9 @@
     "last_pushed_at": "2026-08-31T02:47:31Z",
     "webflow_site_id": "6a98a59e681119615d9c67c0",
     "timezone": "Asia/Saigon",
-    "capability_count": 6
+    "capability_count": 6,
+    "person_data": "incidental",
+    "person_data_note": "Webflow forms collect whatever a visitor submits. Held by Webflow, not by this estate."
   },
   "location": {
     "longitude": 106.7009,

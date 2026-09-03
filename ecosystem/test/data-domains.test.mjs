@@ -138,3 +138,42 @@ test('a mirror is machine-legible, and so is what it is a mirror of', async () =
   confused.metadata.upstream = 'somebody/else';
   assert.ok(checkEntry(confused, file).errors.some((e) => /a node that mirrors another repository is an upstream-mirror/.test(e)));
 });
+
+test('the collection policy is the estate\'s, and every node states where it sits', async () => {
+  const entries = await loadCatalog();
+  const standing = (value) => entries.filter(({ entry }) => entry.metadata.person_data === value);
+
+  // Enforced in one repository's CI and stated as prose everywhere else, the policy was
+  // that repository's. Declared per node, it is the company's.
+  assert.equal(entries.length, standing('refused').length + standing('incidental').length + standing('serves').length);
+  assert.ok(standing('refused').length > standing('serves').length * 5);
+
+  // A first-party node may not answer questions about people without saying so and
+  // saying what would end it, so an exception is a sentence someone wrote rather than a
+  // route someone finds.
+  for (const { entry } of standing('serves')) {
+    if (entry.metadata.maturity === 'upstream-mirror') continue;
+    assert.ok(entry.metadata.person_data_exception, `${entry.nodeId}: serves without a declared exception`);
+    assert.ok(entry.metadata.person_data_exception.length > 80, `${entry.nodeId}: the exception must say what would end it`);
+  }
+  // And the two that do are the two the estate already records as COR-010 failures.
+  const serving = standing('serves').map(({ entry }) => entry.nodeId).sort();
+  assert.deepEqual(serving, ['osiris-dashboard', 'osiris-intel']);
+  for (const { entry } of standing('serves')) {
+    assert.equal(entry.reference.corpus.standing['COR-010'].standing, 'fails', `${entry.nodeId}: serving people is a declared refusal to hold that is not held`);
+  }
+
+  // The validator refuses both halves of the confusion.
+  const [{ entry, file }] = entries.filter((e) => e.entry.nodeId === 'payload-terminal');
+  const undeclared = structuredClone(entry);
+  delete undeclared.metadata.person_data;
+  assert.ok(checkEntry(undeclared, file).errors.some((e) => /person_data/.test(e)));
+
+  const unexplained = structuredClone(entry);
+  unexplained.metadata.person_data = 'serves';
+  assert.ok(checkEntry(unexplained, file).errors.some((e) => /declare metadata\.person_data_exception/.test(e)));
+
+  const orphaned = structuredClone(entry);
+  orphaned.metadata.person_data_exception = 'because';
+  assert.ok(checkEntry(orphaned, file).errors.some((e) => /is set but person_data is not "serves"/.test(e)));
+});

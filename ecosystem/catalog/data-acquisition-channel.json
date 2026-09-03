@@ -623,7 +623,9 @@
     "joint_decision": "2026-08-26-joint-workload-decision: least_squares elected with SCL; DAQ obligation = aligned observation table + explicit missing-value semantics",
     "http_server": false,
     "mcp_server": false,
-    "derived_from": "notationsystems/scout-retrieval-agent (vendored read-only submodule at vendor/scout-retrieval-agent, core@1.0.0 = deterministic-state-architecture, the Scientific Transformer Engine)"
+    "derived_from": "notationsystems/scout-retrieval-agent (vendored read-only submodule at vendor/scout-retrieval-agent, core@1.0.0 = deterministic-state-architecture, the Scientific Transformer Engine)",
+    "person_data": "incidental",
+    "person_data_note": "Carrier vetting and public tenders name people in a commercial capacity."
   },
   "location": {
     "longitude": -79.3832,

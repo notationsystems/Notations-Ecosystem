@@ -457,7 +457,9 @@
     "mcp_tools_http": 12,
     "version": "1.0.0",
     "license": "Apache-2.0",
-    "storage": "SQLite default, PostgreSQL optional"
+    "storage": "SQLite default, PostgreSQL optional",
+    "person_data": "incidental",
+    "person_data_note": "A logistics index holds carrier and dispatcher contacts as commercial records about a role."
   },
   "location": null,
   "relations": [

@@ -90,5 +90,6 @@ add_header Referrer-Policy no-referrer always;
 | How do I add a node or relation, record health, attest posture, request or resolve a capability? | dock → **Console** (all six commands, validated with the control plane's own validator) |
 | How does Payload plug in? | `ecosystem/payload/README.md` (seed, probe, layer extractors) |
 | Why is it modelled this way? | `docs/PAYLOAD_FIRST.md`, `ecosystem/UNIVERSE.md` |
+| What does the estate collect, and what does it refuse? | [docs/COLLECTION_POLICY.md](docs/COLLECTION_POLICY.md) — three standings, declared per node and validated |
 | What is the security model, and what proves it? | [SECURITY.md](SECURITY.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/SECURITY_INVARIANTS.md](docs/SECURITY_INVARIANTS.md) |
 | Where does this sit in the wider Notation substrate? | [docs/SUBSTRATE.md](docs/SUBSTRATE.md) |

@@ -183,7 +183,8 @@
     "capability_count": 12,
     "signing": "ed25519",
     "at_rest": "envelope-encrypted signing key",
-    "auth": "per-principal bearer credentials"
+    "auth": "per-principal bearer credentials",
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

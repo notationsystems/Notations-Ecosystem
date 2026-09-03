@@ -448,7 +448,8 @@
     "layer_count": 22,
     "tool_count": 11,
     "agent_binding": "window.payloadEarth.tools / invokeTool (in-page, no MCP yet)",
-    "fetches_from_payload_terminal": false
+    "fetches_from_payload_terminal": false,
+    "person_data": "refused"
   },
   "location": {
     "longitude": 121.65,

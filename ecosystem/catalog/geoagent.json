@@ -310,7 +310,9 @@
     "version": "1.8.0",
     "license": "MIT",
     "python": ">=3.11",
-    "mcp_surface": "none found in repo"
+    "mcp_surface": "none found in repo",
+    "person_data": "incidental",
+    "person_data_note": "Earth-observation imagery can show people; nothing is stored or indexed."
   },
   "location": null,
   "relations": [

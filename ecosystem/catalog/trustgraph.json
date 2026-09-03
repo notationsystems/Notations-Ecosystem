@@ -581,7 +581,9 @@
     "api_version": "2.4",
     "mcp_tools": 31,
     "license": "Apache-2.0",
-    "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs"
+    "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs",
+    "person_data": "incidental",
+    "person_data_note": "A document-ingestion platform will extract whatever entities a document contains, including people."
   },
   "location": null,
   "relations": [

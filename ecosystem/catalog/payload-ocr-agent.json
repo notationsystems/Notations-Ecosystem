@@ -371,7 +371,9 @@
     "tool_count": 8,
     "prompt_count": 5,
     "writes_canonical_state": false,
-    "has_http_surface": false
+    "has_http_surface": false,
+    "person_data": "incidental",
+    "person_data_note": "Freight paperwork carries names and signatures. They are preserved as verbatim evidence inside an observation and are never a query key."
   },
   "location": null,
   "relations": [

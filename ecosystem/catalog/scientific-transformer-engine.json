@@ -561,7 +561,8 @@
     "core_version": "core@1.0.0",
     "native_kernels": 5,
     "zkvm_backends": "SP1, Nexus, RISC Zero",
-    "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)"
+    "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)",
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

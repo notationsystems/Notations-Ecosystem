@@ -390,7 +390,8 @@
     "operations": "lj_pairwise_energy_forces, fourier_transform_1d, least_squares, kalman_filter_linear",
     "backends": "cpu (validated), cuda (compiled and linked, never GPU-executed)",
     "core_binding": "extends core@1.0.0 (extends_only)",
-    "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far"
+    "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far",
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

@@ -297,7 +297,8 @@
     "capability_count": 24,
     "license": "GPL-3.0",
     "mcp_port": 45677,
-    "gpu_required": true
+    "gpu_required": true,
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

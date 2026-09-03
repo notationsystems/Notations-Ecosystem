@@ -181,7 +181,8 @@
     "source_state": "bytecode-only (engine/__pycache__/*.cpython-314.pyc); no .py committed",
     "ledger_records": 9,
     "capability_count": 15,
-    "derived_from": "MiroFish (swarm idea, per docstrings)"
+    "derived_from": "MiroFish (swarm idea, per docstrings)",
+    "person_data": "refused"
   },
   "location": null,
   "relations": [

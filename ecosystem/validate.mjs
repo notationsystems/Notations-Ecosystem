@@ -17,6 +17,8 @@ const MATURITIES = new Set(['empty', 'prototype', 'v0', 'active', 'archived', 'u
 const RESOURCE_CLASSES = new Set(['public', 'internal', 'sensitive']);
 /** What losing it would cost, which is a different question and often the harder one. */
 const RESOURCE_DURABILITY = new Set(['reconstructable', 'refetchable_at_risk', 'unreconstructable']);
+/** Where a system sits against the collection policy (docs/COLLECTION_POLICY.md). */
+const PERSON_DATA = new Set(['refused', 'incidental', 'serves']);
 const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
 
 /**
@@ -168,6 +170,19 @@ export function checkEntry(entry, file, known = new Set()) {
   }
   if (entry.location && typeof entry.location.label !== 'string') warnings.push('location has no label');
   for (const k of Object.keys(entry)) if (!['nodeId', 'name', 'kind', 'description', 'capabilities', 'metadata', 'location', 'relations', 'reference'].includes(k)) warnings.push(`unknown top-level field "${k}"`);
+  // The collection policy is the company's, not one repository's. It was enforced in
+  // Payload Terminal's CI and stated as prose everywhere else, which made it that
+  // system's policy; declaring it per node makes it the estate's and makes an exception
+  // a sentence someone wrote rather than a route someone finds.
+  if (!PERSON_DATA.has(md.person_data)) {
+    errors.push(`metadata.person_data "${md.person_data}" is not one of ${[...PERSON_DATA].join(', ')} — see docs/COLLECTION_POLICY.md`);
+  } else if (md.person_data === 'serves' && md.maturity !== 'upstream-mirror' && !md.person_data_exception) {
+    errors.push('metadata.person_data is "serves" on a first-party node: declare metadata.person_data_exception saying what it serves and what would end it');
+  }
+  if (md.person_data_exception && md.person_data !== 'serves') {
+    errors.push('metadata.person_data_exception is set but person_data is not "serves"');
+  }
+
   // Disclosure and durability are different questions, and one enum could answer only
   // one. `unreconstructable` was a value of the disclosure enum, so a public capture that
   // cannot be refetched had to give up saying it was public in order to say it was
