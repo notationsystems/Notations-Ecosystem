@@ -39,6 +39,12 @@ The chain that matters is not the storage choice:
 Source → Artifact → Observation → Entity → Claim → Transformation → State → Decision
 ```
 
+Every stage of that chain has a class in the identity space, `Decision` included: this
+plane is the system that holds decisions, and a chain whose last stage could not be named
+would end in the one place the estate actually writes to. A resolved coordination record
+is `notation://decision/notationsystems/<coordinationId>`, and it is a name like any
+other here — the plane still dereferences nothing.
+
 ## What this repository is
 
 **This repository is not the substrate.** It is the coordination layer above it: a
@@ -64,11 +70,11 @@ to throw, so the absence is explicit and testable rather than an omission someon
 notation://<class>/<namespace>/<local-id>[@<version>]
 ```
 
-Implemented in `control-plane/src/identity/uri.js`, with seventeen classes in two
+Implemented in `control-plane/src/identity/uri.js`, with eighteen classes in two
 families:
 
 **Information** — `source`, `artifact`, `observation`, `claim`, `entity`, `dataset`,
-`model`, `state`, `transform`, `computation`, `proof`, `node`
+`model`, `state`, `transform`, `computation`, `proof`, `decision`, `node`
 
 **Authority** — `principal`, `agent`, `key`, `deployment`, `verification`
 
@@ -87,6 +93,7 @@ equality of string**.
 uri.entity('notationsystems', 'port-of-montreal')
 uri.artifact('notationsystems', 'comtrade-2026-08-27', 'v2')
 uri.proof('notationsystems', 'sp1-run-4471')
+uri.decision('notationsystems', 'coord-4471')   // the chain's terminal stage, addressable
 assertClass(candidate, 'entity')   // throws if it is a principal, a key, an agent…
 resolve(anything)                  // always throws: this layer is not a resolver
 ```
@@ -95,7 +102,7 @@ resolve(anything)                  // always throws: this layer is not a resolve
 
 | Substrate layer | In this repository | Note |
 | --- | --- | --- |
-| Canonical identity | `control-plane/src/identity/uri.js` | The naming scheme, enforced |
+| Canonical identity | `control-plane/src/identity/uri.js` | The naming scheme, enforced. Every snapshot node carries its derived `uri`, every coordination record its `decision` name, and a posture `evidenceRef` accepts an information-family identity — so the space is on the wire, not only in this document |
 | Coordination ledger | `control-plane/` | Append-only, hash-linked, signed, anchored |
 | Projection | `dock/` | Reads snapshots and events; holds no store of its own |
 | Catalog of nodes | `ecosystem/catalog/` | 30 systems, seeded into the ledger |

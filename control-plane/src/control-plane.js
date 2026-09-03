@@ -2,7 +2,7 @@ import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
 import { parseCommand } from './validation.js';
 import { buildConstellation } from './security/evidence.js';
-import { nodeUri } from './identity/uri.js';
+import { decisionUri, nodeUri, tryUri } from './identity/uri.js';
 import { LOCAL_PRINCIPAL } from './security/identity.js';
 import { permissionForAction, requireActorBinding, requireNodeBinding, requirePermission, requireSeparationOfDuties } from './security/policy.js';
 
@@ -81,7 +81,11 @@ function makeSnapshot(records, durability, generatedAt) {
         // disagree with the id it names, and two spellings of one identity is exactly
         // what the typed space exists to prevent. `resolve()` still throws, so this is
         // a name and not an address.
-        uri: nodeUri(node.nodeId),
+        //
+        // Null when the id cannot carry one — the plane's identifier grammar admits `:`
+        // and `/`, which a segment may not. A mangled name would let two nodes collide,
+        // and a thrown one would brick every later read of an append-only history.
+        uri: tryUri(nodeUri, node.nodeId),
         health: observed?.health ?? 'unknown',
         lastObservedAt: observed?.observedAt ?? null,
         lastObservation: observed ? { source: observed.source, detail: observed.detail } : null,
@@ -98,7 +102,9 @@ function makeSnapshot(records, durability, generatedAt) {
     generatedAt,
     nodes,
     relations: [...state.relations.values()].sort((left, right) => left.relationId.localeCompare(right.relationId)),
-    coordination: [...state.coordination.values()].sort((left, right) => left.coordinationId.localeCompare(right.coordinationId)),
+    coordination: [...state.coordination.values()]
+      .map(record => frozen({ ...record, uri: tryUri(decisionUri, record.coordinationId) }))
+      .sort((left, right) => left.coordinationId.localeCompare(right.coordinationId)),
     constellation: buildConstellation(Object.fromEntries(state.posture), { now: Date.parse(generatedAt) || Date.now() }),
   });
 }

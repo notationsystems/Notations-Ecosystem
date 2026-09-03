@@ -295,7 +295,14 @@ components:
             Each node carries derived health and, when attested, a `security`
             block holding its posture signals.
         relations: { type: array }
-        coordination: { type: array }
+        coordination:
+          type: array
+          description: >-
+            Each record carries `uri`, its name in the canonical identity space —
+            notation://decision/<namespace>/<coordinationId>. A decision is the terminal
+            stage of the substrate chain (docs/SUBSTRATE.md) and the one stage this plane
+            actually writes. Approval is not execution: `dispatch` is always
+            "not_dispatched".
         constellation:
           type: object
           description: Ecosystem-wide security posture folded across every attested node, weakest-link per dimension.

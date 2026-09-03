@@ -8,6 +8,7 @@ must never hold what would let someone do it.**
 - [Invariants](docs/SECURITY_INVARIANTS.md) — the properties, and the tests that prove them
 - [Substrate](docs/SUBSTRATE.md) — the identity space and why the projection is not the database
 - [Data classification](docs/DATA_CLASSIFICATION.md) — every class held, and what is deliberately refused
+- [Corpus doctrine](docs/CORPUS.md) — what the company builds, and the ten invariants that decide whether a system is one
 
 ## Reporting a vulnerability
 

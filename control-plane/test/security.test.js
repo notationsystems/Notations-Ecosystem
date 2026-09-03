@@ -19,7 +19,7 @@ import { issueCredential } from '../src/security/identity.js';
 import { ControlPlane } from '../src/control-plane.js';
 import { KeyStore } from '../src/security/crypto/signing.js';
 import { KeyEncryptionKey, open, seal, rewrap } from '../src/security/crypto/envelope.js';
-import { parseUri, assertClass, resolve as resolveUri, uri } from '../src/identity/uri.js';
+import { parseUri, assertClass, isAuthorityIdentity, isInformationIdentity, nodeUri, resolve as resolveUri, uri } from '../src/identity/uri.js';
 
 const REGISTRY_SCHEMA = 'notations.control-plane.principals.v1';
 
@@ -1029,6 +1029,59 @@ test('SEC-010 the identity space is reachable from the contract, and is still no
     assert.equal(parseUri(node.uri).class, 'node');
     assert.throws(() => resolveUri(node.uri), /does not dereference/i, 'a name is not an address');
 
+    // The family predicates are called from the request path with attacker-supplied
+    // text. A predicate that throws turns a 422 into a 500 — the plane failing rather
+    // than refusing — so they must be total over anything at all.
+    for (const hostile of ['https://x/y', 'not a uri', '', 'notation://bogus/ns/x', '../../etc/passwd', null, 42, {}, []]) {
+      assert.equal(isInformationIdentity(hostile), false, `isInformationIdentity(${JSON.stringify(hostile)}) must answer, not throw`);
+      assert.equal(isAuthorityIdentity(hostile), false);
+    }
+    assert.equal(isInformationIdentity(uri.artifact('notationsystems', 'x')), true);
+    assert.equal(isAuthorityIdentity(uri.key('notationsystems', 'k-1')), true);
+
+    // Equality of identity is equality of string. An earlier nodeUri lowercased the id
+    // and replaced everything outside the segment alphabet with a hyphen, so three ids
+    // the plane accepts as distinct collapsed into one name. A name that two nodes can
+    // share is worse than no name at all.
+    const names = ['a:b', 'a/b', 'a-b', 'A-b'].map(id => nodeUri(id));
+    assert.equal(new Set(names).size, names.length, 'distinct ids must not share a name');
+    // And the space names the estate's own identifiers, which use `kind:name`.
+    assert.equal(nodeUri('payload-terminal'), 'notation://node/notationsystems/payload-terminal');
+    assert.equal(parseUri(uri.principal('notationsystems', 'operator:alice')).localId, 'operator:alice');
+    // While every ambiguous or traversing form stays refused.
+    for (const hostile of ['notation://node/ns/http://evil', 'notation://node/ns/..', 'notation://node/ns/x%2Fy', 'notation://node/ns//x', 'notation://node/ns/x?y', 'notation://node/ns/x#y']) {
+      assert.throws(() => parseUri(hostile), /UriError|not a|may not/i, `${hostile} must be refused`);
+    }
+
+    // An id the plane accepts but the identity space cannot express gets no name, and the
+    // snapshot still reads. A projection over an append-only history must be total: a
+    // record cannot be withdrawn, so one that threw would take every later read with it.
+    // The plane's identifier grammar allows 180 characters; an identity segment allows
+    // 128. A node id between the two is legal here and unnameable there.
+    const unnameable = `n${'x'.repeat(150)}`;
+    const odd = await h.command(h.tokens['operator:alice'], {
+      actorId: 'operator:alice',
+      action: 'register_node',
+      node: { nodeId: unnameable, name: 'long', kind: 'api', description: 'A node whose id is legal for the plane and too long for an identity segment.', capabilities: OBSERVE, metadata: {}, location: null },
+    });
+    assert.equal(odd.status, 201, 'the plane accepts the id');
+    const readBack = await h.call('GET', '/v1/snapshot', { token: h.tokens['operator:alice'] });
+    assert.equal(readBack.status, 200, 'and the snapshot still reads');
+    assert.equal(readBack.body.nodes.find(entry => entry.nodeId === unnameable).uri, null, 'with no name rather than a mangled one');
+
+    // A resolved coordination record carries its decision name, so the substrate chain's
+    // terminal stage — the one stage this plane actually writes — is addressable.
+    const requested = await h.command(h.tokens['agent:planner'], {
+      actorId: 'agent:planner', action: 'request_capability', coordinationId: 'coord:uri-1',
+      requesterNodeId: 'payload-terminal', targetNodeId: 'payload-terminal', capabilityId: 'world.read',
+      requestedMode: 'observe', purpose: 'Confirm a decision is addressable in the identity space.',
+    });
+    assert.equal(requested.status, 201);
+    const record = requested.body.snapshot.coordination.find(entry => entry.coordinationId === 'coord:uri-1');
+    assert.equal(record.uri, 'notation://decision/notationsystems/coord:uri-1');
+    assert.equal(parseUri(record.uri).class, 'decision');
+    assert.equal(record.dispatch, 'not_dispatched');
+
     // The published contract has always said an evidence reference may be a notation://
     // identity. It is now true, and it admits a name from a closed space rather than an
     // arbitrary string that happens to contain slashes.
@@ -1038,6 +1091,8 @@ test('SEC-010 the identity space is reachable from the contract, and is still no
       signals: [{ dimension: 'audit_integrity', state: 'strong', evidenceRef }],
     });
     assert.equal((await attest(uri.artifact('notationsystems', 'comtrade-2026-08-27', 'v2'))).status, 201);
+    assert.equal((await attest(uri.observation('notationsystems', 'probe-4471'))).status, 201);
+    assert.equal((await attest(uri.proof('notationsystems', 'sp1-run-4471'))).status, 201);
     assert.equal((await attest(`sha256:${'b'.repeat(64)}`)).status, 201);
 
     for (const rejected of [
@@ -1045,6 +1100,13 @@ test('SEC-010 the identity space is reachable from the contract, and is still no
       'notation://evil.example/a/b',          // not a class in the space
       '../../etc/passwd',
       `notation://artifact/notationsystems/${'a'.repeat(300)}`, // a name, not a payload
+      // Authority identities are refused: naming a key or an operator as the evidence
+      // for a posture signal would say the key *is* the finding, and would put an
+      // authority identifier into a record agents read and browsers render.
+      uri.principal('notationsystems', 'operator-1'),
+      uri.key('notationsystems', 'k-1a2b3c'),
+      uri.agent('notationsystems', 'planner'),
+      uri.deployment('notationsystems', 'prod-1'),
     ]) {
       const refused = await attest(rejected);
       assert.equal(refused.status, 422, `${rejected} must be refused`);

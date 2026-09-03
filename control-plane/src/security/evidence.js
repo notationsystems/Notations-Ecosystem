@@ -27,7 +27,7 @@
 import { invalid } from '../errors.js';
 import { detectSecretShape, safeText } from './text.js';
 import { isKnown, lookup, sealedKeys, sealedTable } from './table.js';
-import { isUri } from '../identity/uri.js';
+import { isInformationIdentity } from '../identity/uri.js';
 
 /** The dimensions of the constellation. Unknown dimensions are refused. */
 export const POSTURE_DIMENSIONS = sealedTable({
@@ -65,6 +65,13 @@ const EVIDENCE_REF = /^(?:sha256:[a-f0-9]{64}|[A-Za-z0-9][A-Za-z0-9:_.-]{0,79})$
  * slashes in it. It remains a name and not a link: `resolve()` throws by construction,
  * so the plane still cannot dereference what it records.
  *
+ * Only the *information* family is admitted. `notation://principal/...`,
+ * `notation://key/...` and `notation://agent/...` are authority identities: naming one as
+ * the evidence for a posture signal would say a key or an operator *is* the finding, and
+ * would put an authority identifier into a record that is read by agents and rendered in
+ * a browser. Keeping the two families apart is the point of having them
+ * (docs/SUBSTRATE.md), and it is only kept if something checks.
+ *
  * The length bound is tighter than the identity space's own 512, because this field is
  * attestor-supplied and a long free-form tail is the one thing a name should not have.
  */
@@ -72,7 +79,7 @@ const MAX_EVIDENCE_URI_LENGTH = 200;
 
 function isEvidenceReference(value) {
   if (EVIDENCE_REF.test(value)) return true;
-  return value.length <= MAX_EVIDENCE_URI_LENGTH && isUri(value);
+  return value.length <= MAX_EVIDENCE_URI_LENGTH && isInformationIdentity(value);
 }
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
@@ -251,7 +258,7 @@ export function parseSignal(value, index) {
     const reference = safeText(parsed.evidenceRef, `${path}.evidenceRef`).trim();
     if (!isEvidenceReference(reference)) {
       throw invalid(
-        `${path}.evidenceRef must be an opaque identifier such as sha256:<hex>, or a notation:// identity.`,
+        `${path}.evidenceRef must be an opaque identifier such as sha256:<hex>, or a notation:// identity from the information family.`,
         'A reference identifies the attestation in the system that produced it. It is deliberately not a link: the control plane must not carry a pointer to raw findings.',
       );
     }

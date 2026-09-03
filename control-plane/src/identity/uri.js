@@ -40,6 +40,7 @@ export const URI_CLASSES = sealedTable({
   transform: 'A transformation that produced one state from another',
   computation: 'A concrete execution of a transform',
   proof: 'An attestation over a computation or a state',
+  decision: 'A recorded decision about an intent: the terminal stage of the substrate chain',
   node: 'A node of the Nodes universe: a projection identity',
   agent: 'A reasoning agent identity',
   principal: 'An authenticated caller identity (human or service)',
@@ -52,9 +53,19 @@ export const URI_CLASSES = sealedTable({
 export const AUTHORITY_CLASSES = Object.freeze(['principal', 'agent', 'key', 'deployment', 'verification']);
 
 /** Identity classes that name information the substrate holds. */
-export const INFORMATION_CLASSES = Object.freeze(['source', 'artifact', 'observation', 'claim', 'entity', 'dataset', 'model', 'state', 'transform', 'computation', 'proof', 'node']);
+export const INFORMATION_CLASSES = Object.freeze(['source', 'artifact', 'observation', 'claim', 'entity', 'dataset', 'model', 'state', 'transform', 'computation', 'proof', 'decision', 'node']);
 
-const SEGMENT = /^[a-z0-9][a-z0-9._-]{0,127}$/i;
+/**
+ * A segment admits `:` because the estate's own identifiers use it — `operator:alice`,
+ * `seed:catalog`, `coord:4471` — and a canonical space that cannot name its own
+ * identifiers is not canonical. It is unambiguous here: the scheme is stripped before
+ * parsing, segments are split on `/`, and a colon inside one is therefore just a
+ * character. It creates no second spelling of any identity, no traversal, and nothing
+ * dereferences it. Percent-encoding, queries, fragments, empty and relative segments all
+ * stay refused, so the property that matters holds unchanged: equality of identity is
+ * equality of string.
+ */
+const SEGMENT = /^[a-z0-9][a-z0-9._:-]{0,127}$/i;
 const VERSION = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 export const MAX_URI_LENGTH = 512;
 
@@ -144,14 +155,31 @@ export function assertClass(value, expected) {
   return parsed;
 }
 
+/**
+ * The family predicates are total: they answer false for anything that is not an
+ * identity of that family, including text that is not an identity at all.
+ *
+ * A predicate that throws is not a predicate. These are called from the request path
+ * with attestor-supplied text, and a `UriError` escaping one of them turns a 422 into
+ * a 500 — the plane failing rather than refusing, which is the opposite of the property
+ * every boundary here is supposed to have.
+ */
+function classOf(value) {
+  try {
+    return parseUri(value).class;
+  } catch {
+    return null;
+  }
+}
+
 /** Is this an identity of information the substrate holds (rather than an authority)? */
 export function isInformationIdentity(value) {
-  return INFORMATION_CLASSES.includes(parseUri(value).class);
+  return INFORMATION_CLASSES.includes(classOf(value));
 }
 
 /** Is this an identity of an authority (a caller, agent, key, deployment, verifier)? */
 export function isAuthorityIdentity(value) {
-  return AUTHORITY_CLASSES.includes(parseUri(value).class);
+  return AUTHORITY_CLASSES.includes(classOf(value));
 }
 
 /**
@@ -165,6 +193,47 @@ export function resolve() {
 }
 
 /** A URI for a Nodes-universe node id, the projection identity used by this plane. */
+/**
+ * The name of a recorded decision.
+ *
+ * docs/SUBSTRATE.md ends its chain at Decision, and this plane is the system that holds
+ * decisions — yet the identity space had no name for one, so the terminal stage of the
+ * chain was the only stage that could not be addressed. A decision is information: it is
+ * a recorded fact about an intent, not an authority that can act.
+ */
+export function decisionUri(coordinationId, namespace = 'notationsystems') {
+  return buildUri('decision', namespace, coordinationId);
+}
+
+
+/**
+ * The name of a node.
+ *
+ * It does not sanitise. An earlier version lowercased the id and replaced everything
+ * outside the segment alphabet with a hyphen, which meant `Payload-Terminal`,
+ * `payload:terminal` and `payload/terminal` — three ids the plane accepts as distinct —
+ * all became one name. That breaks the property the space exists for: **equality of
+ * identity is equality of string**. Two nodes sharing a canonical name is worse than a
+ * node having none, so an id that is not already a legal segment gets no name and this
+ * throws. Callers that project over stored records must use `tryUri` instead.
+ */
 export function nodeUri(nodeId, namespace = 'notationsystems') {
-  return buildUri('node', namespace, String(nodeId).toLowerCase().replace(/[^a-z0-9._-]/g, '-'));
+  return buildUri('node', namespace, nodeId);
+}
+
+/**
+ * A name, or null when the identifier cannot carry one.
+ *
+ * The plane's identifier grammar is wider than the identity space's segment grammar —
+ * it admits `:` and `/`, which a segment may not contain. Anything projecting over an
+ * append-only journal must therefore be able to answer "no name" rather than throw: a
+ * record cannot be withdrawn, so a projection that throws on one stored id takes every
+ * later read of the whole snapshot with it.
+ */
+export function tryUri(build, ...args) {
+  try {
+    return build(...args);
+  } catch {
+    return null;
+  }
 }
