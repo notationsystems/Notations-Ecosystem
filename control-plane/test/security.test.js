@@ -18,6 +18,7 @@ import { createControlPlaneServer, createRuntime, readConfig, assertTransportPol
 import { SecurityLog } from '../src/security/audit.js';
 import { issueCredential } from '../src/security/identity.js';
 import { ControlPlane, defaultKeystorePath } from '../src/control-plane.js';
+import { checkApiZero, observed } from '../src/api/response.js';
 import { KeyStore } from '../src/security/crypto/signing.js';
 import { KeyEncryptionKey, open, seal, rewrap } from '../src/security/crypto/envelope.js';
 import { parseUri, assertClass, isAuthorityIdentity, isInformationIdentity, nodeUri, resolve as resolveUri, uri } from '../src/identity/uri.js';
@@ -1302,4 +1303,74 @@ test('SEC-042 a journal\'s signing key lives beside the journal, not beside whoe
     await rm(root, { recursive: true, force: true });
     await rm(elsewhere, { recursive: true, force: true });
   }
+});
+
+test('API-000 every response carries a proof root or states its limitations', async () => {
+  // The invariant of docs/API_PLANES.md, asserted on the wire rather than on the catalog's
+  // description of the wire. A response that is neither a referenced read nor a stated
+  // observation is the dangerous shape: authoritative to read, impossible to verify, and
+  // silent about which. Every route, every status the plane can reach from a request.
+  const h = await harness();
+  try {
+    const token = h.tokens['operator:alice'];
+    await h.command(token, { actorId: 'operator:alice', ...h.node('api-zero-fixture', OBSERVE) });
+
+    const responses = [
+      ['GET /health (unauthenticated)', await h.call('GET', '/health')],
+      ['GET /v1/snapshot', await h.call('GET', '/v1/snapshot', { token })],
+      ['GET /v1/events', await h.call('GET', '/v1/events', { token })],
+      ['GET /v1/security/status', await h.call('GET', '/v1/security/status', { token })],
+      ['GET /v1/snapshot (no credential)', await h.call('GET', '/v1/snapshot')],
+      ['GET /v1/snapshot (bad credential)', await h.call('GET', '/v1/snapshot', { token: 'nsk_not.a-real-credential' })],
+      ['GET /v1/events (bad cursor)', await h.call('GET', '/v1/events?after=nope', { token })],
+      ['GET /nope', await h.call('GET', '/nope', { token })],
+      ['POST /v1/commands (invalid)', await h.call('POST', '/v1/commands', { token, body: { action: 'not_an_action' } })],
+      ['POST /v1/commands (accepted)', await h.command(token, { actorId: 'operator:alice', action: 'record_observation', nodeId: 'api-zero-fixture', health: 'healthy', observedAt: new Date().toISOString(), source: 'operator', detail: 'Responding.' })],
+    ];
+
+    for (const [what, res] of responses) {
+      assert.equal(checkApiZero(res.body), null, `${what} (${res.status}): ${checkApiZero(res.body)}`);
+    }
+
+    // The two shapes, in the two places they belong. A read of the journal names the
+    // revision it was folded at; liveness names what it does not cover.
+    const snapshot = responses.find(([what]) => what === 'GET /v1/snapshot')[1].body;
+    assert.equal(snapshot.apiResponse, 'referenced');
+    assert.equal(snapshot.proofRoot.revision, snapshot.revision);
+    assert.equal(snapshot.reference, `notation://state/notationsystems/control-plane@${snapshot.revision}`);
+    assert.equal(snapshot.proofRoot.chain, 'hash-linked');
+    assert.equal(snapshot.proofRoot.signing, 'active');
+
+    const health = responses[0][1].body;
+    assert.equal(health.apiResponse, 'operational_observation');
+    assert.ok(health.observation.limitations.some(l => /this process only, not the estate/.test(l)));
+    // Liveness is unauthenticated, so it must not become an oracle: no revision, no
+    // record count, nothing about held state — and the limitation says so out loud.
+    assert.equal(health.reference, undefined);
+    assert.equal(health.proofRoot, undefined);
+    assert.ok(!JSON.stringify(health).includes(snapshot.revision));
+
+    // A refusal makes no claim about canonical state, and says that rather than nothing.
+    const refused = responses.find(([what]) => what === 'GET /nope')[1].body;
+    assert.equal(refused.apiResponse, 'operational_observation');
+    assert.ok(refused.observation.limitations.some(l => /makes no claim about canonical state/.test(l)));
+  } finally {
+    await h.close();
+  }
+});
+
+test('API-000 a body that satisfies neither shape is refused rather than served', async () => {
+  // Projection must be total: a malformed body is a defect in the plane, and the plane
+  // must not answer with it, but it must also not fail in a way that bricks a route. The
+  // check refuses to serve it and returns an honest observation about the refusal.
+  assert.equal(checkApiZero({ status: 'ok' }), 'a response must declare apiResponse as "referenced" or "operational_observation"; this one declares undefined');
+  assert.match(checkApiZero({ apiResponse: 'referenced' }), /must carry a canonical reference/);
+  assert.match(checkApiZero({ apiResponse: 'referenced', reference: 'x' }), /must carry a proof root/);
+  assert.match(checkApiZero({ apiResponse: 'operational_observation' }), /must carry an observation block/);
+  assert.match(checkApiZero({ apiResponse: 'operational_observation', observation: { observedAt: 'now', limitations: [] } }), /must state what it does not cover/);
+
+  // An observation with no limitations is refused at construction, not silently emptied:
+  // an observation without its limits is indistinguishable from a claim about the estate.
+  assert.throws(() => observed({ status: 'ok' }, []), /at least one limitation/);
+  assert.throws(() => observed({ status: 'ok' }, undefined), /at least one limitation/);
 });

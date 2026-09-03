@@ -23,7 +23,27 @@ export function ConnectionPanel({ dock }: { dock: DockState }) {
         for it again.
       </div>
       <div style={{ color: 'var(--muted)', marginTop: 8, fontSize: 11 }}>
-        {dock.mode === 'live' && <>Live · revision <span className="mono">{dock.snapshot?.revision?.slice(0, 12) ?? '—'}</span> · synced {dock.lastSync ? new Date(dock.lastSync).toLocaleTimeString() : '—'}</>}
+        {dock.mode === 'live' && (
+          <>
+            Live · revision <span className="mono">{dock.snapshot?.revision?.slice(0, 12) ?? '—'}</span> · synced {dock.lastSync ? new Date(dock.lastSync).toLocaleTimeString() : '—'}
+            {/*
+              API-000 made the root visible, so the dock shows it. A revision alone says
+              which fold this is; the proof root says what kind of history it came from —
+              an unsigned chain is still hash-linked and still a root, and reading
+              "verified" over both would be the conflation the field exists to prevent.
+            */}
+            {dock.snapshot?.proofRoot && (
+              <>
+                <br />
+                <span title={`This view is a read of the control plane's canonical state at ${dock.snapshot.reference ?? 'an unnamed revision'}. Chain: ${dock.snapshot.proofRoot.chain}. Signing: ${dock.snapshot.proofRoot.signing}. Rollback anchor: ${dock.snapshot.proofRoot.rollbackAnchor ? 'on' : 'off'}.`}>
+                  proof root · {dock.snapshot.proofRoot.chain}
+                  {dock.snapshot.proofRoot.signing === 'active' ? ', signed' : `, signing ${dock.snapshot.proofRoot.signing}`}
+                  {dock.snapshot.proofRoot.rollbackAnchor ? ', anchored' : ''}
+                </span>
+              </>
+            )}
+          </>
+        )}
         {dock.mode === 'sample' && <>Showing the bundled sample snapshot generated from the catalog. Enter a token to see live control-plane state.</>}
         {dock.mode === 'disconnected' && <>Not connected.</>}
       </div>

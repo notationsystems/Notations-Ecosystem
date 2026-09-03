@@ -5,6 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ControlPlane, defaultKeystorePath } from './control-plane.js';
+import { LIVENESS_LIMITATIONS, REFUSAL_LIMITATIONS, SECURITY_STATUS_LIMITATIONS, checkApiZero, observed, referenced } from './api/response.js';
 import { ControlPlaneError } from './errors.js';
 import { HashJournal } from './journal.js';
 import { SecurityLog, SECURITY_EVENTS, sourceKey } from './security/audit.js';
@@ -125,7 +126,25 @@ export async function createRuntime(config = readConfig(), { securityLog = new S
   return { config, transport, registry, keyStore, journal, controlPlane, limiter, verificationCache, securityLog, sourceSalt, startedAt: Date.now() };
 }
 
+/**
+ * Every response leaves through here, so API-000 is asserted here.
+ *
+ * A body that is neither a referenced read nor a stated observation is a programming
+ * error, not a runtime condition — but it must not become a 500 either, because the
+ * failure mode of a projection that throws is the one this estate has already learned:
+ * validation fails closed at the write boundary, projection must be total. So the check
+ * refuses to *serve* the malformed body and serves an honest observation about it.
+ */
 function json(response, status, body, headers = {}) {
+  const violation = checkApiZero(body);
+  if (violation) {
+    console.error(`[notations-control-plane] API-000 violation on a ${status} response: ${violation}`);
+    body = observed(
+      { error: 'API_CONTRACT_VIOLATION', detail: 'The control plane built a response that states neither a proof root nor its limitations, and refused to serve it.', remedy: 'This is a defect in the plane. Report it with the route and the status.' },
+      ['A refusal by this process; nothing was read and nothing was written.'],
+    );
+    status = 500;
+  }
   const payload = JSON.stringify(body);
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(payload), ...headers });
   response.end(payload);
@@ -205,7 +224,10 @@ export function createControlPlaneServer(runtime) {
        */
       if (request.method === 'GET' && url.pathname === '/health') {
         limiter.chargeRead(`health:${source}`);
-        return json(response, 200, { status: 'operational', service: 'notations-ecosystem-control-plane', uptimeSeconds: Math.round((Date.now() - runtime.startedAt) / 1000) }, headers);
+        return json(response, 200, observed(
+          { status: 'operational', service: 'notations-ecosystem-control-plane', uptimeSeconds: Math.round((Date.now() - runtime.startedAt) / 1000) },
+          LIVENESS_LIMITATIONS,
+        ), headers);
       }
 
       const principal = authenticate(runtime, request, source);
@@ -214,7 +236,12 @@ export function createControlPlaneServer(runtime) {
       if (request.method === 'GET' && url.pathname === '/v1/snapshot') {
         limiter.chargeRead(identity);
         requirePermission(principal, PERMISSIONS.SNAPSHOT_READ);
-        return json(response, 200, await controlPlane.snapshot(), headers);
+        const snapshot = await controlPlane.snapshot();
+        return json(response, 200, referenced(snapshot, {
+          revision: snapshot.revision,
+          cursor: snapshot.eventCursor,
+          integrity: controlPlane.journal.integrity(),
+        }), headers);
       }
 
       if (request.method === 'GET' && url.pathname === '/v1/events') {
@@ -222,13 +249,18 @@ export function createControlPlaneServer(runtime) {
         requirePermission(principal, PERMISSIONS.EVENTS_READ);
         const requested = integer(url.searchParams.get('limit'), config.eventsLimit);
         const limit = Math.max(1, Math.min(requested, config.eventsLimit));
-        return json(response, 200, await controlPlane.events(url.searchParams.get('after') || undefined, { limit }), headers);
+        const page = await controlPlane.events(url.searchParams.get('after') || undefined, { limit });
+        return json(response, 200, referenced(page, {
+          revision: page.revision,
+          cursor: page.eventCursor,
+          integrity: controlPlane.journal.integrity(),
+        }), headers);
       }
 
       if (request.method === 'GET' && url.pathname === '/v1/security/status') {
         limiter.chargeRead(identity);
         requirePermission(principal, PERMISSIONS.SECURITY_STATUS_READ);
-        return json(response, 200, securityStatus(runtime, principal), headers);
+        return json(response, 200, observed(securityStatus(runtime, principal), SECURITY_STATUS_LIMITATIONS), headers);
       }
 
       if (request.method === 'POST' && url.pathname === '/v1/commands') {
@@ -237,7 +269,12 @@ export function createControlPlaneServer(runtime) {
         try {
           const result = await controlPlane.command(body, { principal });
           securityLog.record(SECURITY_EVENTS.COMMAND_ACCEPTED, { source, principal: identity, kind: result.event.kind, outcome: result.outcome });
-          return json(response, 201, result, headers);
+          // The record hash of the appended event is the root this write landed at, so a
+          // caller can point at exactly the history their command produced.
+          return json(response, 201, referenced(result, {
+            revision: result.revision ?? result.event?.recordHash ?? null,
+            integrity: controlPlane.journal.integrity(),
+          }), headers);
         } catch (error) {
           if (error instanceof ControlPlaneError) {
             const kind = error.status === 403 ? SECURITY_EVENTS.FORBIDDEN : SECURITY_EVENTS.COMMAND_REFUSED;
@@ -247,19 +284,19 @@ export function createControlPlaneServer(runtime) {
         }
       }
 
-      return json(response, 404, { error: 'ROUTE_NOT_FOUND', detail: 'This route is not part of the control-plane API.' }, headers);
+      return json(response, 404, observed({ error: 'ROUTE_NOT_FOUND', detail: 'This route is not part of the control-plane API.' }, REFUSAL_LIMITATIONS), headers);
     } catch (error) {
       if (error instanceof ControlPlaneError) {
         if (error.status === 429) securityLog.record(SECURITY_EVENTS.RATE_LIMITED, { source, code: error.code });
         if (error.code === 'ORIGIN_NOT_ALLOWED') securityLog.record(SECURITY_EVENTS.ORIGIN_REJECTED, { source, origin: request.headers.origin });
         if (error.code === 'JOURNAL_CORRUPT' || error.code === 'JOURNAL_ROLLBACK') securityLog.record(SECURITY_EVENTS.INTEGRITY_FAILED, { source, code: error.code, detail: error.detail });
         const extra = error.meta?.retryAfterSeconds ? { 'retry-after': String(error.meta.retryAfterSeconds) } : {};
-        return json(response, error.status, error.toJSON(), { ...headers, ...extra });
+        return json(response, error.status, observed(error.toJSON(), REFUSAL_LIMITATIONS), { ...headers, ...extra });
       }
       // Never return an internal error's text: it is the one place a stack trace or a
       // path could reach an unauthenticated caller.
       console.error('[notations-control-plane] unexpected error', error);
-      return json(response, 500, { error: 'CONTROL_PLANE_INTERNAL_ERROR', detail: 'The control plane could not complete this request.', remedy: 'Inspect the server log and preserve the journal before retrying.' }, headers);
+      return json(response, 500, observed({ error: 'CONTROL_PLANE_INTERNAL_ERROR', detail: 'The control plane could not complete this request.', remedy: 'Inspect the server log and preserve the journal before retrying.' }, REFUSAL_LIMITATIONS), headers);
     }
   };
 

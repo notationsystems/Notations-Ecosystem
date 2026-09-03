@@ -60,7 +60,7 @@ Credentials: issue one per principal rather than sharing a token — see
 [SECURITY.md](SECURITY.md). Without a credential registry the plane falls back to
 `NOTATIONS_CONTROL_PLANE_TOKEN`, which holds every role, and warns at boot.
 
-Checks: `cd control-plane && npm test` (46, of which 42 are named security
+Checks: `cd control-plane && npm test` (48, of which 43 are named security
 invariants), `node ecosystem/validate.mjs` (30 nodes, 634 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
 `cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (50).

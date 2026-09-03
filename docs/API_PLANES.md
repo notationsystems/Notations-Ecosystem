@@ -171,6 +171,22 @@ about a repository nobody here reads would be manufacture rather than descriptio
 - `node ecosystem/api.mjs` reports the estate's whole surface — by role, by plane, by
   response kind, by family — and **exits non-zero if any mutating capability reaches a
   public plane**.
-- The control plane implements API-000 on its own responses: every one carries either a
-  canonical reference with the revision it was read at, or an `observation` block naming
-  what it does not cover. A test walks every route and fails on a response with neither.
+- The control plane implements API-000 on its own responses, and it is **SEC-043**. Every
+  body leaves through one `json()` helper that asserts the invariant on the way out, so a
+  response satisfying neither shape is refused rather than served — projection stays
+  total, and the failure surfaces as an honest refusal instead of a bricked route. A test
+  walks every route and every status the plane can reach from a request:
+
+  | Route | Shape | Carries |
+  | --- | --- | --- |
+  | `GET /health` | observation | Nothing about held state, and it says so — that sentence is what makes it safe unauthenticated |
+  | `GET /v1/snapshot` | referenced | `notation://state/notationsystems/control-plane@<revision>`, and a root naming the chain, its signing state and its anchor |
+  | `GET /v1/events` | referenced | The same, plus the cursor the page was read at |
+  | `GET /v1/security/status` | observation | This process's configuration and counters, and three limitations including that they reset on restart |
+  | `POST /v1/commands` | referenced | The record hash the write landed at, so a caller can point at exactly the history their command produced |
+  | Every refusal | observation | That it makes no claim about canonical state, and that nothing was written |
+
+  An unsigned chain is still hash-linked and still a root, so `proofRoot` names the chain
+  and the signing state separately — reading "verified" over both is the conflation the
+  field exists to prevent. The dock shows it under the revision: `proof root ·
+  hash-linked, signed, anchored`.

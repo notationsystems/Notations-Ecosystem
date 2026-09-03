@@ -245,7 +245,36 @@ export interface Coordination {
   resolutionNote: string | null;
 }
 
-export interface Snapshot {
+/**
+ * API-000: what kind of answer a control-plane response is.
+ *
+ * `referenced` carries the canonical name of what was read and the proof root it was read
+ * at, so the claim can be checked against the chain. `operational_observation` carries
+ * when it was observed and what it does not cover. A response declaring neither is the
+ * shape the invariant exists to refuse — see docs/API_PLANES.md.
+ */
+export interface ProofRoot {
+  revision: string | null;
+  eventCursor?: string | null;
+  records?: number;
+  chain: 'hash-linked';
+  signing: 'active' | 'verify-only' | 'disabled' | 'unknown';
+  rollbackAnchor: boolean;
+}
+
+export interface Referenced {
+  apiResponse: 'referenced';
+  /** `notation://state/notationsystems/control-plane@<revision>` — a name, never an address. */
+  reference: string | null;
+  proofRoot: ProofRoot;
+}
+
+export interface OperationalObservation {
+  apiResponse: 'operational_observation';
+  observation: { observedAt: string; limitations: string[] };
+}
+
+export interface Snapshot extends Partial<Referenced> {
   schema: 'notations.control-plane.snapshot.v1';
   revision: string | null;
   eventCursor: string | null;

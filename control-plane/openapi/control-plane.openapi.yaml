@@ -35,12 +35,14 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [status, service, uptimeSeconds]
-                properties:
-                  status: { const: operational }
-                  service: { const: notations-ecosystem-control-plane }
-                  uptimeSeconds: { type: integer, minimum: 0 }
+                allOf:
+                  - $ref: '#/components/schemas/Observation'
+                  - type: object
+                    required: [status, service, uptimeSeconds]
+                    properties:
+                      status: { const: operational }
+                      service: { const: notations-ecosystem-control-plane }
+                      uptimeSeconds: { type: integer, minimum: 0 }
   /v1/snapshot:
     get:
       summary: Get the current ecosystem graph
@@ -50,7 +52,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Snapshot'
+                allOf:
+                  - $ref: '#/components/schemas/Referenced'
+                  - $ref: '#/components/schemas/Snapshot'
         '401':
           description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
           content:
@@ -96,7 +100,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventsResponse'
+                allOf:
+                  - $ref: '#/components/schemas/Referenced'
+                  - $ref: '#/components/schemas/EventsResponse'
         '401':
           description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
           content:
@@ -134,24 +140,29 @@ paths:
         credential, no key, no address and no journal content.
       responses:
         '200':
-          description: Non-sensitive security status.
+          description: >-
+            Non-sensitive security status. An operational observation under API-000: it
+            describes this process, not the estate's posture, and says so in
+            `observation.limitations`.
           content:
             application/json:
               schema:
-                type: object
-                required: [schema, generatedAt, principal, identity, authorization, transport, keyLifecycle, auditIntegrity, abuse, events]
-                properties:
-                  schema: { const: notations.control-plane.security-status.v1 }
-                  generatedAt: { type: string, format: date-time }
-                  principal: { type: string }
-                  identity: { type: object }
-                  authorization: { type: object }
-                  transport: { type: object }
-                  keyLifecycle: { type: object }
-                  auditIntegrity: { type: object }
-                  abuse: { type: object }
-                  events: { type: object }
-                  recent: { type: array, items: { type: object } }
+                allOf:
+                  - $ref: '#/components/schemas/Observation'
+                  - type: object
+                    required: [schema, generatedAt, principal, identity, authorization, transport, keyLifecycle, auditIntegrity, abuse, events]
+                    properties:
+                      schema: { const: notations.control-plane.security-status.v1 }
+                      generatedAt: { type: string, format: date-time }
+                      principal: { type: string }
+                      identity: { type: object }
+                      authorization: { type: object }
+                      transport: { type: object }
+                      keyLifecycle: { type: object }
+                      auditIntegrity: { type: object }
+                      abuse: { type: object }
+                      events: { type: object }
+                      recent: { type: array, items: { type: object } }
         '401':
           description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
           content:
@@ -191,7 +202,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CommandResult'
+                allOf:
+                  - $ref: '#/components/schemas/Referenced'
+                  - $ref: '#/components/schemas/CommandResult'
         '400':
           description: >-
             COMMAND_NOT_JSON: the body is not JSON. REQUEST_INVALID: the request itself is malformed.
@@ -264,18 +277,80 @@ components:
       type: http
       scheme: bearer
   schemas:
-    Error:
-      type: object
-      required: [error, detail]
+    ApiResponseKind:
+      type: string
       description: >-
-        Every failure has this shape. `error` is a stable machine code; `detail` says what
-        happened in terms safe to return to the caller; `remedy` says what to do instead.
-        A 429 also carries `retryAfterSeconds`, mirrored in the Retry-After header.
+        API-000. Every response declares which of two things it is, and a response that
+        declared neither would be the dangerous shape: authoritative to read, impossible
+        to verify, silent about which. See docs/API_PLANES.md.
+      enum: [referenced, operational_observation]
+    ProofRoot:
+      type: object
+      required: [revision, chain, signing, rollbackAnchor]
+      description: >-
+        The point in the hash-linked history a read was taken at. A caller holding a
+        replica can re-derive the same body from it, which is what makes a referenced
+        response a claim rather than an assertion.
       properties:
-        error: { $ref: '#/components/schemas/ErrorCode' }
-        detail: { type: string }
-        remedy: { type: string }
-        retryAfterSeconds: { type: integer, minimum: 1 }
+        revision:
+          oneOf: [{ type: string }, { type: 'null' }]
+          description: Head record hash at the moment of the read; null on an empty journal.
+        eventCursor: { oneOf: [{ type: string }, { type: 'null' }] }
+        records: { type: integer, minimum: 0 }
+        chain: { const: hash-linked }
+        signing:
+          type: string
+          enum: [active, verify-only, disabled, unknown]
+          description: An unsigned chain is still hash-linked and still a root; this says which.
+        rollbackAnchor: { type: boolean }
+    Referenced:
+      type: object
+      required: [apiResponse, reference, proofRoot]
+      description: A read of held material, naming what was read and the root it was read at.
+      properties:
+        apiResponse: { const: referenced }
+        reference:
+          oneOf: [{ type: string }, { type: 'null' }]
+          description: >-
+            The canonical `notation://state/notationsystems/control-plane@<revision>` name
+            of the state this response read. A name, never an address: nothing here
+            dereferences one.
+        proofRoot: { $ref: '#/components/schemas/ProofRoot' }
+    Observation:
+      type: object
+      required: [apiResponse, observation]
+      description: >-
+        One running process's account of itself at a moment. The limitations are the
+        load-bearing half: `/health` is safe to serve unauthenticated precisely because it
+        says it describes this process and not the estate.
+      properties:
+        apiResponse: { const: operational_observation }
+        observation:
+          type: object
+          required: [observedAt, limitations]
+          properties:
+            observedAt: { type: string, format: date-time }
+            limitations:
+              type: array
+              minItems: 1
+              items: { type: string }
+              description: What this response does NOT cover. Never empty.
+    Error:
+      allOf:
+        - $ref: '#/components/schemas/Observation'
+        - type: object
+          required: [error, detail]
+          description: >-
+            Every failure has this shape. `error` is a stable machine code; `detail` says
+            what happened in terms safe to return to the caller; `remedy` says what to do
+            instead. A 429 also carries `retryAfterSeconds`, mirrored in the Retry-After
+            header. A refusal makes no claim about canonical state, so under API-000 it is
+            an observation and says so.
+          properties:
+            error: { $ref: '#/components/schemas/ErrorCode' }
+            detail: { type: string }
+            remedy: { type: string }
+            retryAfterSeconds: { type: integer, minimum: 1 }
     ErrorCode:
       type: string
       description: >-
@@ -307,6 +382,7 @@ components:
         - JOURNAL_CORRUPT
         - JOURNAL_ROLLBACK
         - CONTROL_PLANE_INTERNAL_ERROR
+        - API_CONTRACT_VIOLATION
     SnapshotNode:
       allOf:
         - $ref: '#/components/schemas/Node'
