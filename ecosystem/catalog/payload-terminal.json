@@ -805,9 +805,10 @@
     "resources": [
       {
         "name": "Comtrade vintage archive",
-        "classification": "unreconstructable",
+        "classification": "public",
         "path": "data-archive/comtrade/",
-        "description": "Every live UN Comtrade retrieval keyed by date and request; upstream revises in place, so lost files are knowledge states gone permanently. Mount as a volume in containers."
+        "description": "Every live UN Comtrade retrieval keyed by date and request; upstream revises in place, so lost files are knowledge states gone permanently. Mount as a volume in containers.",
+        "durability": "unreconstructable"
       },
       {
         "name": "Archive manifest",

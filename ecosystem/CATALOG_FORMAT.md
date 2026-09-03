@@ -56,7 +56,7 @@ runs the real validator over every file.
   "reference": {
     "runtime": { "entrypoints": [], "run": [], "ports": [], "container": false },
     "contracts": [{ "name": "", "path": "", "summary": "" }],
-    "resources": [{ "name": "", "classification": "public|internal|sensitive|unreconstructable", "path": "", "description": "" }],
+    "resources": [{ "name": "", "classification": "public|internal|sensitive", "durability": "reconstructable|refetchable_at_risk|unreconstructable", "path": "", "description": "" }],
     "external_services": [{ "name": "", "domain": "", "purpose": "", "auth": "" }],
     "secrets_env": ["NAMES_ONLY"],
     "health": { "method": "http|cli|manifest-only|none", "endpoint": "/api/health" },

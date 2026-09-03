@@ -16,12 +16,34 @@ wrong rather than merely unfortunate.
 | `SECRET` | Grants access or reveals attack surface | The above, plus never in a log, a snapshot, or an LLM context |
 | `CRYPTOGRAPHIC_SECRET` | Key material | The above, plus envelope encryption and a rotation schedule |
 
+## The second axis: what losing it would cost
+
+The table above answers one question — what disclosing something would cost — and the
+estate runs on two. UN Comtrade revises its datasets in place and keeps no history, so a
+capture of it is `PUBLIC` by disclosure and irreplaceable by durability: lose it and the
+knowledge state it recorded cannot be recovered from anywhere, including from UNSD. One
+enum could hold only one of those answers, and the catalog's resource classification held
+the second by giving up the first — `unreconstructable` sat in the disclosure enum, so a
+public capture had to stop calling itself public in order to say it was irreplaceable.
+
+They are separate now, and a resource may answer both:
+
+| Durability | Meaning | What it demands |
+| --- | --- | --- |
+| `reconstructable` | Can be rebuilt from something else that is kept | Nothing beyond ordinary care |
+| `refetchable_at_risk` | The source will probably serve it again, and may not | A capture, and a plan for the day it does not |
+| `unreconstructable` | The source revises in place or will not serve it twice | Capture before parsing, verify by digest, replicate off-provider |
+
+The archive exists for the third row, and the third row is why `COR-007` — evidence
+before interpretation — is an invariant rather than a preference. Disclosure decides who
+may read a thing; durability decides whether there is still a thing to read.
+
 ## What this repository holds
 
 | Data | Class | Where | Protection |
 | --- | --- | --- | --- |
 | Ecosystem catalog (`ecosystem/catalog/*.json`) | `PUBLIC` | Git | Reviewed in the diff; validated before it can be seeded |
-| Payload spatial layers (`ecosystem/payload/layers/`) | `PUBLIC` | Git | Per-row provenance; `real: true|false` per layer |
+| Payload spatial layers (`ecosystem/payload/layers/`) | `PUBLIC` | Git | Per-row provenance in one declared shape; `basis` per layer — capture, manifest, curated or synthetic — with `real` derived from it |
 | Sample snapshot (`dock/public/sample-snapshot.json`) | `PUBLIC` | Git | Marked `sample: true`, rendered with a notice |
 | Node registrations, relations, capabilities | `INTERNAL` | Journal | Authenticated read, signed chain |
 | Health observations | `INTERNAL` | Journal | As above |

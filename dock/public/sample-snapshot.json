@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "480dd727181e879a67a92ae0359b746fbb941e31f52cb768b6dc3bef6ba25145",
+  "revision": "5293e76fc081087e516dc16c4c3ed3331e23b32879236d050e59c009ff1bfa55",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -732,6 +732,20 @@
           "description": "CLI: generates a new Ed25519 signing key, retires the previous one and records the journal length from which the new key is expected. Records signed by the retired key keep verifying.",
           "mode": "execute",
           "approval": "operator"
+        },
+        {
+          "capabilityId": "journal.verify",
+          "label": "Verify a journal replica offline",
+          "description": "`node control-plane/src/security/cli.js verify <journal>` reads, verifies and reports — chain, signature coverage, anchor agreement and a breakdown by event kind — writing nothing. After an integrity alarm an operator must be able to ask 'is this replica sound?' without starting a server against it, because starting one would append to a history that may be wrong.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "posture.status.read",
+          "label": "Read the plane's own posture",
+          "description": "GET /v1/security/status: identity binding, the authorization model, transport state, key lifecycle, journal integrity and abuse counters. Requires security.status.read. It names no credential, no key, no address and no journal content.",
+          "mode": "observe",
+          "approval": "automatic"
         }
       ],
       "metadata": {
@@ -750,7 +764,7 @@
         "signing": "ed25519",
         "at_rest": "envelope-encrypted signing key",
         "auth": "per-principal bearer credentials",
-        "data_domains": "coordination identity key-lifecycle network-health security-posture",
+        "data_domains": "architecture-invariants coordination identity key-lifecycle network-health security-posture",
         "corpus_role": "coordinate",
         "corpus_grade": "sound",
         "corpus_coverage": 1,

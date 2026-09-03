@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Validate ecosystem/catalog/*.json with the control plane's own validator.
 // Usage: node ecosystem/validate.mjs [file ...]   (default: every catalog file)
+import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,10 @@ export const CATALOG_DIR = path.join(here, 'catalog');
 const RELATION_KINDS = new Set(['supplies_context_to', 'coordinates', 'visualizes', 'governs', 'depends_on']);
 const DOMAINS = new Set(['physical-economy', 'intelligence', 'scientific', 'built-environment', 'perception-3d', 'geospatial', 'archive', 'platform']);
 const MATURITIES = new Set(['empty', 'prototype', 'v0', 'active', 'archived', 'upstream-mirror', 'external']);
+/** What disclosing this resource would cost. */
+const RESOURCE_CLASSES = new Set(['public', 'internal', 'sensitive']);
+/** What losing it would cost, which is a different question and often the harder one. */
+const RESOURCE_DURABILITY = new Set(['reconstructable', 'refetchable_at_risk', 'unreconstructable']);
 const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
 
 /**
@@ -163,6 +168,34 @@ export function checkEntry(entry, file, known = new Set()) {
   }
   if (entry.location && typeof entry.location.label !== 'string') warnings.push('location has no label');
   for (const k of Object.keys(entry)) if (!['nodeId', 'name', 'kind', 'description', 'capabilities', 'metadata', 'location', 'relations', 'reference'].includes(k)) warnings.push(`unknown top-level field "${k}"`);
+  // Disclosure and durability are different questions, and one enum could answer only
+  // one. `unreconstructable` was a value of the disclosure enum, so a public capture that
+  // cannot be refetched had to give up saying it was public in order to say it was
+  // irreplaceable — and that pair is exactly the class the archive exists for.
+  for (const resource of (entry.reference ?? {}).resources ?? []) {
+    if (resource.classification !== undefined && !RESOURCE_CLASSES.has(resource.classification)) {
+      errors.push(`resource ${resource.name}: classification "${resource.classification}" is not one of ${[...RESOURCE_CLASSES].join(', ')}${resource.classification === 'unreconstructable' ? ' — that is a durability, not a disclosure' : ''}`);
+    }
+    if (resource.durability !== undefined && !RESOURCE_DURABILITY.has(resource.durability)) {
+      errors.push(`resource ${resource.name}: durability "${resource.durability}" is not one of ${[...RESOURCE_DURABILITY].join(', ')}`);
+    }
+  }
+
+  // For the nodes that describe this repository, the reference block is checkable, so it
+  // is checked. Contracts and entrypoints are source files and must resolve; resources
+  // are not, because a journal, a key store and a credential registry are runtime state
+  // that a clean checkout correctly does not have.
+  if (md.repo === 'notationsystems/Notations-Ecosystem') {
+    const ref = entry.reference ?? {};
+    const cited = [
+      ...(ref.contracts ?? []).map((c) => ({ where: `contract ${c.name}`, path: c.path })),
+      ...((ref.runtime ?? {}).entrypoints ?? []).map((p) => ({ where: 'runtime entrypoint', path: p })),
+    ].filter((c) => typeof c.path === 'string' && c.path && !/^https?:/.test(c.path));
+    for (const { where, path: cited_path } of cited) {
+      if (!existsSync(path.join(here, '..', cited_path))) errors.push(`${where}: "${cited_path}" does not exist in this repository`);
+    }
+  }
+
   // Corpus conformance (docs/CORPUS.md): what the node claims to hold, and against which
   // of the ten invariants it stands, fails or is structurally exempt.
   const corpus = checkCorpus(entry);

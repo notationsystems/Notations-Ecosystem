@@ -78,6 +78,15 @@ families:
 
 **Authority** — `principal`, `agent`, `key`, `deployment`, `verification`
 
+One word is worth pinning down, because it appears twice and reads like two things.
+`observation` in this space is "a measured or perceived fact about an entity at a time".
+The plane's `record_observation` command records the health of a node. Those are the same
+class applied to different subjects — a node is an entity, and its health at a moment is
+a fact about it — not two meanings of one word. What the plane does *not* record is the
+substrate's other sense of the word: an observation about a facility, a shipment or a
+polymer belongs to the system that owns that domain's state, and reaches the plane only
+as a count in a posture signal or not at all.
+
 Keeping the families apart is the point. The security mandate requires that evidence,
 canonical-state, execution, user, service, agent, cryptographic, deployment and
 verification identities never collapse into one identifier or trust domain. A single

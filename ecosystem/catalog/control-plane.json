@@ -143,6 +143,29 @@
       "surface": "cli",
       "evidence": "control-plane/src/security/crypto/signing.js",
       "data_domain": "key-lifecycle"
+    },
+    {
+      "capabilityId": "journal.verify",
+      "label": "Verify a journal replica offline",
+      "description": "`node control-plane/src/security/cli.js verify <journal>` reads, verifies and reports — chain, signature coverage, anchor agreement and a breakdown by event kind — writing nothing. After an integrity alarm an operator must be able to ask 'is this replica sound?' without starting a server against it, because starting one would append to a history that may be wrong.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "evidence": "control-plane/src/security/cli.js",
+      "data_domain": "architecture-invariants",
+      "side_effects": "none: opens the journal read-only"
+    },
+    {
+      "capabilityId": "posture.status.read",
+      "label": "Read the plane's own posture",
+      "description": "GET /v1/security/status: identity binding, the authorization model, transport state, key lifecycle, journal integrity and abuse counters. Requires security.status.read. It names no credential, no key, no address and no journal content.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v1/security/status",
+      "evidence": "control-plane/src/server.js",
+      "data_domain": "security-posture"
     }
   ],
   "metadata": {
@@ -189,14 +212,24 @@
     },
     "contracts": [
       {
-        "name": "OpenAPI 3.1 contract",
+        "name": "OpenAPI",
         "path": "control-plane/openapi/control-plane.openapi.yaml",
-        "summary": "Snapshot, events and the five command shapes."
+        "summary": "Five routes, 25 stable error codes, and the coordination record whose `dispatch` is a const: approval is not execution, stated where a client can read it."
       },
       {
-        "name": "Record hash chain",
+        "name": "journal record",
         "path": "control-plane/src/journal.js",
-        "summary": "sha256(domain | previousHash | canonical(event)); duplicates by eventId are idempotent."
+        "summary": "event + previousHash + recordHash + optional signature, and nothing else: a field outside that set is covered by neither the hash nor the signature and is refused."
+      },
+      {
+        "name": "identity space",
+        "path": "control-plane/src/identity/uri.js",
+        "summary": "notation://<class>/<namespace>/<local-id>[@version], eighteen classes in an information family and an authority family. resolve() throws by construction."
+      },
+      {
+        "name": "corpus doctrine",
+        "path": "docs/CORPUS.md",
+        "summary": "Ten invariants, five roles, four standings. Graded by ecosystem/corpus.mjs and carried into the snapshot as derived node metadata."
       }
     ],
     "resources": [
@@ -204,12 +237,31 @@
         "name": "coordination journal",
         "classification": "internal",
         "path": "control-plane/data/control-plane.jsonl",
-        "description": "Append-only hash-linked JSONL. Keep on durable storage."
+        "description": "Append-only, SHA-256 hash-linked and Ed25519-signed. Holds node registrations, relations, health observations, security posture and coordination records, and nothing above INTERNAL."
+      },
+      {
+        "name": "rollback anchor",
+        "classification": "internal",
+        "path": "control-plane/data/control-plane.jsonl.anchor",
+        "description": "Head hash and length, written after each durable append. A truncated journal still verifies as a chain; only the anchor catches it."
+      },
+      {
+        "name": "signing key store",
+        "classification": "sensitive",
+        "path": "control-plane/data/keystore.json",
+        "description": "Public verification material for every key ever active, and the active private half wrapped by envelope encryption under CONTROL_PLANE_KEK. Gitignored, mode 0600."
+      },
+      {
+        "name": "credential registry",
+        "classification": "sensitive",
+        "path": "control-plane/data/principals.json",
+        "description": "SHA-256 digests, roles, actor and node bindings. Holds no usable credential: a stolen registry yields nothing to authenticate with."
       }
     ],
     "external_services": [],
     "secrets_env": [
-      "NOTATIONS_CONTROL_PLANE_TOKEN"
+      "NOTATIONS_CONTROL_PLANE_TOKEN",
+      "CONTROL_PLANE_KEK"
     ],
     "health": {
       "method": "http",
@@ -218,7 +270,9 @@
     "spatial": "Carries node locations declared at registration; has no location of its own.",
     "temporal": "Every record has recordedAt; observations carry observedAt; snapshot carries generatedAt and a revision.",
     "open_questions": [
-      "Which execution adapters will sit behind approved intents, and where will they run?"
+      "Which execution adapters will sit behind approved intents, and where will they run?",
+      "A corpus conformance producer, shaped like security/attest.mjs but running inside each system, is what would move a corpus grade from declared to measured. Today 90 of 117 evidence paths point into repositories this one cannot open.",
+      "The rollback anchor is not off-host replication: an attacker who rewrites journal and anchor together defeats it. `backup` posture reports unknown until a replica is configured."
     ],
     "corpus": {
       "role": "coordinate",

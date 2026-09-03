@@ -187,15 +187,17 @@
     "resources": [
       {
         "name": "Comtrade raw captures",
-        "classification": "unreconstructable",
+        "classification": "public",
         "path": "sea-dog-terminal/data-archive/comtrade/",
-        "description": "Eleven 2026-08-27 retrievals; never prune."
+        "description": "Eleven 2026-08-27 retrievals; never prune.",
+        "durability": "unreconstructable"
       },
       {
         "name": "Comtrade served snapshots",
-        "classification": "unreconstructable",
+        "classification": "public",
         "path": "sea-dog-terminal/src/data/economy/snapshots/comtrade-*.json",
-        "description": "comtrade-copper, comtrade-flow-vintages, comtrade-da."
+        "description": "comtrade-copper, comtrade-flow-vintages, comtrade-da.",
+        "durability": "unreconstructable"
       },
       {
         "name": "Open Ownership captures",
