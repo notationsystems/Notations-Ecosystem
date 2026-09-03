@@ -45,10 +45,23 @@ paths:
                       uptimeSeconds: { type: integer, minimum: 0 }
   /v1/snapshot:
     get:
-      summary: Get the current ecosystem graph
+      summary: Get the ecosystem graph — now, or as it stood at any journal record
+      parameters:
+        - name: at
+          in: query
+          required: false
+          schema: { type: string }
+          description: >-
+            An event id from `/v1/events`. When present, the response is the state as it
+            stood when that record was the head of the journal: the same fold as the live
+            snapshot over a prefix of the same records, so there is one derivation and not
+            two. The response is referenced at that record's hash, not at the current head —
+            the proof root is the one the answer is true at. This is the twin's time axis.
       responses:
         '200':
-          description: Current graph, health state, coordination records, and revision.
+          description: >-
+            Current graph, health state, coordination records, and revision — or, with `at`,
+            the same as of that record.
           content:
             application/json:
               schema:
@@ -62,6 +75,11 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '403':
           description: The principal does not hold snapshot.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: "`at` names an event id the journal does not hold (CURSOR_UNKNOWN). Refresh the snapshot and pick a cursor from its events."
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }

@@ -63,16 +63,22 @@ describe('the solar layout', () => {
     expect(arcsDataset(sample, layout).data.rows).toHaveLength(sample.relations.length);
   });
 
-  it('bundles four datasets, a no-basemap config, and pinned colour maps', () => {
+  it('bundles a no-basemap config with pinned colour maps on every coloured layer', () => {
     const bundle = solarBundle(sample);
-    expect(bundle.datasets.map((d) => d.info.id)).toEqual(['solar-orbits', 'solar-arcs', 'solar-moons', 'solar-bodies']);
+    expect(bundle.datasets.length).toBe(6);
     expect(bundle.config.config.mapStyle.styleType).toBe('no_map');
     // customOrdinal with an explicit map, never ordinal: an ordinal scale recolours healthy
     // nodes the moment a filter removes every offline one.
     for (const layer of bundle.config.config.visState.layers) {
-      if (layer.visualChannels.colorField) {
-        expect(layer.visualChannels.colorScale).toBe('customOrdinal');
-        expect((layer.config.visConfig as { colorRange: { colorMap: unknown[] } }).colorRange.colorMap.length).toBeGreaterThan(0);
+      const channels = layer.visualChannels as { colorField?: unknown; colorScale?: string; strokeColorField?: unknown; strokeColorScale?: string };
+      const vis = layer.config.visConfig as { colorRange?: { colorMap: unknown[] }; strokeColorRange?: { colorMap: unknown[] } };
+      if (channels.colorField) {
+        expect(channels.colorScale).toBe('customOrdinal');
+        expect(vis.colorRange!.colorMap.length).toBeGreaterThan(0);
+      }
+      if (channels.strokeColorField) {
+        expect(channels.strokeColorScale).toBe('customOrdinal');
+        expect(vis.strokeColorRange!.colorMap.length).toBeGreaterThan(0);
       }
     }
   });
@@ -97,5 +103,66 @@ describe('the solar layout', () => {
     expect(laid.sun).toBeNull();
     expect(laid.bodies.some((b) => b.isSun)).toBe(false);
     expect(laid.bodies).toHaveLength(noHub.nodes.length);
+  });
+});
+
+describe('the twin\'s coordination arcs and posture halos', () => {
+  it('draws one arc per coordination record between placed bodies, coloured by status and carrying not_dispatched', async () => {
+    const { coordinationDataset, COORDINATION_STATUS_COLOR } = await import('../src/model/solar');
+    const layout = solarLayout(sample);
+    const [requester, target] = sample.nodes;
+    const live: Snapshot = {
+      ...sample,
+      coordination: [{
+        coordinationId: 'coord-twin', requesterNodeId: requester!.nodeId, targetNodeId: target!.nodeId, capabilityId: target!.capabilities[0]!.capabilityId,
+        requestedMode: target!.capabilities[0]!.mode, purpose: 'Twin test.', requestedBy: 'operator:test', requestedAt: '2026-09-03T00:00:00Z',
+        dispatch: 'not_dispatched', status: 'approved', resolvedAt: '2026-09-03T00:01:00Z', resolvedBy: 'operator:test', resolutionNote: 'ok',
+      }],
+    };
+    const ds = coordinationDataset(live, layout);
+    expect(ds.data.rows).toHaveLength(1);
+    const row = ds.data.rows[0]!;
+    expect(row[1]).toBe('approved');
+    expect(row[2]).toBe('not_dispatched');
+    // Every status the plane can emit has a pinned colour; a status with none would fall
+    // back to a palette position and recolour as the set present changed.
+    for (const status of ['approval_required', 'approved', 'ready', 'rejected']) expect(COORDINATION_STATUS_COLOR.some(([s]) => s === status)).toBe(true);
+    expect(coordinationDataset(sample, layout).data.rows).toHaveLength(0);
+  });
+
+  it('gives an attested body a halo coloured by its weakest dimension, and none to an unattested one', async () => {
+    const { haloDataset, weakestState } = await import('../src/model/solar');
+    const [plain, ...rest] = sample.nodes;
+    const attested = {
+      ...plain!,
+      security: {
+        attestedAt: '2026-09-03T00:00:00Z', attestedBy: 'attestor:ci', method: 'automated_scan' as const,
+        signals: [
+          { dimension: 'identity' as const, state: 'strong' as const, coverage: 1, summary: 'Bound.', evidenceRef: null, findings: [], expiresAt: null },
+          { dimension: 'transport' as const, state: 'weak' as const, coverage: 0.5, summary: 'Plaintext loopback.', evidenceRef: null, findings: [], expiresAt: null },
+        ],
+      },
+    } as unknown as typeof plain;
+    expect(weakestState(attested!)).toBe('weak');
+    expect(weakestState(plain!)).toBeNull();
+    // Counted against what the sample already carries, never assumed about it.
+    const sampleAttested = sample.nodes.filter((n) => n.security !== null).length;
+    const layout = solarLayout({ ...sample, nodes: [attested!, ...rest] });
+    const halos = haloDataset(layout);
+    expect(halos.data.rows).toHaveLength(sampleAttested + 1);
+    const mine = halos.data.rows.find((r) => r[0] === plain!.nodeId)!;
+    expect(mine[2]).toBe('weak');
+    // One halo per attested body and none for the rest: absence is the information, and a
+    // neutral ring on an unattested body would read as "attested, unremarkable".
+    expect(haloDataset(solarLayout(sample)).data.rows).toHaveLength(sampleAttested);
+    expect(sampleAttested).toBeLessThan(sample.nodes.length);
+  });
+
+  it('bundles six datasets in draw order: orbits under everything, bodies on top', () => {
+    const bundle = solarBundle(sample);
+    expect(bundle.datasets.map((d) => d.info.id)).toEqual(['solar-orbits', 'solar-arcs', 'solar-coordination', 'solar-halos', 'solar-moons', 'solar-bodies']);
+    expect(bundle.coordination).toBe(sample.coordination.length);
+    expect(bundle.halos).toBe(sample.nodes.filter((n) => n.security !== null).length);
+    expect(SOLAR_CLICK_FIELD['solar-coordination']).toBe('target');
   });
 });

@@ -131,6 +131,19 @@ export class ControlPlaneClient {
     return (await res.json()) as Snapshot;
   }
 
+  /**
+   * The state as of one journal record — the twin's time axis.
+   *
+   * The plane folds the prefix; the dock never replays events itself, because two folds
+   * eventually disagree. The answer is referenced at that record's hash, so scrubbing
+   * back in time still hands the operator a root they can verify.
+   */
+  async snapshotAt(eventId: string): Promise<Snapshot> {
+    const res = await this.fetchImpl(this.url(`/v1/snapshot?at=${encodeURIComponent(eventId)}`), { headers: this.headers() });
+    if (!res.ok) throw await parseError(res);
+    return (await res.json()) as Snapshot;
+  }
+
   async events(after?: string | null, options: { limit?: number } = {}): Promise<EventsResponse> {
     const params = new URLSearchParams();
     if (after) params.set('after', after);

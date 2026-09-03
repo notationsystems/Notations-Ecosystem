@@ -181,6 +181,7 @@ about a repository nobody here reads would be manufacture rather than descriptio
   | --- | --- | --- |
   | `GET /health` | observation | Nothing about held state, and it says so — that sentence is what makes it safe unauthenticated |
   | `GET /v1/snapshot` | referenced | `notation://state/notationsystems/control-plane@<revision>`, and a root naming the chain, its signing state and its anchor |
+  | `GET /v1/snapshot?at=<eventId>` | referenced | The state as of that record — the twin's time axis — referenced at **that record's** hash, not the head. One fold, served by the plane; a client replaying events itself would eventually disagree with it |
   | `GET /v1/events` | referenced | The same, plus the cursor the page was read at |
   | `GET /v1/security/status` | observation | This process's configuration and counters, and three limitations including that they reset on restart |
   | `POST /v1/commands` | referenced | The record hash the write landed at, so a caller can point at exactly the history their command produced |

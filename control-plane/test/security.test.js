@@ -1374,3 +1374,38 @@ test('API-000 a body that satisfies neither shape is refused rather than served'
   assert.throws(() => observed({ status: 'ok' }, []), /at least one limitation/);
   assert.throws(() => observed({ status: 'ok' }, undefined), /at least one limitation/);
 });
+
+test('TWIN-001 the state at any cursor is served by the plane, referenced at that record', async () => {
+  // A digital twin has a time axis, and it must be the plane's fold and not the client's:
+  // a client replaying events itself would eventually disagree with the plane about what
+  // they meant. So `?at=` is a read of a prefix, with one derivation, and its proof root is
+  // the record hash the prefix ends at.
+  const h = await harness();
+  try {
+    const token = h.tokens['operator:alice'];
+    const first = await h.command(token, { actorId: 'operator:alice', ...h.node('twin-alpha', OBSERVE) });
+    await h.command(token, { actorId: 'operator:alice', ...h.node('twin-beta', OBSERVE) });
+
+    const now = await h.call('GET', '/v1/snapshot', { token });
+    assert.deepEqual(now.body.nodes.map(n => n.nodeId).sort(), ['twin-alpha', 'twin-beta']);
+
+    const then = await h.call('GET', `/v1/snapshot?at=${encodeURIComponent(first.body.event.eventId)}`, { token });
+    assert.equal(then.status, 200);
+    assert.deepEqual(then.body.nodes.map(n => n.nodeId), ['twin-alpha']);
+    // Referenced at the cursor, not at the head: the root is the one the answer is true at.
+    assert.equal(then.body.apiResponse, 'referenced');
+    assert.equal(then.body.revision, first.body.event.recordHash);
+    assert.equal(then.body.proofRoot.revision, first.body.event.recordHash);
+    assert.equal(then.body.proofRoot.eventCursor, first.body.event.eventId);
+    assert.equal(then.body.reference, `notation://state/notationsystems/control-plane@${first.body.event.recordHash}`);
+    assert.notEqual(then.body.revision, now.body.revision);
+
+    // A cursor the journal never held is refused with the same code a bad events cursor gets.
+    const unknown = await h.call('GET', '/v1/snapshot?at=control-plane:not-a-record', { token });
+    assert.equal(unknown.status, 409);
+    assert.equal(unknown.body.error, 'CURSOR_UNKNOWN');
+    assert.equal(unknown.body.apiResponse, 'operational_observation');
+  } finally {
+    await h.close();
+  }
+});

@@ -1,5 +1,5 @@
 import type { KeplerDataset } from './kepler';
-import { HEALTH_COLOR, HEALTHS, RELATION_COLOR, RELATION_KINDS, type Snapshot, type SnapshotNode } from './types';
+import { HEALTH_COLOR, HEALTHS, POSTURE_STATE_COLOR, RELATION_COLOR, RELATION_KINDS, type PostureState, type Snapshot, type SnapshotNode } from './types';
 import { domainOf } from './graph';
 
 /**
@@ -24,6 +24,8 @@ export const SOLAR_MOONS = 'solar-moons';
 export const SOLAR_ORBITS = 'solar-orbits';
 export const SOLAR_ARCS = 'solar-arcs';
 export const SOLAR_SELECTED = 'solar-selected';
+export const SOLAR_COORDINATION = 'solar-coordination';
+export const SOLAR_HALOS = 'solar-halos';
 
 /**
  * Orbit order, inner to outer. Platform first because the sun is a platform node and the
@@ -178,6 +180,66 @@ export function arcsDataset(snapshot: Snapshot, layout: SolarLayout): KeplerData
   return { info: { id: SOLAR_ARCS, label: 'Relations' }, data: { fields, rows } };
 }
 
+/**
+ * The coordination ledger, drawn. A request is an arc from requester to target, coloured
+ * by where it stands: awaiting a decision, approved, ready, rejected. An approved arc is
+ * still `not_dispatched` — the plane records decisions and executes nothing — and the
+ * tooltip carries that word so a green arc is never read as "done".
+ */
+export const COORDINATION_STATUS_COLOR: Array<[string, string]> = [
+  ['approval_required', '#F5B942'], ['approved', '#5AC77A'], ['ready', '#39C6D8'], ['rejected', '#E8536A'],
+];
+
+export function coordinationDataset(snapshot: Snapshot, layout: SolarLayout): KeplerDataset {
+  const at = new Map(layout.bodies.map((b) => [b.node.nodeId, b]));
+  const fields: KeplerDataset['data']['fields'] = [
+    { name: 'coordination_id', type: 'string' }, { name: 'status', type: 'string' }, { name: 'dispatch', type: 'string' },
+    { name: 'requester', type: 'string' }, { name: 'target', type: 'string' }, { name: 'capability', type: 'string' },
+    { name: 'mode', type: 'string' }, { name: 'purpose', type: 'string' },
+    { name: 'source_lat', type: 'real' }, { name: 'source_lng', type: 'real' }, { name: 'target_lat', type: 'real' }, { name: 'target_lng', type: 'real' },
+  ];
+  const rows: unknown[][] = [];
+  for (const c of snapshot.coordination) {
+    const s = at.get(c.requesterNodeId);
+    const t = at.get(c.targetNodeId);
+    if (!s || !t) continue;
+    rows.push([c.coordinationId, c.status, c.dispatch, c.requesterNodeId, c.targetNodeId, c.capabilityId, c.requestedMode, c.purpose, round(s.lat), round(s.lon), round(t.lat), round(t.lon)]);
+  }
+  return { info: { id: SOLAR_COORDINATION, label: 'Coordination' }, data: { fields, rows } };
+}
+
+/** Weakest link first: the state a body's halo takes is the worst any dimension reports. */
+const WORST_FIRST: PostureState[] = ['failing', 'weak', 'unknown', 'adequate', 'strong'];
+
+export function weakestState(node: SnapshotNode): PostureState | null {
+  if (!node.security || !node.security.signals.length) return null;
+  const present = new Set(node.security.signals.map((s) => s.state));
+  return WORST_FIRST.find((state) => present.has(state)) ?? null;
+}
+
+/**
+ * Security halos: an unfilled ring around every attested body, coloured by its weakest
+ * dimension. A body with no attestation gets no halo rather than a grey one — the absence
+ * is the information, and drawing it as a neutral ring would make "never attested" look
+ * like "attested, unremarkable".
+ */
+export function haloDataset(layout: SolarLayout): KeplerDataset {
+  const fields: KeplerDataset['data']['fields'] = [
+    { name: 'node_id', type: 'string' }, { name: 'name', type: 'string' }, { name: 'weakest', type: 'string' },
+    { name: 'dimensions', type: 'integer' }, { name: 'attested_at', type: 'string' }, { name: 'method', type: 'string' },
+    { name: 'latitude', type: 'real' }, { name: 'longitude', type: 'real' },
+  ];
+  const rows: unknown[][] = [];
+  for (const b of layout.bodies) {
+    const weakest = weakestState(b.node);
+    if (!weakest) continue;
+    rows.push([b.node.nodeId, b.node.name, weakest, b.node.security!.signals.length, b.node.security!.attestedAt, b.node.security!.method, round(b.lat), round(b.lon)]);
+  }
+  return { info: { id: SOLAR_HALOS, label: 'Posture' }, data: { fields, rows } };
+}
+
+const POSTURE_MAP = WORST_FIRST.map((s) => [s, POSTURE_STATE_COLOR[s]] as [string, string]);
+
 const rgb = (hex: string): [number, number, number] => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 const HEALTH_MAP = HEALTHS.map((h) => [h, HEALTH_COLOR[h]] as [string, string]);
 const MODE_MAP: Array<[string, string]> = [['observe', '#39C6D8'], ['propose', '#8B7CF6'], ['execute', '#F5B942']];
@@ -215,6 +277,23 @@ export function solarConfig() {
             visualChannels: { colorField: { name: 'kind', type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear' },
           },
           {
+            id: 'solar-coordination-arcs', type: 'arc',
+            config: {
+              dataId: SOLAR_COORDINATION, label: 'Coordination', color: [245, 185, 66],
+              columns: { lat0: 'source_lat', lng0: 'source_lng', lat1: 'target_lat', lng1: 'target_lng' }, isVisible: true,
+              visConfig: { opacity: 0.9, thickness: 3.2, colorRange: { name: 'Coordination', type: 'qualitative', category: 'Custom', colors: COORDINATION_STATUS_COLOR.map(([, c]) => c), colorMap: COORDINATION_STATUS_COLOR }, sizeRange: [0, 10], targetColor: null },
+            },
+            visualChannels: { colorField: { name: 'status', type: 'string' }, colorScale: 'customOrdinal', sizeField: null, sizeScale: 'linear' },
+          },
+          {
+            id: 'solar-halo-rings', type: 'point',
+            config: {
+              dataId: SOLAR_HALOS, label: 'Posture', color: [90, 199, 122], columns: { lat: 'latitude', lng: 'longitude', altitude: null }, isVisible: true,
+              visConfig: { radius: 150, fixedRadius: false, opacity: 0.95, outline: true, filled: false, thickness: 2.5, strokeColor: [90, 199, 122], strokeColorRange: { name: 'Posture', type: 'qualitative', category: 'Custom', colors: POSTURE_MAP.map(([, c]) => c), colorMap: POSTURE_MAP } },
+            },
+            visualChannels: { colorField: null, colorScale: 'quantile', sizeField: null, sizeScale: 'linear', strokeColorField: { name: 'weakest', type: 'string' }, strokeColorScale: 'customOrdinal' },
+          },
+          {
             id: 'solar-moons-points', type: 'point',
             config: {
               dataId: SOLAR_MOONS, label: 'Capabilities', color: [57, 198, 216], columns: { lat: 'latitude', lng: 'longitude', altitude: null }, isVisible: true,
@@ -240,6 +319,8 @@ export function solarConfig() {
               [SOLAR_MOONS]: [{ name: 'capability_id', format: null }, { name: 'label', format: null }, { name: 'mode', format: null }, { name: 'approval', format: null }],
               [SOLAR_ARCS]: [{ name: 'source', format: null }, { name: 'kind', format: null }, { name: 'target', format: null }, { name: 'description', format: null }],
               [SOLAR_ORBITS]: [{ name: 'domain', format: null }, { name: 'bodies', format: null }],
+              [SOLAR_COORDINATION]: [{ name: 'requester', format: null }, { name: 'capability', format: null }, { name: 'target', format: null }, { name: 'status', format: null }, { name: 'dispatch', format: null }, { name: 'purpose', format: null }],
+              [SOLAR_HALOS]: [{ name: 'name', format: null }, { name: 'weakest', format: null }, { name: 'dimensions', format: null }, { name: 'method', format: null }, { name: 'attested_at', format: null }],
             },
           },
           brush: { enabled: false, size: 0.5 }, geocoder: { enabled: false }, coordinate: { enabled: false },
@@ -278,14 +359,19 @@ export function solarSelection(layout: SolarLayout, nodeId: string): { datasets:
 }
 
 /** Which dataset column names the node a click should select. Moons select their body; arcs their source. */
-export const SOLAR_CLICK_FIELD: Record<string, string> = { [SOLAR_BODIES]: 'node_id', [SOLAR_MOONS]: 'node_id', [SOLAR_ARCS]: 'source', [SOLAR_SELECTED]: 'node_id' };
+export const SOLAR_CLICK_FIELD: Record<string, string> = { [SOLAR_BODIES]: 'node_id', [SOLAR_MOONS]: 'node_id', [SOLAR_ARCS]: 'source', [SOLAR_SELECTED]: 'node_id', [SOLAR_COORDINATION]: 'target', [SOLAR_HALOS]: 'node_id' };
 
-export interface SolarBundle { datasets: KeplerDataset[]; config: ReturnType<typeof solarConfig>; layout: SolarLayout; arcs: number }
+export interface SolarBundle { datasets: KeplerDataset[]; config: ReturnType<typeof solarConfig>; layout: SolarLayout; arcs: number; coordination: number; halos: number }
 
 export function solarBundle(snapshot: Snapshot): SolarBundle {
   const layout = solarLayout(snapshot);
   const arcs = arcsDataset(snapshot, layout);
-  return { datasets: [orbitsDataset(layout), arcs, moonsDataset(layout), bodiesDataset(layout)], config: solarConfig(), layout, arcs: arcs.data.rows.length };
+  const coordination = coordinationDataset(snapshot, layout);
+  const halos = haloDataset(layout);
+  return {
+    datasets: [orbitsDataset(layout), arcs, coordination, halos, moonsDataset(layout), bodiesDataset(layout)],
+    config: solarConfig(), layout, arcs: arcs.data.rows.length, coordination: coordination.data.rows.length, halos: halos.data.rows.length,
+  };
 }
 
 /** Kepler bounds around the whole system, padded so the outer orbit is not on the edge. */

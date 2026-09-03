@@ -4,7 +4,10 @@ import { KeplerGl } from '@kepler.gl/components';
 import { addDataToMap, fitBounds, removeDataset, wrapTo } from '@kepler.gl/actions';
 import type { ConsoleIntent } from '../App';
 import { SOLAR_CLICK_FIELD, SOLAR_MAP_ID, SOLAR_SELECTED, solarBounds, solarBundle, solarSelection } from '../model/solar';
-import type { LensProps } from './types';
+import { driftBetween, fidelityOf, timeAxis } from '../model/twin';
+import type { Snapshot } from '../model/types';
+import { applyFilters, type LensProps } from './types';
+import { TwinPanel } from './solar/TwinPanel';
 import { resolveClickedNodeId, withAnalyzerTypes, type KeplerInstanceState, type PickedInfo } from './map/keplerBridge';
 import { SolarOverlay } from './solar/SolarOverlay';
 
@@ -23,7 +26,7 @@ const clickField = (dataId: string) => SOLAR_CLICK_FIELD[dataId] ?? 'node_id';
  * feeds it to Kepler, maps clicks back to nodes, and hands the operator a palette whose
  * every verb is a governed command or a read.
  */
-export function SolarLens({ dock, snapshot, filtered, selected, selectedNode, onSelect, onIntent }: LensProps & { onIntent: (intent: ConsoleIntent) => void }) {
+export function SolarLens({ dock, snapshot, filtered, filters, selected, selectedNode, onSelect, onIntent }: LensProps & { onIntent: (intent: ConsoleIntent) => void }) {
   const dispatch = useDispatch();
   const store = useStore<KeplerRoot>();
   const host = useRef<HTMLDivElement>(null);
@@ -44,7 +47,43 @@ export function SolarLens({ dock, snapshot, filtered, selected, selectedNode, on
     return () => ro.disconnect();
   }, []);
 
-  const bundle = useMemo(() => solarBundle(filtered), [filtered]);
+  // The time axis. A cursor is a journal record; the sky drawn is the plane's fold as of
+  // that record, fetched rather than replayed — two folds eventually disagree, and the
+  // plane's is the one with a proof root. Filters apply to the past exactly as to now.
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [past, setPast] = useState<Snapshot | null>(null);
+  const [travelling, setTravelling] = useState(false);
+  useEffect(() => {
+    if (!cursor || dock.mode !== 'live') { setPast(null); return; }
+    let stale = false;
+    setTravelling(true);
+    dock.client.snapshotAt(cursor)
+      .then((s) => { if (!stale) setPast(s); })
+      .catch(() => { if (!stale) { setPast(null); setCursor(null); } })
+      .finally(() => { if (!stale) setTravelling(false); });
+    return () => { stale = true; };
+  }, [cursor, dock.client, dock.mode]);
+  const shown = useMemo(() => (past ? applyFilters(past, filters) : filtered), [past, filtered, filters]);
+  const shownSnapshot = past ?? snapshot;
+
+  // The blueprint: the catalog folded by the same seed, bundled with the dock. Fetched
+  // once so drift can be measured against a live plane; in sample mode the twin *is* the
+  // blueprint and the panel says so.
+  const [blueprint, setBlueprint] = useState<Snapshot | null>(null);
+  useEffect(() => {
+    let stopped = false;
+    fetch(`${import.meta.env.BASE_URL}sample-snapshot.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<Snapshot>) : Promise.reject(new Error(String(r.status)))))
+      .then((b) => { if (!stopped) setBlueprint(b); })
+      .catch(() => { if (!stopped) setBlueprint(null); });
+    return () => { stopped = true; };
+  }, []);
+
+  const axis = useMemo(() => timeAxis(dock.events), [dock.events]);
+  const fidelity = useMemo(() => fidelityOf(shownSnapshot, dock.lastSync), [shownSnapshot, dock.lastSync]);
+  const drift = useMemo(() => (blueprint ? driftBetween(blueprint, snapshot) : null), [blueprint, snapshot]);
+
+  const bundle = useMemo(() => solarBundle(shown), [shown]);
   const bounds = useMemo(() => solarBounds(bundle.layout), [bundle]);
   const fit = useCallback(() => dispatch(wrapTo(SOLAR_MAP_ID, fitBounds(bounds))), [bounds, dispatch]);
   const focus = useCallback((nodeId: string) => {
@@ -71,7 +110,7 @@ export function SolarLens({ dock, snapshot, filtered, selected, selectedNode, on
     if (first) dispatch(wrapTo(SOLAR_MAP_ID, fitBounds(bounds)));
   }, [bundle, ready, dispatch, store]); // eslint-disable-line react-hooks/exhaustive-deps -- bounds only matter on the first load
 
-  const selectedInView = selectedNode && filtered.nodes.some((n) => n.nodeId === selectedNode.nodeId) ? selectedNode : null;
+  const selectedInView = selectedNode && shown.nodes.some((n) => n.nodeId === selectedNode.nodeId) ? (shown.nodes.find((n) => n.nodeId === selectedNode.nodeId) ?? null) : null;
   useEffect(() => {
     if (!ready) return;
     dispatch(wrapTo(SOLAR_MAP_ID, removeDataset(SOLAR_SELECTED)));
@@ -101,9 +140,20 @@ export function SolarLens({ dock, snapshot, filtered, selected, selectedNode, on
           initialUiState={INITIAL_UI_STATE}
         />
       )}
+      <TwinPanel
+        axis={axis}
+        cursor={cursor}
+        onCursor={setCursor}
+        atRevision={shownSnapshot.revision}
+        live={dock.mode === 'live'}
+        fidelity={fidelity}
+        drift={drift}
+        blueprintLoaded={blueprint !== null}
+        travelling={travelling}
+      />
       <SolarOverlay
         dock={dock}
-        snapshot={snapshot}
+        snapshot={shownSnapshot}
         layout={bundle.layout}
         arcs={bundle.arcs}
         selected={selected}

@@ -316,6 +316,23 @@ export class ControlPlane {
     return makeSnapshot(records, 'local_jsonl_single_writer', this.clock());
   }
 
+  /**
+   * The state as it stood when a given event was the head of the journal.
+   *
+   * The same fold as `snapshot()` over a prefix of the same records, so there is one
+   * derivation and not two: a client that replayed events itself would eventually
+   * disagree with the plane about what they meant. The revision of the result is the
+   * record hash at that cursor — a proof root a replica can re-derive — and the fold is
+   * total over any prefix, because every prefix of an append-only chain was once the
+   * whole of it.
+   */
+  async snapshotAt(eventId) {
+    const records = await this.journal.read();
+    const index = records.findIndex(record => record.event.eventId === eventId);
+    if (index < 0) throw new ControlPlaneError(409, 'CURSOR_UNKNOWN', `Event cursor ${eventId} is not present in the journal.`, 'Refresh the complete snapshot and pick a cursor from its events.');
+    return makeSnapshot(records.slice(0, index + 1), 'local_jsonl_single_writer', this.clock());
+  }
+
   async events(afterEventId, { limit = null } = {}) {
     const records = await this.journal.read();
     let selected = records;

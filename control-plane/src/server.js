@@ -236,7 +236,11 @@ export function createControlPlaneServer(runtime) {
       if (request.method === 'GET' && url.pathname === '/v1/snapshot') {
         limiter.chargeRead(identity);
         requirePermission(principal, PERMISSIONS.SNAPSHOT_READ);
-        const snapshot = await controlPlane.snapshot();
+        // `?at=<eventId>` reads the state as of that record — the twin's time axis. Served
+        // here rather than replayed by a client, so there is one fold; and referenced at
+        // that record's own hash, so the answer carries the root it is true at.
+        const at = url.searchParams.get('at');
+        const snapshot = at ? await controlPlane.snapshotAt(at) : await controlPlane.snapshot();
         return json(response, 200, referenced(snapshot, {
           revision: snapshot.revision,
           cursor: snapshot.eventCursor,
