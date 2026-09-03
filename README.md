@@ -63,7 +63,8 @@ Credentials: issue one per principal rather than sharing a token — see
 Checks: `cd control-plane && npm test` (48, of which 43 are named security
 invariants), `node ecosystem/validate.mjs` (30 nodes, 634 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (50).
+`cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (50),
+`node platform/migrate.mjs --reset && node --test platform/test/` (9 invariants, 9 proofs, against a live PostgreSQL).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`
 cannot be delivered by a `<meta>` tag. `dock/public/_headers` carries them for
@@ -93,3 +94,5 @@ add_header Referrer-Policy no-referrer always;
 | What does the estate collect, and what does it refuse? | [docs/COLLECTION_POLICY.md](docs/COLLECTION_POLICY.md) — three standings, declared per node and validated |
 | What is the security model, and what proves it? | [SECURITY.md](SECURITY.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/SECURITY_INVARIANTS.md](docs/SECURITY_INVARIANTS.md) |
 | Where does this sit in the wider Notation substrate? | [docs/SUBSTRATE.md](docs/SUBSTRATE.md) |
+| Who may reach each module, and in what shape? | [docs/API_PLANES.md](docs/API_PLANES.md) — four roles, four planes, thirteen families, one invariant |
+| What is the data platform underneath, and what is deliberately not built yet? | [docs/PLATFORM.md](docs/PLATFORM.md) — one canonical layer, rebuildable projections, nine invariants proved against a live PostgreSQL |

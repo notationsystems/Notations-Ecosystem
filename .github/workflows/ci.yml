@@ -46,6 +46,34 @@ jobs:
         run: node ecosystem/api.mjs
       - run: cd ecosystem && npm test
 
+  platform:
+    runs-on: ubuntu-latest
+    # A real PostgreSQL, because the platform invariants are checked against a running
+    # database and never against the migration files. Tenant isolation is proved here on
+    # every push, including the two ways row security silently fails to apply.
+    services:
+      postgres:
+        image: postgres:16
+        # Trust auth, deliberately: the container lives for one job on one runner and is
+        # reachable from nothing else, and a password in the DSN below would be a
+        # credential committed to source control — which SEC-004's own scanner refuses,
+        # throwaway or not. No password is the shape that cannot leak.
+        env: { POSTGRES_USER: postgres, POSTGRES_HOST_AUTH_METHOD: trust, POSTGRES_DB: notations }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NOTATIONS_PLATFORM_DSN: postgresql://postgres@127.0.0.1:5432/notations
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with: { node-version: 22 }
+      - run: sudo apt-get update -q && sudo apt-get install -y -q postgresql-client
+      - name: Apply the canonical schema and check the nine invariants (docs/PLATFORM.md)
+        run: node platform/migrate.mjs --reset
+      - name: Tenant isolation, proved
+        run: node --test platform/test/
+
   dock:
     runs-on: ubuntu-latest
     steps:

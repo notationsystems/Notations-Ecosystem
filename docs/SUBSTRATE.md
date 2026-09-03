@@ -123,6 +123,15 @@ systems the catalog describes — Payload Terminal, the Scientific Transformer E
 Data Acquisition Channel, the corpus graphs. This repository names them and coordinates
 between them.
 
+## What the substrate runs on
+
+The storage and compute beneath these layers is specified in [PLATFORM.md](PLATFORM.md):
+one canonical PostgreSQL layer with bitemporal, append-only, tenant-isolated state; an
+object store indexed but never mirrored into the database; a transactional outbox rather
+than a broker; and serving projections that are rebuildable by definition and hold no write
+grant on canonical truth. Its canonical schema is real SQL in `platform/sql/`, and its nine
+invariants are checked against a running database rather than against the files.
+
 ## Where this goes next
 
 The natural evolution is from a coordination ledger toward a versioned world-state

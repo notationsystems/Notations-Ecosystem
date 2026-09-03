@@ -1,0 +1,101 @@
+{
+  "schema": "notations.ecosystem.platform.v1",
+  "description": "The data platform: one canonical state layer and several rebuildable serving layers, not a data lake, a graph database or an AI stack. Six tiers in a build order, a deliberately lean first footprint, and — as load-bearing as the build list — the components that are not to be built until workload evidence demands them, each with the evidence that would admit it.",
+
+  "flow": ["immutable artifacts", "canonical state", "versioned corpus builds", "graph / spatial / semantic / analytical projections", "APIs, agents, products, verification"],
+
+  "principle": "The early advantage is canonical evidence, temporal state and reproducible corpus builds — not infrastructure sprawl. Every component below is either in the first footprint with a reason, or deferred with the measurement that would change that.",
+
+  "tiers": {
+    "1-object-storage": {
+      "title": "Object storage — immutable evidence",
+      "component": "S3-compatible object storage",
+      "holds": ["raw source files", "images", "PDFs", "API captures", "model outputs", "manifests", "proofs"],
+      "zones": ["raw", "quarantined", "canonical_export", "published_build"],
+      "every_object_carries": ["content hash", "rights", "retention", "access scope", "source metadata"],
+      "in_repository": "platform/sql/002_evidence.sql indexes the objects; the bytes never enter the database (PLAT-009).",
+      "footprint": "first"
+    },
+    "2-canonical": {
+      "title": "PostgreSQL + PostGIS — canonical operational truth",
+      "component": "managed PostgreSQL 16 with PostGIS",
+      "owns": ["entities", "aliases", "observations", "assertions", "relationships", "bitemporal state", "permissions", "audit logs", "the transactional outbox"],
+      "isolation": "row-level security, ENABLED and FORCED on every tenant table; application roles NOBYPASSRLS. A privileged role bypasses RLS unless deliberately constrained, and the constraint is checked live (PLAT-001, PLAT-002).",
+      "in_repository": "platform/sql/001,003,004,005,006; platform/check.mjs; platform/test/rls.test.mjs proves the isolation and demonstrates both bypasses.",
+      "footprint": "first",
+      "reference": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+    },
+    "3-change": {
+      "title": "Outbox + durable workflows — controlled change",
+      "component": "PostgreSQL transactional outbox; Temporal for durable workflows",
+      "workflows": ["ingestion", "review", "compilation", "release", "challenge", "proof jobs"],
+      "why_not_kafka": "The outbox row commits in the same transaction as the change it describes. A broker is a second system, and 'write, then publish' has a gap that is eventually hit.",
+      "why_temporal": "Workflows resume after failure while retaining execution state; a compilation that died at step 7 of 9 restarts at 7, not at 1.",
+      "in_repository": "platform/sql/005_outbox.sql with claim_outbox (SKIP LOCKED) and idempotent mark_published; Temporal is declared here and not yet run.",
+      "footprint": "first",
+      "reference": "https://docs.temporal.io/"
+    },
+    "4-lakehouse": {
+      "title": "Lakehouse — historical analytical state",
+      "component": "Parquet on object storage, Apache Iceberg tables",
+      "publishes": ["canonical snapshots", "large historical facts"],
+      "why_iceberg": "Snapshots, schema evolution and atomic metadata commits are what make a corpus build reproducible and time travel possible.",
+      "footprint": "deferred",
+      "admit_when": "A canonical snapshot export exceeds what PostgreSQL serves analytically at acceptable cost, or a corpus build needs time travel over history PostgreSQL no longer holds live. Measured, not assumed.",
+      "reference": "https://iceberg.apache.org/spec/"
+    },
+    "5-projections": {
+      "title": "Rebuildable serving projections",
+      "rule": "No serving projection writes canonical truth. Enforced as a permission — the projection role holds no write grant on canonical or evidence (PLAT-004) — not as a convention.",
+      "spatial": { "first": "PostGIS", "footprint": "first", "note": "Declared; this development image carries no PostGIS extension, and the checker reports the tier as declared-not-installed rather than pretending." },
+      "graph": { "first": "PostgreSQL recursive CTEs and materialized views", "footprint": "first", "admit_next_when": "A measured traversal limit — depth, fan-out or latency — that projection.reachable() with its depth cap and cycle guard cannot meet. A graph database is admitted on that measurement, never on its absence.", "in_repository": "platform/sql/007_projections.sql" },
+      "semantic": { "first": "a versioned vector projection keyed to canonical ids", "footprint": "deferred", "admit_when": "Measured latency or scale decides between pgvector and Qdrant. Neither is installed until there is a query to measure." },
+      "lexical": { "first": "PostgreSQL text search with pg_trgm", "footprint": "first", "admit_next_when": "Lexical retrieval needs measured to exceed what PostgreSQL provides. A separate search index is admitted on that measurement." }
+    },
+    "6-assurance": {
+      "title": "Trust and assurance",
+      "components": {
+        "kernel references": "notation:// names and content digests throughout; canonical.notation_uri is a domain, and evidence.content_hash is checked to be a sha256.",
+        "manifests": "corpus-build and result manifests; projection.build records what was built, from which revision, and the command that rebuilds it.",
+        "ci": "GitLab CI for code, containers, deployment provenance and Harness runs. This repository's own CI is GitHub Actions today; the platform's provenance chain is declared for GitLab and the migration is a footprint change, not a doctrine change.",
+        "proofs": "SP1 proofs for selected deterministic computations — the Scientific Transformer Engine and BIM State Transformer already declare SP1 guests in the catalog.",
+        "telemetry": "OpenTelemetry for traces, metrics and logs across ingestion, compilation, APIs and agents."
+      },
+      "footprint": "first",
+      "reference": "https://opentelemetry.io/docs/"
+    }
+  },
+
+  "first_footprint": [
+    "GitLab CI/CD",
+    "managed PostgreSQL/PostGIS",
+    "S3-compatible object storage",
+    "application/API workers",
+    "PostgreSQL outbox",
+    "Temporal",
+    "OpenTelemetry collector/backend"
+  ],
+
+  "deferred": {
+    "Apache Iceberg": "a canonical snapshot export PostgreSQL cannot serve analytically at acceptable cost",
+    "vector search (pgvector or Qdrant)": "a semantic query to measure; the choice between them is a latency and scale measurement",
+    "graph database": "a measured traversal limit projection.reachable() cannot meet",
+    "streaming broker (Kafka)": "an outbox relay measured to be the bottleneck, not a preference for streaming",
+    "GPU workers": "a model workload measured to need them; the catalog's GPU systems run where they run today",
+    "Kubernetes": "an operational load that a small number of hosts cannot carry, measured"
+  },
+
+  "never_first": ["Kafka", "Neo4j", "Spark", "a blockchain", "a large Kubernetes estate"],
+
+  "invariants": {
+    "PLAT-001": "Row security is enabled AND forced on every tenant table. Enabled alone exempts the table owner.",
+    "PLAT-002": "No application role holds BYPASSRLS or SUPERUSER.",
+    "PLAT-003": "Every table with row security has a policy.",
+    "PLAT-004": "No serving projection writes canonical truth: the projection role holds no write grant on canonical or evidence.",
+    "PLAT-005": "Canonical and evidence are append-only for the application: no DELETE, UPDATE only on supersession columns.",
+    "PLAT-006": "Every canonical fact is bitemporal — event time and knowledge time as separate columns.",
+    "PLAT-007": "Every evidence object carries content hash, rights, retention, access scope and source, all NOT NULL.",
+    "PLAT-008": "The transactional outbox exists with a partial index on its backlog.",
+    "PLAT-009": "Evidence rows describe objects and never hold their bytes."
+  }
+}
