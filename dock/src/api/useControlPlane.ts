@@ -11,6 +11,12 @@ export interface DockState {
   mode: DockMode;
   snapshot: Snapshot | null;
   events: JournalRecord[];
+  /**
+   * True when the plane held more records than the dock followed. Surfaced rather than
+   * swallowed: a timeline missing records without saying so is worse than one that says
+   * it could not fetch them.
+   */
+  truncated: boolean;
   error: ControlPlaneApiError | Error | null;
   lastSync: string | null;
   refresh: () => Promise<void>;
@@ -36,6 +42,8 @@ export function useControlPlane(): DockState {
   const [error, setError] = useState<ControlPlaneApiError | Error | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const cursor = useRef<string | null>(null);
+  /** True when the plane had more records than the dock followed. Never hidden. */
+  const [truncated, setTruncated] = useState(false);
   const client = useMemo(() => new ControlPlaneClient(connection), [connection]);
 
   const setConnection = useCallback((c: Connection) => { saveConnection(c); setConnectionState(c); }, []);
@@ -61,9 +69,12 @@ export function useControlPlane(): DockState {
       const s = await client.snapshot();
       applySnapshot(s);
       setMode('live');
-      // Backfill the timeline with the whole journal once; polling appends from the cursor afterwards.
-      const all = await client.events();
+      // Backfill the timeline with the whole journal once; polling appends from the cursor
+      // afterwards. Paged, because the server caps a page and reading one and stopping
+      // would drop records without saying so.
+      const all = await client.allEvents();
       setEvents(all.events.slice(-MAX_EVENTS));
+      setTruncated(Boolean(all.truncated));
     } catch (e) {
       setError(e as Error);
       setMode('disconnected');
@@ -83,10 +94,11 @@ export function useControlPlane(): DockState {
     let stopped = false;
     const tick = async () => {
       try {
-        const res = await client.events(cursor.current);
+        const res = await client.allEvents(cursor.current);
         if (stopped) return;
         if (res.events.length) {
           setEvents((prev) => [...prev, ...res.events].slice(-MAX_EVENTS));
+          setTruncated(Boolean(res.truncated));
           applySnapshot(await client.snapshot());
         }
         setError(null);
@@ -105,11 +117,16 @@ export function useControlPlane(): DockState {
     if (mode !== 'live') throw new ControlPlaneApiError(0, 'DOCK_NOT_LIVE', 'The dock is showing the sample snapshot; commands need a live control plane.', 'Enter the control-plane token and connect.');
     const result = await client.command(cmd);
     applySnapshot(result.snapshot);
-    const delta = await client.events(cursor.current);
-    void delta;
-    setEvents((prev) => [...prev, { event: { eventId: result.event.eventId, recordedAt: new Date().toISOString(), commandHash: '', kind: result.event.kind }, previousHash: null, recordHash: result.event.recordHash }].slice(-MAX_EVENTS));
+    // The records the plane actually wrote, not a reconstruction of them. This used to
+    // fetch the delta, discard it, and append a hand-built record with an empty
+    // commandHash and a null previousHash — a fabricated entry in a list the timeline
+    // labels "the control plane's append-only, hash-linked record". A projection that
+    // invents what it cannot fetch is the one thing this estate says it never does.
+    const delta = await client.allEvents(cursor.current);
+    setEvents((prev) => [...prev, ...delta.events].slice(-MAX_EVENTS));
+    setTruncated(Boolean(delta.truncated));
     return result;
   }, [mode, client, applySnapshot]);
 
-  return { connection, setConnection, client, mode, snapshot, events, error, lastSync, refresh, submit, connect };
+  return { connection, setConnection, client, mode, snapshot, events, truncated, error, lastSync, refresh, submit, connect };
 }

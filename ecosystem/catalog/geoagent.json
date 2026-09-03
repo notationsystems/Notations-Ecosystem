@@ -291,7 +291,7 @@
       "description": "docs/examples notebooks: intro, live_mapping, openai_codex, qgis_agent, stac_workflow, stream_chat_openai_codex; site published at geoagent.gishub.org.",
       "mode": "observe",
       "approval": "automatic",
-      "surface": "docs",
+      "surface": "doc",
       "path": "docs/examples/",
       "evidence": "docs/examples/; mkdocs.yml"
     }

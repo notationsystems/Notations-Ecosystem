@@ -52,7 +52,8 @@
         "provenance",
         "known_at",
         "confidence"
-      ]
+      ],
+      "basis": "synthetic"
     },
     {
       "id": "earth-chokepoints",
@@ -94,7 +95,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "synthetic"
     },
     {
       "id": "earth-routes",
@@ -132,7 +134,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "synthetic"
     },
     {
       "id": "earth-flows",
@@ -172,7 +175,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "synthetic"
     },
     {
       "id": "earth-events",
@@ -217,7 +221,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "synthetic"
     },
     {
       "id": "comtrade-flows",
@@ -263,13 +268,14 @@
         "known_at",
         "valid_from",
         "valid_to"
-      ]
+      ],
+      "basis": "capture"
     },
     {
       "id": "archive-coverage",
       "name": "Archive coverage by reporter",
       "group": "coverage",
-      "source_system": "payload-data-archive",
+      "source_system": "information-systems-archive",
       "geometry": "point",
       "file": "archive-coverage.json",
       "provenance": "Payload Terminal data-archive/MANIFEST.json (sha256-verified)",
@@ -312,7 +318,8 @@
         "known_at",
         "valid_from",
         "valid_to"
-      ]
+      ],
+      "basis": "manifest"
     },
     {
       "id": "submarine-cables",
@@ -341,7 +348,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "curated"
     },
     {
       "id": "nuclear-facilities",
@@ -383,7 +391,8 @@
       },
       "provenance_fields": [
         "provenance"
-      ]
+      ],
+      "basis": "curated"
     }
   ],
   "row_provenance": {
@@ -400,5 +409,11 @@
     ],
     "defined_in": "ecosystem/payload/provenance.mjs",
     "note": "One spelling for the estate’s central discipline. A value with no origin is a rumour; a value whose knowability is not recorded cannot be replayed as known-then."
+  },
+  "row_basis": {
+    "capture": "Every row names a dated retrieval from the source that published it",
+    "manifest": "Every row is derived from a sha256-indexed manifest entry",
+    "curated": "Real data assembled by hand or scraped from a first-party file: no capture date, no digest",
+    "synthetic": "Generated for demonstration. Never an observation"
   }
 }

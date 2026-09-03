@@ -25,7 +25,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { detectRefusedMaterial, POSTURE_DIMENSIONS } from '../control-plane/src/security/evidence.js';
+import { detectRefusedMaterial, MAX_SIGNALS_PER_ATTESTATION, POSTURE_DIMENSIONS } from '../control-plane/src/security/evidence.js';
 import { HttpControlPlane } from '../control-plane/src/client.js';
 
 const run = promisify(execFile);
@@ -325,28 +325,39 @@ export async function attest(plane, { nodeId, actorId = 'attestor:local', signal
   if (!snapshot.nodes.some(node => node.nodeId === nodeId)) {
     throw new Error(`Node ${nodeId} is not registered in the control plane; seed the catalog before attesting.`);
   }
-  // Twelve signals per attestation is the contract's cap; send the constellation in
-  // batches rather than truncating it silently.
-  const batches = [];
-  for (let index = 0; index < signals.length; index += 12) batches.push(signals.slice(index, index + 12));
-  const results = [];
-  let revision = snapshot.revision;
-  for (const [index, batch] of batches.entries()) {
-    const result = await plane.command({
-      requestId: `attest:${nodeId}:${now()}:${index}`,
-      actorId,
-      submittedAt: now(),
-      expectedRevision: revision,
-      action: 'record_security_posture',
-      nodeId,
-      attestedAt: now(),
-      method,
-      signals: batch,
-    });
-    revision = result.snapshot.revision;
-    results.push(result);
+  // One attestation, never several.
+  //
+  // This used to split the constellation into batches of twelve and send one command per
+  // batch, on the reasoning that batching beats silent truncation. It is worse than
+  // truncation: the plane replaces a node's posture wholesale on each
+  // record_security_posture — `posture.set(event.posture.nodeId, event.posture)` — so
+  // every batch but the last was overwritten by the next, and the constellation showed
+  // the tail of the producer's output while the journal recorded all of it. Nothing said
+  // so. An attestation is one statement about a node at one time; splitting it makes two
+  // statements, and the second wins.
+  //
+  // So: refuse, loudly, naming the cap and the count. A producer that cannot say
+  // everything says nothing and reports why, which is the same trade every other refusal
+  // in this estate makes.
+  if (signals.length > MAX_SIGNALS_PER_ATTESTATION) {
+    throw new Error(
+      `This producer emitted ${signals.length} signals and one attestation carries at most ${MAX_SIGNALS_PER_ATTESTATION}. ` +
+      'Posture is replaced wholesale per node, so sending them in batches would record all of them and show only the last. ' +
+      'Narrow the producer, or attest the extra dimensions against a different node.',
+    );
   }
-  return { batches: results.length, revision };
+  const result = await plane.command({
+    requestId: `attest:${nodeId}:${now()}`,
+    actorId,
+    submittedAt: now(),
+    expectedRevision: snapshot.revision,
+    action: 'record_security_posture',
+    nodeId,
+    attestedAt: now(),
+    method,
+    signals,
+  });
+  return { signals: signals.length, revision: result.snapshot.revision };
 }
 
 async function main() {
@@ -375,7 +386,7 @@ async function main() {
     plane = await ControlPlane.fromEnvironment(journalPath);
   }
   const result = await attest(plane, { nodeId, actorId: option('actor') ?? 'attestor:local', signals });
-  process.stdout.write(`Attested ${signals.length} signals for ${nodeId} in ${result.batches} batch(es); revision ${result.revision}\n`);
+  process.stdout.write(`Attested ${result.signals} signals for ${nodeId} in one attestation; revision ${result.revision}\n`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

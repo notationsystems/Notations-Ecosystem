@@ -11,4 +11,12 @@ node sample-snapshot.mjs                                 # dock/public/sample-sn
 npm test
 ```
 
-`payload/` is the Payload adapter: health probe, layer extractors and the layer manifest.
+`payload/` is the Payload adapter: health probe, layer extractors, the layer manifest and the
+one row-provenance shape every extracted row uses.
+
+Two closed vocabularies keep the catalog queryable across systems: `surfaces.json` (how a
+capability is reached) and `data-domains.json` (what subject it touches). Both record every
+spelling they have been written as, and `validate.mjs` refuses an alias by naming the
+canonical form. `corpus.mjs` grades every node against [docs/CORPUS.md](../docs/CORPUS.md)
+and reports how much of each grade is verified here, taken on trust from another
+repository, or merely declared in this catalog.

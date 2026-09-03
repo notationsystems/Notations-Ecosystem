@@ -120,7 +120,13 @@ export function TimelineLens({ dock, snapshot, filtered, onSelect, selected }: L
         <div className="ops-head">
           <div>
             <h2>Journal events</h2>
-            <p className="lede">The control plane's append-only, hash-linked record. Newest first.</p>
+            <p className="lede">
+              The control plane's append-only, hash-linked record, exactly as the plane
+              wrote it. Newest first.
+              {dock.truncated && (
+                <> <b style={{ color: 'var(--amber)' }}>The plane holds more records than this view followed.</b></>
+              )}
+            </p>
           </div>
           <span className="meta">
             {dock.mode === 'live'

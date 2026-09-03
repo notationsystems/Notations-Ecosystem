@@ -78,3 +78,34 @@ test('a node carries the set of subjects it touches, truncated on a whole subjec
   assert.ok(truncated.length <= 60);
   for (const subject of truncated.split(' ')) assert.ok(SUBJECTS.includes(subject));
 });
+
+test('the surface vocabulary is closed too, and its aliases are recorded', async () => {
+  const surfaces = JSON.parse(await readFile(path.join(here, '..', 'surfaces.json'), 'utf8'));
+  const names = Object.keys(surfaces.surfaces);
+  assert.ok(names.length >= 15);
+  const aliases = new Map();
+  for (const [name, entry] of Object.entries(surfaces.surfaces)) {
+    assert.ok(entry.description && entry.description.length > 10, `${name}: needs a description`);
+    for (const alias of entry.aliases ?? []) {
+      assert.ok(!names.includes(alias), `${alias} is both a surface and an alias of ${name}`);
+      assert.ok(!aliases.has(alias), `${alias} is claimed twice`);
+      aliases.set(alias, name);
+    }
+  }
+
+  const entries = await loadCatalog();
+  const used = new Set();
+  for (const { entry } of entries) {
+    for (const capability of entry.capabilities ?? []) {
+      if (!capability.surface) continue;
+      assert.ok(names.includes(capability.surface), `${entry.nodeId}/${capability.capabilityId}: "${capability.surface}" is not a surface`);
+      used.add(capability.surface);
+    }
+  }
+  assert.deepEqual(names.filter((n) => !used.has(n)), [], 'a surface nobody uses would rot');
+
+  const [{ entry, file }] = entries.filter((e) => e.entry.nodeId === 'control-plane');
+  const aliased = structuredClone(entry);
+  aliased.capabilities[0].surface = 'docs';
+  assert.ok(checkEntry(aliased, file).errors.some((e) => /is a recorded spelling of "doc"/.test(e)));
+});

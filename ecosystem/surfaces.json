@@ -1,0 +1,84 @@
+{
+  "schema": "notations.ecosystem.surfaces.v1",
+  "description": "How a capability is reached. Closed, for the same reason data_domain is: left open it produced 28 spellings for 19 kinds, including `doc` beside `docs`, `wire` beside `wire-contract`, and `sse` beside `event-stream`. A capability graph whose systems describe the same kind of entry point differently cannot be queried across them.",
+  "surfaces": {
+    "http": {
+      "description": "An HTTP route the system serves",
+      "aliases": [
+        "http-client"
+      ]
+    },
+    "sse": {
+      "description": "A server-sent event stream",
+      "aliases": [
+        "event-stream"
+      ]
+    },
+    "websocket": {
+      "description": "A bidirectional socket"
+    },
+    "webhook": {
+      "description": "An inbound callback the system accepts"
+    },
+    "tcp": {
+      "description": "A raw socket"
+    },
+    "mcp": {
+      "description": "A Model Context Protocol tool"
+    },
+    "agent-tool": {
+      "description": "A tool registered for an agent to call in-process, including in a browser",
+      "aliases": [
+        "browser-tool-registry",
+        "browser-global"
+      ]
+    },
+    "cli": {
+      "description": "A command-line entry point"
+    },
+    "python": {
+      "description": "An importable Python API"
+    },
+    "ts-api": {
+      "description": "An importable TypeScript or JavaScript API"
+    },
+    "ui": {
+      "description": "A surface a human operates directly"
+    },
+    "file": {
+      "description": "A file or dataset the system reads or writes",
+      "aliases": [
+        "static-file",
+        "dataset"
+      ]
+    },
+    "contract": {
+      "description": "A declared interface with no runtime entry point of its own",
+      "aliases": [
+        "wire-contract",
+        "wire"
+      ]
+    },
+    "doc": {
+      "description": "Documentation that is itself the surface",
+      "aliases": [
+        "docs"
+      ]
+    },
+    "ci": {
+      "description": "A continuous-integration job"
+    },
+    "github": {
+      "description": "A GitHub integration surface"
+    },
+    "docker": {
+      "description": "A container entry point"
+    },
+    "manual": {
+      "description": "An operator procedure with no automated entry point"
+    },
+    "external": {
+      "description": "Provided by a third party outside the estate"
+    }
+  }
+}

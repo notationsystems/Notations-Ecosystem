@@ -92,3 +92,27 @@ export function checkLayerProvenance(layer, rows) {
   if (missing) problems.push(`${layer.id}: ${missing} row(s) carry no ${REQUIRED_ROW_PROVENANCE}`);
   return problems;
 }
+
+/** How much a layer's rows are worth, from strongest to weakest. */
+export const ROW_BASES = Object.freeze(['capture', 'manifest', 'curated', 'synthetic']);
+
+/**
+ * A layer's `real` flag is derived from its basis, never asserted beside it.
+ *
+ * `real` used to be a boolean over a rule the manifest states — "a layer is only real
+ * when every row names a capture or a verified manifest entry" — that two layers do not
+ * meet. Submarine cables and nuclear facilities are real data scraped out of a
+ * first-party file: not synthetic, and not a capture either. The boolean forced them to
+ * be one or the other, and they were marked `real: true` against the manifest's own
+ * rule. `basis` says which of the four they are; `real` means "not synthetic".
+ */
+export function checkLayerBasis(layer) {
+  const problems = [];
+  if (!ROW_BASES.includes(layer.basis)) {
+    problems.push(`${layer.id}: basis "${layer.basis}" is not one of ${ROW_BASES.join(', ')}`);
+    return problems;
+  }
+  const derived = layer.basis !== 'synthetic';
+  if (layer.real !== derived) problems.push(`${layer.id}: real is ${layer.real} but basis "${layer.basis}" derives ${derived}`);
+  return problems;
+}

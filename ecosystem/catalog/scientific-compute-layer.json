@@ -36,7 +36,7 @@
       "description": "exit_code 0 completed; 10 PROTOCOL (malformed envelope, unknown operation); 11 VALIDATION (bad parameters/input); 12 BACKEND_UNAVAILABLE (cuda without toolkit or device); 13 COMPUTATION (coincident particles, non-finite result); 14 INTERNAL (unexpected exception). Single source of truth in protocol.hpp, mirrored in python/scl/errors.py and ste_adapter FAULT_* constants.",
       "mode": "observe",
       "approval": "automatic",
-      "surface": "wire",
+      "surface": "contract",
       "method": "contract",
       "path": "native/include/scl/protocol.hpp",
       "evidence": "native/include/scl/protocol.hpp; python/scl/errors.py",

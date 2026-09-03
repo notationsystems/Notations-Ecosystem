@@ -274,7 +274,7 @@
       "description": "Five integer-exact kernels with self-describing program descriptors: scout.native.pairwise-energy-kernel.v1, heat-diffusion-kernel.v1, radius-of-gyration-kernel.v1, crystal-lattice-kernel.v1 and attention-kernel.v1 (hardmax). Each descriptor states input layout, bounds, arithmetic and fault codes; the registry is a fixed array with no dynamic loading.",
       "mode": "observe",
       "approval": "automatic",
-      "surface": "wire",
+      "surface": "contract",
       "method": "descriptor",
       "path": "crates/execution-native",
       "evidence": "crates/execution-native/src/reference.rs; crates/execution-cli/src/main.rs",

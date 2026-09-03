@@ -16,11 +16,14 @@
  *
  * Usage: node ecosystem/corpus.mjs [--json]
  */
+import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const CATALOG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'catalog');
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const CATALOG_DIR = path.join(HERE, 'catalog');
+const REPO_ROOT = path.join(HERE, '..');
 
 /**
  * A loader of its own rather than validate.mjs's, so the dependency runs one way:
@@ -67,6 +70,33 @@ export const ROLES = Object.freeze({
 
 export const ROLE_IDS = Object.freeze(Object.keys(ROLES));
 
+/**
+ * How much weight an evidence path can carry.
+ *
+ * `holds` accepts a path, and a path is a claim about a file. Which files can be checked
+ * depends on where they are: a path into this repository is verifiable here and is
+ * verified; a path into one of the other thirty repositories is taken on trust; and a
+ * path back to the node's own catalog entry is the estate asserting something about a
+ * system rather than the system showing it. A grade that did not distinguish the three
+ * would read as measured when most of it is declared.
+ */
+export const EVIDENCE_WEIGHTS = Object.freeze(['verified', 'remote', 'self-declared']);
+const THIS_REPO = 'notationsystems/Notations-Ecosystem';
+
+export function evidenceWeight(entry, path) {
+  if (path.startsWith('ecosystem/catalog/')) return 'self-declared';
+  return entry?.metadata?.repo === THIS_REPO ? 'verified' : 'remote';
+}
+
+/** Every evidence path a node's `holds` declarations cite, with its weight. */
+export function evidencePaths(entry) {
+  const standing = entry?.reference?.corpus?.standing ?? {};
+  return Object.entries(standing).flatMap(([id, value]) =>
+    value?.standing === 'holds' && typeof value.evidence === 'string'
+      ? value.evidence.split(';').map(part => part.trim()).filter(Boolean).map(path => ({ id, path, weight: evidenceWeight(entry, path) }))
+      : []);
+}
+
 /** An `exempt` note may not be a promise. These readings are refused. */
 const NOT_A_REASON = /\b(not (yet )?(implemented|built|done|started)|todo|tbd|later|planned|coming|future|no time|n\/?a)\b/i;
 
@@ -104,7 +134,11 @@ export function gradeNode(entry) {
   const exempt = of('exempt');
   const unknown = of('unknown');
   const applicable = INVARIANT_IDS.length - exempt.length;
-  const coverage = applicable ? Math.round((holds.length / applicable) * 100) / 100 : null;
+  // Only a node that declared something has a coverage figure. Computing one for an
+  // undeclared node yields a typed 0 that the ecosystem mean would then average in, so
+  // "never assessed" would drag the estate's number down as if it were "assessed and
+  // empty" — the coercion of absence into a value that the doctrine refuses elsewhere.
+  const coverage = corpus && applicable ? Math.round((holds.length / applicable) * 100) / 100 : null;
 
   // A canonical-state owner without provenance, refusal or an admission boundary is not
   // a low score; it is a different category, and it must read as one.
@@ -183,6 +217,13 @@ export function checkCorpus(entry) {
     if (value.note && value.note.length > 400) warnings.push(`${id}: note is longer than 400 characters`);
   }
 
+  // A path this repository can check, it checks. The rest is the structural limit of a
+  // catalog that describes systems living elsewhere, and is reported rather than hidden.
+  for (const { id, path: cited, weight } of evidencePaths(entry)) {
+    if (weight !== 'verified') continue;
+    if (!existsSync(resolve(REPO_ROOT, cited))) errors.push(`${id}: evidence path "${cited}" does not exist in this repository`);
+  }
+
   const graded = gradeNode(entry);
   if (graded.role && graded.unknown.length && graded.grade !== 'unbuilt') {
     warnings.push(`ungraded invariants: ${graded.unknown.join(', ')} (counted against the node)`);
@@ -209,7 +250,10 @@ export function gradeEcosystem(entries) {
   const byGrade = {};
   for (const node of nodes) byGrade[node.grade] = (byGrade[node.grade] ?? 0) + 1;
   const graded = nodes.filter(n => typeof n.coverage === 'number');
+  const evidence = { verified: 0, remote: 0, 'self-declared': 0 };
+  for (const { entry } of entries) for (const { weight } of evidencePaths(entry)) evidence[weight] += 1;
   return {
+    evidence,
     nodes,
     byGrade,
     byRole: ROLE_IDS.reduce((acc, role) => ({ ...acc, [role]: nodes.filter(n => n.role === role).length }), {}),
@@ -234,6 +278,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.stdout.write(`\nby grade: ${Object.entries(report.byGrade).map(([g, n]) => `${g}=${n}`).join('  ')}\n`);
     process.stdout.write(`by role:  ${Object.entries(report.byRole).map(([r, n]) => `${r}=${n}`).join('  ')}\n`);
     process.stdout.write(`mean coverage across graded nodes: ${report.meanCoverage ?? 'n/a'}\n`);
+    process.stdout.write(`evidence: ${report.evidence.verified} verified here, ${report.evidence.remote} in the systems' own repositories, ${report.evidence['self-declared']} declared in this catalog\n`);
     if (report.contested.length) {
       for (const { domain, nodeIds } of report.contested) process.stdout.write(`COR-002 violated: ${domain} is claimed by ${nodeIds.join(' and ')}\n`);
     }

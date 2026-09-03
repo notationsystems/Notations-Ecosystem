@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { INVARIANT_IDS, ROLES, checkCorpus, effectiveStanding, gradeEcosystem, gradeNode, loadCatalog } from '../corpus.mjs';
+import { EVIDENCE_WEIGHTS, INVARIANT_IDS, ROLES, checkCorpus, effectiveStanding, evidencePaths, evidenceWeight, gradeEcosystem, gradeNode, loadCatalog } from '../corpus.mjs';
 
 /** A minimal catalog entry carrying only what the corpus checks look at. */
 const node = (corpus, nodeId = 'test-node') => ({ nodeId, reference: corpus === undefined ? {} : { corpus } });
@@ -99,4 +99,43 @@ test('the catalog grades without contested ownership', async () => {
   const report = gradeEcosystem(await loadCatalog());
   assert.equal(report.nodes.length, 30);
   assert.deepEqual(report.contested, [], `contested canonical state: ${JSON.stringify(report.contested)}`);
+});
+
+
+test('COR-EVIDENCE a path this repository can check, it checks', () => {
+  const local = { nodeId: 'x', metadata: { repo: 'notationsystems/Notations-Ecosystem' }, reference: { corpus: { role: 'hold', holding: 'A corpus.', standing: { 'COR-001': { standing: 'holds', evidence: 'control-plane/src/journal.js' } } } } };
+  assert.deepEqual(checkCorpus(local).errors, []);
+
+  const broken = structuredClone(local);
+  broken.reference.corpus.standing['COR-001'].evidence = 'control-plane/src/nope.js';
+  assert.ok(checkCorpus(broken).errors.some((e) => /does not exist in this repository/.test(e)));
+
+  // A path into one of the other thirty repositories cannot be checked from here, and
+  // is not pretended to be: it is recorded as taken on trust.
+  const remote = structuredClone(local);
+  remote.metadata.repo = 'notationsystems/Payload-Terminal-V0';
+  remote.reference.corpus.standing['COR-001'].evidence = 'src/app/api/economy/route.ts';
+  assert.deepEqual(checkCorpus(remote).errors, []);
+});
+
+test('COR-EVIDENCE the three weights are distinguished, so a grade is never read as measured', () => {
+  assert.deepEqual(EVIDENCE_WEIGHTS, ['verified', 'remote', 'self-declared']);
+  const here = { metadata: { repo: 'notationsystems/Notations-Ecosystem' } };
+  const elsewhere = { metadata: { repo: 'notationsystems/Payload-Terminal-V0' } };
+  assert.equal(evidenceWeight(here, 'control-plane/src/journal.js'), 'verified');
+  assert.equal(evidenceWeight(elsewhere, 'src/app/api/economy/route.ts'), 'remote');
+  // The weakest: the estate asserting something about a system, rather than the system
+  // showing it.
+  assert.equal(evidenceWeight(elsewhere, 'ecosystem/catalog/payload-terminal.json'), 'self-declared');
+  assert.equal(evidenceWeight(here, 'ecosystem/catalog/control-plane.json'), 'self-declared');
+});
+
+test('COR-EVIDENCE the estate reports how much of its grade is declared rather than measured', async () => {
+  const report = gradeEcosystem(await loadCatalog());
+  const total = report.evidence.verified + report.evidence.remote + report.evidence['self-declared'];
+  assert.ok(total > 90, 'every holds declaration carries at least one path');
+  assert.ok(report.evidence['self-declared'] > 0, 'and the weakest class is counted, not hidden');
+  const paths = evidencePaths((await loadCatalog()).find((e) => e.entry.nodeId === 'control-plane').entry);
+  assert.ok(paths.length >= 4);
+  for (const { weight } of paths) assert.ok(EVIDENCE_WEIGHTS.includes(weight));
 });

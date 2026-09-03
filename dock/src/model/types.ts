@@ -236,6 +236,9 @@ export interface EventsResponse {
   revision: string | null;
   eventCursor: string | null;
   events: JournalRecord[];
+  /** The server capped this page. More records exist after `nextCursor`. */
+  truncated?: boolean;
+  nextCursor?: string | null;
 }
 
 export interface CommandBase {

@@ -28,6 +28,25 @@ const DATA_DOMAIN_SUBJECTS = new Set(Object.keys(DATA_DOMAINS.subjects));
 const DATA_DOMAIN_ALIASES = new Map(
   Object.entries(DATA_DOMAINS.subjects).flatMap(([subject, entry]) => (entry.aliases ?? []).map((a) => [a, subject])),
 );
+
+/** How a capability is reached. Closed for the same reason: 28 spellings for 19 kinds. */
+const SURFACES = JSON.parse(await readFile(path.join(here, 'surfaces.json'), 'utf8'));
+const SURFACE_NAMES = new Set(Object.keys(SURFACES.surfaces));
+const SURFACE_ALIASES = new Map(
+  Object.entries(SURFACES.surfaces).flatMap(([name, entry]) => (entry.aliases ?? []).map((a) => [a, name])),
+);
+
+/** Refuse an unknown value, and name the canonical spelling when one is recorded. */
+function checkVocabulary(errors, capabilityId, field, value, { names, aliases, file, noun, remedy }) {
+  if (value === undefined || names.has(value)) return;
+  const canonical = aliases.get(value);
+  errors.push(canonical
+    ? `capability ${capabilityId}: ${field} "${value}" is a recorded spelling of "${canonical}"; use the ${noun}`
+    : `capability ${capabilityId}: ${field} "${value}" is not a ${noun} in ecosystem/${file} — ${remedy}`);
+}
+
+const DATA_DOMAIN_VOCABULARY = { names: DATA_DOMAIN_SUBJECTS, aliases: DATA_DOMAIN_ALIASES, file: 'data-domains.json', noun: 'subject', remedy: 'add it there, with the estate domain it belongs to, before using it' };
+const SURFACE_VOCABULARY = { names: SURFACE_NAMES, aliases: SURFACE_ALIASES, file: 'surfaces.json', noun: 'surface', remedy: 'add it there, with what it means, before using it' };
 const NOW = '2026-01-01T00:00:00.000Z';
 
 /**
@@ -117,12 +136,8 @@ export function checkEntry(entry, file, known = new Set()) {
   for (const c of entry.capabilities ?? []) {
     for (const k of Object.keys(c)) if (!['capabilityId', 'label', 'description', 'mode', 'approval'].includes(k) && !CAPABILITY_EXTRA.has(k)) warnings.push(`capability ${c.capabilityId}: unknown field "${k}"`);
     if (!c.evidence) warnings.push(`capability ${c.capabilityId}: no evidence path`);
-    if (c.data_domain !== undefined && !DATA_DOMAIN_SUBJECTS.has(c.data_domain)) {
-      const canonical = DATA_DOMAIN_ALIASES.get(c.data_domain);
-      errors.push(canonical
-        ? `capability ${c.capabilityId}: data_domain "${c.data_domain}" is a recorded spelling of "${canonical}"; use the subject`
-        : `capability ${c.capabilityId}: data_domain "${c.data_domain}" is not a subject in ecosystem/data-domains.json — add it there, with the estate domain it belongs to, before using it`);
-    }
+    checkVocabulary(errors, c.capabilityId, 'data_domain', c.data_domain, DATA_DOMAIN_VOCABULARY);
+    checkVocabulary(errors, c.capabilityId, 'surface', c.surface, SURFACE_VOCABULARY);
   }
   const md = entry.metadata ?? {};
   if (!DOMAINS.has(md.domain)) errors.push(`metadata.domain "${md.domain}" is not one of ${[...DOMAINS].join(', ')}`);

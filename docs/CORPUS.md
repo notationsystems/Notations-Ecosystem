@@ -148,13 +148,17 @@ score; it is a different category, and it should read as one.
 `operator_surface`) describes a system's **shape**. It does not say what part the system
 plays in the program. That is its **role**, and there are five:
 
-| Role | What it does | Bound by | Exempt from |
-| --- | --- | --- | --- |
-| `hold` | Owns a corpus or a canonical state | all ten | — |
-| `feed` | Supplies evidence into someone else's corpus | 001, 003, 004, 005, 007, 010 | 002, 008, 009 |
-| `transform` | Computes over a corpus and returns proposals, never measurements | 003, 005, 006, 010 | 001, 002, 007, 009 |
-| `project` | Renders a corpus it does not own | 009, 010 | 001–007 |
-| `coordinate` | Records what exists and what was agreed between corpora | 001, 008, 009, 010 | 002–007 |
+A role is defined by what it is **exempt** from; everything else binds. Listing both
+columns invited them to disagree, and they did — so only the exemptions are written here,
+and they are the list `ROLES` holds in `ecosystem/corpus.mjs`.
+
+| Role | What it does | Structurally exempt from |
+| --- | --- | --- |
+| `hold` | Owns a corpus or a canonical state | nothing |
+| `feed` | Supplies evidence into someone else's corpus | COR-002, COR-008, COR-009 |
+| `transform` | Computes over a corpus and returns proposals, never measurements | COR-001, COR-002, COR-007, COR-009 |
+| `project` | Renders a corpus it does not own | COR-001 … COR-007 |
+| `coordinate` | Records what exists and what was agreed between corpora | COR-002 … COR-007 |
 
 Role and kind are orthogonal: the same shape can play different parts. `payload-render-engine`
 is a `world_model` by shape and a `project` by role, and the tension between those two words
@@ -187,10 +191,36 @@ The derived *grade* is a different matter — see below.
 Rules, enforced by `ecosystem/validate.mjs`:
 
 - every applicable invariant appears; an omitted one is graded `unknown`, never skipped;
-- `holds` requires an `evidence` path, exactly as `capabilities[].evidence` does;
+- `holds` requires an `evidence` path, exactly as `capabilities[].evidence` does, and how
+  much that path is worth depends on where it points (see below);
 - `exempt` requires a `note`, and the note may not be "not implemented";
 - `fails` is legal, expected, and never a validation error. A catalog that cannot record
   a failure would record only flattery.
+
+### How much a grade is measured, and how much is declared
+
+`holds` is a claim about a file, and which files this repository can check depends on
+where they are. Three weights, counted and reported by `node ecosystem/corpus.mjs`:
+
+| Weight | Where the path points | What it is worth |
+| --- | --- | --- |
+| `verified` | Into this repository | Checked: the validator refuses a path that does not resolve |
+| `remote` | Into one of the other thirty repositories | Taken on trust. This is a catalog of systems that live elsewhere; it cannot open their files |
+| `self-declared` | Back at the node's own catalog entry | The weakest: the estate asserting something about a system rather than the system showing it |
+
+Today that is 7 verified, 90 remote and 20 self-declared. Publishing the split is the
+point: a reader who sees "sound, 100%" should also see that most of what supports it is
+declared rather than measured, exactly as the security constellation reports coverage
+rather than implying completeness.
+
+The way to move a claim up the scale is not to write a better path. It is a **conformance
+producer** — the same shape as `security/attest.mjs`, running inside the system it
+describes, measuring COR-007 by checking a manifest against the files on disk, COR-008 by
+walking a hash chain, COR-005 by counting routes that return a typed refusal — and
+submitting a standing with the paths stripped. `evidenceRef` already accepts a
+`sha256:` digest or a `notation://` identity from the information family, which is
+precisely the substitute for a repository path. That is the next step for this doctrine,
+and until it exists the numbers above say honestly how far it has got.
 
 ### What crosses into the journal
 

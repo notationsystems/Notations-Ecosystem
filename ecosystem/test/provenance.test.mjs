@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-import { ROW_PROVENANCE_FIELDS, checkLayerProvenance, observedProvenanceFields, rowProvenance } from '../payload/provenance.mjs';
+import { ROW_BASES, ROW_PROVENANCE_FIELDS, checkLayerBasis, checkLayerProvenance, observedProvenanceFields, rowProvenance } from '../payload/provenance.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PAYLOAD = path.join(here, '..', 'payload');
@@ -79,5 +79,29 @@ test('one spelling: no layer carries a private name for knowledge time', async (
     for (const legacy of LEGACY) {
       assert.ok(!keys.has(legacy), `${layer.id} carries ${legacy}; knowledge time is spelled known_at (${ROW_PROVENANCE_FIELDS.join(', ')})`);
     }
+  }
+});
+
+test('COR-003 a layer states the basis of its rows, and `real` is derived from it', async () => {
+  const { layers, row_basis: bases } = await manifest();
+  assert.deepEqual(Object.keys(bases).sort(), [...ROW_BASES].sort(), 'every basis is described');
+  for (const layer of layers) {
+    assert.deepEqual(checkLayerBasis(layer), [], `${layer.id}`);
+    assert.equal(layer.real, layer.basis !== 'synthetic');
+  }
+  // Two layers are real without being captures: curated data scraped from a first-party
+  // file. A boolean forced them to claim to be one or the other, and they claimed wrong.
+  assert.deepEqual(layers.filter((l) => l.basis === 'curated').map((l) => l.id).sort(), ['nuclear-facilities', 'submarine-cables']);
+  assert.deepEqual(layers.filter((l) => l.basis === 'capture').map((l) => l.id), ['comtrade-flows']);
+  assert.ok(checkLayerBasis({ id: 'x', basis: 'synthetic', real: true }).some((p) => /derives false/.test(p)));
+  assert.ok(checkLayerBasis({ id: 'x', basis: 'vibes', real: true }).some((p) => /not one of/.test(p)));
+});
+
+test('every layer names a node that exists in the catalog', async () => {
+  const { layers } = await manifest();
+  const { loadCatalog } = await import('../corpus.mjs');
+  const known = new Set((await loadCatalog()).map((e) => e.entry.nodeId));
+  for (const layer of layers) {
+    assert.ok(known.has(layer.source_system), `${layer.id}: source_system "${layer.source_system}" is not a catalog node`);
   }
 });

@@ -131,11 +131,34 @@ export class ControlPlaneClient {
     return (await res.json()) as Snapshot;
   }
 
-  async events(after?: string | null): Promise<EventsResponse> {
-    const qs = after ? `?after=${encodeURIComponent(after)}` : '';
-    const res = await this.fetchImpl(this.url(`/v1/events${qs}`), { headers: this.headers() });
+  async events(after?: string | null, options: { limit?: number } = {}): Promise<EventsResponse> {
+    const params = new URLSearchParams();
+    if (after) params.set('after', after);
+    if (options.limit) params.set('limit', String(options.limit));
+    const qs = params.toString();
+    const res = await this.fetchImpl(this.url(`/v1/events${qs ? `?${qs}` : ''}`), { headers: this.headers() });
     if (!res.ok) throw await parseError(res);
     return (await res.json()) as EventsResponse;
+  }
+
+  /**
+   * Every record after `after`, following the server's pagination.
+   *
+   * `GET /v1/events` caps a page and says so with `truncated` and `nextCursor`. Reading
+   * one page and stopping drops the rest silently, which is the failure this estate
+   * refuses everywhere else: a timeline that is missing records without saying so is
+   * worse than one that says it could not fetch them.
+   */
+  async allEvents(after?: string | null, { pages = 20 } = {}): Promise<EventsResponse> {
+    let page = await this.events(after);
+    const events = [...page.events];
+    let fetched = 1;
+    while (page.truncated && page.nextCursor && fetched < pages) {
+      page = await this.events(page.nextCursor);
+      events.push(...page.events);
+      fetched += 1;
+    }
+    return { ...page, events, truncated: Boolean(page.truncated), nextCursor: page.nextCursor ?? null };
   }
 
   async command(cmd: Command): Promise<CommandResult> {
