@@ -72,8 +72,11 @@
   .sw.ring { background: transparent !important; border: 2px solid; width: 9px; height: 9px; }
   .layers label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); padding: 2px 0; }
   .stage { position: relative; background: var(--sky); overflow: hidden; }
-  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
-  canvas.grabbing { cursor: grabbing; }
+  #sky { position: absolute; inset: 0; }
+  #sky canvas { display: block; }
+  .skyhud .clock { font-family: var(--mono); font-size: 11px; color: var(--faint); align-self: center; padding-left: 2px; font-variant-numeric: tabular-nums; }
+  .skyhud button.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .skyfail { position: absolute; inset: 0; display: grid; place-content: center; padding: 0 18%; text-align: center; color: var(--muted); font-size: 13px; }
   .stage .view { position: absolute; inset: 0; overflow: auto; padding: 18px 22px 24px; display: none; background: var(--sky); }
   .stage .view.on { display: block; }
   .tooltip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 6px 9px; font-size: 12px; max-width: 320px; box-shadow: 0 6px 24px rgba(0,0,0,.25); display: none; z-index: 5; }
@@ -194,9 +197,9 @@
   </nav>
 
   <main class="stage" id="stage">
-    <canvas id="sky" aria-label="The estate as a solar system"></canvas>
-    <div class="skyhud"><button id="fit">fit</button><button id="focus-sun">sun</button><button id="back-now" hidden>back to now</button></div>
-    <div class="skynote">nothing here is a place · positions are domain and registration order · drag to pan, wheel to zoom, double-click to focus</div>
+    <div id="sky" aria-label="The estate as a Keplerian solar system"></div>
+    <div class="skyhud"><button id="play" aria-pressed="true">pause</button><button id="speed">×2</button><button id="fit">fit</button><button id="focus-sun">sun</button><button id="follow">follow</button><button id="back-now" hidden>back to now</button><span class="clock" id="orbit-clock">t+0s</span></div>
+    <div class="skynote">nothing here is a place and none of this is telemetry · axis is the domain ring, eccentricity is one minus corpus coverage, period follows Kepler’s third law · drag to orbit, wheel to zoom, click a body</div>
     <div class="tooltip" id="tip"></div>
     <div class="view" id="view-tower"></div>
     <div class="view" id="view-ledger"></div>
@@ -233,6 +236,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
 <script type="application/json" id="twin-data">__DATA__</script>
 <script>
 (() => {
@@ -325,28 +329,391 @@ function sunOf(snap) {
   const c = snap.nodes.filter(n => n.metadata?.corpus_role === 'coordinate');
   return c.slice().sort((a, b) => (deg.get(b.nodeId) ?? 0) - (deg.get(a.nodeId) ?? 0) || a.nodeId.localeCompare(b.nodeId))[0] ?? null;
 }
+// The sky, as a Keplerian solar system on deck.gl — the renderer the dock's Kepler.gl solar lens
+// draws through, loaded standalone so this instance carries no server.
+//
+// Nothing here is a place and nothing here is telemetry. Every orbital element is read off the
+// corpus: the semi-major axis is the body's domain ring and its order within it, the eccentricity
+// is one minus its corpus coverage, the inclination and ascending node are its domain, and the
+// period follows Kepler's third law from the axis. A body with thin evidence visibly swings; a
+// body with complete evidence runs a near-circle. The motion is that law applied to those
+// elements — never a measurement of anything.
+const D = window.deck;
+const TAU = Math.PI * 2;
+const DEG = Math.PI / 180;
+
+// A stable fraction in [0,1) from an identifier, so the same corpus always builds the same sky.
+function spread(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i += 1) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 1000) / 1000;
+}
+function rgb(colour, alpha = 255) {
+  const s = String(colour || '').trim();
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  if (m) {
+    const h = m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), alpha];
+  }
+  const p = /rgba?\(([^)]+)\)/i.exec(s);
+  if (p) { const v = p[1].split(',').map(Number); return [v[0] | 0, v[1] | 0, v[2] | 0, alpha]; }
+  return [154, 165, 177, alpha];
+}
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+
+// Kepler's equation, M = E - e sin E, by Newton–Raphson. Six iterations is ample below e = 0.5.
+function eccentricAnomaly(M, e) {
+  let E = M + e * Math.sin(M);
+  for (let k = 0; k < 6; k += 1) {
+    const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= d;
+    if (Math.abs(d) < 1e-10) break;
+  }
+  return E;
+}
+// One point on the orbit, in the parent's frame, from the eccentric anomaly.
+function atAnomaly(el, E) {
+  const xo = el.a * (Math.cos(E) - el.e);
+  const yo = el.a * Math.sqrt(1 - el.e * el.e) * Math.sin(E);
+  const cw = Math.cos(el.w), sw = Math.sin(el.w);
+  const ci = Math.cos(el.i), si = Math.sin(el.i);
+  const cO = Math.cos(el.O), sO = Math.sin(el.O);
+  const x1 = xo * cw - yo * sw, y1 = xo * sw + yo * cw;
+  const y2 = y1 * ci, z2 = y1 * si;
+  return [x1 * cO - y2 * sO, x1 * sO + y2 * cO, z2];
+}
+const positionAt = (el, t) => atAnomaly(el, eccentricAnomaly(el.M0 + el.n * t, el.e));
+const ellipse = (el, segments = 128) => Array.from({ length: segments + 1 }, (_, k) => atAnomaly(el, (TAU * k) / segments));
+
+// Kepler's third law: the period grows with the three-halves power of the axis, so the outer
+// domains genuinely lag the inner ones rather than all turning together.
+const PERIOD_UNIT = 2.5;
+const meanMotion = (a) => TAU / (PERIOD_UNIT * Math.pow(a, 1.5));
+
+function elementsFor(node, ringIndex, slot, ringCount) {
+  const coverage = Number(node.metadata?.corpus_coverage);
+  const known = Number.isFinite(coverage) ? Math.max(0, Math.min(1, coverage)) : 0;
+  const jitter = spread(node.nodeId);
+  // Bodies in one domain share a ring but not an orbit: each takes its own lane within the ring.
+  const lane = ringCount > 1 ? (slot / ringCount - 0.5) * RING_STEP * 0.5 : 0;
+  const a = INNER_RADIUS + RING_STEP * ringIndex + lane;
+  return {
+    a,
+    e: 0.04 + (1 - known) * 0.26,               // thin evidence swings; complete evidence circles
+    i: (ringIndex % 2 ? -1 : 1) * (4 + ringIndex * 1.9 + jitter * 3) * DEG,
+    O: (ringIndex * 41 + jitter * 60) * DEG,
+    w: (slot * 47 + jitter * 130) * DEG,
+    M0: (slot / Math.max(1, ringCount)) * TAU + jitter * 0.7,
+    n: meanMotion(a),
+  };
+}
+function moonElements(body, cap, index, count) {
+  const jitter = spread(cap.capabilityId);
+  const base = body.isSun ? MOON_RADIUS * 2.1 : MOON_RADIUS;
+  const a = base * (0.72 + 0.5 * ((index % 4) / 3)) * (body.isSun ? 1 : 1 + Math.min(0.5, count / 90));
+  return {
+    a,
+    e: cap.mode === 'execute' ? 0.22 : cap.mode === 'propose' ? 0.12 : 0.05,
+    i: (jitter - 0.5) * 46 * DEG,
+    O: jitter * TAU,
+    w: (index * 37) * DEG,
+    M0: (index / Math.max(1, count)) * TAU,
+    n: meanMotion(a) * 0.34,
+  };
+}
+
 function layoutOf(snap) {
   const sun = sunOf(snap);
   const others = snap.nodes.filter(n => n.nodeId !== sun?.nodeId).slice().sort((a, b) => a.nodeId.localeCompare(b.nodeId));
   const byOrbit = new Map();
   for (const n of others) { const i = orbitIndex(domainOf(n)); byOrbit.set(i, [...(byOrbit.get(i) ?? []), n]); }
   const bodies = [], orbits = [];
-  if (sun) bodies.push({ node: sun, lon: 0, lat: 0, orbit: -1, domain: domainOf(sun), isSun: true });
+  if (sun) bodies.push({ node: sun, isSun: true, domain: domainOf(sun), orbit: -1, el: null, path: [], pos: [0, 0, 0] });
   for (const [i, ns] of [...byOrbit.entries()].sort((a, b) => a[0] - b[0])) {
-    const radius = INNER_RADIUS + RING_STEP * i, phase = (i * Math.PI) / 7;
-    ns.forEach((n, j) => { const t = phase + (2 * Math.PI * j) / ns.length; bodies.push({ node: n, lon: radius * Math.cos(t), lat: radius * Math.sin(t), orbit: i, domain: domainOf(n), isSun: false }); });
-    orbits.push({ index: i, domain: ns[0] ? domainOf(ns[0]) : ORBIT_ORDER[i] ?? 'unassigned', radius, bodies: ns.length });
+    ns.forEach((n, j) => {
+      const el = elementsFor(n, i, j, ns.length);
+      bodies.push({ node: n, isSun: false, domain: domainOf(n), orbit: i, el, path: ellipse(el), pos: positionAt(el, 0) });
+    });
+    orbits.push({ index: i, domain: ns[0] ? domainOf(ns[0]) : ORBIT_ORDER[i] ?? 'unassigned', radius: INNER_RADIUS + RING_STEP * i, bodies: ns.length });
   }
   const moons = [];
-  for (const b of bodies) {
-    const caps = b.node.capabilities, r = b.isSun ? MOON_RADIUS * 2.2 : MOON_RADIUS;
-    caps.forEach((c, i) => { const t = Math.PI / 2 + (2 * Math.PI * i) / caps.length; moons.push({ body: b, cap: c, lon: b.lon + r * Math.cos(t), lat: b.lat + r * Math.sin(t) }); });
-  }
+  for (const b of bodies) b.node.capabilities.forEach((cap, k) => moons.push({ body: b, cap, el: moonElements(b, cap, k, b.node.capabilities.length), pos: [0, 0, 0] }));
   const fabric = new Map();
   for (const s of snap.fabric.syncs) fabric.set(s.systemNodeId, [...(fabric.get(s.systemNodeId) ?? []), s.authority]);
-  const outer = orbits.reduce((m, o) => Math.max(m, o.radius), INNER_RADIUS) + RING_STEP * 0.9;
+  const outer = bodies.reduce((m, b) => Math.max(m, b.el ? b.el.a * (1 + b.el.e) : 0), INNER_RADIUS) + RING_STEP * 0.6;
   return { sun, bodies, moons, orbits, fabric, outer, at: new Map(bodies.map(b => [b.node.nodeId, b])) };
 }
+
+// Distant field, on a shell, so rotating the camera reads as depth rather than as a moving backdrop.
+const STARS = Array.from({ length: 520 }, (_, i) => {
+  const u = spread(`star-u-${i}`), v = spread(`star-v-${i}`), w = spread(`star-r-${i}`);
+  const theta = u * TAU, phi = Math.acos(2 * v - 1), r = 90 + w * 130;
+  return { position: [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi) * 0.42], size: 0.6 + w * 1.5, alpha: 40 + Math.round(w * 90) };
+});
+
+const bodySize = (b) => Math.max(0.22, Math.min(1.05, 0.14 + Math.sqrt(b.node.capabilities.length) * 0.105)) * (b.isSun ? 1.7 : 1);
+const SPEEDS = [0, 0.5, 1, 2, 6, 20];
+
+const sky = {
+  deck: null, followed: null, viewport: null, t: 0, playing: true, speed: 2, last: 0, raf: 0, ready: false,
+  view: { target: [0, 0, 0], rotationX: 36, rotationOrbit: -18, zoom: 4.02, minZoom: 1.2, maxZoom: 9 },
+};
+
+function skyFrame() {
+  for (const b of layout.bodies) if (b.el) b.pos = positionAt(b.el, sky.t);
+  for (const m of layout.moons) {
+    const p = m.body.pos, l = positionAt(m.el, sky.t);
+    m.pos = [p[0] + l[0], p[1] + l[1], p[2] + l[2]];
+  }
+}
+// The arc a body has just swept, sampled backwards along its own orbit, so a paused sky still
+// shows which way each body is going.
+function trailOf(b) {
+  if (!b.el) return null;
+  const span = (TAU / b.el.n) * 0.07;
+  return Array.from({ length: 22 }, (_, k) => positionAt(b.el, sky.t - span * (1 - k / 21)));
+}
+
+function buildLayers() {
+  const c = C(), vis = visibleIds(), dim = vis.size < snap.nodes.length;
+  const HC = HEALTH_COLOR(c), SC = STATE_COLOR(c), RC = RELATION_COLOR(c), AC = AUTH_COLOR(c), STC = STATUS_COLOR(c);
+  const moonMap = { mode: MODE_COLOR(c), maturity: MATURITY_COLOR(c), approval: APPROVAL_COLOR(c) }[state.moonsBy];
+  const ground = rgb(css('--ground'));
+  const shown = (id) => !dim || vis.has(id);
+  const fade = (id) => (shown(id) ? 1 : 0.14);
+  const zoom = sky.view.zoom;
+  const L = state.layers;
+  const layers = [];
+
+  layers.push(new D.ScatterplotLayer({
+    id: 'stars', data: STARS, radiusUnits: 'pixels', getPosition: d => d.position,
+    getRadius: d => d.size, getFillColor: d => rgb(c.muted, d.alpha), parameters: { depthTest: false },
+  }));
+
+  if (L.orbits) layers.push(new D.PathLayer({
+    id: 'orbit-paths', data: layout.bodies.filter(b => b.el), widthUnits: 'pixels', getWidth: 1,
+    getPath: b => b.path, getColor: b => rgb(c.line, shown(b.node.nodeId) ? 150 : 40), parameters: { depthTest: false },
+  }));
+
+  if (L.trails) layers.push(new D.PathLayer({
+    id: 'trails', data: layout.bodies.filter(b => b.el && shown(b.node.nodeId)), widthUnits: 'pixels', getWidth: 2,
+    getPath: trailOf, getColor: b => rgb(HC[b.node.health] ?? c.grey, 90), capRounded: true,
+    updateTriggers: { getPath: sky.t }, parameters: { depthTest: false },
+  }));
+
+  const arcsOf = (list, source, target, colour, width, height) => list
+    .map(d => { const s = layout.at.get(source(d)), t = layout.at.get(target(d)); return s && t ? { d, s, t } : null; })
+    .filter(Boolean)
+    .map(x => ({ ...x, alpha: Math.round(190 * Math.min(fade(x.s.node.nodeId), fade(x.t.node.nodeId))) }));
+
+  if (L.relations) layers.push(new D.ArcLayer({
+    id: 'relations', data: arcsOf(snap.relations, r => r.sourceNodeId, r => r.targetNodeId),
+    getSourcePosition: x => x.s.pos, getTargetPosition: x => x.t.pos, getHeight: 0.3, widthUnits: 'pixels', getWidth: 1,
+    getSourceColor: x => rgb(RC[x.d.kind] ?? c.muted, Math.round(x.alpha * 0.3)),
+    getTargetColor: x => rgb(RC[x.d.kind] ?? c.muted, Math.round(x.alpha * 0.62)),
+    updateTriggers: { getSourcePosition: sky.t, getTargetPosition: sky.t }, parameters: { depthTest: false },
+  }));
+
+  if (L.fabric) layers.push(new D.ArcLayer({
+    id: 'fabric', data: arcsOf(snap.fabric.syncs, s => s.systemNodeId, s => s.fabricNodeId),
+    getSourcePosition: x => x.s.pos, getTargetPosition: x => x.t.pos, getHeight: 0.7, widthUnits: 'pixels', getWidth: 1.9,
+    getSourceColor: x => rgb(AC[x.d.authority], 70), getTargetColor: x => rgb(AC[x.d.authority], 210),
+    updateTriggers: { getSourcePosition: sky.t, getTargetPosition: sky.t }, parameters: { depthTest: false },
+  }));
+
+  if (L.coordination) layers.push(new D.ArcLayer({
+    id: 'coordination', data: arcsOf(snap.coordination, q => q.requesterNodeId, q => q.targetNodeId),
+    getSourcePosition: x => x.s.pos, getTargetPosition: x => x.t.pos, getHeight: 1.1, widthUnits: 'pixels', getWidth: 2.6,
+    getSourceColor: x => rgb(STC[x.d.status] ?? c.muted, 100), getTargetColor: x => rgb(STC[x.d.status] ?? c.muted, 240),
+    updateTriggers: { getSourcePosition: sky.t, getTargetPosition: sky.t }, parameters: { depthTest: false },
+  }));
+
+  // The sun's corona: three stacked discs, so the coordinating node reads as the source of the system.
+  if (layout.sun) layers.push(new D.ScatterplotLayer({
+    id: 'corona', data: [3.4, 2.2, 1.35], getPosition: () => [0, 0, 0], getRadius: k => bodySize(layout.at.get(layout.sun.nodeId)) * k,
+    getFillColor: k => rgb(c.accent, k > 3 ? 16 : k > 2 ? 26 : 44), radiusMinPixels: 6, parameters: { depthTest: false },
+  }));
+
+  if (L.halos) layers.push(new D.ScatterplotLayer({
+    id: 'halos', data: layout.bodies.filter(b => weakest(b.node)), filled: false, stroked: true,
+    getPosition: b => b.pos, getRadius: b => bodySize(b) * 1.85, getLineColor: b => rgb(SC[weakest(b.node)], Math.round(215 * fade(b.node.nodeId))),
+    lineWidthUnits: 'pixels', getLineWidth: 2, radiusMinPixels: 5, radiusMaxPixels: 90,
+    updateTriggers: { getPosition: sky.t }, parameters: { depthTest: false },
+  }));
+
+  if (L.moons && zoom > 4.6) layers.push(new D.ScatterplotLayer({
+    id: 'moons', data: layout.moons.filter(m => shown(m.body.node.nodeId)), pickable: true,
+    getPosition: m => m.pos, getRadius: 0.05, radiusMinPixels: 1.4, radiusMaxPixels: 4,
+    getFillColor: m => rgb(moonMap[state.moonsBy === 'mode' ? m.cap.mode : state.moonsBy === 'approval' ? m.cap.approval : (m.cap.maturity ?? 'undeclared')] ?? c.muted, 215),
+    onHover: info => hoverSky(info, 'moon'), onClick: info => info.object && select(info.object.body.node.nodeId),
+    updateTriggers: { getPosition: sky.t, getFillColor: state.moonsBy }, parameters: { depthTest: false },
+  }));
+
+  layers.push(new D.ScatterplotLayer({
+    id: 'bodies', data: layout.bodies, pickable: true, stroked: true, lineWidthUnits: 'pixels',
+    getPosition: b => b.pos, getRadius: bodySize,
+    getFillColor: b => rgb(HC[b.node.health] ?? c.grey, Math.round(255 * fade(b.node.nodeId))),
+    getLineColor: b => (state.selected === b.node.nodeId ? rgb(c.accent) : b.isSun ? rgb(c.accent, 220) : mix(ground, rgb(c.line), 0.35)),
+    getLineWidth: b => (state.selected === b.node.nodeId ? 3 : 1.5),
+    radiusMinPixels: 3, radiusMaxPixels: 46, autoHighlight: true, highlightColor: [255, 255, 255, 60],
+    onHover: info => hoverSky(info, 'body'),
+    onClick: info => select(info.object ? info.object.node.nodeId : null),
+    updateTriggers: { getPosition: sky.t, getLineColor: state.selected, getLineWidth: state.selected, getFillColor: [state.search, state.domains.size, state.kinds.size] },
+    parameters: { depthTest: false },
+  }));
+
+  if (L.labels) {
+    const marks = declutter();
+    layers.push(new D.TextLayer({
+      id: 'body-labels', data: marks.bodies,
+      getPosition: m => m.body.pos, getText: m => m.text,
+      getSize: m => (m.body.isSun ? 13 : 11), sizeUnits: 'pixels',
+      getColor: m => rgb(m.force ? c.text : c.muted, 240),
+      getPixelOffset: m => [0, Math.round(12 + bodySize(m.body) * 4)],
+      fontFamily: 'ui-monospace, monospace', characterSet: 'auto',
+      getTextAnchor: 'middle', getAlignmentBaseline: 'top',
+      background: true, getBackgroundColor: rgb(css('--sky'), 190), backgroundPadding: [3, 1, 3, 1],
+      updateTriggers: { getPosition: sky.t, getText: sky.t, getColor: state.selected },
+      parameters: { depthTest: false },
+    }));
+    layers.push(new D.TextLayer({
+      id: 'ring-labels', data: marks.rings,
+      getPosition: m => m.position, getText: m => m.orbit.domain,
+      getSize: 10, sizeUnits: 'pixels', getColor: rgb(c.faint, 210),
+      fontFamily: 'ui-monospace, monospace', getTextAnchor: 'middle', getAlignmentBaseline: 'center',
+      updateTriggers: { getPosition: sky.t }, parameters: { depthTest: false },
+    }));
+  }
+  return layers;
+}
+
+// Labels are placed where they land on screen, biggest and most-asked-for first; a label that would
+// sit on one already placed is dropped rather than drawn over it. The sun, the selection and the
+// body under the pointer always keep theirs.
+function declutter() {
+  const vp = sky.viewport;
+  if (!vp || typeof vp.project !== 'function') return { bodies: [], rings: [] };
+  const vis = visibleIds(), dim = vis.size < snap.nodes.length, full = sky.view.zoom > 5.4;
+  const taken = [];
+  const claim = (x, y, w, h) => {
+    for (const p of taken) if (x < p.b && x + w > p.a && y < p.d && y + h > p.c) return false;
+    taken.push({ a: x, b: x + w, c: y, d: y + h });
+    return true;
+  };
+  const bodies = [];
+  const ranked = layout.bodies
+    .filter(b => !dim || vis.has(b.node.nodeId))
+    .map(b => ({ b, force: b.isSun || state.selected === b.node.nodeId || state.hover === b.node.nodeId }))
+    .sort((p, q) => (q.force ? 1 : 0) - (p.force ? 1 : 0) || q.b.node.capabilities.length - p.b.node.capabilities.length);
+  for (const { b, force } of ranked) {
+    const text = (full || force) ? b.node.name : b.node.nodeId;
+    const label = text.length > 30 ? text.slice(0, 29) + '\u2026' : text;
+    const p = vp.project(b.pos);
+    if (!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+    const w = label.length * 6.4 + 8, h = 15;
+    const x = p[0] - w / 2, y = p[1] + 12 + bodySize(b) * 4;
+    if (!claim(x, y, w, h)) { if (!force) continue; taken.push({ a: x, b: x + w, c: y, d: y + h }); }
+    bodies.push({ body: b, text: label, force });
+  }
+  const rings = [];
+  for (const o of layout.orbits) {
+    const position = [o.radius * Math.cos(2.6), o.radius * Math.sin(2.6), 0];
+    const p = vp.project(position);
+    if (!p || !Number.isFinite(p[0])) continue;
+    const w = o.domain.length * 6 + 8;
+    if (claim(p[0] - w / 2, p[1] - 7, w, 14)) rings.push({ orbit: o, position });
+  }
+  return { bodies, rings };
+}
+
+function hoverSky(info, kind) {
+  const tip = $('tip'), c = C();
+  if (!info || !info.object) {
+    if (state.hover) { state.hover = null; }
+    tip.style.display = 'none';
+    return;
+  }
+  if (kind === 'body') {
+    const n = info.object.node, auth = layout.fabric.get(n.nodeId), el = info.object.el;
+    state.hover = n.nodeId;
+    tip.innerHTML = `<b>${esc(n.name)}</b><span class="d mono">${esc(n.nodeId)}</span>`
+      + `<div>${esc(KIND_LABEL[n.kind] ?? n.kind)} · ${esc(domainOf(n))} · <span style="color:${HEALTH_COLOR(c)[n.health]}">${esc(n.health)}</span></div>`
+      + `<div class="d">${n.capabilities.length} capabilities · corpus ${esc(n.metadata?.corpus_grade ?? 'undeclared')} · ${auth ? auth.map(a => AUTH_LABEL[a]).join(', ') : 'unbound'}</div>`
+      + (el ? `<div class="d mono">a ${el.a.toFixed(2)} · e ${el.e.toFixed(3)} · period ${(TAU / el.n).toFixed(0)} s</div>` : '<div class="d mono">at rest at the centre</div>');
+  } else {
+    const m = info.object;
+    state.hover = m.body.node.nodeId;
+    tip.innerHTML = `<b class="mono">${esc(m.cap.capabilityId)}</b><div>${esc(m.cap.label)}</div>`
+      + `<div class="d">${esc(m.cap.mode)} · ${esc(m.cap.approval)} · ${esc(m.cap.maturity ?? 'undeclared')}${m.cap.methodologyVersion ? ' · ' + esc(m.cap.methodologyVersion) : ''}</div>`
+      + `<div class="d">orbiting ${esc(m.body.node.nodeId)}</div>`;
+  }
+  const r = $('stage').getBoundingClientRect();
+  tip.style.display = 'block';
+  tip.style.left = Math.max(6, Math.min(info.x + 14, r.width - 336)) + 'px';
+  tip.style.top = Math.min(info.y + 14, r.height - 90) + 'px';
+}
+
+function draw() {
+  if (!sky.deck) return;
+  skyFrame();
+  try { sky.deck.setProps({ layers: buildLayers(), viewState: sky.view }); }
+  catch (err) { console.error('sky', err); }
+}
+function fit() { sky.view = { ...sky.view, target: [0, 0, 0], zoom: 4.02, rotationX: 36, rotationOrbit: -18 }; draw(); }
+function focusBody(id) {
+  const b = layout.at.get(id);
+  if (!b) return;
+  sky.view = { ...sky.view, target: b.pos.slice(), zoom: Math.max(sky.view.zoom, b.isSun ? 5.2 : 6.1) };
+  draw();
+}
+function resize() { draw(); }
+
+function tick(now) {
+  sky.raf = requestAnimationFrame(tick);
+  const dt = sky.last ? Math.min(0.05, (now - sky.last) / 1000) : 0;
+  sky.last = now;
+  if (!sky.playing || state.lens !== 'sky') return;
+  sky.t += dt * sky.speed;
+  const focus = sky.followed ? layout.at.get(sky.followed) : null;
+  skyFrame();
+  if (focus) sky.view = { ...sky.view, target: focus.pos.slice() };
+  try { sky.deck.setProps({ layers: buildLayers(), viewState: sky.view }); }
+  catch (err) { sky.playing = false; console.error('sky', err); }
+  $('orbit-clock').textContent = `t+${sky.t.toFixed(0)}s`;
+}
+
+function startSky() {
+  try { startSkyUnguarded(); } catch (err) { console.error('sky', err); $('sky').innerHTML = '<div class="skyfail">The solar renderer failed to start, so this instance will not draw a sky it cannot compute. Every other lens reads the same fold and is unaffected.</div>'; }
+}
+function startSkyUnguarded() {
+  if (!D || !D.DeckGL || !D.OrbitView) {
+    $('sky').innerHTML = '<div class="skyfail">The solar renderer did not load, so this instance will not draw a sky it cannot compute. Every other lens reads the same fold and is unaffected.</div>';
+    return;
+  }
+  sky.deck = new D.DeckGL({
+    container: $('sky'),
+    views: [new D.OrbitView({ orbitAxis: 'Z', fovy: 48 })],
+    viewState: sky.view,
+    controller: { inertia: 260, scrollZoom: { speed: 0.012, smooth: true } },
+    onViewStateChange: ({ viewState }) => { sky.view = viewState; draw(); },
+    getCursor: ({ isDragging, isHovering }) => (isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab'),
+    onAfterRender: () => { try { const [v] = sky.deck.getViewports(); if (v && !sky.viewport) { sky.viewport = v; draw(); } else if (v) sky.viewport = v; } catch { /* no viewport yet */ } },
+    parameters: { clearColor: rgb(css('--sky')).map(v => v / 255) },
+    layers: [],
+  });
+  sky.ready = true;
+  draw();
+  sky.raf = requestAnimationFrame(tick);
+
+}
+
+function renderMotion() {
+  $('play').textContent = sky.playing ? 'pause' : 'play';
+  $('play').setAttribute('aria-pressed', String(sky.playing));
+  $('speed').textContent = `×${sky.speed}`;
+  $('follow').classList.toggle('on', !!sky.followed);
+}
+
 const weakest = (n) => { if (!n.security || !n.security.signals.length) return null; const p = new Set(n.security.signals.map(s => s.state)); return WORST_FIRST.find(s => p.has(s)) ?? null; };
 const words = (v) => typeof v === 'string' && v.trim() ? v.trim().split(/\s+/) : [];
 
@@ -471,7 +838,7 @@ function validateCommand(cmd, snap) {
 }
 
 const state = { cursor: RECORDS.length, lens: 'sky', selected: null, hover: null, moonsBy: 'mode', search: '', domains: new Set(), kinds: new Set(NODE_KINDS),
-  layers: { relations: true, fabric: true, coordination: true, halos: true, moons: true, labels: true }, drafts: [], refusals: [], cam: { x: 0, y: 0, scale: 1 }, fitted: false, seq: 1 };
+  layers: { orbits: true, relations: true, fabric: true, coordination: true, trails: true, halos: true, moons: true, labels: true }, drafts: [], refusals: [], cam: { x: 0, y: 0, scale: 1 }, fitted: false, seq: 1 };
 const snapAt = () => foldAt(state.cursor);
 let snap = snapAt(), layout = layoutOf(snap);
 for (const n of snap.nodes) state.domains.add(domainOf(n));
@@ -491,76 +858,6 @@ function visibleIds() {
   }).map(n => n.nodeId));
 }
 
-// The sky, on Canvas 2D.
-const canvas = $('sky'), ctx = canvas.getContext('2d');
-let W = 0, H = 0, dpr = 1;
-const toScreen = (lon, lat) => [W / 2 + (lon - state.cam.x) * state.cam.scale, H / 2 - (lat - state.cam.y) * state.cam.scale];
-const toWorld = (x, y) => [(x - W / 2) / state.cam.scale + state.cam.x, -(y - H / 2) / state.cam.scale + state.cam.y];
-function resize() { const r = canvas.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; W = Math.round(r.width); H = Math.round(r.height); canvas.width = W * dpr; canvas.height = H * dpr; if (!state.fitted && W && H) { fit(); state.fitted = true; } draw(); }
-function fit() { const o = layout.outer; state.cam = { x: 0, y: 0, scale: Math.min(W / (o * 2.5), H / (o * 2.05)) }; draw(); }
-function focusBody(id) { const b = layout.at.get(id); if (!b) return; state.cam = { x: b.lon, y: b.lat, scale: Math.max(state.cam.scale, Math.min(W, H) / (b.isSun ? 9 : 6)) }; draw(); }
-const stars = Array.from({ length: 160 }, (_, i) => { const a = Math.sin(i * 12.9898) * 43758.5453, b = Math.sin(i * 78.233) * 12345.6789; return [a - Math.floor(a), b - Math.floor(b), 0.4 + ((i * 7) % 5) / 8]; });
-function arc(x1, y1, x2, y2, bow = 0.12) { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(mx - dy * bow, my + dx * bow, x2, y2); ctx.stroke(); }
-function bodyRadius(b) { return Math.max(5, Math.min(22, 3 + Math.sqrt(b.node.capabilities.length) * 2.4)) * (b.isSun ? 1.35 : 1); }
-function draw() {
-  if (!W || !H) return;
-  const c = C(), vis = visibleIds(), dim = vis.size < snap.nodes.length;
-  const HC = HEALTH_COLOR(c), SC = STATE_COLOR(c), RC = RELATION_COLOR(c), AC = AUTH_COLOR(c), moonMap = { mode: MODE_COLOR(c), maturity: MATURITY_COLOR(c), approval: APPROVAL_COLOR(c) }[state.moonsBy], STC = STATUS_COLOR(c);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-  const g = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, Math.max(W, H) * 0.75); g.addColorStop(0, c.sky); g.addColorStop(1, css('--ground')); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = c.faint; for (const [sx, sy, a] of stars) { ctx.globalAlpha = a * 0.35; ctx.fillRect(sx * W, sy * H, 1, 1); } ctx.globalAlpha = 1;
-  ctx.strokeStyle = c.line; ctx.lineWidth = 1;
-  const taken = [];
-  const claim = (x, y, w, h) => { for (const p of taken) { if (x < p.b && x + w > p.a && y < p.d && y + h > p.c) return false; } taken.push({ a: x, b: x + w, c: y, d: y + h }); return true; };
-  const label = (text, x, y, force) => { const w = ctx.measureText(text).width, bx = x - w / 2 - 2, by = y - 9; if (!claim(bx, by, w + 4, 12) && !force) return; if (force) { taken.push({ a: bx, b: bx + w + 4, c: by, d: by + 12 }); } ctx.fillText(text, x, y); };
-  layout.orbits.forEach((o, oi) => { const [x, y] = toScreen(0, 0); const la = -Math.PI / 3 + oi * 0.42; ctx.beginPath(); ctx.arc(x, y, o.radius * state.cam.scale, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = c.faint; ctx.font = `10px ${css('--mono')}`; ctx.textAlign = 'left'; const lr = o.radius * state.cam.scale; ctx.textAlign = 'center'; label(o.domain, x + Math.cos(la) * lr, y + Math.sin(la) * lr - 4, false); ctx.textAlign = 'left'; });
-  const alphaFor = (id) => (dim && !vis.has(id)) ? 0.12 : 1;
-  if (state.layers.relations) { ctx.lineWidth = 1.1; for (const r of snap.relations) { const s = layout.at.get(r.sourceNodeId), t = layout.at.get(r.targetNodeId); if (!s || !t) continue; ctx.globalAlpha = 0.45 * Math.min(alphaFor(r.sourceNodeId), alphaFor(r.targetNodeId)); ctx.strokeStyle = RC[r.kind] ?? c.muted; const [x1, y1] = toScreen(s.lon, s.lat), [x2, y2] = toScreen(t.lon, t.lat); arc(x1, y1, x2, y2); } ctx.globalAlpha = 1; }
-  if (state.layers.fabric) { ctx.lineWidth = 2; ctx.setLineDash([6, 5]); for (const s of snap.fabric.syncs) { const a = layout.at.get(s.systemNodeId), b = layout.at.get(s.fabricNodeId); if (!a || !b) continue; ctx.globalAlpha = 0.8 * alphaFor(s.systemNodeId); ctx.strokeStyle = AC[s.authority]; const [x1, y1] = toScreen(a.lon, a.lat), [x2, y2] = toScreen(b.lon, b.lat); arc(x1, y1, x2, y2, -0.1); } ctx.setLineDash([]); ctx.globalAlpha = 1; }
-  if (state.layers.coordination) { ctx.lineWidth = 3; for (const q of snap.coordination) { const a = layout.at.get(q.requesterNodeId), b = layout.at.get(q.targetNodeId); if (!a || !b) continue; ctx.globalAlpha = 0.9; ctx.strokeStyle = STC[q.status] ?? c.muted; const [x1, y1] = toScreen(a.lon, a.lat), [x2, y2] = toScreen(b.lon, b.lat); arc(x1, y1, x2, y2, 0.2); } ctx.globalAlpha = 1; }
-  if (state.layers.halos) { ctx.lineWidth = 2.5; for (const b of layout.bodies) { const w = weakest(b.node); if (!w) continue; ctx.globalAlpha = alphaFor(b.node.nodeId); ctx.strokeStyle = SC[w]; const [x, y] = toScreen(b.lon, b.lat); ctx.beginPath(); ctx.arc(x, y, bodyRadius(b) + 8, 0, Math.PI * 2); ctx.stroke(); } ctx.globalAlpha = 1; }
-  if (state.layers.moons && state.cam.scale > 18) { for (const m of layout.moons) { ctx.globalAlpha = 0.9 * alphaFor(m.body.node.nodeId); const key = state.moonsBy === 'mode' ? m.cap.mode : state.moonsBy === 'approval' ? m.cap.approval : (m.cap.maturity ?? 'undeclared'); ctx.fillStyle = moonMap[key] ?? c.muted; const [x, y] = toScreen(m.lon, m.lat); ctx.beginPath(); ctx.arc(x, y, Math.min(3.2, 1.2 + state.cam.scale / 40), 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; }
-  ctx.font = `11px ${css('--sans')}`; ctx.textAlign = 'center';
-  const tags = [];
-  for (const b of layout.bodies) {
-    const [x, y] = toScreen(b.lon, b.lat), r = bodyRadius(b); ctx.globalAlpha = alphaFor(b.node.nodeId);
-    ctx.fillStyle = HC[b.node.health] ?? c.grey; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = css('--ground'); ctx.lineWidth = 2; ctx.stroke();
-    if (b.isSun) { ctx.strokeStyle = c.accent; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2); ctx.stroke(); }
-    if (state.selected === b.node.nodeId) { ctx.strokeStyle = c.accent; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, r + 14, 0, Math.PI * 2); ctx.stroke(); }
-    if (state.layers.labels) tags.push({ b, x, y, r, near: b.isSun || state.selected === b.node.nodeId || state.hover === b.node.nodeId });
-  }
-  tags.sort((p, q) => (q.near ? 1 : 0) - (p.near ? 1 : 0) || q.r - p.r);
-  for (const t of tags) {
-    ctx.globalAlpha = alphaFor(t.b.node.nodeId);
-    if (t.near || state.cam.scale > 26) { ctx.font = `11px ${css('--sans')}`; ctx.fillStyle = c.text; label(t.b.node.name.length > 30 ? t.b.node.name.slice(0, 29) + '…' : t.b.node.name, t.x, t.y + t.r + 14, t.near); }
-    else if (state.cam.scale > 7) { ctx.font = `10px ${css('--mono')}`; ctx.fillStyle = c.muted; label(t.b.node.nodeId.length > 22 ? t.b.node.nodeId.slice(0, 21) + '…' : t.b.node.nodeId, t.x, t.y + t.r + 12, false); }
-  }
-  ctx.globalAlpha = 1;
-}
-function hit(px, py) {
-  let best = null, bd = 1e9;
-  for (const b of layout.bodies) { const [x, y] = toScreen(b.lon, b.lat); const d = Math.hypot(px - x, py - y); if (d <= bodyRadius(b) + 6 && d < bd) { best = { kind: 'body', body: b }; bd = d; } }
-  if (best) return best;
-  if (state.layers.moons && state.cam.scale > 18) for (const m of layout.moons) { const [x, y] = toScreen(m.lon, m.lat); const d = Math.hypot(px - x, py - y); if (d <= 6 && d < bd) { best = { kind: 'moon', moon: m }; bd = d; } }
-  return best;
-}
-let dragging = null;
-canvas.addEventListener('pointerdown', e => { dragging = { x: e.clientX, y: e.clientY, cx: state.cam.x, cy: state.cam.y, moved: false }; canvas.classList.add('grabbing'); canvas.setPointerCapture(e.pointerId); });
-canvas.addEventListener('pointermove', e => {
-  const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
-  if (dragging) { const dx = e.clientX - dragging.x, dy = e.clientY - dragging.y; if (Math.abs(dx) + Math.abs(dy) > 3) dragging.moved = true; state.cam.x = dragging.cx - dx / state.cam.scale; state.cam.y = dragging.cy + dy / state.cam.scale; draw(); return; }
-  const h = hit(px, py); const tip = $('tip');
-  if (!h) { tip.style.display = 'none'; if (state.hover) { state.hover = null; draw(); } return; }
-  const c = C();
-  if (h.kind === 'body') { const n = h.body.node; state.hover = n.nodeId; const auth = layout.fabric.get(n.nodeId); tip.innerHTML = `<b>${esc(n.name)}</b><span class="d mono">${esc(n.nodeId)}</span><div>${esc(KIND_LABEL[n.kind] ?? n.kind)} · ${esc(domainOf(n))} · <span style="color:${HEALTH_COLOR(c)[n.health]}">${esc(n.health)}</span></div><div class="d">${n.capabilities.length} capabilities · corpus ${esc(n.metadata?.corpus_grade ?? 'undeclared')} · ${auth ? auth.map(a => AUTH_LABEL[a]).join(', ') : 'unbound'}</div>`; }
-  else { const m = h.moon; state.hover = m.body.node.nodeId; tip.innerHTML = `<b class="mono">${esc(m.cap.capabilityId)}</b><div>${esc(m.cap.label)}</div><div class="d">${esc(m.cap.mode)} · ${esc(m.cap.approval)} · ${esc(m.cap.maturity ?? 'undeclared')}${m.cap.methodologyVersion ? ' · ' + esc(m.cap.methodologyVersion) : ''}</div>`; }
-  tip.style.display = 'block'; tip.style.left = Math.min(px + 14, W - 330) + 'px'; tip.style.top = (py + 14) + 'px'; draw();
-});
-canvas.addEventListener('pointerup', e => { const r = canvas.getBoundingClientRect(); if (dragging && !dragging.moved) { const h = hit(e.clientX - r.left, e.clientY - r.top); select(h ? (h.kind === 'body' ? h.body.node.nodeId : h.moon.body.node.nodeId) : null); } dragging = null; canvas.classList.remove('grabbing'); });
-canvas.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
-canvas.addEventListener('wheel', e => { e.preventDefault(); const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top; const [wx, wy] = toWorld(px, py); const f = Math.exp(-e.deltaY * 0.0015); state.cam.scale = Math.max(8, Math.min(400, state.cam.scale * f)); const [nx, ny] = toWorld(px, py); state.cam.x += wx - nx; state.cam.y += wy - ny; draw(); }, { passive: false });
-canvas.addEventListener('dblclick', e => { const r = canvas.getBoundingClientRect(); const h = hit(e.clientX - r.left, e.clientY - r.top); if (h) focusBody(h.kind === 'body' ? h.body.node.nodeId : h.moon.body.node.nodeId); });
 new ResizeObserver(resize).observe($('stage'));
 $('fit').onclick = fit; $('focus-sun').onclick = () => { if (layout.sun) { select(layout.sun.nodeId); focusBody(layout.sun.nodeId); } };
 $('back-now').onclick = () => setCursor(RECORDS.length);
@@ -589,7 +886,7 @@ function renderRail() {
     `<div><span class="sw line" style="background:${c.green};height:3px"></span>coordination · approved, never dispatched</div>`,
   ].join('');
 }
-function setLens(id) { state.lens = id; document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === `view-${id}`)); canvas.style.visibility = id === 'sky' ? 'visible' : 'hidden'; document.querySelector('.skyhud').style.display = id === 'sky' ? 'flex' : 'none'; document.querySelector('.skynote').style.display = id === 'sky' ? 'block' : 'none'; renderRail(); renderView(); }
+function setLens(id) { state.lens = id; document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === `view-${id}`)); $('sky').style.visibility = id === 'sky' ? 'visible' : 'hidden'; if (id !== 'sky') $('tip').style.display = 'none'; document.querySelector('.skyhud').style.display = id === 'sky' ? 'flex' : 'none'; document.querySelector('.skynote').style.display = id === 'sky' ? 'block' : 'none'; renderRail(); renderView(); }
 
 const nodeLink = (id) => `<button class="link" data-goto="${esc(id)}">${esc(id)}</button>`;
 function bindGoto(root) { root.querySelectorAll('[data-goto]').forEach(b => b.onclick = (e) => { e.preventDefault(); select(b.dataset.goto); if (state.lens !== 'sky') setLens('sky'); focusBody(b.dataset.goto); }); root.querySelectorAll('[data-cursor]').forEach(b => b.onclick = () => setCursor(Number(b.dataset.cursor))); root.querySelectorAll('[data-verb]').forEach(b => b.onclick = () => openDrafter(b.dataset.verb, b.dataset.arg)); }
@@ -771,6 +1068,9 @@ new MutationObserver(() => renderAll()).observe(document.documentElement, { attr
 function renderAll() { renderRail(); renderStrip(); renderInspector(); renderView(); draw(); }
 $('fold-chip').textContent = FOLD_AGREES ? 'fold agrees with the plane at head' : 'fold DISAGREES with the plane at head'; $('fold-chip').classList.add(FOLD_AGREES ? 'ok' : 'bad');
 $('fold-chip').title = FOLD_AGREES ? `This page folded the ${RECORDS.length}-record journal itself and reached the plane's head: same revision, same bodies and health, same decisions, same bindings.` : 'The local fold and the plane’s exported snapshot differ; trust the plane.';
-setLens('sky'); if (layout.sun) select(layout.sun.nodeId); renderAll(); resize();
+$('play').onclick = () => { sky.playing = !sky.playing; renderMotion(); };
+$('speed').onclick = () => { sky.speed = SPEEDS[(SPEEDS.indexOf(sky.speed) + 1) % SPEEDS.length]; renderMotion(); };
+$('follow').onclick = () => { sky.followed = sky.followed ? null : state.selected; if (sky.followed) focusBody(sky.followed); renderMotion(); };
+startSky(); setLens('sky'); if (layout.sun) select(layout.sun.nodeId); renderAll(); renderMotion();
 })();
 </script>
