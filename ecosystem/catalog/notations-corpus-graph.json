@@ -32,7 +32,8 @@
       "evidence": "ncg/cli.py (_validate); ncg/graph.py (validate); ncg/schema/edges.py (RELATION_RULES)",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the corpus file under validation; the invariants are declared in this repository"
     },
     {
       "capabilityId": "cli.summary",
@@ -46,7 +47,8 @@
       "evidence": "ncg/cli.py (_summary); ncg/graph.py (summary)",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the corpus file, counted"
     },
     {
       "capabilityId": "cli.show",
@@ -60,7 +62,8 @@
       "evidence": "ncg/cli.py (_show); ncg/graph.py (measurements_of, signals_of, properties_of)",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the corpus file, per sample"
     },
     {
       "capabilityId": "cli.detect",
@@ -74,7 +77,8 @@
       "evidence": "ncg/cli.py (_detect); ncg/ingest/base.py (ParserRegistry.candidates)",
       "cost": "free",
       "latency": "ms per file",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "candidate input files, sniffed; each parser reports its own confidence"
     },
     {
       "capabilityId": "cli.formats",
@@ -88,7 +92,8 @@
       "evidence": "ncg/cli.py (_formats); ncg/ingest/parsers/*.py; .github/workflows/ci.yml",
       "cost": "free",
       "latency": "ms",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the parser registry in this repository"
     },
     {
       "capabilityId": "cli.terms",
@@ -102,7 +107,8 @@
       "evidence": "ncg/cli.py (_terms); ncg/schema/vocab.py (PROPERTY_TERMS)",
       "cost": "free",
       "latency": "ms",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "the property-term vocabulary in this repository"
     },
     {
       "capabilityId": "api.ingest",
@@ -116,7 +122,8 @@
       "cost": "free",
       "latency": "seconds",
       "side_effects": "mutates the passed or new CorpusGraph in memory",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "instrument export files on the ingested share"
     },
     {
       "capabilityId": "api.graph.query",
@@ -129,7 +136,8 @@
       "evidence": "ncg/graph.py",
       "cost": "free",
       "latency": "ms",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the loaded corpus graph"
     },
     {
       "capabilityId": "api.graph.mutate",
@@ -143,7 +151,8 @@
       "cost": "free",
       "latency": "ms",
       "side_effects": "mutates the in-memory graph",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the caller; every added node keeps the source file it came from"
     },
     {
       "capabilityId": "api.graph.persist",
@@ -157,7 +166,8 @@
       "cost": "free",
       "latency": "seconds",
       "side_effects": "writes the corpus file",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the corpus graph in memory, streamed to JSONL"
     },
     {
       "capabilityId": "contract.corpus_jsonl",
@@ -168,7 +178,8 @@
       "surface": "file",
       "path": "corpus.jsonl / corpus.jsonl.gz",
       "evidence": "ncg/graph.py (FORMAT_VERSION, to_jsonl); ncg/schema/nodes.py (NODE_TYPES); ncg/schema/edges.py (Relation, RELATION_RULES)",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "whatever was ingested; the header counts what the body must contain"
     },
     {
       "capabilityId": "contract.sample_manifest",
@@ -179,7 +190,8 @@
       "surface": "file",
       "path": "samples.json",
       "evidence": "ncg/ingest/sample_keys.py; README.md (Joining techniques to one sample)",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "a hand-written alias manifest; the resolver never guesses a sample id"
     },
     {
       "capabilityId": "parser.jcamp_dx",
@@ -190,7 +202,8 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.jcampdx",
       "evidence": "ncg/ingest/parsers/jcampdx.py; ncg/ingest/base.py (Parser, ParserRegistry)",
-      "data_domain": "spectroscopy"
+      "data_domain": "spectroscopy",
+      "provenance": "JCAMP-DX instrument exports (FTIR, Raman, NMR, MS)"
     },
     {
       "capabilityId": "parser.bruker_topspin",
@@ -201,7 +214,8 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.bruker",
       "evidence": "ncg/ingest/parsers/bruker.py; ncg/ingest/pipeline.py (_is_bruker_root)",
-      "data_domain": "spectroscopy"
+      "data_domain": "spectroscopy",
+      "provenance": "a Bruker TopSpin experiment directory (acqus and processed 1r)"
     },
     {
       "capabilityId": "parser.sec_ascii",
@@ -212,7 +226,8 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.sec",
       "evidence": "ncg/ingest/parsers/sec.py; ncg/ingest/textutil.py",
-      "data_domain": "chromatography"
+      "data_domain": "chromatography",
+      "provenance": "Agilent, Waters, Malvern, PSS and Tosoh chromatogram exports"
     },
     {
       "capabilityId": "parser.thermal_ascii",
@@ -223,7 +238,8 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.thermal",
       "evidence": "ncg/ingest/parsers/thermal.py",
-      "data_domain": "thermal-analysis"
+      "data_domain": "thermal-analysis",
+      "provenance": "TA Instruments, Mettler STARe and Netzsch Proteus thermogram exports"
     },
     {
       "capabilityId": "parser.mzml",
@@ -234,7 +250,8 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.mzml",
       "evidence": "ncg/ingest/parsers/mzml.py",
-      "data_domain": "mass-spectrometry"
+      "data_domain": "mass-spectrometry",
+      "provenance": "mzML files from MALDI instruments"
     },
     {
       "capabilityId": "derive.sec",
@@ -245,7 +262,8 @@
       "surface": "python",
       "method": "ncg.derive.sec",
       "evidence": "ncg/derive/sec.py; ncg/derive/properties.py (derive_for_run)",
-      "data_domain": "chromatography"
+      "data_domain": "chromatography",
+      "provenance": "the chromatogram's own signal and column calibration; a derivation, not a measurement"
     },
     {
       "capabilityId": "derive.thermal",
@@ -256,7 +274,8 @@
       "surface": "python",
       "method": "ncg.derive.thermal",
       "evidence": "ncg/derive/thermal.py",
-      "data_domain": "thermal-analysis"
+      "data_domain": "thermal-analysis",
+      "provenance": "the thermogram's own signal; a derivation, not a measurement"
     },
     {
       "capabilityId": "derive.mass_spec",
@@ -267,7 +286,8 @@
       "surface": "python",
       "method": "ncg.derive.mass_spec",
       "evidence": "ncg/derive/mass_spec.py",
-      "data_domain": "mass-spectrometry"
+      "data_domain": "mass-spectrometry",
+      "provenance": "the mass spectrum's own peak series; a derivation, not a measurement"
     },
     {
       "capabilityId": "derive.properties",
@@ -278,7 +298,8 @@
       "surface": "python",
       "method": "ncg.derive.properties.derive_for_run",
       "evidence": "ncg/derive/properties.py; ncg/derive/signal_ops.py; ncg/schema/vocab.py",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the run's own signals, by technique; a derivation, not a new measurement"
     },
     {
       "capabilityId": "api.units",
@@ -289,7 +310,8 @@
       "surface": "python",
       "method": "ncg.units",
       "evidence": "ncg/units.py; ncg/__init__.py",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the quantity it is given; conversion is exact or it refuses"
     },
     {
       "capabilityId": "contract.schema",
@@ -300,7 +322,8 @@
       "surface": "python",
       "method": "ncg.schema",
       "evidence": "ncg/schema/nodes.py; ncg/schema/vocab.py; ncg/schema/edges.py; ncg/schema/codec.py; ncg/schema/identity.py",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "the node types and vocabularies declared in this repository"
     }
   ],
   "metadata": {

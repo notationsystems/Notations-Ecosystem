@@ -31,7 +31,8 @@
       "evidence": "gat/cli.py (_run_check); gat/geometry/clash.py",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "bim-geometry-uncertainty"
+      "data_domain": "bim-geometry-uncertainty",
+      "provenance": "input IFC bytes (sha256-bound), and the proposed geometry if one is given"
     },
     {
       "capabilityId": "cli.verify",
@@ -45,7 +46,8 @@
       "evidence": "gat/cli.py (_run_verify); gat/engine/verify.py; gat/geometry/compliance.py",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the loaded model and the invariant registry in this repository"
     },
     {
       "capabilityId": "cli.inspect",
@@ -59,7 +61,8 @@
       "evidence": "gat/cli.py (_run_inspect); gat/engine/sensitivity.py",
       "cost": "free",
       "latency": "~seconds",
-      "data_domain": "bim-geometry-uncertainty"
+      "data_domain": "bim-geometry-uncertainty",
+      "provenance": "the belief state already loaded; a census, not a new observation"
     },
     {
       "capabilityId": "cli.splats",
@@ -74,7 +77,8 @@
       "cost": "free",
       "latency": "seconds",
       "data_domain": "gaussian-splat",
-      "side_effects": "writes PLY files and manifest.json under out_dir"
+      "side_effects": "writes PLY files and manifest.json under out_dir",
+      "provenance": "the belief state, rendered as splats; variations are sampled, not observed"
     },
     {
       "capabilityId": "cli.sample",
@@ -88,7 +92,8 @@
       "evidence": "gat/cli.py (_run_sample); gat/engine/sampling.py",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "bim-geometry-uncertainty"
+      "data_domain": "bim-geometry-uncertainty",
+      "provenance": "Monte-Carlo realizations of the joint posterior; synthetic by construction"
     },
     {
       "capabilityId": "cli.report",
@@ -102,7 +107,8 @@
       "evidence": "gat/cli.py (_run_report); gat/report.py; docs/design-language-v1.md",
       "cost": "free",
       "latency": "~100 ms",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "a gat-headless-response-v1 document, rendered"
     },
     {
       "capabilityId": "cli.ledger",
@@ -116,7 +122,8 @@
       "evidence": "gat/cli.py (_run_ledger); gat/report.py (decode_ledger); docs/execution-ledger-v1.md",
       "cost": "free",
       "latency": "~100 ms",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "an execution ledger file, chain-verified before anything is drawn"
     },
     {
       "capabilityId": "cli.view",
@@ -131,7 +138,8 @@
       "cost": "free",
       "latency": "seconds",
       "side_effects": "writes one HTML file",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "the belief state and sampled as-builts, rendered offline"
     },
     {
       "capabilityId": "headless.summary",
@@ -146,7 +154,8 @@
       "cost": "free",
       "latency": "~seconds",
       "workflow": "construction-acceptance",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the authoritative state loaded for the request"
     },
     {
       "capabilityId": "headless.acceptance",
@@ -161,7 +170,8 @@
       "cost": "free",
       "latency": "~seconds",
       "workflow": "construction-acceptance",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "the evidence admitted for the case; unresolved is a verdict, not a gap"
     },
     {
       "capabilityId": "headless.beam_assurance",
@@ -192,7 +202,8 @@
       "cost": "free",
       "latency": "~seconds",
       "workflow": "rfi-impact",
-      "data_domain": "bim-ifc"
+      "data_domain": "bim-ifc",
+      "provenance": "the current belief with the proposed change applied; nothing is committed"
     },
     {
       "capabilityId": "session.load",
@@ -205,7 +216,8 @@
       "evidence": "gat/session.py; gat/adapters/ifc; gat/adapters/openusd.py; gat/adapters/usd_io.py; docs/openusd-carrier-v0.md",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "bim-ifc"
+      "data_domain": "bim-ifc",
+      "provenance": "input IFC, snapshot, OpenUSD or USDA bytes (sha256-bound)"
     },
     {
       "capabilityId": "session.run",
@@ -219,7 +231,8 @@
       "cost": "free",
       "latency": "ms to seconds (dense covariance cliff measured in docs/incremental-propagation-v1.md)",
       "side_effects": "mutates in-process canonical belief and appends ledger events",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a closed operator over the belief; the transformation is recorded, not the result"
     },
     {
       "capabilityId": "session.record_causal",
@@ -233,7 +246,8 @@
       "cost": "free",
       "latency": "ms",
       "side_effects": "appends ledger events",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the operator or external system that made the assessment, named"
     },
     {
       "capabilityId": "session.export",
@@ -247,7 +261,8 @@
       "cost": "free",
       "latency": "seconds",
       "side_effects": "writes files",
-      "data_domain": "bim-ifc"
+      "data_domain": "bim-ifc",
+      "provenance": "the posterior means and sigmas already held, in the source unit convention"
     },
     {
       "capabilityId": "ledger.replay",
@@ -260,7 +275,8 @@
       "evidence": "gat/ledger.py; gat/demo/ledger_replay.py; docs/execution-ledger-v1.md",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the ledger file; every accepted event regenerated rather than trusted"
     },
     {
       "capabilityId": "decision.plan_evidence",
@@ -273,7 +289,8 @@
       "evidence": "gat/engine/decision.py; gat/engine/active_inference.py; gat/demo/active_inference.py",
       "cost": "free",
       "latency": "ms",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "the belief state; SATISFIED, VIOLATED or UNRESOLVED at a stated risk"
     },
     {
       "capabilityId": "geometry.scan_registration",
@@ -286,7 +303,8 @@
       "evidence": "gat/geometry/scan_io.py; gat/geometry/registration.py",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "point-cloud-evidence"
+      "data_domain": "point-cloud-evidence",
+      "provenance": "PLY scan vertices, registered; the points are evidence, the fit is not"
     },
     {
       "capabilityId": "geometry.clearance_assurance",
@@ -300,7 +318,8 @@
       "cost": "free",
       "latency": "seconds",
       "workflow": "construction-acceptance",
-      "data_domain": "point-cloud-evidence"
+      "data_domain": "point-cloud-evidence",
+      "provenance": "registered scan points and the proposed box; calibrated, not assumed"
     },
     {
       "capabilityId": "analysis.sensitivity_stability",
@@ -313,7 +332,8 @@
       "evidence": "gat/engine/sensitivity.py; gat/engine/stability.py; gat/engine/configuration.py; gat/engine/dynamics.py; docs/temporal-dynamics-v1.md",
       "cost": "free",
       "latency": "ms",
-      "data_domain": "bim-geometry-uncertainty"
+      "data_domain": "bim-geometry-uncertainty",
+      "provenance": "the covariance already held; attribution, not measurement"
     },
     {
       "capabilityId": "proof.manifest",
@@ -326,7 +346,8 @@
       "evidence": "gat/proof_manifest.py; docs/proof-carrying-state-v1.md",
       "cost": "free",
       "latency": "ms (plus backend verify)",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the ledger and the numeric contract that bound the run"
     },
     {
       "capabilityId": "proof.sp1_beam",
@@ -341,7 +362,8 @@
       "latency": "minutes",
       "side_effects": "writes beam.sp1-proof, beam_sp1_receipt.json, beam_sp1_manifest.json",
       "workflow": "beam-assurance",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the SP1 guest execution; the receipt is the evidence, not the transcript"
     },
     {
       "capabilityId": "contract.sp1_beam_request",
@@ -352,7 +374,8 @@
       "surface": "file",
       "path": "beam_sp1_request.json / beam_sp1_receipt.json",
       "evidence": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs; docs/sp1-beam-guest-v1.md",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the request and receipt files themselves"
     },
     {
       "capabilityId": "contract.material_certificate",
@@ -363,7 +386,8 @@
       "surface": "file",
       "path": "material_certificate.json",
       "evidence": "gat/engineering/material_certificate.py; gat/demo/material_certificate.json",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "an issuer's MEASURED certificate, with issuer and basis preserved"
     },
     {
       "capabilityId": "demo.beam_assurance",
@@ -378,7 +402,8 @@
       "cost": "free",
       "latency": "seconds",
       "side_effects": "writes demo artifacts under out_dir",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the AISC Companion F.1-1B example, end to end"
     },
     {
       "capabilityId": "validation.fetch_ifc_corpus",
@@ -409,7 +434,8 @@
       "cost": "free",
       "latency": "interactive",
       "workflow": "construction-acceptance",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "a completed gat-headless response; the panel computes nothing"
     }
   ],
   "metadata": {

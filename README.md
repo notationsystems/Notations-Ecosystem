@@ -63,7 +63,7 @@ Credentials: issue one per principal rather than sharing a token — see
 Checks: `cd control-plane && npm test` (45, of which 41 are named security
 invariants), `node ecosystem/validate.mjs` (30 nodes, 634 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (49), `cd dock && npm run check && npm test && npm run build` (50).
+`cd ecosystem && npm test` (50), `cd dock && npm run check && npm test && npm run build` (50).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`
 cannot be delivered by a `<meta>` tag. `dock/public/_headers` carries them for

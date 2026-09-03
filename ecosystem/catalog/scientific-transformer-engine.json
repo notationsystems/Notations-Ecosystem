@@ -14,7 +14,8 @@
       "method": "import",
       "path": "core.canonical.state.CanonicalState",
       "evidence": "core/canonical/state.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the version already committed; the contract holds it, it does not produce it"
     },
     {
       "capabilityId": "canonical.version.contract",
@@ -26,7 +27,8 @@
       "method": "import",
       "path": "core.canonical.version",
       "evidence": "core/canonical/version.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a SHA-256 over the fields and edges themselves — identity is content, not time"
     },
     {
       "capabilityId": "canonical.delta.diff",
@@ -38,7 +40,8 @@
       "method": "call",
       "path": "core.canonical.delta.diff",
       "evidence": "core/canonical/delta.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "two versions; the diff is derived and carries the provenance it was given"
     },
     {
       "capabilityId": "canonical.validate_candidate",
@@ -50,7 +53,8 @@
       "method": "call",
       "path": "core.canonical.validation.validate_candidate",
       "evidence": "core/canonical/validation.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the candidate offered, and only what survives validation becomes state"
     },
     {
       "capabilityId": "canonical.projection.project_state",
@@ -62,7 +66,8 @@
       "method": "call",
       "path": "core.projection.project.project_state",
       "evidence": "core/projection/project.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a committed version; a projection, and never a second state"
     },
     {
       "capabilityId": "morpho.compile",
@@ -74,7 +79,8 @@
       "method": "call",
       "path": "morpho.compiler.compile_morpho",
       "evidence": "morpho/compiler.py; morpho/ir.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a projected state; the IR adds structure, never facts"
     },
     {
       "capabilityId": "morpho.hdl.parse",
@@ -86,7 +92,8 @@
       "method": "call",
       "path": "morpho.parser",
       "evidence": "morpho/parser.py; morpho/lexer.py; morpho/identity.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a human-written Morpho HDL document"
     },
     {
       "capabilityId": "backend.threejs.compile",
@@ -98,7 +105,8 @@
       "method": "call",
       "path": "backends.threejs.compiler.compile_threejs",
       "evidence": "backends/threejs/compiler.py",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "the IR; a rendering, deterministic and derived"
     },
     {
       "capabilityId": "backend.diagram.compile_svg",
@@ -110,7 +118,8 @@
       "method": "call",
       "path": "backends.diagram.compiler.compile_svg",
       "evidence": "backends/diagram/compiler.py",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "the IR; a deterministic layout, derived"
     },
     {
       "capabilityId": "backend.graph.analyze",
@@ -122,7 +131,8 @@
       "method": "call",
       "path": "backends.graph.analysis.analyze",
       "evidence": "backends/graph/analysis.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the IR's own adjacency; counts, not claims"
     },
     {
       "capabilityId": "backend.interface.simulation_neural",
@@ -134,7 +144,8 @@
       "method": "import",
       "path": "backends.simulation.interface; backends.neural.interface",
       "evidence": "backends/simulation/interface.py; backends/neural/interface.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "shapes only; this seam carries no data of its own"
     },
     {
       "capabilityId": "runtime.feedback_loop.submit",
@@ -146,7 +157,8 @@
       "method": "call",
       "path": "runtime.feedback_loop",
       "evidence": "runtime/feedback_loop.py",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a simulation or neural belief, offered as a candidate — never written directly"
     },
     {
       "capabilityId": "renderer.threejs.view",
@@ -158,7 +170,8 @@
       "method": "GET",
       "path": "renderer/index.html",
       "evidence": "renderer/index.html; renderer/vendor/three.module.js",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "a ThreeJSSceneDescriptor JSON; the browser computes nothing"
     },
     {
       "capabilityId": "scripts.generate_sample_scene",
@@ -170,7 +183,8 @@
       "method": "run",
       "path": "python3 scripts/generate_sample_scene.py",
       "evidence": "scripts/generate_sample_scene.py",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic: a sample canonical state built by the script itself"
     },
     {
       "capabilityId": "adapters.json.ingest",
@@ -182,7 +196,8 @@
       "method": "call",
       "path": "adapters.json_adapter.JSONAdapter",
       "evidence": "adapters/json_adapter.py; adapters/interface.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "arbitrary external JSON, with the inferred schema recorded beside it"
     },
     {
       "capabilityId": "adapters.csv.ingest",
@@ -194,7 +209,8 @@
       "method": "call",
       "path": "adapters.csv_adapter.CSVAdapter",
       "evidence": "adapters/csv_adapter.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "external CSV rows, normalized with the original preserved"
     },
     {
       "capabilityId": "evidence.pool.admit",
@@ -206,7 +222,8 @@
       "method": "call",
       "path": "evidence.admission",
       "evidence": "evidence/admission.py; evidence/pool.py; evidence/quarantine.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "the admitting caller; content-addressed, and quarantined if it cannot be admitted"
     },
     {
       "capabilityId": "evidence.trust_graph.build",
@@ -218,7 +235,8 @@
       "method": "call",
       "path": "evidence.trust_graph.build_trust_graph",
       "evidence": "evidence/trust_graph.py; evidence/metrics.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "referents and claims already in the pool; a read-only view"
     },
     {
       "capabilityId": "scout.run",
@@ -230,7 +248,8 @@
       "method": "call",
       "path": "scout.pipeline.run_scout",
       "evidence": "scout/pipeline.py; scout/interface.py; scout/adapters.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "whatever the configured SourceAdapter fetched, through a declared Extractor"
     },
     {
       "capabilityId": "retrieval.query",
@@ -242,7 +261,8 @@
       "method": "call",
       "path": "retrieval.engine.DeterministicRetrievalEngine",
       "evidence": "retrieval/engine.py; retrieval/query.py; retrieval/context.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "the evidence pool; deterministic, so the same query returns the same result"
     },
     {
       "capabilityId": "structures.ingest_documents",
@@ -254,7 +274,8 @@
       "method": "call",
       "path": "structures.ingest.ingest_documents",
       "evidence": "structures/ingest.py; architecture/chemistry_reachability.yaml",
-      "data_domain": "document-corpus"
+      "data_domain": "document-corpus",
+      "provenance": "molecule, crystal and substance documents through the same admission door"
     },
     {
       "capabilityId": "execution.specification.contract",
@@ -266,7 +287,8 @@
       "method": "import",
       "path": "execution.specification.ExecutionSpecification",
       "evidence": "execution/specification.py; execution/commitments.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the specification itself; identity is the program, configuration and input"
     },
     {
       "capabilityId": "execution.native.kernels",
@@ -278,7 +300,8 @@
       "method": "descriptor",
       "path": "crates/execution-native",
       "evidence": "crates/execution-native/src/reference.rs; crates/execution-cli/src/main.rs",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "integer-exact computation, self-described by its program descriptor"
     },
     {
       "capabilityId": "execution.cli.wire",
@@ -290,7 +313,8 @@
       "method": "stdin/stdout",
       "path": "crates/execution-cli (target/release/execution-cli)",
       "evidence": "crates/execution-cli/src/main.rs; crates/Cargo.toml",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "one Rust process per request stream; the transcript is checked, not trusted"
     },
     {
       "capabilityId": "execution.run_specification",
@@ -302,7 +326,8 @@
       "method": "call",
       "path": "execution.engine.run_specification",
       "evidence": "execution/engine.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the execution CLI, with every result recomputed rather than believed"
     },
     {
       "capabilityId": "execution.gromacs.run",
@@ -314,7 +339,8 @@
       "method": "call",
       "path": "execution.gromacs.run_gromacs_specification",
       "evidence": "execution/gromacs.py; structures/gromacs_bridge.py",
-      "data_domain": "molecular-dynamics"
+      "data_domain": "molecular-dynamics",
+      "provenance": "a GROMACS run (grompp, mdrun, energy) — a computation, never a measurement"
     },
     {
       "capabilityId": "execution.dispatcher.dispatch",
@@ -326,7 +352,8 @@
       "method": "call",
       "path": "execution.dispatcher.SpecificationDispatcher.dispatch",
       "evidence": "execution/dispatcher.py; experiment/interface.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "whichever runner is configured; the specification names it"
     },
     {
       "capabilityId": "execution.proving.prove_and_verify",
@@ -338,7 +365,8 @@
       "method": "call",
       "path": "execution.proving.prove_and_verify",
       "evidence": "execution/proving.py; execution/guest_registry.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the zero-knowledge backend; the receipt is the evidence"
     },
     {
       "capabilityId": "execution.proving.verify_existing",
@@ -350,7 +378,8 @@
       "method": "call",
       "path": "execution.proving.verify_existing_proof",
       "evidence": "execution/proving.py; docs/STE_STAGE10_VERIFICATION_ARTIFACT.md",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "a stored proof, re-verified against the backend"
     },
     {
       "capabilityId": "execution.host.wire",
@@ -362,7 +391,8 @@
       "method": "stdout",
       "path": "zk/sp1-adapter/src/bin/sp1_host.rs; zk/nexus/nexus-adapter; zk/risc0/risc0-adapter",
       "evidence": "zk/sp1-adapter/src/bin/sp1_host.rs; docs/STE_NEXUS_BACKEND.md",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the SP1, Nexus or RISC Zero host process"
     },
     {
       "capabilityId": "execution.build.guest_registry",
@@ -374,7 +404,8 @@
       "method": "run",
       "path": "python3 -m execution.build",
       "evidence": "execution/build.py; zk/recipes/sp1-heat.recipe",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "zk/recipes/*.recipe in this repository, rebuilt from source"
     },
     {
       "capabilityId": "campaign.run",
@@ -386,7 +417,8 @@
       "method": "call",
       "path": "campaign.driver.run_campaign",
       "evidence": "campaign/driver.py; campaign/policy.py; campaign/warrant_cache.py; campaign/prefetch.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "one evidence pool and one operator per campaign; every point recorded"
     },
     {
       "capabilityId": "experiment.run_step",
@@ -398,7 +430,8 @@
       "method": "call",
       "path": "experiment.step.run_experiment_step",
       "evidence": "experiment/step.py; operations/trace.py; materials/results.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "what the dispatcher returned, admitted as a Record before anything else"
     },
     {
       "capabilityId": "materials.program.analyze",
@@ -410,7 +443,8 @@
       "method": "call",
       "path": "materials.program.analyze_program",
       "evidence": "materials/program.py; materials/decision.py",
-      "data_domain": "polymer-characterisation"
+      "data_domain": "polymer-characterisation",
+      "provenance": "the evidence pool, through the deterministic retrieval engine"
     },
     {
       "capabilityId": "workbench.repl.inspect",
@@ -422,7 +456,8 @@
       "method": "repl",
       "path": "python -m workbench",
       "evidence": "workbench/cli.py; workbench/__main__.py; examples/polymer_tensile_strength.json",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the retrieval engine over a loaded scenario; a view, not a write"
     },
     {
       "capabilityId": "workbench.repl.observe_admit",
@@ -434,7 +469,8 @@
       "method": "repl",
       "path": "python -m workbench (observe)",
       "evidence": "workbench/cli.py; workbench/interaction.py; experiment/session.py",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "a human at the REPL, admitting an externally supplied value"
     },
     {
       "capabilityId": "transformer.attention.forward",
@@ -446,7 +482,8 @@
       "method": "call",
       "path": "transformer.model.AttentionModel",
       "evidence": "transformer/model.py; transformer/prediction.py; architecture/transformer_contract.yaml",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "content-addressed integer matrices; exact, and reproducible by id"
     },
     {
       "capabilityId": "transformer.representation",
@@ -458,7 +495,8 @@
       "method": "call",
       "path": "transformer.representation.molecule_representation",
       "evidence": "transformer/representation.py; structures/molecule.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the molecule's own structure, as a content-addressed representation"
     },
     {
       "capabilityId": "architecture.invariants.declaration",
@@ -470,7 +508,8 @@
       "method": "yaml",
       "path": "architecture/*.yaml",
       "evidence": "architecture/core.yaml; architecture/invariants.yaml; architecture/exchange/ste_invariant_declaration.yaml",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "architecture/core.yaml in this repository"
     },
     {
       "capabilityId": "architecture.conformance.check",
@@ -482,7 +521,8 @@
       "method": "call",
       "path": "architecture.conformance",
       "evidence": "architecture/conformance.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the repository under check, against its own declared contract"
     },
     {
       "capabilityId": "architecture.doctrine.generate",
@@ -494,7 +534,8 @@
       "method": "run",
       "path": "python3 -m architecture.doctrine_generator",
       "evidence": "architecture/doctrine_generator.py; architecture/generated/doctrine",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the declarations; the doctrine is rendered from them, never hand-edited"
     },
     {
       "capabilityId": "architecture.invariant_register.derive",
@@ -506,7 +547,8 @@
       "method": "run",
       "path": "python3 architecture/exchange/build_invariant_register.py",
       "evidence": "architecture/derive_register.py; architecture/exchange/build_invariant_register.py; architecture/exchange/invariant_register.yaml",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the three bound repositories STE, DAQ and SCL, read at their pinned states"
     },
     {
       "capabilityId": "scripts.reachability_probes",
@@ -518,7 +560,8 @@
       "method": "run",
       "path": "python3 scripts/canonical_state_reachability.py",
       "evidence": "scripts/canonical_state_reachability.py; scripts/chemistry_reachability.py; scripts/ingest_reachability_probe.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the repository under probe; a reachability fact, not a world fact"
     },
     {
       "capabilityId": "scripts.stage_campaigns",
@@ -530,7 +573,8 @@
       "method": "run",
       "path": "python3 scripts/stage6_campaign.py",
       "evidence": "scripts/stage6_campaign.py; scripts/stage11_campaign.py; scripts/structural_campaign.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the staged campaign definitions in this repository"
     },
     {
       "capabilityId": "scripts.benchmarks",
@@ -542,7 +586,8 @@
       "method": "run",
       "path": "python3 scripts/transformer_baseline.py",
       "evidence": "scripts/transformer_baseline.py; scripts/engine_request_profile.py",
-      "data_domain": "evaluation"
+      "data_domain": "evaluation",
+      "provenance": "measured on the machine that ran them; a benchmark is not a property of the code"
     }
   ],
   "metadata": {

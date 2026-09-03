@@ -308,11 +308,44 @@ test('every first-party capability names its subject, and an empty repository na
   // And the validator refuses both directions rather than leaving them to review.
   const gap = structuredClone(entries.find((e) => e.entry.nodeId === 'pythia-oracle-engine'));
   delete gap.entry.capabilities[0].data_domain;
-  assert.ok(checkEntry(gap.entry, gap.file).errors.some((e) => /declare no data_domain/.test(e)));
+  assert.ok(checkEntry(gap.entry, gap.file).errors.some((e) => /do not state subject/.test(e)));
 
   const invented = structuredClone(entries.find((e) => e.entry.nodeId === 'payload-corpus-graph'));
   invented.entry.capabilities[0].data_domain = 'trade-flows';
   assert.ok(checkEntry(invented.entry, invented.file).errors.some((e) => /an empty repository touches no subject/.test(e)));
+});
+
+test('every first-party capability says where its answers come from', async () => {
+  const entries = await loadCatalog();
+  const caps = entries.flatMap(({ entry }) => entry.capabilities);
+
+  // The company states that it builds provenance-bearing corpora. The field stood at 44
+  // of 634 and at zero on Payload Terminal, which is the node the claim is about.
+  assert.ok(caps.filter((c) => c.provenance).length >= 395, 'provenance coverage fell');
+
+  for (const { entry } of entries) {
+    const maturity = entry.metadata.maturity;
+    if (maturity === 'upstream-mirror') continue;
+    for (const c of entry.capabilities) {
+      if (maturity === 'empty') assert.equal(c.provenance, undefined, `${entry.nodeId}: an empty repository claims a source`);
+      else assert.ok(c.provenance, `${entry.nodeId}/${c.capabilityId}: no provenance`);
+    }
+  }
+
+  // A computation is not a measurement, and the field is where a reader of the catalog
+  // actually meets that distinction — COR-005 stated at the point of use.
+  const computed = caps.filter((c) => /^computation[: ]/.test(c.provenance ?? ''));
+  assert.ok(computed.length >= 8, 'the analytic capabilities no longer mark themselves as computations');
+  const synthetic = caps.filter((c) => /^synthetic:/.test(c.provenance ?? ''));
+  assert.ok(synthetic.length >= 40, 'the synthetic corpora no longer say so');
+
+  const bare = structuredClone(entries.find((e) => e.entry.nodeId === 'payload-terminal'));
+  delete bare.entry.capabilities[0].provenance;
+  assert.ok(checkEntry(bare.entry, bare.file).errors.some((e) => /do not state where its answers come from/.test(e)));
+
+  const claiming = structuredClone(entries.find((e) => e.entry.nodeId === 'payload-corpus-graph'));
+  claiming.entry.capabilities[0].provenance = 'UN Comtrade capture 2026-08-27';
+  assert.ok(checkEntry(claiming.entry, claiming.file).errors.some((e) => /an empty repository answers nothing/.test(e)));
 });
 
 test('osiris-intel names person-intelligence, because a refusal has to be nameable', async () => {

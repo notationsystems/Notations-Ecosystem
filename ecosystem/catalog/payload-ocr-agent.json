@@ -14,7 +14,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.inspect_document']",
       "evidence": "src/agent/tools.ts; src/artifact/acquire.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the artifact bytes, through the configured OCR provider; verbatim text is kept"
     },
     {
       "capabilityId": "tool.ocr.classify_document",
@@ -26,7 +27,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.classify_document']",
       "evidence": "src/agent/tools.ts; src/classify/classifier.ts; src/classify/documentType.ts; prompts/classify_document.v1.md",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "model output over the artifact: a classification, with confidence, never a fact"
     },
     {
       "capabilityId": "tool.ocr.extract_fields",
@@ -38,7 +40,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.extract_fields']",
       "evidence": "src/agent/tools.ts; src/pipeline/pipeline.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the artifact bytes; every field keeps its verbatim text, page and character span"
     },
     {
       "capabilityId": "tool.ocr.extract_table",
@@ -50,7 +53,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.extract_table']",
       "evidence": "src/agent/tools.ts; src/model/OCRModel.ts (extractTables)",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the provider's own table perception, in provider-native shape"
     },
     {
       "capabilityId": "tool.ocr.find_evidence",
@@ -62,7 +66,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.find_evidence']",
       "evidence": "src/agent/tools.ts; src/model/types.ts (EvidenceLocation)",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the bundle already built; a lookup, not a second perception"
     },
     {
       "capabilityId": "tool.ocr.validate_extraction",
@@ -74,7 +79,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.validate_extraction']",
       "evidence": "src/agent/tools.ts; src/extract/validate.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the issues attached at extraction time, not recomputed here"
     },
     {
       "capabilityId": "tool.ocr.compare_documents",
@@ -86,7 +92,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.compare_documents']",
       "evidence": "src/agent/tools.ts; src/conflict/detect.ts; src/conflict/subjects.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "two sealed bundles, joined on a curated shared-subject map"
     },
     {
       "capabilityId": "tool.ocr.create_observation",
@@ -98,7 +105,8 @@
       "method": "call",
       "path": "createOcrTools(deps)['ocr.create_observation']",
       "evidence": "src/agent/tools.ts; src/canonical/boundary.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a sealed bundle; adjudication stays pending and nothing is written"
     },
     {
       "capabilityId": "api.process_document",
@@ -110,7 +118,8 @@
       "method": "function",
       "path": "src/pipeline/pipeline.ts#processDocument",
       "evidence": "src/pipeline/pipeline.ts; src/index.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the artifact bytes through the staged pipeline"
     },
     {
       "capabilityId": "api.ingest_artifact",
@@ -122,7 +131,8 @@
       "method": "function",
       "path": "src/artifact/acquire.ts#ingestArtifact",
       "evidence": "src/artifact/acquire.ts; src/artifact/types.ts; src/core/ids.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the caller's bytes; identity is the content hash, not the filename"
     },
     {
       "capabilityId": "api.ocr_model_seam",
@@ -134,7 +144,8 @@
       "method": "interface",
       "path": "src/model/OCRModel.ts#OCRModel",
       "evidence": "src/model/OCRModel.ts; src/model/providers/mistral.ts; src/model/providers/fixture.ts; src/model/providerSeam.test.ts",
-      "data_domain": "model-weights"
+      "data_domain": "model-weights",
+      "provenance": "whichever provider is configured; the seam records which one answered"
     },
     {
       "capabilityId": "api.provider_factory",
@@ -146,7 +157,8 @@
       "method": "function",
       "path": "src/model/providers/index.ts#createProvider",
       "evidence": "src/model/providers/index.ts; .env.example; docs/BOUNDARIES.md#integration-contract-for-the-host",
-      "data_domain": "model-weights"
+      "data_domain": "model-weights",
+      "provenance": "configuration; the fixture provider is deterministic and offline"
     },
     {
       "capabilityId": "api.schema_registry",
@@ -158,7 +170,8 @@
       "method": "function",
       "path": "src/schema/registry.ts#schemaFor",
       "evidence": "src/schema/registry.ts; src/schema/rateConfirmation.ts; src/schema/billOfLading.ts; src/schema/proofOfDelivery.ts; src/schema/invoice.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "versioned zod schemas in this repository"
     },
     {
       "capabilityId": "api.normalize",
@@ -170,7 +183,8 @@
       "method": "function",
       "path": "src/normalize/index.ts",
       "evidence": "src/normalize/money.ts; src/normalize/weight.ts; src/normalize/temporal.ts; docs/ARCHITECTURE.md#normalization",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "the verbatim string it normalises; the original is never discarded"
     },
     {
       "capabilityId": "api.build_observation",
@@ -182,7 +196,8 @@
       "method": "function",
       "path": "src/observation/build.ts#buildObservation",
       "evidence": "src/observation/build.ts; src/extract/fields.ts; src/core/epistemics.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the artifact and the extraction that produced the field, or it refuses"
     },
     {
       "capabilityId": "api.evidence_sink_port",
@@ -194,7 +209,8 @@
       "method": "interface",
       "path": "src/evidence/port.ts#EvidenceSink",
       "evidence": "src/evidence/port.ts; src/evidence/bridge.ts; docs/BOUNDARIES.md",
-      "data_domain": "evidence-pool"
+      "data_domain": "evidence-pool",
+      "provenance": "the host's EvidencePool is the destination; this port reads nothing back"
     },
     {
       "capabilityId": "api.detect_conflicts",
@@ -206,7 +222,8 @@
       "method": "function",
       "path": "src/conflict/detect.ts#detectConflicts",
       "evidence": "src/conflict/detect.ts; src/observation/types.ts (ConflictRecord)",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "two bundles; the classification is derived, the readings are not"
     },
     {
       "capabilityId": "api.entity_candidates",
@@ -218,7 +235,8 @@
       "method": "function",
       "path": "src/entity/candidates.ts#candidatesFromObservations",
       "evidence": "src/entity/candidates.ts; docs/ARCHITECTURE.md#freight-intelligence-hooks",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "observations in a bundle; candidates, never resolved entities"
     },
     {
       "capabilityId": "api.injection_guard",
@@ -230,7 +248,8 @@
       "method": "function",
       "path": "src/security/injection.ts",
       "evidence": "src/security/injection.ts; prompts/classify_document.v1.md",
-      "data_domain": "security-posture"
+      "data_domain": "security-posture",
+      "provenance": "document content, treated as data — the one place text is never instruction"
     },
     {
       "capabilityId": "api.prompt_registry",
@@ -242,7 +261,8 @@
       "method": "class",
       "path": "src/core/prompts.ts#PromptRegistry",
       "evidence": "src/core/prompts.ts; prompts/",
-      "data_domain": "model-weights"
+      "data_domain": "model-weights",
+      "provenance": "prompts/*.vN.md in this repository, versioned into execution identity"
     },
     {
       "capabilityId": "api.telemetry",
@@ -254,7 +274,8 @@
       "method": "interface",
       "path": "src/observability/telemetry.ts#TelemetrySink",
       "evidence": "src/observability/telemetry.ts",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "this process: counts, provider, model, prompt and schema versions"
     },
     {
       "capabilityId": "contract.observation_bundle",
@@ -266,7 +287,8 @@
       "method": "schema",
       "path": "src/observation/types.ts#ObservationBundle",
       "evidence": "src/observation/types.ts; src/core/epistemics.ts; src/core/refusals.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the artifact and the execution that read it, bound into the observation id"
     },
     {
       "capabilityId": "contract.canonical_state_candidate",
@@ -278,7 +300,8 @@
       "method": "schema",
       "path": "src/canonical/boundary.ts#CanonicalStateCandidate",
       "evidence": "src/canonical/boundary.ts; src/canonical/boundary.test.ts; docs/BOUNDARIES.md",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "a sealed bundle; the host adjudicates, this agent never does"
     },
     {
       "capabilityId": "contract.execution_identity",
@@ -290,7 +313,8 @@
       "method": "schema",
       "path": "src/observation/types.ts#ExtractionMeta",
       "evidence": "src/observation/types.ts; src/core/ids.ts (executionKeyFrom, artifactIdFrom); docs/ARCHITECTURE.md#determinism",
-      "data_domain": "identity"
+      "data_domain": "identity",
+      "provenance": "the provider, model, prompt and schema versions of the run itself"
     },
     {
       "capabilityId": "contract.temporal_frame",
@@ -302,7 +326,8 @@
       "method": "schema",
       "path": "src/core/time.ts#TemporalFrame",
       "evidence": "src/core/time.ts; docs/ARCHITECTURE.md#temporal-semantics",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the document for event time, the run for known_at; the two never merge"
     },
     {
       "capabilityId": "contract.refusals",
@@ -314,7 +339,8 @@
       "method": "schema",
       "path": "src/core/refusals.ts",
       "evidence": "src/core/refusals.ts; src/agent/tools.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the failure itself, typed; a refusal is a successful return"
     },
     {
       "capabilityId": "cli.demo",
@@ -326,7 +352,8 @@
       "method": "npm",
       "path": "npm run demo [-- --live <pdf>]",
       "evidence": "package.json; src/demo/rateConfirmation.demo.ts; README.md#quick-start",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the fixture corpus, deterministic and offline unless --live is passed"
     },
     {
       "capabilityId": "cli.test",
@@ -338,7 +365,8 @@
       "method": "npm",
       "path": "npm test | npm run audit:boundary | npm run typecheck",
       "evidence": "package.json; vitest.config.ts; src/canonical/boundary.test.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the fixture corpus, including adversarial shapes"
     },
     {
       "capabilityId": "cli.test_live",
@@ -350,7 +378,8 @@
       "method": "npm",
       "path": "npm run test:live",
       "evidence": "package.json; src/model/providers/mistral.live.test.ts; .env.example",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the real Mistral API, only when RUN_LIVE_TESTS=1"
     }
   ],
   "metadata": {

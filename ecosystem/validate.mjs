@@ -253,13 +253,21 @@ export function checkEntry(entry, file, known = new Set()) {
   // An `empty` node is exempt in the other direction, and may not carry one at all: it
   // has no code, so it touches no subject, and a placeholder that named one would be the
   // catalog inventing a holding out of a repository name.
+  //
+  // `provenance` is required on the same terms and for a sharper reason: this company
+  // states that it builds provenance-bearing corpora, and the field stood at 7% — zero on
+  // Payload Terminal. A catalog silent about where its own systems' answers come from is
+  // arguing against its subject.
   if (md.maturity === 'empty') {
     for (const c of entry.capabilities ?? []) {
       if (c.data_domain) errors.push(`capability ${c.capabilityId}: an empty repository touches no subject — remove data_domain "${c.data_domain}" until there is code`);
+      if (c.provenance) errors.push(`capability ${c.capabilityId}: an empty repository answers nothing — remove provenance "${c.provenance}" until there is code`);
     }
   } else if (md.maturity !== 'upstream-mirror') {
-    const bare = (entry.capabilities ?? []).filter((c) => !c.data_domain).map((c) => c.capabilityId);
-    if (bare.length) errors.push(`${bare.length} capabilit${bare.length === 1 ? 'y' : 'ies'} on a first-party node declare no data_domain: ${bare.slice(0, 6).join(', ')}${bare.length > 6 ? '…' : ''}`);
+    for (const [field, noun] of [['data_domain', 'subject'], ['provenance', 'where its answers come from']]) {
+      const bare = (entry.capabilities ?? []).filter((c) => !c[field]).map((c) => c.capabilityId);
+      if (bare.length) errors.push(`${bare.length} capabilit${bare.length === 1 ? 'y' : 'ies'} on a first-party node do not state ${noun} (${field}): ${bare.slice(0, 6).join(', ')}${bare.length > 6 ? '…' : ''}`);
+    }
   }
 
   // Disclosure and durability are different questions, and one enum could answer only

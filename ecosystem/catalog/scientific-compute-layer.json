@@ -16,7 +16,8 @@
       "evidence": "native/src/main.cpp; docs/SCL_CONTRACT.md",
       "cost": "free (local process)",
       "latency": "~4-7 ms process/JSON boundary plus native compute",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the caller's request bytes; identity is the operation, configuration and input"
     },
     {
       "capabilityId": "cli.result.envelope",
@@ -28,7 +29,8 @@
       "method": "stdout",
       "path": "native/build/scl_cli",
       "evidence": "native/src/main.cpp; native/include/scl/protocol.hpp",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the computation that just ran, with the backend and its version named"
     },
     {
       "capabilityId": "cli.fault_vocabulary",
@@ -40,7 +42,8 @@
       "method": "contract",
       "path": "native/include/scl/protocol.hpp",
       "evidence": "native/include/scl/protocol.hpp; python/scl/errors.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the fault itself, typed; a halt is a stated outcome, not a missing answer"
     },
     {
       "capabilityId": "cli.version",
@@ -52,7 +55,8 @@
       "method": "argv",
       "path": "scl_cli --version",
       "evidence": "native/src/main.cpp; native/include/scl/version.hpp",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the built binary; the version string is the artifact, not a claim about it"
     },
     {
       "capabilityId": "cli.backend.cuda",
@@ -64,7 +68,8 @@
       "method": "field",
       "path": "request.backend",
       "evidence": "native/backends/cuda/lj_pairwise_cuda.cu; native/backends/cuda/fourier_cuda.cu; native/src/backend.cpp; docs/PHASE4_AUDIT.md",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the CUDA backend; the answer names which backend produced it"
     },
     {
       "capabilityId": "op.lj_pairwise_energy_forces",
@@ -78,7 +83,8 @@
       "evidence": "native/src/op_lj_pairwise.cpp; native/src/lj_pairwise.cpp; docs/SCL_CONTRACT.md",
       "cost": "free (CPU)",
       "latency": "~3.7 ms native at N=2000",
-      "data_domain": "molecular-dynamics"
+      "data_domain": "molecular-dynamics",
+      "provenance": "computation over the supplied positions — a result, explicitly not a measurement"
     },
     {
       "capabilityId": "op.fourier_transform_1d",
@@ -92,7 +98,8 @@
       "evidence": "native/src/op_fourier.cpp; native/src/fourier.cpp; native/include/scl/fourier.hpp",
       "cost": "free (CPU)",
       "latency": "~96 ms native at N=2048 (O(N^2))",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "computation over the supplied signal; bitwise reproducible on the same binary"
     },
     {
       "capabilityId": "op.least_squares",
@@ -105,7 +112,8 @@
       "path": "least_squares",
       "evidence": "native/src/op_least_squares.cpp; native/src/least_squares.cpp; python/scl/least_squares.py",
       "cost": "free (CPU)",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "computation over the supplied design matrix and observations"
     },
     {
       "capabilityId": "op.kalman_filter_linear",
@@ -118,7 +126,8 @@
       "path": "kalman_filter_linear",
       "evidence": "native/src/op_kalman.cpp; native/src/kalman.cpp; python/scl/kalman.py; docs/SCL_CONTRACT.md",
       "cost": "free (CPU)",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "computation over the supplied series; the noise provenance travels with it"
     },
     {
       "capabilityId": "python.run_scl_request",
@@ -130,7 +139,8 @@
       "method": "call",
       "path": "scl.run_scl_request",
       "evidence": "python/scl/client.py; python/scl/errors.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the SCL CLI process; the Python side computes nothing itself"
     },
     {
       "capabilityId": "python.request.identity",
@@ -142,7 +152,8 @@
       "method": "property",
       "path": "scl.SCLRequest.identity",
       "evidence": "python/scl/identity.py; python/scl/client.py; docs/SCL_CONTRACT.md",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the request's own bytes, hashed; identity is content, not call order"
     },
     {
       "capabilityId": "python.codec.lj",
@@ -154,7 +165,8 @@
       "method": "call",
       "path": "scl.encode_lj_configuration",
       "evidence": "python/scl/client.py",
-      "data_domain": "molecular-dynamics"
+      "data_domain": "molecular-dynamics",
+      "provenance": "the caller's values, encoded; units are checked at the boundary"
     },
     {
       "capabilityId": "python.codec.fourier",
@@ -166,7 +178,8 @@
       "method": "call",
       "path": "scl.fourier",
       "evidence": "python/scl/fourier.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the caller's values, encoded"
     },
     {
       "capabilityId": "python.codec.least_squares",
@@ -178,7 +191,8 @@
       "method": "call",
       "path": "scl.least_squares",
       "evidence": "python/scl/least_squares.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the caller's values, encoded"
     },
     {
       "capabilityId": "python.codec.kalman",
@@ -190,7 +204,8 @@
       "method": "call",
       "path": "scl.kalman",
       "evidence": "python/scl/kalman.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the caller's values, encoded, with measurement-noise provenance required"
     },
     {
       "capabilityId": "python.quantity",
@@ -202,7 +217,8 @@
       "method": "import",
       "path": "scl.Quantity",
       "evidence": "python/scl/quantity.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the caller; an uncertainty is stated, estimated, propagated or explicitly absent"
     },
     {
       "capabilityId": "python.method_block",
@@ -214,7 +230,8 @@
       "method": "call",
       "path": "scl.lj_method_block_for",
       "evidence": "python/scl/method_block.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "the request that produced it; a method block describes a run, not a finding"
     },
     {
       "capabilityId": "ste_adapter.run_scl_specification",
@@ -226,7 +243,8 @@
       "method": "call",
       "path": "scl.ste_adapter.run_scl_specification",
       "evidence": "python/scl/ste_adapter.py; tests/test_ste_integration.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the SCL CLI, driven from an STE ExecutionSpecification"
     },
     {
       "capabilityId": "ste_adapter.build_specification",
@@ -238,7 +256,8 @@
       "method": "call",
       "path": "scl.ste_adapter.build_lj_specification",
       "evidence": "python/scl/ste_adapter.py",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "the caller's parameters, assembled into a specification"
     },
     {
       "capabilityId": "ste_adapter.interpret_result",
@@ -250,7 +269,8 @@
       "method": "call",
       "path": "scl.ste_adapter.interpret_lj_result",
       "evidence": "python/scl/ste_adapter.py; docs/PHASE2_AUDIT.md",
-      "data_domain": "execution-trace"
+      "data_domain": "execution-trace",
+      "provenance": "an SCL result; the interpretation is a candidate, never a state"
     },
     {
       "capabilityId": "contract.parameter_classes",
@@ -262,7 +282,8 @@
       "method": "contract",
       "path": "docs/SCL_CONTRACT.md#6",
       "evidence": "docs/SCL_CONTRACT.md; native/include/scl/operation.hpp; tests/test_annotating_parameters.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the declaration in this repository of which fields enter identity"
     },
     {
       "capabilityId": "contract.reproducibility",
@@ -274,7 +295,8 @@
       "method": "contract",
       "path": "docs/SCL_CONTRACT.md#7",
       "evidence": "docs/SCL_CONTRACT.md; native/CMakeLists.txt; tests/test_numerical_validation.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "tested on the same binary, machine and backend; the claim is scoped to that"
     },
     {
       "capabilityId": "build.cmake",
@@ -286,7 +308,8 @@
       "method": "run",
       "path": "cmake -S native -B native/build",
       "evidence": "native/CMakeLists.txt; native/tests/CMakeLists.txt; README.md",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the source tree under build"
     },
     {
       "capabilityId": "bench.run_benchmark",
@@ -299,7 +322,8 @@
       "path": "python3 scripts/run_benchmark.py",
       "evidence": "scripts/run_benchmark.py; docs/PHASE1_AUDIT.md",
       "cost": "free (CPU minutes)",
-      "data_domain": "evaluation"
+      "data_domain": "evaluation",
+      "provenance": "measured on the machine that ran it; a benchmark is not a property of the code"
     },
     {
       "capabilityId": "native.kalman_validate",
@@ -311,7 +335,8 @@
       "method": "run",
       "path": "native/build/tests/kalman_validate",
       "evidence": "native/tests/kalman_validate.cpp; architecture/kalman_validation_preregistration.yaml; tests/test_kalman_validation.py",
-      "data_domain": "numerical-kernels"
+      "data_domain": "numerical-kernels",
+      "provenance": "pre-registered scenarios in this repository, run from a seed"
     },
     {
       "capabilityId": "exchange.scl_requirements",
@@ -323,7 +348,8 @@
       "method": "run",
       "path": "python3 architecture/exchange/build_scl_requirements.py",
       "evidence": "architecture/exchange/build_scl_requirements.py; architecture/exchange/scl_requirements.yaml; architecture/exchange/build_scl_contract_clauses.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "executable code in this repository, traced — not a hand-written inventory"
     },
     {
       "capabilityId": "exchange.canonical_yaml",
@@ -335,7 +361,8 @@
       "method": "call",
       "path": "architecture/exchange/canonical_yaml.py",
       "evidence": "architecture/exchange/canonical_yaml.py; architecture/exchange/canonicalization_fixture.yaml; tests/test_shared_serializer_pin.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the exchange documents themselves; the encoding is fixed so bytes can be compared"
     },
     {
       "capabilityId": "exchange.verify_pair_landed",
@@ -347,7 +374,8 @@
       "method": "run",
       "path": "python3 architecture/exchange/verify_pair_landed.py",
       "evidence": "architecture/exchange/verify_pair_landed.py; architecture/proof_integrity.yaml",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "two repository checkouts, compared byte for byte"
     },
     {
       "capabilityId": "exchange.joint_workload_decision",
@@ -359,7 +387,8 @@
       "method": "yaml",
       "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml",
       "evidence": "architecture/decisions/2026-08-26-joint-workload-decision.yaml; tests/test_joint_workload_decision.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "a decision recorded by both parties, bound by hash"
     },
     {
       "capabilityId": "exchange.invariant_register_mirror",
@@ -371,7 +400,8 @@
       "method": "yaml",
       "path": "architecture/exchange/",
       "evidence": "architecture/exchange/invariant_register.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/ste_invariants.yaml; tests/test_exchange_artifact.py",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the Scientific Transformer Engine's derived register, byte-identical"
     }
   ],
   "metadata": {
