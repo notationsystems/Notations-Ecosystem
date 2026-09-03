@@ -64,3 +64,42 @@ describe('untrusted metadata never becomes a link destination', () => {
     }
   });
 });
+
+describe('a hostile snapshot cannot inject into the graph tooltip', () => {
+  it('renders hostile text as inert content, never as markup or attributes', async () => {
+    const { nodeTooltip, linkTooltip } = await import('../src/lenses/graph/render');
+    const hostile = {
+      id: 'x', name: '<img src=x onerror=alert(1)>', kind: '__proto__', health: '"><script>alert(1)</script>',
+      domain: 'd', color: '" onmouseover="alert(1)', ring: 'x', val: 1, capabilities: 1, executeCapabilities: 0,
+      located: false, node: {} as never,
+    } as never;
+
+    // force-graph assigns these strings to innerHTML, so the real question is what the
+    // browser builds from them — not whether a substring survives escaping.
+    const render = (html: string) => {
+      const host = document.createElement('div');
+      host.innerHTML = html;
+      return host;
+    };
+
+    for (const html of [nodeTooltip(hostile), linkTooltip({ id: 'l', source: 'a', target: 'b', kind: '"><script>x</script>' as never, description: '', relation: {} as never })]) {
+      const host = render(html);
+      expect(host.querySelector('img'), 'no element may be built from hostile text').toBeNull();
+      expect(host.querySelector('script')).toBeNull();
+      for (const element of host.querySelectorAll('*')) {
+        for (const attribute of element.attributes) {
+          expect(attribute.name.startsWith('on'), `event handler ${attribute.name} injected`).toBe(false);
+          // Only our own hex constants may reach a style attribute.
+          if (attribute.name === 'style') {
+            for (const colour of [...attribute.value.matchAll(/color:\s*([^;]+)/g)].map((m) => (m[1] ?? '').trim())) {
+              expect(colour, 'colour in a style attribute').toMatch(/^(?:#[0-9a-fA-F]{6}|rgba\([\d.,\s]+\))$/);
+            }
+          }
+        }
+      }
+    }
+
+    // The hostile name is still shown to the operator, as text.
+    expect(render(nodeTooltip(hostile)).textContent).toContain('<img src=x onerror=alert(1)>');
+  });
+});

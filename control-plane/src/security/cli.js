@@ -21,6 +21,8 @@ import { issueCredential, validatePrincipalRecord } from './identity.js';
 import { ROLES } from './policy.js';
 import { KeyStore } from './crypto/signing.js';
 import { KeyEncryptionKey } from './crypto/envelope.js';
+import { HashJournal, verifyRecords } from '../journal.js';
+import { readAnchor, assertNotRolledBack } from './anchor.js';
 
 const REGISTRY_SCHEMA = 'notations.control-plane.principals.v1';
 
@@ -140,6 +142,62 @@ function cmdKek(args) {
   ].join('\n'));
 }
 
+/**
+ * Verify a journal offline.
+ *
+ * After an integrity alarm the operator needs to answer "is this replica sound?"
+ * without starting a server against it — starting one would append to a history that
+ * may be wrong. This reads, verifies and reports, and writes nothing.
+ */
+async function cmdVerify(args) {
+  const journalPath = resolve(args[0] ?? process.env.CONTROL_PLANE_JOURNAL_PATH ?? 'data/control-plane.jsonl');
+  let keyStore = null;
+  try {
+    keyStore = await KeyStore.load({ filePath: keystorePath(), kek: kek(), create: false });
+  } catch (error) {
+    process.stderr.write(`warning: key store unavailable (${error.message}); signatures cannot be checked\n`);
+  }
+  const journal = new HashJournal(journalPath, { keyStore, anchor: false });
+
+  let records;
+  try {
+    records = await journal.read();
+  } catch (error) {
+    process.stdout.write(`FAILED  ${journalPath}\n  ${error.detail ?? error.message}\n  ${error.remedy ?? ''}\n`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const defect = verifyRecords(records, { keyStore, requireSignatures: false });
+  const signed = records.filter(record => record.signature).length;
+  const anchor = await readAnchor(journalPath);
+  let rollback = null;
+  try {
+    assertNotRolledBack(records, anchor);
+  } catch (error) {
+    rollback = error.detail;
+  }
+
+  const kinds = new Map();
+  for (const { event } of records) kinds.set(event.kind, (kinds.get(event.kind) ?? 0) + 1);
+
+  process.stdout.write([
+    `journal   ${journalPath}`,
+    `records   ${records.length}`,
+    `chain     ${defect ? `BROKEN — ${defect}` : 'verifies'}`,
+    `signed    ${signed}/${records.length}${keyStore ? '' : ' (unchecked: no key store)'}`,
+    `anchor    ${anchor ? `length ${anchor.length}, head ${String(anchor.head).slice(0, 12)}…` : 'absent'}`,
+    `rollback  ${rollback ? `DETECTED — ${rollback}` : anchor ? 'none' : 'not checkable without an anchor'}`,
+    `events    ${[...kinds.entries()].sort().map(([kind, count]) => `${kind}=${count}`).join(' ') || 'none'}`,
+    '',
+  ].join('\n'));
+
+  if (defect || rollback) {
+    process.stdout.write('This journal is NOT sound. Restore from a verified replica; do not append to it.\n');
+    process.exitCode = 1;
+  }
+}
+
 const USAGE = `notations control-plane security tool
 
   issue    --principal <id> [--roles a,b] [--actors a,b] [--nodes a,b] [--expires <iso>] [--kind human|service|agent]
@@ -147,6 +205,7 @@ const USAGE = `notations control-plane security tool
   disable  --key-id <keyId>
   keys     show | rotate [--at-record <n>]
   kek      generate
+  verify   [journal path]      verify a journal offline: chain, signatures, rollback anchor
 
 Environment:
   CONTROL_PLANE_PRINCIPALS_FILE  credential registry (default data/principals.json)
@@ -162,6 +221,7 @@ export async function run(argv) {
     case 'disable': return cmdDisable(args);
     case 'keys': return cmdKeys(args);
     case 'kek': return cmdKek(args);
+    case 'verify': return cmdVerify(args);
     default:
       process.stdout.write(USAGE);
       if (command && command !== 'help' && command !== '--help') process.exitCode = 2;

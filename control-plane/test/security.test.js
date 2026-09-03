@@ -344,7 +344,7 @@ test('SEC-CRYPTO envelope encryption binds ciphertext to its key, version and co
   assert.equal(open(other, rewrapped, 'journal-signing-key').toString('utf8'), 'a signing key');
 });
 
-test('SEC-013 the constellation accepts posture evidence and refuses material', async () => {
+test('SEC-030 the constellation accepts posture evidence and refuses material', async () => {
   const h = await harness();
   try {
     await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', ...h.node('payload-terminal', OBSERVE) });
@@ -602,4 +602,67 @@ test('SEC-ABUSE a legitimate bulk writer backs off rather than defeating the bud
     sleep: async () => { throw new Error('must not sleep on a 403'); },
   });
   await assert.rejects(denied.command({ requestId: 'x' }), error => error instanceof ControlPlaneHttpError && error.status === 403);
+});
+
+test('SEC-013 no credential or key material can leave through an API response', async () => {
+  const h = await harness();
+  try {
+    const token = h.tokens['operator:alice'];
+    await h.command(token, { actorId: 'operator:alice', ...h.node('payload-terminal', OBSERVE) });
+    await h.command(h.tokens['attestor:ci'], { actorId: 'attestor:ci', action: 'record_security_posture', nodeId: 'payload-terminal', attestedAt: new Date().toISOString(), method: 'automated_scan', signals: [{ dimension: 'identity', state: 'strong', coverage: 1, summary: 'All credentials are bound to principals.' }] });
+
+    // Everything an authenticated caller — including an agent's LLM context — can read.
+    const surfaces = await Promise.all([
+      h.call('GET', '/v1/snapshot', { token }),
+      h.call('GET', '/v1/events', { token }),
+      h.call('GET', '/v1/security/status', { token }),
+      h.call('GET', '/health'),
+    ]);
+
+    for (const response of surfaces) {
+      const body = JSON.stringify(response.body);
+      for (const [name, credential] of Object.entries(h.tokens)) {
+        assert.ok(!body.includes(credential), `${name}'s credential must never appear in a response`);
+        // Nor the secret half on its own.
+        assert.ok(!body.includes(credential.split('.')[2]), `${name}'s secret must never appear in a response`);
+      }
+      assert.ok(!body.includes(h.config.kek), 'the key encryption key must never appear in a response');
+      // No private key material, in any encoding the key store might hold.
+      assert.ok(!/BEGIN [A-Z ]*PRIVATE KEY/.test(body), 'no private key may appear in a response');
+      assert.ok(!/"privateKey"/.test(body), 'no private key field may appear in a response');
+      assert.ok(!/"secretHash"/.test(body), 'no credential digest may appear in a response');
+    }
+
+    // The security status describes the key lifecycle without exposing the keys.
+    const status = surfaces[2].body;
+    assert.equal(status.keyLifecycle.privateKeyProtection, 'envelope-encrypted');
+    assert.ok(status.keyLifecycle.keys.every(key => typeof key.publicKey === 'string' && key.privateKey === undefined), 'only public halves are described');
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-SERIALIZATION the plane parses only JSON, and only into a fixed contract', async () => {
+  const h = await harness();
+  try {
+    const token = h.tokens['operator:alice'];
+    // A body that is not JSON is refused before anything else looks at it.
+    const notJson = await h.call('POST', '/v1/commands', { token, headers: { 'content-type': 'application/json' }, body: undefined });
+    assert.equal(notJson.status, 400);
+    assert.equal(notJson.body.error, 'COMMAND_NOT_JSON');
+
+    // A body that is JSON but not a command object is refused by shape, not coerced.
+    for (const shape of [[], 'a string', 42, true, null]) {
+      const response = await h.call('POST', '/v1/commands', { token, body: shape });
+      assert.ok(response.status === 400 || response.status === 422, `shape ${JSON.stringify(shape)} must be refused, got ${response.status}`);
+    }
+
+    // Unknown fields are refused rather than ignored: nothing enters the journal that
+    // the contract does not name.
+    const extra = await h.command(token, { actorId: 'operator:alice', ...h.node('extra-node', OBSERVE), unexpected: 'field' });
+    assert.equal(extra.status, 422);
+    assert.match(extra.body.detail, /not part of the control-plane contract/);
+  } finally {
+    await h.close();
+  }
 });

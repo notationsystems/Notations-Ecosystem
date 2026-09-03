@@ -97,19 +97,41 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
 }
 
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const FALLBACK_COLOR = '#9AA5B1';
+
+/**
+ * A colour that is safe to interpolate into a style attribute.
+ *
+ * These tooltips are rendered as innerHTML by force-graph, and the colours are looked
+ * up from snapshot-derived values. Today `kind` and `health` are enum-validated by the
+ * control plane, so the lookups return our own constants — but an unescaped value in an
+ * attribute inside an innerHTML string is one refactor away from being an injection, and
+ * a bracket lookup can return an inherited member (KIND_COLOR['__proto__']) rather than
+ * undefined. Both are closed here rather than relied upon elsewhere.
+ */
+function safeColor(value: unknown): string {
+  return typeof value === 'string' && HEX_COLOR.test(value) ? value : FALLBACK_COLOR;
+}
+
+/** A lookup that cannot return an inherited property. */
+function own<T>(table: Record<string, T>, key: string): T | undefined {
+  return Object.hasOwn(table, key) ? table[key] : undefined;
+}
+
 /** HTML tooltip for a node (force-graph renders nodeLabel as innerHTML). */
 export function nodeTooltip(node: GraphNodeDatum): string {
   const caps = `${node.capabilities} capabilit${node.capabilities === 1 ? 'y' : 'ies'}${node.executeCapabilities ? ` · ${node.executeCapabilities} execute` : ''}`;
   return `<div style="font:12px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e6e9ef;background:rgba(13,17,25,0.94);border:1px solid #1f2736;border-radius:6px;padding:6px 9px;line-height:1.4">`
     + `<div style="font-weight:600">${esc(node.name)}</div>`
-    + `<div style="color:#8b94a5"><span style="color:${node.color}">●</span> ${esc(KIND_LABEL[node.kind] ?? node.kind)}</div>`
+    + `<div style="color:#8b94a5"><span style="color:${safeColor(node.color)}">●</span> ${esc(own(KIND_LABEL, node.kind) ?? node.kind)}</div>`
     + `<div style="color:#8b94a5;font-variant-numeric:tabular-nums">${caps}</div>`
-    + `<div><span style="color:${HEALTH_COLOR[node.health] ?? HEALTH_COLOR.unknown}">◌</span> ${esc(node.health)}</div>`
+    + `<div><span style="color:${safeColor(own(HEALTH_COLOR, node.health) ?? HEALTH_COLOR.unknown)}">◌</span> ${esc(node.health)}</div>`
     + `</div>`;
 }
 
 /** Small relation-kind label shown while hovering a link. */
 export function linkTooltip(link: GraphLinkDatum): string {
-  const color = RELATION_COLOR[link.kind] ?? '#9AA5B1';
-  return `<span style="font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:${color};background:rgba(13,17,25,0.94);border:1px solid #1f2736;border-radius:4px;padding:2px 7px">${esc(RELATION_LABEL[link.kind] ?? link.kind)}</span>`;
+  const color = safeColor(own(RELATION_COLOR, link.kind));
+  return `<span style="font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:${color};background:rgba(13,17,25,0.94);border:1px solid #1f2736;border-radius:4px;padding:2px 7px">${esc(own(RELATION_LABEL, link.kind) ?? link.kind)}</span>`;
 }

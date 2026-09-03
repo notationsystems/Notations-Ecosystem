@@ -7,6 +7,7 @@ must never hold what would let someone do it.**
 - [Threat model](docs/THREAT_MODEL.md) — actors, assets, boundaries, and known limits
 - [Invariants](docs/SECURITY_INVARIANTS.md) — the properties, and the tests that prove them
 - [Substrate](docs/SUBSTRATE.md) — the identity space and why the projection is not the database
+- [Data classification](docs/DATA_CLASSIFICATION.md) — every class held, and what is deliberately refused
 
 ## Reporting a vulnerability
 
@@ -71,15 +72,17 @@ cd control-plane && npm start
 - **Never reuse one credential across roles.** Separation of duties is enforced on
   actors, so an approver and a proposer must be genuinely different identities.
 - **Treat a `JOURNAL_ROLLBACK` or `JOURNAL_CORRUPT` as an incident.** The plane fails
-  closed rather than serving history it cannot verify. Restore from a verified replica;
-  do not append to a shortened chain.
+  closed rather than serving history it cannot verify. Check a replica offline before
+  trusting it — `node control-plane/src/security/cli.js verify <journal>` reads and
+  reports without writing — then restore from a sound one. Never append to a shortened
+  chain: a truncated journal still verifies as a chain, and only the anchor catches it.
 - **Keep posture attestation at the source.** Run `security/attest.mjs` where the system
   is, so redaction happens before anything crosses the network.
 
 ## Checks
 
 ```sh
-cd control-plane && npm test        # 23 tests, including 20 named invariants
+cd control-plane && npm test        # 26 tests covering 30 named invariants
 node security/scan-secrets.mjs      # repository credential scan
 node security/attest.mjs --print    # what this deployment would attest, sent nowhere
 cd dock && npm test                 # includes credential-handling invariants

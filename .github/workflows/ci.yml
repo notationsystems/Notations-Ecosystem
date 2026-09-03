@@ -3,6 +3,8 @@ on:
   push:
   pull_request:
 
+# Least privilege for the workflow token, and actions pinned by commit rather than by a
+# moving tag: a tag can be repointed at new code by whoever controls the action.
 permissions:
   contents: read
 
@@ -10,8 +12,8 @@ jobs:
   control-plane:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with: { node-version: 22 }
       - run: cd control-plane && npm run check
       - name: Security invariants
@@ -20,9 +22,9 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with: { node-version: 22 }
       - name: No secret may be committed (SEC-004)
         run: node security/scan-secrets.mjs
@@ -34,8 +36,8 @@ jobs:
   ecosystem:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with: { node-version: 22 }
       - run: node ecosystem/validate.mjs
       - run: cd ecosystem && npm test
@@ -43,8 +45,8 @@ jobs:
   dock:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with: { node-version: 22, cache: npm, cache-dependency-path: dock/package-lock.json }
       - run: cd dock && npm ci
       - run: cd dock && npm run check && npm test && npm run build

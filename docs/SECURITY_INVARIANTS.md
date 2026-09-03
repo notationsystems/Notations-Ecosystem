@@ -20,7 +20,7 @@ Run them with `cd control-plane && npm test`.
 | SEC-010 | Identity classes stay distinct and are never collapsed into one trust domain. | `identity/uri.js` typed classes; principal ≠ actor ≠ node ≠ key. | `SEC-010 identity classes stay distinct…` |
 | SEC-011 | An agent may not grant itself a capability. | Separation of duties on `resolve_coordination`. | `SEC-011 an actor may not approve its own execution intent` |
 | SEC-012 | Approval is not execution: a coordination record is never dispatched by the plane. | `control-plane.js` sets `dispatch: 'not_dispatched'` and never changes it. | `SEC-011 …` asserts it after approval. |
-| SEC-013 | The constellation holds evidence, never material. | `security/evidence.js` refusal boundary. | `SEC-013 the constellation accepts posture evidence and refuses material` |
+| SEC-013 | No credential, key or digest may leave through an API response, and so never reaches an agent's context. | Nothing above `INTERNAL` enters the journal or the status surface. | `SEC-013 no credential or key material can leave through an API response` |
 | SEC-014 | Cryptographic and integrity verification failures fail closed. | `verifyRecords`, `assertNotRolledBack`. | `SEC-014 …` (tamper and rollback both refused) |
 | SEC-015 | Authorization failure fails closed. | `forbidden()` is thrown, never defaulted around. | `SEC-002`, `SEC-SCOPE` |
 | SEC-016 | Unknown actions, roles and enum values never acquire privileged semantics. | Allowlists in `validation.js` and `permissionForAction`. | `SEC-016 unknown actions, roles and enum values…` |
@@ -34,6 +34,22 @@ Run them with `cd control-plane && npm test`.
 | SEC-024 | A node-scoped credential cannot act for another node. | `requireNodeBinding`. | `SEC-SCOPE a node-scoped credential may not attest for another node` |
 | SEC-025 | Secrets never appear in logs, and callers are pseudonymised. | `audit.js` `logSafe` and `sourceKey`. | `SEC-AUDIT …` |
 | SEC-026 | The dock will not send a credential to an origin it was not configured for. | `checkBaseUrl`, enforced at call time. | `the dock will not hand its credential to an arbitrary origin` (dock) |
+| SEC-027 | Only JSON is parsed, and only into the declared contract. | `readJSON` plus `exactKeys`; no other deserializer exists in the plane. | `SEC-SERIALIZATION the plane parses only JSON…` |
+| SEC-028 | Snapshot content never becomes markup, an attribute, or a link destination. | `esc`/`safeColor`/`own` in the graph tooltip; `githubRepoUrl` for links. | `a hostile snapshot cannot inject into the graph tooltip`, `untrusted metadata never becomes a link destination` (dock) |
+| SEC-029 | A bulk writer meeting a rate limit backs off rather than defeating it. | `HttpControlPlane` honours `Retry-After`; authorization failures are never retried. | `SEC-ABUSE a legitimate bulk writer backs off…` |
+| SEC-030 | The constellation holds evidence, never material. | `security/evidence.js` refusal boundary. | `SEC-030 the constellation accepts posture evidence and refuses material` |
+
+## Recovery
+
+An operator who sees `JOURNAL_CORRUPT` or `JOURNAL_ROLLBACK` must be able to answer "is
+this replica sound?" without starting a server against it — starting one would append to
+a history that may be wrong. `node control-plane/src/security/cli.js verify <journal>`
+reads, verifies and reports, writing nothing: chain, signature coverage, anchor
+agreement, and a breakdown by event kind. It exits non-zero when the journal is not
+sound.
+
+A truncated journal is the case worth understanding: the remaining prefix still
+*verifies as a chain*. Only the anchor catches it.
 
 ## Invariants that are architectural rather than testable
 

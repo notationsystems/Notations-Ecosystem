@@ -3,7 +3,7 @@ import type { Command, CommandResult, ControlPlaneErrorBody, EventsResponse, Hea
 export interface Connection {
   /** Base URL of the control plane. `/cp` in development (Vite proxy), or an absolute origin for a deployed dock. */
   baseUrl: string;
-  /** Bearer token. Never persisted beyond sessionStorage; never sent anywhere but baseUrl. */
+  /** Bearer token. Held in memory only, never written to browser storage, and never sent anywhere but an allowlisted baseUrl. */
   token: string;
   /** Identifier the dock signs its commands with (control-plane actorId). */
   actorId: string;
