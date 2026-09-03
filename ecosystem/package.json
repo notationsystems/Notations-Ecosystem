@@ -1,0 +1,14 @@
+{
+  "name": "notations-ecosystem-catalog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The discovered Notations Universe: catalog nodes in the control-plane model, plus seed and sample-snapshot tooling.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "validate": "node validate.mjs",
+    "seed:journal": "node seed.mjs --journal ../control-plane/data/control-plane.jsonl",
+    "sample": "node sample-snapshot.mjs",
+    "test": "node --test"
+  }
+}

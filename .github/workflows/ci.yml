@@ -1,0 +1,28 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  control-plane:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd control-plane && npm run check && npm test
+  ecosystem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node ecosystem/validate.mjs
+      - run: cd ecosystem && npm test
+  dock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: dock/package-lock.json }
+      - run: cd dock && npm ci
+      - run: cd dock && npm run check && npm test && npm run build

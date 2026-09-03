@@ -1,0 +1,764 @@
+{
+  "schema": "notations.control-plane.snapshot.v1",
+  "revision": "64fe480ebe88845e64348e52f2fdcf6d5be5787390b5d2c622666d9a9b776219",
+  "eventCursor": "control-plane:04f37e0fdf207403b5da1b5b5db9cd80dafe5f0e26fc865c0c6e82fc9613d2c3",
+  "durability": "local_jsonl_single_writer",
+  "generatedAt": "2026-09-03T00:00:00.000Z",
+  "nodes": [
+    {
+      "nodeId": "building-information-corpus",
+      "name": "Building Information Corpus",
+      "kind": "information_library",
+      "description": "Planned corpus of building information (documents, drawings, IFC/OpenUSD evidence) that the BIM State Transformer will absorb as evidence. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Building-Information-Corpus",
+        "domain": "built-environment",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-09-01T06:27:12Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "building-information-graph",
+      "name": "Building Information Graph",
+      "kind": "information_library",
+      "description": "Planned provenance-tracked graph over building information, the built-environment counterpart of the Notations Corpus Graph. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Building-Information-Graph-",
+        "domain": "built-environment",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-09-01T06:24:19Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "control-plane",
+      "name": "Notations Ecosystem Control Plane",
+      "kind": "api",
+      "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked journal of node registrations, relations, health observations and capability requests. It records intent and operator approval but never stores provider credentials and never dispatches an external call; every write carries expectedRevision so a stale dock or agent cannot overwrite newer state. Execution adapters are a later, separate least-privilege boundary.",
+      "capabilities": [
+        {
+          "capabilityId": "snapshot.read",
+          "label": "Read the ecosystem snapshot",
+          "description": "GET /v1/snapshot: current nodes (with derived health), relations, coordination records, revision and event cursor.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "events.read",
+          "label": "Read events after a cursor",
+          "description": "GET /v1/events?after=<eventCursor>: append-only records after a known cursor; 409 CURSOR_UNKNOWN means refresh the snapshot.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "health.read",
+          "label": "Liveness and journal summary",
+          "description": "GET /health (unauthenticated): service status, revision and node count.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "node.register",
+          "label": "Register or revise a node",
+          "description": "POST /v1/commands action=register_node with expectedRevision. Declares a node's kind, capabilities (observe/propose/execute), bounded metadata and optional location.",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "relation.declare",
+          "label": "Declare a relation between nodes",
+          "description": "POST /v1/commands action=declare_relation: supplies_context_to, coordinates, visualizes, governs or depends_on between two registered nodes.",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "observation.record",
+          "label": "Record a health observation",
+          "description": "POST /v1/commands action=record_observation from an operator, health check or webhook; derives the node's health in the snapshot.",
+          "mode": "propose",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "capability.request",
+          "label": "Request a capability of another node",
+          "description": "POST /v1/commands action=request_capability: a reasoning engine or dock states intent to use a target capability in its declared mode; execute intents become approval_required and stay dispatch=not_dispatched.",
+          "mode": "propose",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "coordination.resolve",
+          "label": "Approve or reject a coordination request",
+          "description": "POST /v1/commands action=resolve_coordination by an operator. Approval is not execution: the record remains not_dispatched.",
+          "mode": "execute",
+          "approval": "operator"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Notations-Ecosystem",
+        "domain": "platform",
+        "maturity": "v0",
+        "language": "JavaScript",
+        "framework": "node:http (dependency-free)",
+        "exposure": "local-only",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-09-03T01:40:38Z",
+        "durability": "local_jsonl_single_writer",
+        "default_port": 8787,
+        "capability_count": 8
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "healthy",
+      "lastObservedAt": "2026-09-03T00:00:00.000Z",
+      "lastObservation": {
+        "source": "health_check",
+        "detail": "Sample: the control plane answered /health."
+      }
+    },
+    {
+      "nodeId": "network-scout-signal-miner",
+      "name": "Network Scout Signal Miner",
+      "kind": "information_library",
+      "description": "Planned signal-mining scout over network and open-source feeds, a candidate upstream for the OSIRIS intel layer. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Network-Scout-Signal-Miner",
+        "domain": "intelligence",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-08-22T02:32:57Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "notation-systems-web",
+      "name": "Notation Systems website (Webflow)",
+      "kind": "operator_surface",
+      "description": "The public web presence of Notation Systems, hosted on Webflow (site 'notation-systems', English primary locale, no custom domain attached yet, last published 2026-09-03). Reachable through the Webflow Data API, which makes the site a programmable node: pages, CMS collections, assets, forms and publishing. A Webflow Cloud app (tradewind-scm-nextjs, a Next.js + OpenNext starter) is mounted under it.",
+      "capabilities": [
+        {
+          "capabilityId": "site.read",
+          "label": "Read site details",
+          "description": "Site domains, locales and publish state (GET /v2/sites/{site_id}).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "pages.read",
+          "label": "List pages",
+          "description": "Enumerate pages and their metadata (GET /v2/sites/{site_id}/pages).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "cms.read",
+          "label": "Read CMS items",
+          "description": "Read collection items; a public catalogue of ecosystem nodes could be published here from the control plane.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "cms.write",
+          "label": "Create or update CMS items",
+          "description": "Write collection items (POST/PATCH /v2/collections/{collection_id}/items).",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "site.publish",
+          "label": "Publish the site",
+          "description": "Publish to the Webflow subdomain and custom domains (POST /v2/sites/{site_id}/publish).",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "webhooks.observe",
+          "label": "Site webhooks",
+          "description": "Form submissions, publishes and CMS changes can be delivered as webhook observations into the control plane.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/tradewind-scm-nextjs",
+        "domain": "platform",
+        "maturity": "external",
+        "language": "Webflow / Next.js",
+        "framework": "Webflow + Webflow Cloud (OpenNext on Cloudflare)",
+        "exposure": "deployed",
+        "upstream": "Webflow",
+        "visibility": "private",
+        "last_pushed_at": "2026-08-31T02:47:31Z",
+        "webflow_site_id": "6a98a59e681119615d9c67c0",
+        "timezone": "Asia/Saigon",
+        "capability_count": 6
+      },
+      "location": {
+        "longitude": 106.7009,
+        "latitude": 10.7769
+      },
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "notations-archival-swarm",
+      "name": "Notations Archival Swarm",
+      "kind": "information_library",
+      "description": "Planned swarm of archival agents that capture and re-verify unreconstructable external datasets, the class of data the Information Systems Archive mirrors. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Notations-Archival-Swarm",
+        "domain": "archive",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-08-25T23:15:57Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "notations-dock",
+      "name": "Notations Universe Dock",
+      "kind": "visual_dock",
+      "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It never talks to a provider directly and holds no credentials of its own.",
+      "capabilities": [
+        {
+          "capabilityId": "map.observe",
+          "label": "Kepler.gl universe map",
+          "description": "Located nodes as points sized by capability count and coloured by kind; relations as arcs; health as colour; flows from world models as extra layers.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "graph.observe",
+          "label": "Capability graph",
+          "description": "Force-directed graph of every node and relation with a node inspector listing capabilities by mode and approval.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "ledger.observe",
+          "label": "Coordination ledger",
+          "description": "Every coordination record with status (ready, approval_required, approved, rejected) and its dispatch state, always not_dispatched.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "events.observe",
+          "label": "Event timeline",
+          "description": "Incremental journal events after the last cursor, with automatic snapshot refresh on cursor loss.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "command.compose",
+          "label": "Command console",
+          "description": "Composes register_node, declare_relation, record_observation, request_capability and resolve_coordination commands, validated with the control plane's own validator, and submits them with the current revision.",
+          "mode": "propose",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Notations-Ecosystem",
+        "domain": "platform",
+        "maturity": "v0",
+        "language": "TypeScript",
+        "framework": "Vite + React + Kepler.gl",
+        "exposure": "local-only",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-09-03T01:40:38Z",
+        "default_port": 5173,
+        "capability_count": 5
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "healthy",
+      "lastObservedAt": "2026-09-03T00:00:00.000Z",
+      "lastObservation": {
+        "source": "operator",
+        "detail": "Sample: dock rendered the snapshot."
+      }
+    },
+    {
+      "nodeId": "notations-energy-modulator",
+      "name": "Notations Energy Modulator",
+      "kind": "information_library",
+      "description": "Planned energy and compute modulation layer for long-running archival and scientific workloads. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Notations-Energy-Modulator",
+        "domain": "archive",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-08-25T23:14:51Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "payload-corpus-graph",
+      "name": "Payload Corpus Graph",
+      "kind": "information_library",
+      "description": "Planned corpus graph for Payload: documents perceived by the OCR agent and freight evidence linked with provenance, the physical-economy counterpart of the Notations Corpus Graph. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+      "capabilities": [
+        {
+          "capabilityId": "charter.observe",
+          "label": "Repository placeholder",
+          "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+          "mode": "observe",
+          "approval": "automatic"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/PayLoad-Corpus-Graph",
+        "domain": "physical-economy",
+        "maturity": "empty",
+        "language": "",
+        "framework": "",
+        "exposure": "unknown",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-08-31T07:20:03Z",
+        "capability_count": 1
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    },
+    {
+      "nodeId": "payload-render-engine",
+      "name": "Payload Earth (Payload Render Engine)",
+      "kind": "world_model",
+      "description": "PAYLOAD EARTH is the cinematic WebGL/Three.js globe digital twin of the physical economy: ports, airports, rail terminals, warehouses, mines, refineries, chokepoints and cities drawn as nodes; road/rail/maritime/air routes as first-class semantic objects; commodity flows animated as GPU particle streams; a sim clock that scrubs historical/current/forecast state; and an inspector that shows promises (Assertions) against evidence (Observations) with computed Deviations. It is a strict projection of Payload state: it never owns or mutates canonical state, and it must never become a simulator or a second representation of state next to the Payload Terminal. Today every record is synthetic (provenance.source 'synthetic:demo', built in-process by src/data/synthetic/world.ts); no network fetch to Payload Terminal exists yet - the SpatialDataProvider seam (load/stateAt/query/subscribe) is where a Payload Spatial API client plugs in. Basemap geometry is static world-atlas TopoJSON shipped under public/data/.",
+      "capabilities": [
+        {
+          "capabilityId": "view.globe",
+          "label": "Interactive globe world view",
+          "description": "Principal UI: procedural day/night Earth (Natural Earth 50m land topology + corpus city lights), atmosphere, graticule, starfield; drag to rotate, wheel to zoom with altitude-driven LOD/progressive disclosure gated by Entity.importance. Nodes, per-mode route polylines and flow particles are drawn from the WorldSnapshot only.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.command_bar",
+          "label": "Command bar (text grammar over AppApi)",
+          "description": "Forgiving command grammar: find/goto <name>, show/hide <layer|group>, show <commodity> flows, flows on/off, play/pause/now, speed 1h|6h|24h, compare <a> vs <b>, view presets (world/freight/trade/commodities/network/exceptions), follow the load, help. Pure functions executeCommand/suggestCommands with autocomplete suggestions. All verbs are view operations on the projection.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.layer_panel",
+          "label": "Layer panel (22 layers in 5 groups)",
+          "description": "Toggle layer visibility across WORLD (countries, cities, terrain, nightlights), TRANSPORT (road, rail, maritime, air), INFRASTRUCTURE (ports, airports, rail_terminals, warehouses, industrial), ECONOMY (production, demand, inventory, flows) and INTELLIGENCE (bottlenecks, constraints, anomalies, dependencies, risk). Kept in sync via layersChange events.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.inspector",
+          "label": "Entity inspector (promises vs evidence)",
+          "description": "Info panel for a selected facility, route or flow: identity, provenance source, status, capacity, connected routes/flows, active events and constraints, and for routes the PROMISED transit (Assertion) against OBSERVED transits (Observations, n=) with the computed Deviation and a utilization sparkline. Reads provenance.source on the record; never replaces it.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.timeline",
+          "label": "Timeline scrubber and playback",
+          "description": "Global sim-time control bound to the snapshot timeRange {start,end,now}: scrub, play/pause, speed; regime shown as historical / current (within +/-30 min of dataset now) / forecast ('scenario' reserved). Every dynamic layer resolves state deterministically via store.stateAt(entityId, simTime).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.status_bar",
+          "label": "Status bar with provenance chip",
+          "description": "Persistent HUD showing fps, camera altitude (km), visible nodes/routes, particle count, sim time/regime, and the SYNTHETIC / DEMO DATA disclaimer chip read from snapshot.meta.disclaimer.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.country_summary",
+          "label": "Country selection and summary",
+          "description": "Click a country (point-in-polygon on Natural Earth 110m borders) to select it and open a summary: nodes in country, routes touching it, flows, and route counts per transport mode (CountryInfo).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.compare_routes",
+          "label": "Compare two routes",
+          "description": "compare <a> vs <b>: side-by-side great-circle distance, promised duration (assertion of record) and live utilization at the current sim time for two searched routes. Distances are presented as great-circle estimates, never road distance.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "view.follow_the_load",
+          "label": "Follow the Load cinematic scenario",
+          "description": "Scripted multimodal demo (GTA West DC -> Toronto intermodal -> Hwy 401 -> Windsor-Detroit Ambassador Bridge -> I-94 -> Chicago DC): camera dolly along the path with step captions. A long-running view operation on the mirror; 'stop'/Escape exits. No state is changed.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.fly_to",
+          "label": "Tool: fly_to (lat, lon, altitude)",
+          "description": "Structured agent tool exposed at window.payloadEarth.invokeTool('fly_to', {lat, lon, altitude?}): smoothly flies the camera to a WGS84 point at an optional altitude in earth radii. Safety flags destructive/longRunning/requiresConfirmation all false.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.find",
+          "label": "Tool: find (fuzzy entity search + focus)",
+          "description": "invokeTool('find', {query}): scored fuzzy search over nodes, routes and flows by name; returns SearchResult[] {id, name, kind, score, detail} and cinematically focuses the best match.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.select_entity",
+          "label": "Tool: select_entity by id",
+          "description": "invokeTool('select_entity', {id}): selects an entity id (e.g. node:port-shanghai, route:..., flow:...) and opens the inspector; emits a select event with source 'command'.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.set_layer",
+          "label": "Tool: set_layer visibility",
+          "description": "invokeTool('set_layer', {layer, visible}): toggles one LayerId (e.g. transport.maritime, intel.bottlenecks).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.set_preset",
+          "label": "Tool: set_preset view preset",
+          "description": "invokeTool('set_preset', {preset}): applies a curated layer combination - world, freight, trade, commodities, network or exceptions.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.set_flow_mode",
+          "label": "Tool: set_flow_mode particles on/off",
+          "description": "invokeTool('set_flow_mode', {enabled}): enables/disables the GPU flow-particle layer (particle density proportional to Flow.intensity; particles are representational, not real shipments).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.set_time",
+          "label": "Tool: set_time (scrub fraction)",
+          "description": "invokeTool('set_time', {fraction}): scrubs sim time to a 0..1 fraction of the snapshot timeRange; deterministic re-render.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.set_playing",
+          "label": "Tool: set_playing (play/pause)",
+          "description": "invokeTool('set_playing', {playing}): plays or pauses the sim clock (default 3600 sim-seconds per wall-second).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.run_command",
+          "label": "Tool: run_command (command-bar string)",
+          "description": "invokeTool('run_command', {command}): executes any command-bar string and returns CommandResult {ok, message}.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.get_state",
+          "label": "Tool: get_state (twin view state snapshot)",
+          "description": "invokeTool('get_state'): returns {time: TemporalState, selection, country, preset, flowMode, layers: LayerDef[], data: snapshot.meta {label, disclaimer, generatedAt}} - the machine-readable view state incl. the data disclaimer.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "tool.follow_the_load",
+          "label": "Tool: follow_the_load (long-running demo)",
+          "description": "invokeTool('follow_the_load'): starts the Toronto -> Chicago cinematic multimodal scenario; flagged longRunning: true, not destructive.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "api.app_facade",
+          "label": "AppApi facade (window.payloadEarth.api)",
+          "description": "The single typed facade all UI and agent bindings use: events bus, store, clock, camera (flyToLatLon, frameRoute, followPath, altitudeRadii), layer/preset/flow-mode getters and setters, select/focus/selectCountry/countryInfo, runCommand/suggest/search, demo start/stop. Exposed at runtime as window.payloadEarth.api.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "api.world_store",
+          "label": "WorldStore read-only query API",
+          "description": "Indexed, renderer-blind read API over the snapshot: node/route/flow/commodity/entity by id, routesOfNode, flowsThroughRoute, flowsTouchingNode, routesByMode, nodesInCountry, routesTouchingCountry, stateAt(entityId,t), activeEvents(t), deviationsFor(entityId) (on-demand assertion/observation join), search(q). Never mutates.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "events.app_bus",
+          "label": "Typed AppEvents stream",
+          "description": "EventBus<AppEvents> that UI, layers and bindings subscribe to: select, hover, countrySelect, layersChange, time (TemporalState), preset, flowMode, demo (step/caption), toast, status (fps/altitude/visible counts/particles).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.spatial_data_provider",
+          "label": "SpatialDataProvider seam (ingress contract)",
+          "description": "The only data interface the twin consumes: load(): Promise<WorldSnapshot> (mandatory hydration), stateAt(entityId, t): EntityState (mandatory, deterministic), optional query(ViewportQuery{bbox, altitude, minImportance}) for PostGIS/vector-tile window queries, optional subscribe(onDelta) for push deltas from canonical state. A Payload Spatial API client implements this without touching the renderer.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.world_snapshot",
+          "label": "WorldSnapshot schema",
+          "description": "What a provider hands the renderer: nodes: Facility[], routes: Route[], flows: Flow[], commodities, events: WorldEvent[], constraints, assertions, observations, cityLights [lon,lat,intensity][], timeRange {start,end,now}, meta {label, disclaimer, generatedAt}. WGS84 lon/lat, GeoJSON-compatible Point/LineString geometry.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.node_ontology",
+          "label": "Facility / NodeKind ontology",
+          "description": "Entity base (id, kind, name, geometry, status LifecycleStatus incl. 'unknown', provenance, importance 0..1, country ISO-2, tags) and Facility (inputs/outputs commodity ids, capacity QuantityRating, operator, connectedRouteIds) with subtypes Port (portType container|bulk|energy|mixed, berths, drafts), Airport (iata, cargoTonnesPerYear), RailTerminal (intermodal), Warehouse (areaSqm). NodeKind covers logistics, extraction, processing, industry, city and chokepoint.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.route_flow",
+          "label": "Route, TransportSegment, Commodity and Flow schema",
+          "description": "Route: mode road|rail|maritime|air, LineString geometry, originId/destinationId, distanceKm, estimatedDurationHours, capacity, utilization, constraints (chokepoint/border/capacity/draft_limit/weather/regulatory/congestion with atFraction), historicalState samples, corridorId, geometryBasis routed|great_circle_estimate|synthetic_corridor. Flow: commodityId, origin/destination, ordered TransportSegments (routeId, span), intensity 0..1, status moving|holding|delayed|delivered.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.provenance",
+          "label": "Provenance block (is-this-real as a query)",
+          "description": "Every world-describing record carries Provenance {source: DataSource ('synthetic:demo' | 'payload:canonical' | 'payload:spatial' | 'external:osm' | 'external:ais' | 'external:gov-gis' | string), knownAt, validFrom?, validTo?, evidence?: string[], confidence?}. The build fails if any record lacks provenance.source.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.assertion_observation_deviation",
+          "label": "Assertion / Observation / Deviation model",
+          "description": "Promises and evidence are distinct records: Assertion {entityId, metric, value, unit, assertedAt, provenance}, Observation {entityId, t, metric, value, provenance}, Deviation {assertionId, observationId, delta = observed - asserted, ratio}. Route.estimatedDurationHours/capacity are projections of the current assertion and are never overwritten by outcomes.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.events_constraints",
+          "label": "WorldEvent and Constraint schema",
+          "description": "WorldEvent {affects: EntityId[], severity, start, end?, category congestion|closure|weather|strike|demand_surge|incident, provenance} perturbs entity state through smooth ramps; Constraint attaches a standing typed constraint with validity window to an entity.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "contract.temporal_state",
+          "label": "TemporalState / EntityState",
+          "description": "TemporalState {t, regime historical|current|forecast|scenario, referenceNow, scenarioId?} fans out on the event bus; EntityState {entityId, t, utilization, congestion, status, activeEventIds} is the deterministic per-entity dynamic state a provider resolves for (entityId, t).",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "data.synthetic_world",
+          "label": "Synthetic demo world v1 dataset",
+          "description": "In-process SyntheticProvider ('Synthetic demo world v1'): 114 nodes (26 ports incl. Shanghai, Singapore, Rotterdam, LA/Long Beach; 16 cargo airports; 10 rail terminals; DCs; Windsor-Detroit border crossing; mines, oil fields, agri belts, steel mills, refineries; 8 chokepoints - Panama, Suez, Malacca, Hormuz, Gibraltar, Bab el-Mandeb, Bosporus, Dover; 12 cities), 55 routes over 9 corridors, 16 commodities with derived flows, events, constraints, assertions and observations. Dynamic state is a hash-seeded pure function of (entityId, t). Every record has provenance.source 'synthetic:demo'.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "data.basemap_topojson",
+          "label": "Static basemap assets (world-atlas TopoJSON)",
+          "description": "Served static files fetched by the client at boot: public/data/land-50m.json (Natural Earth 50m land, used to generate procedural day/night/mask textures) and public/data/countries-110m.json (borders + point-in-polygon country picking). No external imagery or tile servers.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "cli.check",
+          "label": "npm run check (seam + provenance + types)",
+          "description": "Validation gate run before every build: scripts/check-seam.mjs (src/data/** imports no packages and never escapes the data layer except core/events.ts and core/time.ts), scripts/validate-provenance.mjs (executes buildWorldSnapshot() and fails on any node/route/flow/commodity/event/constraint/assertion/observation lacking provenance.source), and tsc --noEmit strict.",
+          "mode": "propose",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "cli.dev_build",
+          "label": "Vite dev server / production build / preview",
+          "description": "npm run dev (Vite dev server, host: true), npm run build (runs check, then vite build to dist/ with base './' so the twin deploys as a static site), npm run preview. Build is a local compute job producing the deployable static bundle.",
+          "mode": "execute",
+          "approval": "operator"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Payload-Render-Engine",
+        "domain": "physical-economy",
+        "maturity": "v0",
+        "language": "TypeScript",
+        "framework": "Vite 5 + three.js 0.180 + topojson-client",
+        "exposure": "static-web",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-08-31T20:57:34Z",
+        "capability_count": 35,
+        "version": "0.1.0",
+        "license": "GPL-3.0",
+        "data_provenance": "synthetic:demo",
+        "dataset_label": "Synthetic demo world v1",
+        "node_count": 114,
+        "route_count": 55,
+        "commodity_count": 16,
+        "chokepoint_count": 8,
+        "port_count": 26,
+        "layer_count": 22,
+        "tool_count": 11,
+        "agent_binding": "window.payloadEarth.tools / invokeTool (in-page, no MCP yet)",
+        "fetches_from_payload_terminal": false
+      },
+      "location": {
+        "longitude": 121.65,
+        "latitude": 31.34
+      },
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null
+    }
+  ],
+  "relations": [
+    {
+      "relationId": "building-information-graph--depends_on--building-information-corpus",
+      "sourceNodeId": "building-information-graph",
+      "targetNodeId": "building-information-corpus",
+      "kind": "depends_on",
+      "description": "Corpus-to-graph pairing (planned, inferred from naming), mirroring the Payload and Notations corpus graphs.",
+      "declaredAt": "2026-09-03T00:00:00.000Z"
+    },
+    {
+      "relationId": "notation-systems-web--visualizes--control-plane",
+      "sourceNodeId": "notation-systems-web",
+      "targetNodeId": "control-plane",
+      "kind": "visualizes",
+      "description": "Intended public catalogue: CMS items rendered from control-plane node registrations (not yet built).",
+      "declaredAt": "2026-09-03T00:00:00.000Z"
+    },
+    {
+      "relationId": "notations-dock--depends_on--control-plane",
+      "sourceNodeId": "notations-dock",
+      "targetNodeId": "control-plane",
+      "kind": "depends_on",
+      "description": "Every command the dock submits goes through /v1/commands with the snapshot revision; without the control plane the dock only shows the bundled sample snapshot.",
+      "declaredAt": "2026-09-03T00:00:00.000Z"
+    },
+    {
+      "relationId": "notations-dock--visualizes--control-plane",
+      "sourceNodeId": "notations-dock",
+      "targetNodeId": "control-plane",
+      "kind": "visualizes",
+      "description": "The dock renders the control plane's snapshot, coordination records and events.",
+      "declaredAt": "2026-09-03T00:00:00.000Z"
+    },
+    {
+      "relationId": "notations-energy-modulator--governs--notations-archival-swarm",
+      "sourceNodeId": "notations-energy-modulator",
+      "targetNodeId": "notations-archival-swarm",
+      "kind": "governs",
+      "description": "Planned (inferred): sets the energy budget the swarm runs under.",
+      "declaredAt": "2026-09-03T00:00:00.000Z"
+    }
+  ],
+  "coordination": [],
+  "sample": true,
+  "sampleNote": "Generated from ecosystem/catalog by ecosystem/sample-snapshot.mjs. Not live control-plane state."
+}

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["vite/client", "node"],
+    "paths": { "@control-plane/*": ["../control-plane/src/*"] },
+    "baseUrl": "."
+  },
+  "include": ["src", "test", "vite.config.ts", "vitest.config.ts", "src/control-plane.d.ts"]
+}

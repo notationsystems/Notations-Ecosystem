@@ -1,0 +1,88 @@
+# Ecosystem catalog format
+
+`ecosystem/catalog/<nodeId>.json` — one file per node of the Notations Universe. The catalog is
+the *discovered* description of the ecosystem's APIs, world models, libraries, reasoning engines
+and docks. `ecosystem/seed.mjs` turns it into control-plane commands (`register_node`,
+`declare_relation`) and the dock can layer its `reference` block over the live snapshot. Once
+seeded, the control plane journal (`control-plane/`) is authoritative; the catalog is
+documentation and seed material, never an execution authority.
+
+Every constraint below mirrors `control-plane/src/validation.js`; `node ecosystem/validate.mjs`
+runs the real validator over every file.
+
+## Node
+
+```json
+{
+  "nodeId": "payload-terminal",
+  "name": "Payload Terminal V0",
+  "kind": "api",
+  "description": "2–6 sentences: what it is, what role it plays in the ecosystem, what it must never become. ≤ 1200 chars.",
+  "capabilities": [
+    {
+      "capabilityId": "economy.entity.read",
+      "label": "Read an economy entity",
+      "description": "≤ 600 chars. What it returns / does.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/entity",
+      "evidence": "src/app/api/economy/entity/route.ts"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Payload-Terminal-V0",
+    "domain": "physical-economy",
+    "maturity": "v0",
+    "language": "TypeScript",
+    "framework": "Next.js 16",
+    "exposure": "docker",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-03T01:18:22Z",
+    "capability_count": 12
+  },
+  "location": { "longitude": 103.85, "latitude": 1.29, "label": "Port of Singapore" },
+  "relations": [
+    {
+      "relationId": "payload-terminal--depends_on--osiris-intel",
+      "targetNodeId": "osiris-intel",
+      "kind": "depends_on",
+      "description": "≤ 600 chars. Why, with the direction made explicit.",
+      "evidence": "intel/server.js; src/lib/... (repo-relative paths)"
+    }
+  ],
+  "reference": {
+    "runtime": { "entrypoints": [], "run": [], "ports": [], "container": false },
+    "contracts": [{ "name": "", "path": "", "summary": "" }],
+    "resources": [{ "name": "", "classification": "public|internal|sensitive|unreconstructable", "path": "", "description": "" }],
+    "external_services": [{ "name": "", "domain": "", "purpose": "", "auth": "" }],
+    "secrets_env": ["NAMES_ONLY"],
+    "health": { "method": "http|cli|manifest-only|none", "endpoint": "/api/health" },
+    "spatial": "one sentence on what geography the system natively carries",
+    "temporal": "one sentence on what time dimension it carries",
+    "open_questions": []
+  }
+}
+```
+
+### Rules (enforced)
+
+- `nodeId`, `capabilityId`, `relationId`: `^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$`. Use kebab-case node ids and dotted capability ids (`world.read`, `sdk.ingest`).
+- `name` ≤ 160 chars; `description` 1–1200 chars; capability `label` ≤ 120; capability `description` ≤ 600.
+- `kind` ∈ `api` · `world_model` · `information_library` · `reasoning_engine` · `visual_dock` · `operator_surface`.
+- 1–100 capabilities, unique ids. `mode` ∈ `observe` · `propose` · `execute`; `approval` ∈ `automatic` · `operator`; **`execute` requires `operator`**.
+- `metadata`: flat strings (≤ 500 chars) / finite numbers / booleans; keys `^[a-z][a-z0-9_.-]{0,80}$`; keys may never contain `token secret password credential authorization cookie email phone contact`.
+- `location`: `null` or `{ longitude, latitude }` (a `label` is allowed in the catalog and stripped before seeding).
+- `relations[].kind` ∈ `supplies_context_to` · `coordinates` · `visualizes` · `governs` · `depends_on`; `targetNodeId` should be another catalog node.
+- `surface`, `method`, `path`, `evidence`, `side_effects`, `cost`, `latency`, `provenance`, `data_domain` and `workflow` on capabilities, and the whole `reference` block, are catalog-only: they never enter the control plane. `cost` is a short hint ("free", "rate-limited 60/min", "GPU minutes"); `latency` a typical figure ("~200 ms", "minutes"); `provenance` where the capability's answers come from ("UN Comtrade capture 2026-08-27", "synthetic:demo", "OpenSanctions bulk CSV"); `data_domain` the data domain it touches (e.g. `trade-flows`, `carrier-identity`, `sanctions`); `workflow` the operator workflow it belongs to (e.g. `daily-chain`, `deploy`).
+- `reference` may also carry `data_sources` (`[{ name, domain, purpose, auth, coverage, freshness }]`), `workflows` (`[{ id, name, steps: [string], doc_path }]`) and `layers` (`[{ id, name, geometry, source, provenance }]`) for systems that are modelled deeply (Payload first).
+
+### Meaning of the enums
+
+- **kind** — `api`: a service exposing HTTP/MCP surfaces others call. `world_model`: an engine that holds or renders a state of the world (canonical state, simulation, globe, BIM belief). `information_library`: archives, corpora, graphs, datasets, knowledge platforms. `reasoning_engine`: agents and models that perceive, plan or infer (OCR agent, geospatial agent, scouts, depth models). `visual_dock`: viewers and dashboards that only render. `operator_surface`: terminals where a human operates and approves.
+- **mode** — `observe`: read-only queries and views. `propose`: produces plans, scenarios, validations or observations for review without changing canonical state. `execute`: writes canonical state, ingests, publishes, sends, spends, triggers compute or external side effects → `approval: operator`.
+- **relation kind** (source → target) — `supplies_context_to`: evidence/data/context flows from source into target. `coordinates`: source orchestrates or calls target. `visualizes`: source renders target's state. `governs`: source defines policy or contract that target follows. `depends_on`: source needs target to function.
+- **metadata.domain** ∈ `physical-economy` · `intelligence` · `scientific` · `built-environment` · `perception-3d` · `geospatial` · `archive` · `platform`.
+- **metadata.maturity** ∈ `empty` · `prototype` · `v0` · `active` · `archived` · `upstream-mirror` · `external`.
