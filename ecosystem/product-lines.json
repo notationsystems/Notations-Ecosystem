@@ -1,0 +1,251 @@
+{
+  "schema": "notations.ecosystem.product-lines.v1",
+  "description": "Three APIs on one shared spine. Logistics operations, market state and land state are different object worlds that share only a few keys; forcing them into one schema produces a bad API, and giving each its own identity for organizations, sites, commodities and contracts produces three companies. This file names the spine that keeps them one product, what each line is and is explicitly not, the incumbent layer each must not clone, the cross-line join that has to resolve in v1, and the order in which they are built. It is checked by product-lines.mjs, not believed.",
+
+  "invariants": {
+    "LINE-001": {
+      "statement": "Every spine type has exactly one canonical owner. One line defines it; every other line holds a reference to it and never a second definition.",
+      "why": "Two definitions of the same organization is the moment the OS becomes three products that happen to share a logo."
+    },
+    "LINE-002": {
+      "statement": "A reference is a pointer, not a copy. A non-owner carries the owner's identifier and the fields it needs to display, and may not carry the fields that would let it answer as though it owned the type.",
+      "why": "A copied field drifts, and a drifted copy is answered from rather than resolved."
+    },
+    "LINE-003": {
+      "statement": "Every line states, in its own file, what it is not.",
+      "why": "A line with no written non-goal grows into the line next to it, and the partition that justified three APIs stops being real."
+    },
+    "LINE-004": {
+      "statement": "Every line names the incumbent layer it does not clone, and the layer on which it competes.",
+      "why": "Each of these markets already has vendors at the coverage layer. A line that does not say which fight it is declining will start it by accident."
+    },
+    "LINE-005": {
+      "statement": "The cross-line join resolves in v1 schemas. Every hop names its source class, its target class and the key that carries it, and that key appears on both.",
+      "why": "The join is the entire argument for one company. A join that only works in a slide is three companies."
+    },
+    "LINE-006": {
+      "statement": "Exactly one line is building at a time. The others are defined.",
+      "why": "Three lines building in parallel spends the year on venue and vendor connectors and ships no spine."
+    },
+    "LINE-007": {
+      "statement": "A building line names a bounded v1 slice — its mode, its corridor and its geography — before it ships.",
+      "why": "An unbounded v1 is the same failure as an unbounded corpus: an extent nobody can state and a boundary nobody can point at."
+    },
+    "LINE-008": {
+      "statement": "Every source class carries a rights profile, and a source whose redistribution terms are unread is marked unverified rather than assumed.",
+      "why": "Redistribution terms decide what an API may return. Assuming them is how a licensed feed leaves through a public endpoint."
+    },
+    "LINE-009": {
+      "statement": "An optional venue adapter is admitted only when its events tie to an object the line already owns.",
+      "why": "A venue whose events tie to nothing the estate owns is a different firm's product built inside this one."
+    },
+    "LINE-010": {
+      "statement": "A line's data subjects come from the closed vocabulary in data-domains.json.",
+      "why": "A coordination layer whose lines name the same subject differently cannot answer a question that spans them — the same reason the vocabulary was closed in the first place."
+    }
+  },
+
+  "spine": {
+    "description": "The canonical types NotationOS owns across all three lines. Each is defined once, by one owner, and referenced everywhere else. The reference shape is what a non-owner is allowed to hold.",
+    "types": {
+      "organization": {
+        "owner": "notationos",
+        "definition": "A legal or operating entity: a carrier, a shipper, a counterparty, an owner of record, an applicant, a broker.",
+        "keys": ["organization_id"],
+        "reference_shape": ["organization_id", "display_name"],
+        "note": "The OS owns this one directly rather than lending it to a line, because all three lines meet the same counterparties and a party resolved twice is a party resolved wrong."
+      },
+      "site": {
+        "owner": "landshark",
+        "definition": "Land as a legal object: the parcel, its geometry of record, and the identity everything else hangs off.",
+        "keys": ["site_id"],
+        "reference_shape": ["site_id", "display_name", "centroid"],
+        "note": "LANDSHARK owns the legal geometry. PAYLOAD's facility and node are its own classes that reference a site_id; they are not a second parcel."
+      },
+      "commodity": {
+        "owner": "tradewind",
+        "definition": "The market identity of a traded thing: what a price is a price of.",
+        "keys": ["commodity_id"],
+        "reference_shape": ["commodity_id", "display_name"],
+        "note": "TRADEWIND owns market identity. The physical thing on a ship is a different type."
+      },
+      "product_lot": {
+        "owner": "payload",
+        "definition": "The physical lot that actually moves: quantity, packaging, HS classification, and the commodity it is an instance of.",
+        "keys": ["lot_id", "commodity_id"],
+        "reference_shape": ["lot_id"],
+        "requires_reference_to": "commodity",
+        "note": "Splitting market identity from physical lot is what lets a price and a container be joined without either owning the other."
+      },
+      "contract": {
+        "owner": "notationos",
+        "definition": "The base identity of an agreement. Typed, never one blob: each subtype is owned by the line whose objects it binds.",
+        "keys": ["contract_id", "contract_type"],
+        "reference_shape": ["contract_id", "contract_type"],
+        "subtypes": {
+          "charter": { "owner": "payload", "binds": ["voyage", "organization"] },
+          "purchase": { "owner": "payload", "binds": ["product_lot", "organization"] },
+          "derivative": { "owner": "tradewind", "binds": ["instrument", "organization"] },
+          "lease": { "owner": "landshark", "binds": ["site", "organization"] }
+        }
+      }
+    }
+  },
+
+  "lines": {
+    "payload": {
+      "name": "PAYLOAD",
+      "job": "Move physical goods.",
+      "not_the_job": [
+        "The price of copper — that is TRADEWIND's object, and PAYLOAD holds a commodity reference, not a curve.",
+        "The zoning of a lot — that is LANDSHARK's object, and PAYLOAD holds a site reference, not a by-law.",
+        "Visibility for everyone, on every mode, everywhere. That is the incumbent layer and it is a coverage fight."
+      ],
+      "object_classes": ["shipment", "load", "container", "voyage", "party", "node", "milestone"],
+      "spine": { "owns": ["product_lot", "contract.charter", "contract.purchase"], "references": ["organization", "site", "commodity"] },
+      "incumbents": {
+        "layer_not_cloned": "Network visibility and rate coverage: TMS vendors, rate benchmarks such as Xeneta and Freightos, visibility networks such as project44 and FourKites, AIS position vendors such as Kpler, and carrier EDI.",
+        "where_we_compete": "Resolved parties, nodes and milestones with lineage on one corridor: an answer that can be walked back to the document or event it came from, and that refuses rather than guesses when it cannot."
+      },
+      "data_subjects": ["shipments", "logistics", "tracking-events", "carrier-identity", "facilities", "trade-lanes", "trade-documents", "service-levels", "disruptions"],
+      "source_classes": [
+        { "id": "carrier-edi", "kind": "counterparty_feed", "rights": { "redistribution": "unverified", "note": "Terms are per carrier agreement and must be read and recorded before admission." } },
+        { "id": "operator-documents", "kind": "first_party", "rights": { "redistribution": "own_material", "note": "Documents the operator already holds; OCR and extraction are first-party derivations." } },
+        { "id": "ais-positions", "kind": "licensed_vendor", "rights": { "redistribution": "unverified", "note": "Position vendors license derived use narrowly; nothing here asserts a vendor's terms." } },
+        { "id": "rate-benchmarks", "kind": "licensed_vendor", "rights": { "redistribution": "unverified", "note": "Benchmark redistribution is normally prohibited; must be confirmed per contract before an endpoint returns it." } }
+      ],
+      "stage": "building",
+      "v1_slice": {
+        "mode": "to_decide",
+        "corridor": "to_decide",
+        "geography": "to_decide",
+        "events": "licensed",
+        "open_decision": "One mode, one corridor, one geography — the single decision that has to be made before this line ships. The corridor should be one where the operator already holds first-party documents and counterparty relationships, so that resolution and lineage can be demonstrated against material the estate can lawfully return.",
+        "note": "Marked to_decide rather than guessed. LINE-007 warns until the three fields are named."
+      },
+      "implemented_by": ["payload-terminal", "payload-corpus-graph", "payload-ocr-agent", "payload-render-engine", "atlas-mcp"],
+      "adjacent": []
+    },
+
+    "tradewind": {
+      "name": "TRADEWIND",
+      "job": "Price and risk.",
+      "not_the_job": [
+        "Tracking a truck — that is PAYLOAD's object, and TRADEWIND holds a voyage or shipment reference, not a milestone stream.",
+        "A prediction-market venue. Prediction markets are a third source class under this line — venue, contract, print, with a rights profile per venue — not a product to clone.",
+        "A general prediction API across every venue and question. That is a different firm."
+      ],
+      "object_classes": ["instrument", "contract", "curve", "print", "position", "event_market"],
+      "spine": { "owns": ["commodity", "contract.derivative"], "references": ["organization", "product_lot"] },
+      "incumbents": {
+        "layer_not_cloned": "Market data coverage: Bloomberg, Refinitiv and exchange market-data agreements for listed derivatives; Kpler, Argus and Platts for physical commodity assessments; venue and tick vendors for prediction markets.",
+        "where_we_compete": "Price and risk tied to objects the estate already owns and can walk back — the freight and commodity exposure of a specific corridor, with the same lineage discipline the corpora are held to."
+      },
+      "data_subjects": ["commodity-markets", "freight-rates", "financial-markets", "prediction-markets", "risk"],
+      "source_classes": [
+        { "id": "listed-derivatives", "kind": "licensed_vendor", "rights": { "redistribution": "unverified", "note": "Exchange market data is licensed per redistribution class; must be confirmed before any endpoint returns a print." } },
+        { "id": "physical-assessments", "kind": "licensed_vendor", "rights": { "redistribution": "unverified", "note": "Price assessments are licensed material; derived use terms must be read and recorded." } },
+        { "id": "prediction-venues", "kind": "venue_adapter", "optional": true, "rights": { "redistribution": "unverified", "note": "Per venue terms. Admitted only under LINE-009." }, "admission_rule": "Only where the event resolves against an object this estate already owns: a freight disruption on a corridor PAYLOAD holds, a rate decision that prices an instrument TRADEWIND holds, or an outage on a commodity in the spine." }
+      ],
+      "stage": "defined",
+      "v1_slice": {
+        "scope": "Only instruments that touch the PAYLOAD slice — the freight derivatives on that corridor, or the commodity that rides those ships.",
+        "note": "Not 'commodities plus listed derivatives plus prediction markets in parallel'. That build spends the year on venue connectors."
+      },
+      "implemented_by": [],
+      "adjacent": ["pythia-oracle-engine", "osiris-intel"]
+    },
+
+    "landshark": {
+      "name": "LANDSHARK",
+      "job": "Land as a legal and development object.",
+      "not_the_job": [
+        "Clash detection in Revit. Engineers are users of survey and plan objects here; they are not the BIM customer, and this line is not a BIM tool.",
+        "A national parcel and zoning coverage API. Regrid, LightBox, ATTOM and Precisely already hold that layer and it is a coverage fight.",
+        "A listings portal or brokerage platform. MLS and CoStar hold that; a listing is an observation attached to a parcel, not the product."
+      ],
+      "object_classes": ["parcel", "zone", "survey", "plan", "entitlement", "listing_lease"],
+      "spine": { "owns": ["site", "contract.lease"], "references": ["organization"] },
+      "incumbents": {
+        "layer_not_cloned": "National parcel, zoning and ownership coverage: Regrid, LightBox, ATTOM, Precisely. And listings: MLS and CoStar.",
+        "where_we_compete": "Time, documents and decisions: official plan against zoning by-law against survey against application against issued permit against listing, each dated and each walked back to its instrument. An entitlement corpus, not a parcel API."
+      },
+      "data_subjects": ["facilities", "local-context", "terrain", "infrastructure", "beneficial-ownership"],
+      "source_classes": [
+        { "id": "public-registers", "kind": "public_record", "rights": { "redistribution": "public_record", "note": "Terms of use still vary by registry and are recorded per source." } },
+        { "id": "planning-instruments", "kind": "public_record", "rights": { "redistribution": "public_record", "note": "Official plans, by-laws, applications and issued permits as published documents." } },
+        { "id": "survey-and-plan", "kind": "first_party", "rights": { "redistribution": "own_material", "note": "Survey and plan objects the operator or its client holds." } },
+        { "id": "listings", "kind": "licensed_vendor", "optional": true, "rights": { "redistribution": "unverified", "note": "Listing data is licensed; admitted as dated observations on a parcel, never republished as a listings product." } }
+      ],
+      "stage": "defined",
+      "v1_slice": {
+        "scope": "Parcels that are origins, destinations or development sites in the same geography as the PAYLOAD slice.",
+        "note": "The geography is inherited from the PAYLOAD decision, not chosen separately."
+      },
+      "implemented_by": [],
+      "adjacent": ["building-information-corpus", "building-information-graph", "bim-state-transformer-engine", "geoagent"]
+    }
+  },
+
+  "join": {
+    "description": "The join that makes this one company. A metals contract prices a commodity; a lot of that commodity rides a voyage; that voyage discharges at a node standing on a parcel. If these hops do not resolve in v1 schemas, three APIs were built instead of one.",
+    "path": [
+      {
+        "hop": "contract-to-voyage",
+        "from": { "line": "tradewind", "class": "contract", "subtype": "derivative" },
+        "through": { "line": "payload", "class": "product_lot" },
+        "to": { "line": "payload", "class": "voyage" },
+        "key": "commodity_id",
+        "note": "The derivative names a commodity; the lot on the voyage is an instance of that same commodity. The key is the spine's, owned by TRADEWIND, referenced by PAYLOAD."
+      },
+      {
+        "hop": "voyage-to-parcel",
+        "from": { "line": "payload", "class": "voyage" },
+        "through": { "line": "payload", "class": "node" },
+        "to": { "line": "landshark", "class": "parcel" },
+        "key": "site_id",
+        "note": "The voyage's discharge milestone happens at a node; the node references the site it stands on. The key is the spine's, owned by LANDSHARK, referenced by PAYLOAD."
+      }
+    ]
+  },
+
+  "class_keys": {
+    "description": "The keys each object class carries, so that LINE-005 can be checked rather than asserted. A class lists the spine keys it holds; a hop whose key is absent from either endpoint is not a join.",
+    "payload": {
+      "shipment": ["shipment_id", "organization_id", "lot_id"],
+      "load": ["load_id", "shipment_id", "lot_id"],
+      "container": ["container_id", "voyage_id"],
+      "voyage": ["voyage_id", "commodity_id", "site_id", "organization_id"],
+      "party": ["organization_id"],
+      "node": ["node_id", "site_id"],
+      "milestone": ["milestone_id", "voyage_id", "node_id", "observed_at"],
+      "product_lot": ["lot_id", "commodity_id"]
+    },
+    "tradewind": {
+      "instrument": ["instrument_id", "commodity_id"],
+      "contract": ["contract_id", "contract_type", "instrument_id", "commodity_id", "organization_id"],
+      "curve": ["curve_id", "instrument_id", "as_of"],
+      "print": ["print_id", "instrument_id", "observed_at"],
+      "position": ["position_id", "instrument_id", "organization_id"],
+      "event_market": ["event_market_id", "venue_id", "resolves_against"]
+    },
+    "landshark": {
+      "parcel": ["site_id", "organization_id"],
+      "zone": ["zone_id", "site_id"],
+      "survey": ["survey_id", "site_id", "dated_at"],
+      "plan": ["plan_id", "site_id", "dated_at"],
+      "entitlement": ["entitlement_id", "site_id", "dated_at", "organization_id"],
+      "listing_lease": ["listing_id", "site_id", "contract_id", "observed_at"]
+    }
+  },
+
+  "sequence": {
+    "description": "The product map is three APIs. The year-one build is not.",
+    "steps": [
+      { "order": 1, "what": "NotationOS releases the spine objects and shared identity: organization, site, commodity, product_lot, contract.", "gate": "All three lines resolve the same organization and the same commodity." },
+      { "order": 2, "what": "One PAYLOAD slice: one mode, one corridor, licensed events, with resolved parties and nodes and lineage on every milestone.", "gate": "An answer on that corridor walks back to its document or event, and refuses where it cannot." },
+      { "order": 3, "what": "TRADEWIND only on instruments that touch that slice — the freight derivatives on that corridor or the commodity riding those ships.", "gate": "The contract-to-voyage hop resolves against real objects." },
+      { "order": 4, "what": "LANDSHARK on parcels that are origins, destinations or development sites in the same geography.", "gate": "The voyage-to-parcel hop resolves against real objects." }
+    ]
+  }
+}

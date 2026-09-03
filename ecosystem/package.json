@@ -10,6 +10,7 @@
     "seed:journal": "node seed.mjs --journal ../control-plane/data/control-plane.jsonl",
     "sample": "node sample-snapshot.mjs",
     "test": "node --test",
-    "twin": "node twin/build.mjs"
+    "twin": "node twin/build.mjs",
+    "lines": "node product-lines.mjs"
   }
 }

@@ -62,8 +62,8 @@ Credentials: issue one per principal rather than sharing a token — see
 
 Checks: `cd control-plane && npm test` (59, of which 46 are named security
 invariants), `node ecosystem/validate.mjs` (31 nodes, 645 capabilities, 46 relations),
-`node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (65), `cd dock && npm run check && npm test && npm run build` (72),
+`node ecosystem/corpus.mjs`, `node ecosystem/product-lines.mjs`, `node security/scan-secrets.mjs`,
+`cd ecosystem && npm test` (80), `cd dock && npm run check && npm test && npm run build` (72),
 `node platform/migrate.mjs --reset && node --test platform/test/` (9 invariants, 9 proofs, against a live PostgreSQL).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`
@@ -83,6 +83,7 @@ add_header Referrer-Policy no-referrer always;
 | --- | --- |
 | Which systems are provenance-bearing corpora, and which fail which invariant? | dock → **Corpus** lens; `node ecosystem/corpus.mjs` |
 | What does this company build, and what makes something one of them? | [docs/CORPUS.md](docs/CORPUS.md) — ten invariants, five roles, four standings |
+| What are the three APIs, and what keeps them one company? | [docs/PRODUCT_LINES.md](docs/PRODUCT_LINES.md) — PAYLOAD, TRADEWIND, LANDSHARK on one spine; ten invariants, one cross-line join, one line building at a time |
 | How healthy is each security control across the estate? | dock → **Security** lens (11 posture dimensions, weakest-link) |
 | What can node X do, in which mode, with whose approval? | `ecosystem/catalog/<nodeId>.json` → seeded → `GET /v1/snapshot` |
 | What is healthy / stale / waiting for approval / blocked? | dock → **Operator** lens |
