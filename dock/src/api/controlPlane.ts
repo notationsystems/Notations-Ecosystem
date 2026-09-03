@@ -22,24 +22,78 @@ export const DEFAULT_CONNECTION: Connection = {
   actorId: 'operator:dock',
 };
 
-const TOKEN_KEY = 'notations-dock.token';
 const CONN_KEY = 'notations-dock.connection';
+const LEGACY_TOKEN_KEY = 'notations-dock.token';
+
+/**
+ * The credential lives in memory for the lifetime of the page and nowhere else.
+ *
+ * `sessionStorage` survives a reload, which is convenient, and is readable by any
+ * script that reaches this origin, which is the whole risk. A control-plane
+ * credential can register nodes and approve execution intents; trading a re-typed
+ * token for that exposure is not a trade worth making. Non-secret preferences (base
+ * URL, actor id) are still persisted, because they are not secret.
+ */
+let inMemoryToken = '';
 
 export function loadConnection(): Connection {
   const conn = { ...DEFAULT_CONNECTION };
   try {
     const saved = sessionStorage.getItem(CONN_KEY);
     if (saved) Object.assign(conn, JSON.parse(saved) as Partial<Connection>);
-    conn.token = sessionStorage.getItem(TOKEN_KEY) ?? '';
+    // Clear anything a previous build of the dock may have left behind.
+    sessionStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch { /* storage unavailable: run with defaults */ }
+  conn.token = inMemoryToken;
   return conn;
 }
 
 export function saveConnection(conn: Connection): void {
+  inMemoryToken = conn.token;
   try {
     sessionStorage.setItem(CONN_KEY, JSON.stringify({ baseUrl: conn.baseUrl, actorId: conn.actorId }));
-    if (conn.token) sessionStorage.setItem(TOKEN_KEY, conn.token); else sessionStorage.removeItem(TOKEN_KEY);
   } catch { /* ignore */ }
+}
+
+export function forgetToken(): void {
+  inMemoryToken = '';
+}
+
+/**
+ * Where the dock is willing to send a credential.
+ *
+ * The base URL is an editable field, so it is also the easiest way to talk an
+ * operator into posting their token to somewhere else. A same-origin path or the
+ * origin this build was configured with are allowed; anything else is refused with
+ * the reason, rather than quietly attempted.
+ */
+export function checkBaseUrl(baseUrl: string): { ok: true } | { ok: false; reason: string } {
+  const value = baseUrl.trim();
+  if (!value) return { ok: false, reason: 'A base URL is required.' };
+  if (value.startsWith('/')) return { ok: true };
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return { ok: false, reason: 'That is not a valid URL or same-origin path.' };
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return { ok: false, reason: `The ${parsed.protocol} scheme is not a control plane.` };
+  }
+  // A loopback control plane is the documented development setup and is reachable
+  // only from this machine, so it is allowed whether or not a browser origin exists.
+  if (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost' || parsed.hostname === '[::1]') return { ok: true };
+  const configured = (import.meta.env?.VITE_CONTROL_PLANE_URL as string | undefined) ?? '';
+  const allowed = new Set<string>();
+  if (configured && !configured.startsWith('/')) {
+    try { allowed.add(new URL(configured).origin); } catch { /* misconfigured build */ }
+  }
+  if (typeof location !== 'undefined') allowed.add(location.origin);
+  if (allowed.has(parsed.origin)) return { ok: true };
+  return {
+    ok: false,
+    reason: `The dock will not send a credential to ${parsed.origin}. Allowed: a same-origin path, this origin, loopback, or the origin this build was configured with.`,
+  };
 }
 
 async function parseError(res: Response): Promise<ControlPlaneApiError> {
@@ -52,6 +106,8 @@ export class ControlPlaneClient {
   constructor(private readonly conn: Connection, private readonly fetchImpl: typeof fetch = (...args) => fetch(...args)) {}
 
   private url(path: string): string {
+    const verdict = checkBaseUrl(this.conn.baseUrl);
+    if (!verdict.ok) throw new ControlPlaneApiError(0, 'DOCK_BASE_URL_REFUSED', verdict.reason, 'Point the dock at its own origin or a loopback control plane.');
     const base = this.conn.baseUrl.replace(/\/$/, '');
     return `${base}${path}`;
   }

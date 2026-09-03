@@ -126,7 +126,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   let plane;
   if (journal) {
     const { ControlPlane } = await import('../control-plane/src/control-plane.js');
-    plane = ControlPlane.fromPath(path.resolve(journal));
+    // fromEnvironment, not fromPath: an offline writer must sign the chain the same
+    // way the server would, or "is this history signed?" has no useful answer.
+    plane = await ControlPlane.fromEnvironment(path.resolve(journal));
   } else if (url) {
     if (!token) { console.error('--token or NOTATIONS_CONTROL_PLANE_TOKEN is required with --url'); process.exit(2); }
     plane = new HttpPlane(url, token);

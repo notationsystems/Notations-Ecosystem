@@ -1,0 +1,387 @@
+#!/usr/bin/env node
+/**
+ * The security evidence producer.
+ *
+ * This is the thing that keeps the constellation honest. It runs real checks where
+ * the systems actually are — dependency audits, key-store inspection, journal
+ * verification, transport configuration, secret scanning — and then submits *only*
+ * what the control plane is allowed to hold: a state, a coverage fraction, counts by
+ * severity, and one sentence.
+ *
+ * The asymmetry is the point. The producer sees package names, versions, advisory
+ * identifiers and file paths. The control plane never does. If someone compromises
+ * the visualiser they get a dashboard of how healthy things are, not an inventory of
+ * what to attack. Every signal is re-checked against the same refusal boundary the
+ * server enforces before it is sent, so a careless summary fails here, loudly, rather
+ * than being refused later in a way someone might be tempted to work around.
+ *
+ *   node security/attest.mjs --journal control-plane/data/control-plane.jsonl
+ *   node security/attest.mjs --url http://127.0.0.1:8787 --token "$TOKEN" --node control-plane
+ *   node security/attest.mjs --print            # show what would be sent, send nothing
+ */
+
+import { execFile } from 'node:child_process';
+import { readFile, readdir, stat } from 'node:fs/promises';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import { detectRefusedMaterial, POSTURE_DIMENSIONS } from '../control-plane/src/security/evidence.js';
+
+const run = promisify(execFile);
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+const clamp = value => Math.max(0, Math.min(1, Math.round(value * 100) / 100));
+
+/** Dependency risk: severity counts only. Package names and advisories stay here. */
+async function dependencyRisk(packageDirectory) {
+  const findings = { critical: 0, high: 0, medium: 0, low: 0 };
+  let audited = false;
+  try {
+    const { stdout } = await run('npm', ['audit', '--json'], { cwd: packageDirectory, maxBuffer: 32 * 1024 * 1024 });
+    const report = JSON.parse(stdout);
+    const counts = report?.metadata?.vulnerabilities ?? {};
+    findings.critical = counts.critical ?? 0;
+    findings.high = counts.high ?? 0;
+    findings.medium = counts.moderate ?? 0;
+    findings.low = (counts.low ?? 0) + (counts.info ?? 0);
+    audited = true;
+  } catch (error) {
+    // `npm audit` exits non-zero when it finds anything, and still prints the report.
+    try {
+      const report = JSON.parse(error.stdout ?? '{}');
+      const counts = report?.metadata?.vulnerabilities ?? {};
+      findings.critical = counts.critical ?? 0;
+      findings.high = counts.high ?? 0;
+      findings.medium = counts.moderate ?? 0;
+      findings.low = (counts.low ?? 0) + (counts.info ?? 0);
+      audited = Boolean(report?.metadata);
+    } catch {
+      audited = false;
+    }
+  }
+  if (!audited) {
+    return { dimension: 'dependency_risk', state: 'unknown', summary: 'No dependency audit could be run in this environment.' };
+  }
+  const state = findings.critical > 0 ? 'failing' : findings.high > 0 ? 'weak' : findings.medium > 0 ? 'adequate' : 'strong';
+  return {
+    dimension: 'dependency_risk',
+    state,
+    coverage: 1,
+    findings,
+    summary: `Dependency audit complete: ${findings.critical} critical, ${findings.high} high, ${findings.medium} medium, ${findings.low} low.`,
+  };
+}
+
+/** Repository secret hygiene folds into identity posture. */
+async function secretHygiene() {
+  try {
+    const { stdout } = await run('node', [path.join(ROOT, 'security/scan-secrets.mjs')], { cwd: ROOT, maxBuffer: 8 * 1024 * 1024 });
+    const exempted = Number(/(\d+) exempted/.exec(stdout)?.[1] ?? 0);
+    return { clean: true, exempted };
+  } catch (error) {
+    const findings = Number(/(\d+) finding/.exec(error.stdout ?? '')?.[1] ?? 1);
+    return { clean: findings === 0, findings };
+  }
+}
+
+/** Identity posture, from the credential registry's shape rather than its contents. */
+async function identityPosture(environment) {
+  const legacy = Boolean((environment.NOTATIONS_CONTROL_PLANE_TOKEN ?? '').trim());
+  let bound = 0;
+  let unbound = 0;
+  const registryPath = environment.CONTROL_PLANE_PRINCIPALS_FILE;
+  if (registryPath) {
+    try {
+      const registry = JSON.parse(await readFile(registryPath, 'utf8'));
+      for (const principal of registry.principals ?? []) {
+        if ((principal.actors ?? []).includes('*')) unbound += 1; else bound += 1;
+      }
+    } catch {
+      // An unreadable registry is reported as unknown coverage, never guessed at.
+    }
+  }
+  const total = bound + unbound + (legacy ? 1 : 0);
+  const hygiene = await secretHygiene();
+  const findings = { critical: hygiene.clean ? 0 : (hygiene.findings ?? 1), high: legacy ? 1 : 0, medium: unbound, low: 0 };
+  const state = !hygiene.clean ? 'failing' : legacy ? 'weak' : total === 0 ? 'unknown' : unbound > 0 ? 'adequate' : 'strong';
+  return {
+    dimension: 'identity',
+    state,
+    coverage: total ? clamp(bound / total) : 0,
+    findings,
+    summary: total
+      ? `${bound} of ${total} credentials are bound to a single actor identity${legacy ? '; a shared deployment token is still in use' : ''}.`
+      : 'No credential registry is configured for this deployment.',
+  };
+}
+
+/** Authorization coverage: the fraction of state-changing actions with a required permission. */
+async function authorizationPosture() {
+  const { ACTION_PERMISSIONS, ROLES } = await import('../control-plane/src/security/policy.js');
+  const actions = Object.keys(ACTION_PERMISSIONS);
+  return {
+    dimension: 'authorization',
+    state: actions.length ? 'strong' : 'unknown',
+    coverage: 1,
+    summary: `${actions.length} state-changing actions each require a named permission across ${Object.keys(ROLES).length} roles, with separation of duties on approval.`,
+  };
+}
+
+function transportPosture(environment) {
+  const host = environment.CONTROL_PLANE_HOST || '127.0.0.1';
+  const loopback = ['127.0.0.1', '::1', 'localhost'].includes(host);
+  const tls = Boolean(environment.CONTROL_PLANE_TLS_CERT && environment.CONTROL_PLANE_TLS_KEY);
+  const proxy = ['1', 'true', 'yes', 'on'].includes(String(environment.CONTROL_PLANE_TRUST_PROXY_TLS ?? '').toLowerCase());
+  const state = tls ? 'strong' : proxy ? 'adequate' : loopback ? 'adequate' : 'failing';
+  return {
+    dimension: 'encryption_in_transit',
+    state,
+    coverage: tls || proxy ? 1 : 0,
+    summary: tls ? 'TLS terminates at the control plane.' : proxy ? 'TLS terminates at a trusted proxy in front of the control plane.' : 'The control plane serves loopback traffic only.',
+  };
+}
+
+async function keyLifecyclePosture(environment) {
+  const keystorePath = environment.CONTROL_PLANE_KEYSTORE || path.join(ROOT, 'control-plane/data/keystore.json');
+  const wrapped = Boolean(environment.CONTROL_PLANE_KEK);
+  try {
+    const store = JSON.parse(await readFile(keystorePath, 'utf8'));
+    const keys = store.keys ?? [];
+    const active = keys.find(key => key.keyId === store.activeKeyId);
+    const ageDays = active?.createdAt ? Math.floor((Date.now() - Date.parse(active.createdAt)) / 86_400_000) : null;
+    const plaintext = keys.some(key => key.privateKey?.protection === 'plaintext');
+    const state = plaintext ? 'failing' : ageDays !== null && ageDays > 365 ? 'weak' : ageDays !== null && ageDays > 180 ? 'adequate' : 'strong';
+    return [
+      {
+        dimension: 'key_lifecycle',
+        state,
+        coverage: 1,
+        findings: { critical: plaintext ? 1 : 0, high: 0, medium: ageDays !== null && ageDays > 180 ? 1 : 0, low: 0 },
+        summary: `${keys.length} signing key(s), ${keys.filter(key => key.retiredAt).length} retired; active key is ${ageDays ?? 'of unknown'} days old and is ${plaintext ? 'stored in plaintext' : 'envelope-encrypted at rest'}.`,
+      },
+      {
+        dimension: 'encryption_at_rest',
+        state: wrapped ? 'strong' : 'weak',
+        coverage: wrapped ? 1 : 0,
+        summary: wrapped ? 'Signing key material is wrapped by a key encryption key held outside the repository.' : 'No key encryption key is configured; signing key material is not wrapped at rest.',
+      },
+    ];
+  } catch {
+    return [
+      { dimension: 'key_lifecycle', state: 'unknown', summary: 'No signing key store is present for this deployment.' },
+      { dimension: 'encryption_at_rest', state: wrapped ? 'adequate' : 'unknown', summary: wrapped ? 'A key encryption key is configured.' : 'No key encryption key is configured.' },
+    ];
+  }
+}
+
+/** Audit integrity: verify the chain itself, and report only the verdict. */
+async function auditIntegrityPosture(journalPath) {
+  try {
+    const { HashJournal } = await import('../control-plane/src/journal.js');
+    const { KeyStore } = await import('../control-plane/src/security/crypto/signing.js');
+    const keystorePath = process.env.CONTROL_PLANE_KEYSTORE || path.join(ROOT, 'control-plane/data/keystore.json');
+    let keyStore = null;
+    try {
+      keyStore = await KeyStore.load({ filePath: keystorePath, kek: null, create: false });
+    } catch {
+      keyStore = null;
+    }
+    const journal = new HashJournal(journalPath, { keyStore, anchor: true });
+    const records = await journal.read();
+    const signed = records.filter(record => record.signature).length;
+    let anchored = false;
+    try {
+      await stat(`${journalPath}.anchor`);
+      anchored = true;
+    } catch {
+      anchored = false;
+    }
+    const state = records.length === 0 ? 'unknown' : anchored && signed === records.length ? 'strong' : signed > 0 ? 'adequate' : 'weak';
+    return {
+      dimension: 'audit_integrity',
+      state,
+      coverage: records.length ? clamp(signed / records.length) : 0,
+      summary: `${records.length} records verify as an unbroken hash chain; ${signed} carry signatures and the head is ${anchored ? 'anchored against rollback' : 'not anchored'}.`,
+    };
+  } catch (error) {
+    return { dimension: 'audit_integrity', state: 'failing', coverage: 0, summary: `The journal did not verify: ${String(error.code ?? 'verification failed')}.` };
+  }
+}
+
+async function backupPosture(environment) {
+  const replica = environment.CONTROL_PLANE_JOURNAL_REPLICA;
+  if (!replica) {
+    return { dimension: 'backup', state: 'unknown', coverage: 0, summary: 'No off-host journal replica is configured, so recoverability is unverified.' };
+  }
+  try {
+    const info = await stat(replica);
+    const ageHours = Math.floor((Date.now() - info.mtimeMs) / 3_600_000);
+    const state = ageHours <= 24 ? 'strong' : ageHours <= 168 ? 'adequate' : 'weak';
+    return { dimension: 'backup', state, coverage: 1, summary: `A journal replica exists and was last written ${ageHours} hours ago.` };
+  } catch {
+    return { dimension: 'backup', state: 'failing', coverage: 0, summary: 'A journal replica is configured but is not readable.' };
+  }
+}
+
+/** Exposure: how much of the ecosystem is reachable, as a count. Never which, or where. */
+async function exposurePosture() {
+  try {
+    const directory = path.join(ROOT, 'ecosystem/catalog');
+    const files = (await readdir(directory)).filter(file => file.endsWith('.json'));
+    let deployed = 0;
+    let localOnly = 0;
+    let unknown = 0;
+    for (const file of files) {
+      const entry = JSON.parse(await readFile(path.join(directory, file), 'utf8'));
+      const exposure = entry.metadata?.exposure ?? 'unknown';
+      if (exposure === 'deployed' || exposure === 'external') deployed += 1;
+      else if (exposure === 'unknown') unknown += 1;
+      else localOnly += 1;
+    }
+    const total = files.length;
+    return {
+      dimension: 'exposure',
+      state: unknown > total / 2 ? 'weak' : deployed === 0 ? 'strong' : 'adequate',
+      coverage: total ? clamp((total - unknown) / total) : 0,
+      findings: { critical: 0, high: 0, medium: unknown, low: 0 },
+      summary: `${total} catalogued systems: ${deployed} externally reachable, ${localOnly} local or library-only, ${unknown} with undeclared exposure.`,
+    };
+  } catch {
+    return { dimension: 'exposure', state: 'unknown', summary: 'The ecosystem catalog could not be read.' };
+  }
+}
+
+async function controlPlaneIntegrityPosture() {
+  try {
+    await run('npm', ['test'], { cwd: path.join(ROOT, 'control-plane'), maxBuffer: 16 * 1024 * 1024 });
+    return { dimension: 'control_plane_integrity', state: 'strong', coverage: 1, summary: 'The control plane security invariant suite passes in this environment.' };
+  } catch (error) {
+    const failed = Number(/# fail (\d+)/.exec(error.stdout ?? '')?.[1] ?? 1);
+    return {
+      dimension: 'control_plane_integrity',
+      state: failed > 0 ? 'failing' : 'unknown',
+      coverage: 1,
+      findings: { critical: failed, high: 0, medium: 0, low: 0 },
+      summary: `${failed} control-plane invariant test(s) do not pass in this environment.`,
+    };
+  }
+}
+
+/**
+ * Re-check every signal against the boundary before it is sent. A producer that
+ * leaks material should fail here, where the person running it sees why.
+ */
+export function assertProducerOutputIsEvidence(signals) {
+  for (const signal of signals) {
+    if (!(signal.dimension in POSTURE_DIMENSIONS)) throw new Error(`Unknown constellation dimension ${signal.dimension}.`);
+    if (!signal.summary) continue;
+    const found = detectRefusedMaterial(signal.summary);
+    if (found) {
+      throw new Error(`Refusing to attest: the ${signal.dimension} summary contains ${found.class} (${found.id}). ${found.why}`);
+    }
+  }
+  return signals;
+}
+
+export async function collectPosture({ environment = process.env, journalPath, packageDirectory = path.join(ROOT, 'control-plane'), skipTests = false } = {}) {
+  const signals = [
+    await identityPosture(environment),
+    await authorizationPosture(),
+    transportPosture(environment),
+    ...(await keyLifecyclePosture(environment)),
+    await dependencyRisk(packageDirectory),
+    await exposurePosture(),
+    await auditIntegrityPosture(journalPath ?? path.join(ROOT, 'control-plane/data/control-plane.jsonl')),
+    await backupPosture(environment),
+    ...(skipTests ? [] : [await controlPlaneIntegrityPosture()]),
+  ];
+  return assertProducerOutputIsEvidence(signals);
+}
+
+class HttpPlane {
+  constructor(base, token) {
+    this.base = base.replace(/\/$/, '');
+    this.token = token;
+  }
+
+  headers(json = false) {
+    return { authorization: `Bearer ${this.token}`, accept: 'application/json', ...(json ? { 'content-type': 'application/json' } : {}) };
+  }
+
+  async snapshot() {
+    const response = await fetch(`${this.base}/v1/snapshot`, { headers: this.headers() });
+    if (!response.ok) throw new Error(`snapshot ${response.status}: ${await response.text()}`);
+    return response.json();
+  }
+
+  async command(command) {
+    const response = await fetch(`${this.base}/v1/commands`, { method: 'POST', headers: this.headers(true), body: JSON.stringify(command) });
+    if (!response.ok) throw new Error(`command ${response.status}: ${await response.text()}`);
+    return response.json();
+  }
+}
+
+export async function attest(plane, { nodeId, actorId = 'attestor:local', signals, method = 'automated_scan', now = () => new Date().toISOString() }) {
+  const snapshot = await plane.snapshot();
+  if (!snapshot.nodes.some(node => node.nodeId === nodeId)) {
+    throw new Error(`Node ${nodeId} is not registered in the control plane; seed the catalog before attesting.`);
+  }
+  // Twelve signals per attestation is the contract's cap; send the constellation in
+  // batches rather than truncating it silently.
+  const batches = [];
+  for (let index = 0; index < signals.length; index += 12) batches.push(signals.slice(index, index + 12));
+  const results = [];
+  let revision = snapshot.revision;
+  for (const [index, batch] of batches.entries()) {
+    const result = await plane.command({
+      requestId: `attest:${nodeId}:${now()}:${index}`,
+      actorId,
+      submittedAt: now(),
+      expectedRevision: revision,
+      action: 'record_security_posture',
+      nodeId,
+      attestedAt: now(),
+      method,
+      signals: batch,
+    });
+    revision = result.snapshot.revision;
+    results.push(result);
+  }
+  return { batches: results.length, revision };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const option = name => {
+    const index = args.indexOf(`--${name}`);
+    return index >= 0 ? args[index + 1] : undefined;
+  };
+  const nodeId = option('node') ?? 'control-plane';
+  const journalPath = option('journal') ? path.resolve(option('journal')) : undefined;
+  const signals = await collectPosture({ journalPath, skipTests: args.includes('--skip-tests') });
+
+  if (args.includes('--print') || (!option('url') && !journalPath)) {
+    process.stdout.write(`${JSON.stringify({ nodeId, method: 'automated_scan', signals }, null, 2)}\n`);
+    if (!option('url') && !journalPath) process.stderr.write('\nNothing was submitted. Pass --journal <path> or --url <base> --token <token> to record this attestation.\n');
+    return;
+  }
+
+  let plane;
+  if (option('url')) {
+    const token = option('token') ?? process.env.NOTATIONS_CONTROL_PLANE_TOKEN;
+    if (!token) throw new Error('--token or NOTATIONS_CONTROL_PLANE_TOKEN is required with --url');
+    plane = new HttpPlane(option('url'), token);
+  } else {
+    const { ControlPlane } = await import('../control-plane/src/control-plane.js');
+    plane = await ControlPlane.fromEnvironment(journalPath);
+  }
+  const result = await attest(plane, { nodeId, actorId: option('actor') ?? 'attestor:local', signals });
+  process.stdout.write(`Attested ${signals.length} signals for ${nodeId} in ${result.batches} batch(es); revision ${result.revision}\n`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  });
+}

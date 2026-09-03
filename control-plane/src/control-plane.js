@@ -245,6 +245,33 @@ export class ControlPlane {
     return new ControlPlane(new HashJournal(path, { keyStore, requireSignatures, anchor }), clock, rest);
   }
 
+  /**
+   * A control plane configured the way the server configures itself.
+   *
+   * Offline tools — seeding, probing, attesting — write to the same journal as the
+   * server. If they skipped signing, the chain would be signed only where the server
+   * happened to be the writer, and "is this history signed?" would have no useful
+   * answer. This makes the signing configuration a property of the journal rather
+   * than of whoever opened it.
+   */
+  static async fromEnvironment(journalPath, environment = process.env, clock = undefined) {
+    const [{ KeyStore }, { KeyEncryptionKey }] = await Promise.all([
+      import('./security/crypto/signing.js'),
+      import('./security/crypto/envelope.js'),
+    ]);
+    const enabled = !['0', 'false', 'no', 'off'].includes(String(environment.CONTROL_PLANE_SIGNING ?? '').toLowerCase());
+    let keyStore = null;
+    if (enabled) {
+      const kek = environment.CONTROL_PLANE_KEK ? KeyEncryptionKey.fromBase64('kek-primary', environment.CONTROL_PLANE_KEK) : null;
+      keyStore = await KeyStore.load({ filePath: environment.CONTROL_PLANE_KEYSTORE || 'data/keystore.json', kek, create: true });
+    }
+    return ControlPlane.fromPath(journalPath, clock, {
+      keyStore,
+      requireSignatures: ['1', 'true', 'yes', 'on'].includes(String(environment.CONTROL_PLANE_REQUIRE_SIGNATURES ?? '').toLowerCase()),
+      maxCommandAgeSeconds: Number.parseInt(environment.CONTROL_PLANE_MAX_COMMAND_AGE_S ?? '', 10) || undefined,
+    });
+  }
+
   async snapshot() {
     const records = await this.journal.read();
     return makeSnapshot(records, 'local_jsonl_single_writer', this.clock());

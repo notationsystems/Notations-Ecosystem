@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
+    <!--
+      The dock renders untrusted text: node descriptions, capability summaries and
+      posture attestations all come from whoever wrote them. React escapes markup and
+      this policy removes the rest of the class: no plugins, no string eval, no form
+      posts, and connections only to this origin and the token-free basemap tiles.
+
+      Two directives are deliberate. 'unsafe-inline' for styles is required by
+      styled-components, which Kepler.gl uses; script-src has no such exception.
+      'wasm-unsafe-eval' permits WebAssembly compilation, which deck.gl needs, without
+      permitting eval() of strings — the narrow directive rather than 'unsafe-eval'.
+
+      frame-ancestors and X-Frame-Options are absent here because a <meta> policy
+      cannot carry them; they are served as headers (see public/_headers and the
+      deployment notes in README.md).
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://basemaps.cartocdn.com; font-src 'self' data:; connect-src 'self' https://basemaps.cartocdn.com; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <meta name="referrer" content="no-referrer" />
     <title>Notations Universe Dock</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><polygon points='12,2 21,7 21,17 12,22 3,17 3,7' fill='%23F5B942'/></svg>" />
   </head>

@@ -78,7 +78,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const token = opt('--token') ?? process.env.NOTATIONS_CONTROL_PLANE_TOKEN;
   const loop = Number(opt('--loop') ?? 0);
   let plane;
-  if (journal) { const { ControlPlane } = await import('../../control-plane/src/control-plane.js'); plane = ControlPlane.fromPath(path.resolve(journal)); }
+  if (journal) { const { ControlPlane } = await import('../../control-plane/src/control-plane.js'); plane = await ControlPlane.fromEnvironment(path.resolve(journal)); }
   else if (url && token) plane = new HttpPlane(url, token);
   else { console.error('usage: node ecosystem/payload/probe.mjs --journal <path> | --url <base> [--token <token>] [--loop <seconds>]'); process.exit(2); }
   const configured = TARGETS.filter((t) => process.env[t.env]);

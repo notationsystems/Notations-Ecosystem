@@ -122,3 +122,27 @@ table.grid th { color: var(--muted); font-weight: 500; font-size: 11px; text-tra
 .strip .kpi span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
 .strip .kpi b { font-size: 18px; font-variant-numeric: tabular-nums; }
 .strip .kpi.locked b { color: var(--line); }
+
+/* Security constellation */
+.sec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.sec-card { display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; background: var(--bg-2); color: inherit; cursor: pointer; font: inherit; }
+.sec-card:hover { background: var(--bg-3); }
+.sec-card.active { background: var(--bg-3); box-shadow: inset 0 0 0 1px var(--muted); }
+.sec-card.empty { opacity: 0.55; border-left-color: var(--line); }
+.sec-head { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.sec-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.sec-state { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; }
+.sec-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; background: var(--bg); }
+.sec-bar > span { display: block; height: 100%; }
+.sec-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; align-items: center; }
+.sec-coverage { display: inline-flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums; }
+.sec-coverage.empty { color: var(--line); }
+.sec-coverage .bar { display: inline-block; width: 42px; height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+.sec-coverage .fill { display: block; height: 100%; background: var(--cyan); }
+.sec-findings { display: flex; flex-wrap: wrap; gap: 5px; font-size: 11px; }
+.sec-findings.none { color: var(--muted); }
+.sec-count { padding: 0 5px; border-radius: 3px; border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.sec-count.critical { color: var(--red); border-color: rgba(232, 83, 106, 0.5); }
+.sec-count.high { color: var(--amber); border-color: rgba(245, 185, 66, 0.5); }
+.sec-count.medium { color: var(--cyan); }
+.sec-count.low { color: var(--muted); }

@@ -6,6 +6,16 @@ info:
     A private, append-only capability graph and coordination ledger. It records
     intent and approval but never stores provider credentials or dispatches an
     external API call.
+
+    Authentication is a bearer credential of the form `ncp.<keyId>.<secret>`,
+    issued per principal. The principal's roles decide which commands it may
+    submit, and the `actorId` it records must be one bound to that credential:
+    the audit trail is authenticated, not self-asserted. An execution intent must
+    be approved by a different actor than the one that proposed it.
+
+    Security posture is evidence only. Credentials, key material, vulnerability
+    detail, network topology, offensive capability and links to raw findings are
+    refused at the command boundary with a 422 naming the class.
 servers:
   - url: http://127.0.0.1:8787
 security:
@@ -14,10 +24,14 @@ paths:
   /health:
     get:
       security: []
-      summary: Liveness and journal summary
+      summary: Liveness
+      description: >-
+        Unauthenticated, and therefore says nothing about state: an anonymous
+        caller learns that the process is running, not how much history it holds
+        or what its current revision is.
       responses:
         '200':
-          description: Service is able to read a verified journal.
+          description: The service is running.
   /v1/snapshot:
     get:
       summary: Get the current ecosystem graph
@@ -37,11 +51,42 @@ paths:
           required: false
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          description: Page size, capped server-side by CONTROL_PLANE_EVENTS_LIMIT.
+          schema:
+            type: integer
+            minimum: 1
       responses:
         '200':
-          description: Append-only events after the supplied cursor.
+          description: >-
+            Append-only events after the supplied cursor. A truncated page carries
+            `truncated: true` and `nextCursor`.
+        '401':
+          description: No credential, or an invalid one.
+        '403':
+          description: The principal does not hold events.read.
         '409':
           description: Cursor no longer belongs to the retained journal; refresh the snapshot.
+        '429':
+          description: Request budget exceeded, or the source is locked out after repeated authentication failures.
+        '503':
+          description: The journal did not verify (JOURNAL_CORRUPT) or has been shortened (JOURNAL_ROLLBACK).
+
+  /v1/security/status:
+    get:
+      summary: The control plane's own security posture
+      description: >-
+        Requires the security.status.read permission (the operator and admin
+        roles). Reports identity binding, the authorization model, transport
+        state, key lifecycle, journal integrity and abuse counters. It names no
+        credential, no key, no address and no journal content.
+      responses:
+        '200':
+          description: Non-sensitive security status.
+        '403':
+          description: The principal does not hold security.status.read.
   /v1/commands:
     post:
       summary: Append one coordination command with optimistic concurrency
@@ -54,15 +99,30 @@ paths:
                 - $ref: '#/components/schemas/RegisterNodeCommand'
                 - $ref: '#/components/schemas/DeclareRelationCommand'
                 - $ref: '#/components/schemas/ObservationCommand'
+                - $ref: '#/components/schemas/SecurityPostureCommand'
                 - $ref: '#/components/schemas/CapabilityRequestCommand'
                 - $ref: '#/components/schemas/ResolveCoordinationCommand'
       responses:
         '201':
           description: Command appended.
+        '401':
+          description: No credential, or an invalid one.
+        '403':
+          description: >-
+            The principal lacks the permission for this action, may not claim the
+            supplied actorId, is not scoped to the subject node, or is attempting
+            to resolve a coordination it proposed (separation of duties).
         '409':
           description: Revision, event-id, or coordination conflict.
+        '413':
+          description: The command exceeds 256 KiB.
         '422':
-          description: Command violates the capability or safety contract.
+          description: >-
+            Command violates the capability or safety contract: unknown action,
+            unsafe text, unbounded structure, a credential-shaped value, a stale
+            timestamp (COMMAND_STALE), or refused security material.
+        '429':
+          description: Request budget exceeded.
 components:
   securitySchemes:
     bearerAuth:
@@ -155,6 +215,53 @@ components:
             capabilityId: { type: string }
             requestedMode: { type: string, enum: [observe, propose, execute] }
             purpose: { type: string }
+    PostureSignal:
+      type: object
+      required: [dimension, state]
+      properties:
+        dimension:
+          type: string
+          enum: [identity, authorization, encryption_in_transit, encryption_at_rest, key_lifecycle, dependency_risk, exposure, audit_integrity, backup, incident, control_plane_integrity]
+        state: { type: string, enum: [strong, adequate, weak, failing, unknown] }
+        coverage: { type: number, minimum: 0, maximum: 1 }
+        findings:
+          type: object
+          description: Counts by severity. Never identifiers, versions or descriptions.
+          additionalProperties: false
+          properties:
+            critical: { type: integer, minimum: 0 }
+            high: { type: integer, minimum: 0 }
+            medium: { type: integer, minimum: 0 }
+            low: { type: integer, minimum: 0 }
+        summary:
+          type: string
+          maxLength: 280
+          description: >-
+            One sentence. Refused if it contains credentials, addresses, ports,
+            internal hostnames, advisory identifiers, package versions, exploit
+            language, tooling invocations, URLs or filesystem paths.
+        evidenceRef:
+          type: string
+          description: >-
+            An opaque identifier such as sha256:<hex> or a notation:// URI.
+            Deliberately not a link: the control plane must not carry a pointer to
+            raw findings, and never dereferences one.
+        expiresAt: { type: string, format: date-time }
+    SecurityPostureCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [nodeId, attestedAt, method, signals]
+          properties:
+            action: { const: record_security_posture }
+            nodeId: { type: string }
+            attestedAt: { type: string, format: date-time }
+            method: { type: string, enum: [automated_scan, operator_review, external_audit, self_declared] }
+            signals:
+              type: array
+              minItems: 1
+              maxItems: 12
+              items: { $ref: '#/components/schemas/PostureSignal' }
     ResolveCoordinationCommand:
       allOf:
         - $ref: '#/components/schemas/CommandBase'
@@ -174,6 +281,13 @@ components:
         eventCursor: { oneOf: [{ type: string }, { type: 'null' }] }
         durability: { const: local_jsonl_single_writer }
         generatedAt: { type: string, format: date-time }
-        nodes: { type: array }
+        nodes:
+          type: array
+          description: >-
+            Each node carries derived health and, when attested, a `security`
+            block holding its posture signals.
         relations: { type: array }
         coordination: { type: array }
+        constellation:
+          type: object
+          description: Ecosystem-wide security posture folded across every attested node, weakest-link per dimension.

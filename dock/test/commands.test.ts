@@ -40,9 +40,9 @@ describe('client', () => {
       if (String(url).endsWith('/v1/events?after=gone')) return new Response(JSON.stringify({ error: 'CURSOR_UNKNOWN', detail: 'gone', remedy: 'Refresh the snapshot.' }), { status: 409 });
       return new Response(JSON.stringify({ schema: 'notations.control-plane.snapshot.v1', nodes: [], relations: [], coordination: [], revision: null, eventCursor: null }), { status: 200 });
     }) as typeof fetch;
-    const client = new ControlPlaneClient({ baseUrl: 'http://cp/', token: 't0k', actorId: 'operator:dock' }, fetchImpl);
+    const client = new ControlPlaneClient({ baseUrl: 'http://127.0.0.1:8787/', token: 't0k', actorId: 'operator:dock' }, fetchImpl);
     await client.snapshot();
-    expect(calls[0]?.url).toBe('http://cp/v1/snapshot');
+    expect(calls[0]?.url).toBe('http://127.0.0.1:8787/v1/snapshot');
     expect((calls[0]?.init?.headers as Record<string, string>).authorization).toBe('Bearer t0k');
     await expect(client.events('gone')).rejects.toMatchObject({ code: 'CURSOR_UNKNOWN', status: 409, remedy: 'Refresh the snapshot.' });
     await expect(client.events('gone')).rejects.toBeInstanceOf(ControlPlaneApiError);
