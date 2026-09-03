@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { generateKeyPairSync, sign } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,6 +8,8 @@ import { ControlPlane } from '../src/control-plane.js';
 import { ControlPlaneError } from '../src/errors.js';
 import { observePayloadTerminal } from '../src/adapters/payload-terminal.js';
 import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
+import { securityConstellationProfile } from '../src/profiles/security-constellation.js';
+import { attestationPayload } from '../src/security/attestation.js';
 
 const NOW = '2026-09-02T00:00:00.000Z';
 
@@ -125,4 +128,36 @@ test('never probes arbitrary insecure non-loopback Payload URLs', async () => {
     observePayloadTerminal({ PAYLOAD_TERMINAL_URL: 'http://payload.example' }),
     error => error instanceof ControlPlaneError && error.code === 'PAYLOAD_ADAPTER_NOT_CONFIGURED',
   );
+});
+
+test('materializes independently signed, bounded internal security posture', async () => {
+  const { directory, plane } = await fixture();
+  try {
+    const profile = securityConstellationProfile();
+    await plane.applyProfile({ requestId: 'bootstrap-security', actorId: 'operator:local', submittedAt: NOW, expectedRevision: null }, profile);
+    const snapshot = await plane.snapshot();
+    const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+    const attestation = {
+      attestationId: 'attestation-crypto-1',
+      subjectNodeId: 'notations-key-lifecycle',
+      category: 'cryptography',
+      status: 'healthy',
+      observedAt: NOW,
+      expiresAt: '2026-09-03T00:00:00.000Z',
+      summary: 'Encryption policy and key rotation controls meet the current internal posture baseline.',
+      signerId: 'security-collector-1',
+    };
+    attestation.signature = sign(null, Buffer.from(JSON.stringify(attestationPayload(attestation))), privateKey).toString('base64url');
+    const result = await plane.recordSecurityAttestation({
+      requestId: 'record-crypto-posture', actorId: 'security-collector-1', submittedAt: NOW, expectedRevision: snapshot.revision, attestation,
+    }, { NOTATIONS_SECURITY_ATTESTERS: JSON.stringify({ 'security-collector-1': publicKey.export({ format: 'jwk' }).x }) });
+    const posture = result.snapshot.nodes.find(entry => entry.nodeId === 'notations-key-lifecycle').security;
+    assert.equal(posture.overall, 'healthy');
+    assert.equal(posture.attestations[0].category, 'cryptography');
+    assert.equal(posture.attestations[0].status, 'healthy');
+    assert.equal(posture.attestations[0].freshness, 'current');
+    assert.equal(posture.attestations[0].signerId, 'security-collector-1');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

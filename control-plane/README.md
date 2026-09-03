@@ -73,3 +73,23 @@ redirects, accepts no caller-supplied target, limits the response to 64 KiB,
 and persists only a bounded `healthy`, `degraded`, or `offline` observation.
 It does not forward the remote body, headers, credentials, or any other
 Payload data into the control-plane journal.
+
+## Internal Security Constellation
+
+Security posture is an internal operation, not a product API and not a
+security-control surface. `npm run profile:security` materializes the internal
+Security Constellation: identity and authorization, cryptography/key lifecycle,
+API exposure, software supply chain, resilience/backups, audit integrity,
+incident state, and Control Plane integrity.
+
+The internal collector records evidence with:
+
+```sh
+npm run security:attest -- path/to/signed-attestation.json
+```
+
+Each statement is verified against `NOTATIONS_SECURITY_ATTESTERS`, an allowlist
+of Ed25519 **public** keys. The journal stores the signed, bounded statement;
+the dock receives only category, posture status, freshness, signer identity,
+and a short summary. It never receives private keys, credentials, raw
+vulnerability findings, unrestricted network topology, or offensive tooling.

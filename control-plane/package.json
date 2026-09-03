@@ -11,6 +11,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
-    "check": "node --check src/errors.js && node --check src/validation.js && node --check src/journal.js && node --check src/control-plane.js && node --check src/server.js && node --check src/adapters/payload-terminal.js && node --check src/profiles/payload-terminal.js"
+    "check": "node --check src/errors.js && node --check src/validation.js && node --check src/journal.js && node --check src/control-plane.js && node --check src/server.js && node --check src/adapters/payload-terminal.js && node --check src/profiles/payload-terminal.js && node --check src/profiles/security-constellation.js && node --check src/security/attestation.js && node --check scripts/apply-internal-profile.js && node --check scripts/record-security-attestation.js",
+    "profile:payload": "node scripts/apply-internal-profile.js payload-terminal",
+    "profile:security": "node scripts/apply-internal-profile.js security-constellation",
+    "security:attest": "node scripts/record-security-attestation.js"
   }
 }

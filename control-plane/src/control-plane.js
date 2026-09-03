@@ -1,6 +1,7 @@
 import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
-import { parseCommand, parseProfileApplication } from './validation.js';
+import { parseCommand, parseProfileApplication, parseSecurityAttestation } from './validation.js';
+import { verifySecurityAttestation } from './security/attestation.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
 
@@ -13,6 +14,7 @@ function derive(records) {
   const relations = new Map();
   const observations = new Map();
   const coordination = new Map();
+  const securityAttestations = new Map();
 
   for (const { event } of records) {
     switch (event.kind) {
@@ -45,11 +47,37 @@ function derive(records) {
         for (const node of event.nodes) nodes.set(node.nodeId, node);
         for (const relation of event.relations) relations.set(relation.relationId, relation);
         break;
+      case 'security_attested':
+        securityAttestations.set(`${event.attestation.subjectNodeId}\u0000${event.attestation.category}`, event);
+        break;
       default:
         throw new ControlPlaneError(503, 'JOURNAL_CORRUPT', `Journal contains unsupported event kind ${event.kind}.`, 'Restore a journal produced by a compatible control-plane release.');
     }
   }
-  return { nodes, relations, observations, coordination };
+  return { nodes, relations, observations, coordination, securityAttestations };
+}
+
+function securityPosture(nodeId, securityAttestations, generatedAt) {
+  const states = [...securityAttestations.values()]
+    .filter(event => event.attestation.subjectNodeId === nodeId)
+    .map(event => {
+      const expired = event.attestation.expiresAt !== null && Date.parse(event.attestation.expiresAt) <= Date.parse(generatedAt);
+      return frozen({
+        category: event.attestation.category,
+        status: expired ? 'unknown' : event.attestation.status,
+        freshness: expired ? 'expired' : 'current',
+        observedAt: event.attestation.observedAt,
+        expiresAt: event.attestation.expiresAt,
+        summary: event.attestation.summary,
+        signerId: event.verification.signerId,
+        verifiedAt: event.verification.verifiedAt,
+      });
+    })
+    .sort((left, right) => left.category.localeCompare(right.category));
+  if (!states.length) return frozen({ overall: 'unattested', attestations: states });
+  const priority = { healthy: 0, unknown: 1, degraded: 2, critical: 3 };
+  const overall = states.reduce((worst, current) => priority[current.status] > priority[worst] ? current.status : worst, 'healthy');
+  return frozen({ overall, attestations: states });
 }
 
 function makeSnapshot(records, durability, generatedAt) {
@@ -62,6 +90,7 @@ function makeSnapshot(records, durability, generatedAt) {
         health: observed?.health ?? 'unknown',
         lastObservedAt: observed?.observedAt ?? null,
         lastObservation: observed ? { source: observed.source, detail: observed.detail } : null,
+        security: securityPosture(node.nodeId, state.securityAttestations, generatedAt),
       });
     })
     .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
@@ -257,6 +286,39 @@ export class ControlPlane {
       profile: { profileId: profile.profileId, version: profile.version },
       nodes,
       relations,
+    });
+    const append = await this.journal.append(event, command.expectedRevision);
+    const current = await this.journal.read();
+    return frozen({
+      schema: 'notations.control-plane.command-result.v1',
+      outcome: append.outcome,
+      event: { eventId: append.record.event.eventId, kind: append.record.event.kind, recordHash: append.record.recordHash },
+      snapshot: makeSnapshot(current, 'local_jsonl_single_writer', this.clock()),
+    });
+  }
+
+  /**
+   * Internal-only path for independently signed security posture evidence.
+   * The proof travels in the immutable journal; the visual projection exposes
+   * a bounded summary and never private keys, secrets, or raw findings.
+   */
+  async recordSecurityAttestation(input, environment = process.env) {
+    const command = parseSecurityAttestation(input);
+    const recordedAt = this.clock();
+    if (Date.parse(command.submittedAt) > Date.parse(recordedAt) + 60_000) throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the collector clock and submit the same attestation again.');
+    const verification = verifySecurityAttestation(command.attestation, environment, this.clock);
+    const records = await this.journal.read();
+    const state = derive(records);
+    if (!state.nodes.has(command.attestation.subjectNodeId)) {
+      throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Security attestation subject ${command.attestation.subjectNodeId} is not registered.`, 'Apply the internal Security Constellation profile before recording its posture.');
+    }
+    const event = frozen({
+      eventId: `security-attestation:${digest({ actorId: command.actorId, requestId: command.requestId, attestationId: command.attestation.attestationId })}`,
+      recordedAt,
+      commandHash: digest(command.raw),
+      kind: 'security_attested',
+      attestation: command.attestation,
+      verification,
     });
     const append = await this.journal.append(event, command.expectedRevision);
     const current = await this.journal.read();

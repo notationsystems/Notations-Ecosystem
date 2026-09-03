@@ -9,8 +9,11 @@ const NODE_KINDS = new Set(['api', 'world_model', 'information_library', 'reason
 const CAPABILITY_MODES = new Set(['observe', 'propose', 'execute']);
 const APPROVALS = new Set(['automatic', 'operator']);
 const RELATIONS = new Set(['supplies_context_to', 'coordinates', 'visualizes', 'governs', 'depends_on']);
-const HEALTH = new Set(['unknown', 'healthy', 'degraded', 'offline']);
+const HEALTH = new Set(['unknown', 'healthy', 'degraded', 'critical', 'offline']);
 const OBSERVATION_SOURCES = new Set(['operator', 'health_check', 'webhook']);
+const SECURITY_CATEGORIES = new Set(['identity', 'cryptography', 'exposure', 'supply_chain', 'resilience', 'control_plane_integrity']);
+const SECURITY_STATUSES = new Set(['healthy', 'degraded', 'critical', 'unknown']);
+const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
 function record(value, path) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid(`${path} must be an object.`);
@@ -171,5 +174,32 @@ export function parseProfileApplication(input) {
     submittedAt: instant(parsed.submittedAt, 'submittedAt'),
     expectedRevision: nullableRevision(parsed.expectedRevision),
     raw: parsed,
+  };
+}
+
+/** A bounded, signed security posture statement—never a raw finding or secret. */
+export function parseSecurityAttestation(input) {
+  const parsed = exactKeys(input, 'security attestation', ['requestId', 'actorId', 'submittedAt', 'expectedRevision', 'attestation']);
+  const attestation = exactKeys(parsed.attestation, 'attestation', ['attestationId', 'subjectNodeId', 'category', 'status', 'observedAt', 'expiresAt', 'summary', 'signerId', 'signature']);
+  if (attestation.expiresAt !== null && attestation.expiresAt !== undefined) instant(attestation.expiresAt, 'attestation.expiresAt');
+  const signature = string(attestation.signature, 'attestation.signature', 1_024);
+  if (!BASE64URL.test(signature)) throw invalid('attestation.signature must be base64url-encoded Ed25519 signature data.');
+  return {
+    requestId: identifier(parsed.requestId, 'requestId'),
+    actorId: identifier(parsed.actorId, 'actorId'),
+    submittedAt: instant(parsed.submittedAt, 'submittedAt'),
+    expectedRevision: nullableRevision(parsed.expectedRevision),
+    raw: parsed,
+    attestation: {
+      attestationId: identifier(attestation.attestationId, 'attestation.attestationId'),
+      subjectNodeId: identifier(attestation.subjectNodeId, 'attestation.subjectNodeId'),
+      category: member(attestation.category, 'attestation.category', SECURITY_CATEGORIES),
+      status: member(attestation.status, 'attestation.status', SECURITY_STATUSES),
+      observedAt: instant(attestation.observedAt, 'attestation.observedAt'),
+      expiresAt: attestation.expiresAt === null || attestation.expiresAt === undefined ? null : instant(attestation.expiresAt, 'attestation.expiresAt'),
+      summary: string(attestation.summary, 'attestation.summary', 600),
+      signerId: identifier(attestation.signerId, 'attestation.signerId'),
+      signature,
+    },
   };
 }
