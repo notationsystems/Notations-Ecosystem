@@ -15,7 +15,8 @@
       "path": "/health",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
       "data_domain": "network-health",
-      "provenance": "this process: loop state, prediction count and version"
+      "provenance": "this process: loop state, prediction count and version",
+      "module_family": "operations"
     },
     {
       "capabilityId": "oracle.config",
@@ -28,7 +29,9 @@
       "path": "/config",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc",
       "data_domain": "automation",
-      "provenance": "the effective configuration of this process"
+      "provenance": "the effective configuration of this process",
+      "module_family": "operations",
+      "response_kind": "operational_observation"
     },
     {
       "capabilityId": "oracle.world.read",
@@ -41,7 +44,8 @@
       "path": "/world",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc",
       "data_domain": "news",
-      "provenance": "payload-terminal /api/* feeds, assembled into a brief by the LLM"
+      "provenance": "payload-terminal /api/* feeds, assembled into a brief by the LLM",
+      "module_family": "projection"
     },
     {
       "capabilityId": "oracle.state.stream",
@@ -54,7 +58,9 @@
       "path": "/state/stream",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/state.cpython-314.pyc",
       "data_domain": "news",
-      "provenance": "the engine's own pub/sub over the same assembled brief"
+      "provenance": "the engine's own pub/sub over the same assembled brief",
+      "module_family": "operations",
+      "response_kind": "operational_observation"
     },
     {
       "capabilityId": "oracle.agent.view",
@@ -67,7 +73,8 @@
       "path": "/agent/view",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
       "data_domain": "news",
-      "provenance": "the assembled brief and current forecasts, for external agents"
+      "provenance": "the assembled brief and current forecasts, for external agents",
+      "module_family": "agent"
     },
     {
       "capabilityId": "oracle.predictions.read",
@@ -80,7 +87,8 @@
       "path": "/predictions",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; runs/ledger.jsonl",
       "data_domain": "prediction-markets",
-      "provenance": "the forecast ledger (runs/ledger.jsonl)"
+      "provenance": "the forecast ledger (runs/ledger.jsonl)",
+      "module_family": "projection"
     },
     {
       "capabilityId": "oracle.predict.run",
@@ -93,7 +101,8 @@
       "path": "/predict",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/pipeline.cpython-314.pyc; engine/__pycache__/oracle.cpython-314.pyc",
       "data_domain": "prediction-markets",
-      "provenance": "model output over payload-terminal feeds: a proposal, never a measurement"
+      "provenance": "model output over payload-terminal feeds: a proposal, never a measurement",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "oracle.scorecard.read",
@@ -106,7 +115,8 @@
       "path": "/scorecard",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/ledger.cpython-314.pyc",
       "data_domain": "evaluation",
-      "provenance": "resolved forecasts scored against what happened (Brier, calibration bins)"
+      "provenance": "resolved forecasts scored against what happened (Brier, calibration bins)",
+      "module_family": "projection"
     },
     {
       "capabilityId": "oracle.scorecard.resolve",
@@ -119,7 +129,8 @@
       "path": "/scorecard/resolve",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
       "data_domain": "evaluation",
-      "provenance": "an LLM judging due forecasts; the verdict is recorded, not the reasoning"
+      "provenance": "an LLM judging due forecasts; the verdict is recorded, not the reasoning",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "oracle.whatif",
@@ -132,7 +143,8 @@
       "path": "/whatif",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
       "data_domain": "prediction-markets",
-      "provenance": "model output on a counterfactual; ephemeral and never ledgered"
+      "provenance": "model output on a counterfactual; ephemeral and never ledgered",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "oracle.chat",
@@ -145,7 +157,8 @@
       "path": "/chat",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
       "data_domain": "news",
-      "provenance": "model output with the live sources and current forecasts in context"
+      "provenance": "model output with the live sources and current forecasts in context",
+      "module_family": "agent"
     },
     {
       "capabilityId": "oracle.models",
@@ -158,7 +171,9 @@
       "path": "/model",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/swarm.cpython-314.pyc",
       "data_domain": "automation",
-      "provenance": "the local Ollama installation"
+      "provenance": "the local Ollama installation",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "oracle.loop",
@@ -171,7 +186,9 @@
       "path": "/loop",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
       "data_domain": "automation",
-      "provenance": "this process's loop configuration"
+      "provenance": "this process's loop configuration",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "oracle.webhooks",
@@ -184,7 +201,8 @@
       "path": "/webhooks",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/webhooks.cpython-314.pyc",
       "data_domain": "automation",
-      "provenance": "the registered hooks in this process"
+      "provenance": "the registered hooks in this process",
+      "module_family": "federation"
     },
     {
       "capabilityId": "oracle.ledger",
@@ -195,7 +213,8 @@
       "surface": "file",
       "evidence": "runs/ledger.jsonl; engine/__pycache__/ledger.cpython-314.pyc",
       "data_domain": "prediction-markets",
-      "provenance": "the engine's own briefs and forecasts, appended"
+      "provenance": "the engine's own briefs and forecasts, appended",
+      "module_family": "persistence"
     }
   ],
   "metadata": {

@@ -15,7 +15,8 @@
       "path": "/v1/snapshot",
       "evidence": "control-plane/src/server.js",
       "data_domain": "coordination",
-      "provenance": "the append-only journal, folded; nothing is fetched to answer"
+      "provenance": "the append-only journal, folded; nothing is fetched to answer",
+      "module_family": "topology"
     },
     {
       "capabilityId": "events.read",
@@ -28,7 +29,8 @@
       "path": "/v1/events",
       "evidence": "control-plane/src/control-plane.js",
       "data_domain": "coordination",
-      "provenance": "the append-only journal, in order"
+      "provenance": "the append-only journal, in order",
+      "module_family": "topology"
     },
     {
       "capabilityId": "health.read",
@@ -41,7 +43,8 @@
       "path": "/health",
       "evidence": "control-plane/src/server.js",
       "data_domain": "network-health",
-      "provenance": "the journal head and this process; no node is contacted"
+      "provenance": "the journal head and this process; no node is contacted",
+      "module_family": "operations"
     },
     {
       "capabilityId": "node.register",
@@ -54,7 +57,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/validation.js",
       "data_domain": "coordination",
-      "provenance": "the caller's own command, validated at the write boundary"
+      "provenance": "the caller's own command, validated at the write boundary",
+      "module_family": "federation"
     },
     {
       "capabilityId": "relation.declare",
@@ -67,7 +71,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/control-plane.js",
       "data_domain": "coordination",
-      "provenance": "the caller's own command, validated at the write boundary"
+      "provenance": "the caller's own command, validated at the write boundary",
+      "module_family": "federation"
     },
     {
       "capabilityId": "observation.record",
@@ -80,7 +85,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/control-plane.js",
       "data_domain": "network-health",
-      "provenance": "the caller's own observation; the plane probes nothing itself"
+      "provenance": "the caller's own observation; the plane probes nothing itself",
+      "module_family": "federation"
     },
     {
       "capabilityId": "capability.request",
@@ -93,7 +99,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/control-plane.js",
       "data_domain": "coordination",
-      "provenance": "the caller's own request; approval is not execution"
+      "provenance": "the caller's own request; approval is not execution",
+      "module_family": "federation"
     },
     {
       "capabilityId": "coordination.resolve",
@@ -106,7 +113,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/control-plane.js",
       "data_domain": "coordination",
-      "provenance": "an operator decision, attributed to a bound actor"
+      "provenance": "an operator decision, attributed to a bound actor",
+      "module_family": "federation"
     },
     {
       "capabilityId": "security.status.read",
@@ -119,7 +127,9 @@
       "path": "/v1/security/status",
       "evidence": "control-plane/src/server.js",
       "data_domain": "security-posture",
-      "provenance": "this process: configuration, journal state and rate-limit counters"
+      "provenance": "this process: configuration, journal state and rate-limit counters",
+      "module_family": "topology",
+      "response_kind": "operational_observation"
     },
     {
       "capabilityId": "posture.record",
@@ -132,7 +142,8 @@
       "path": "/v1/commands",
       "evidence": "control-plane/src/security/evidence.js",
       "data_domain": "security-posture",
-      "provenance": "an attestor's signals, past the evidence boundary that strips the material"
+      "provenance": "an attestor's signals, past the evidence boundary that strips the material",
+      "module_family": "federation"
     },
     {
       "capabilityId": "credential.issue",
@@ -143,7 +154,9 @@
       "surface": "cli",
       "evidence": "control-plane/src/security/cli.js",
       "data_domain": "identity",
-      "provenance": "generated here; the registry keeps only the SHA-256 digest"
+      "provenance": "generated here; the registry keeps only the SHA-256 digest",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "key.rotate",
@@ -154,7 +167,9 @@
       "surface": "cli",
       "evidence": "control-plane/src/security/crypto/signing.js",
       "data_domain": "key-lifecycle",
-      "provenance": "generated here; the private half never leaves the key store"
+      "provenance": "generated here; the private half never leaves the key store",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "journal.verify",
@@ -166,7 +181,8 @@
       "evidence": "control-plane/src/security/cli.js",
       "data_domain": "architecture-invariants",
       "side_effects": "none: opens the journal read-only",
-      "provenance": "a journal replica on disk, checked against the anchor"
+      "provenance": "a journal replica on disk, checked against the anchor",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "posture.status.read",
@@ -179,7 +195,8 @@
       "path": "/v1/security/status",
       "evidence": "control-plane/src/server.js",
       "data_domain": "security-posture",
-      "provenance": "the recorded posture attestations, folded"
+      "provenance": "the recorded posture attestations, folded",
+      "module_family": "release"
     }
   ],
   "metadata": {

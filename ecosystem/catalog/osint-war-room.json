@@ -149,7 +149,8 @@
       "method": "POST",
       "path": "/api/alerts/settings",
       "evidence": "backend/api/alerts.py",
-      "side_effects": "writes backend/database.json"
+      "side_effects": "writes backend/database.json",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "news.feed",
@@ -245,7 +246,8 @@
     "license": "MIT",
     "state_store": "backend/database.json (flat file)",
     "person_data": "incidental",
-    "person_data_note": "Telegram channel previews and conflict reporting carry names; nothing is indexed by person."
+    "person_data_note": "Telegram channel previews and conflict reporting carry names; nothing is indexed by person.",
+    "module_family": "projection"
   },
   "location": {
     "longitude": 30.5234,

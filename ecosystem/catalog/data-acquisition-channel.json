@@ -15,7 +15,8 @@
       "path": "<root> list-sources | inspect-source <source_id>",
       "evidence": "daf/catalog/cli.py",
       "data_domain": "acquisition-plans",
-      "provenance": "the persisted source catalog under the acquisition root"
+      "provenance": "the persisted source catalog under the acquisition root",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.catalog.cli.list_plans",
@@ -28,7 +29,8 @@
       "path": "<root> list-plans | inspect-plan <plan_id>",
       "evidence": "daf/catalog/cli.py; daf/catalog/plan.py",
       "data_domain": "acquisition-plans",
-      "provenance": "the persisted plan catalog under the acquisition root"
+      "provenance": "the persisted plan catalog under the acquisition root",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.catalog.cli.validate_plan",
@@ -41,7 +43,8 @@
       "path": "<root> validate-plan <plan_id>",
       "evidence": "daf/catalog/cli.py; daf/catalog/plan.py",
       "data_domain": "acquisition-plans",
-      "provenance": "the plan and the source definition it names; nothing is fetched to validate"
+      "provenance": "the plan and the source definition it names; nothing is fetched to validate",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.catalog.cli.execute_plan",
@@ -55,7 +58,8 @@
       "evidence": "daf/catalog/cli.py; daf/scheduling/runner.py",
       "side_effects": "writes <root>/evidence, <root>/checkpoints; outbound HTTPS to the source",
       "data_domain": "acquisition-plans",
-      "provenance": "whichever adapter the plan names, into the durable pool"
+      "provenance": "whichever adapter the plan names, into the durable pool",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.catalog.register",
@@ -67,7 +71,8 @@
       "path": "daf.catalog.source_catalog.SourceCatalog.register; daf.catalog.plan_catalog.PlanCatalog.register",
       "evidence": "daf/catalog/source_catalog.py; daf/catalog/plan_catalog.py; docs/DAF_CATALOG_AND_PLANS.md",
       "data_domain": "acquisition-plans",
-      "provenance": "the caller's definition; registration is not acquisition"
+      "provenance": "the caller's definition; registration is not acquisition",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.orchestration.run",
@@ -79,7 +84,8 @@
       "path": "daf.orchestration.orchestrator.AcquisitionOrchestrator.run",
       "evidence": "daf/orchestration/orchestrator.py; daf/orchestration/request.py; daf/orchestration/result.py; docs/DAF_ORCHESTRATION.md",
       "data_domain": "acquisition-plans",
-      "provenance": "the configured adapters; every raw document keeps the source that produced it"
+      "provenance": "the configured adapters; every raw document keeps the source that produced it",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.scheduling.run_due_plans",
@@ -91,7 +97,8 @@
       "path": "daf.scheduling.due.run_due_plans",
       "evidence": "daf/scheduling/due.py; daf/scheduling/runner.py; daf/catalog/checkpoint.py",
       "data_domain": "acquisition-plans",
-      "provenance": "the checkpoints already recorded, against the clock it is given"
+      "provenance": "the checkpoints already recorded, against the clock it is given",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.execution.execute_plan_recorded",
@@ -103,7 +110,8 @@
       "path": "daf.execution.recorded.execute_plan_recorded",
       "evidence": "daf/execution/recorded.py; daf/execution/record.py; daf/execution/quarantine.py; daf/execution/store.py; architecture/execution_record.yaml",
       "data_domain": "acquisition-plans",
-      "provenance": "the plan's adapter, with the execution recorded beside the result"
+      "provenance": "the plan's adapter, with the execution recorded beside the result",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.execution.ingest_report",
@@ -115,7 +123,9 @@
       "path": "daf.execution.metrics.ingest_report",
       "evidence": "daf/execution/metrics.py; docs/PHASE_27_INGEST_REJECTION_METRICS.md",
       "data_domain": "acquisition-plans",
-      "provenance": "the pool's own rejections and backlog; counts, not judgements"
+      "provenance": "the pool's own rejections and backlog; counts, not judgements",
+      "module_family": "operations",
+      "response_kind": "operational_observation"
     },
     {
       "capabilityId": "daf.storage.pool.read",
@@ -127,7 +137,8 @@
       "path": "daf.storage.durable_pool.DurablePool.restore; daf.storage.classified_pool.ClassifiedPool",
       "evidence": "daf/storage/durable_pool.py; daf/storage/classified_pool.py; daf/storage/filesystem_store.py; docs/DAF_DURABLE_STORAGE.md",
       "data_domain": "evidence-pool",
-      "provenance": "the filesystem evidence store; content-addressed, restored not rebuilt"
+      "provenance": "the filesystem evidence store; content-addressed, restored not rebuilt",
+      "module_family": "persistence"
     },
     {
       "capabilityId": "daf.storage.artifact_store.read",
@@ -139,7 +150,8 @@
       "path": "daf.storage.artifact_store.ArtifactStore; daf.catalog.history",
       "evidence": "daf/storage/artifact_store.py; daf/catalog/history.py",
       "data_domain": "evidence-pool",
-      "provenance": "the stored artifact bytes, by id and version"
+      "provenance": "the stored artifact bytes, by id and version",
+      "module_family": "persistence"
     },
     {
       "capabilityId": "daf.storage.metadata_index.query",
@@ -151,7 +163,8 @@
       "path": "daf.storage.metadata_index.MetadataIndex",
       "evidence": "daf/storage/metadata_index.py; docs/DAF_INDEXED_STORAGE.md",
       "data_domain": "evidence-pool",
-      "provenance": "the index, which holds ids and query columns only — never the content"
+      "provenance": "the index, which holds ids and query columns only — never the content",
+      "module_family": "persistence"
     },
     {
       "capabilityId": "daf.adapter.arxiv",
@@ -164,7 +177,8 @@
       "path": "https://export.arxiv.org/api/query",
       "evidence": "daf/adapters/arxiv.py; daf/extractors/arxiv.py; daf/orchestration/bindings.py; docs/SCOUT_VERTICAL_SLICE.md",
       "data_domain": "scientific-literature",
-      "provenance": "arXiv (export.arxiv.org), one HTTPS GET per acquisition"
+      "provenance": "arXiv (export.arxiv.org), one HTTPS GET per acquisition",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.adapter.edgar_daily_index",
@@ -177,7 +191,8 @@
       "path": "https://www.sec.gov/Archives/edgar/daily-index/",
       "evidence": "daf/adapters/edgar_daily_index.py; daf/extractors/edgar_daily_index.py; architecture/daq_agent_instruments.yaml; docs/DAF_EDGAR_ADAPTER.md",
       "data_domain": "sec-filings",
-      "provenance": "the SEC EDGAR daily index"
+      "provenance": "the SEC EDGAR daily index",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.adapter.usgs_earthquakes",
@@ -190,7 +205,8 @@
       "path": "https://earthquake.usgs.gov/fdsnws/event/1/query",
       "evidence": "daf/adapters/usgs_earthquakes.py; daf/extractors/usgs_earthquakes.py; docs/DAF_USGS_EARTHQUAKE_ADAPTER.md; docs/PHASE_31_USGS_METHOD_PROVENANCE_AND_QUANTITY_SEMANTICS.md",
       "data_domain": "seismic",
-      "provenance": "the USGS earthquake catalog"
+      "provenance": "the USGS earthquake catalog",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.adapter.noaa_water_level",
@@ -203,7 +219,8 @@
       "path": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
       "evidence": "daf/adapters/noaa_water_level.py; daf/extractors/noaa_water_level_measurements.py; docs/DAF_NOAA_WATER_LEVEL_ADAPTER.md; architecture/exchange/daq_capabilities.yaml",
       "data_domain": "tidal-water-level",
-      "provenance": "NOAA CO-OPS water-level stations"
+      "provenance": "NOAA CO-OPS water-level stations",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.adapter.local_datasets",
@@ -215,7 +232,8 @@
       "path": "adapter_id local-dataset | incremental-dataset | graph-dataset",
       "evidence": "daf/adapters/local_dataset.py; daf/adapters/incremental_dataset.py; daf/extractors/graph_dataset.py; docs/DAF_INCREMENTAL_ACQUISITION.md",
       "data_domain": "evidence-pool",
-      "provenance": "files on the local acquisition share, through the same adapter protocol"
+      "provenance": "files on the local acquisition share, through the same adapter protocol",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.adapter.gpc_reports",
@@ -227,7 +245,8 @@
       "path": "daf.adapters.gpc_report.GpcReportSourceAdapter; daf.adapters.gpc_summary_export.GpcSummaryExportSourceAdapter",
       "evidence": "daf/adapters/gpc_report.py; daf/adapters/gpc_summary_export.py; daf/extractors/gpc_report.py; docs/PHASE_38_GPC_EXTRACTOR.md; docs/PHASE_40_THE_ANCHORS_STOP_BEING_CHROMATOGRAMS.md",
       "data_domain": "chromatography",
-      "provenance": "GPC instrument reports, one raw document per run"
+      "provenance": "GPC instrument reports, one raw document per run",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "daf.agent.edgar_scout.contract",
@@ -239,7 +258,8 @@
       "path": "architecture/schemas/candidate_filing.schema.json; daf.agents.candidate_filing.validate",
       "evidence": "daf/agents/candidate_filing.py; architecture/daq_agent_instruments.yaml; docs/generated/AGENT_EDGAR_SCOUT.md",
       "data_domain": "sec-filings",
-      "provenance": "the generated contract in this repository; it authorises, it does not fetch"
+      "provenance": "the generated contract in this repository; it authorises, it does not fetch",
+      "module_family": "agent"
     },
     {
       "capabilityId": "science.information_gap.diagnose",
@@ -251,7 +271,8 @@
       "path": "science.information_gap.diagnose_information_gap",
       "evidence": "science/information_gap.py; docs/PHASE_20_INFORMATION_GAP_ACQUISITION_SEAM.md",
       "data_domain": "acquisition-plans",
-      "provenance": "the state and candidate already held; a diagnosis, not a new observation"
+      "provenance": "the state and candidate already held; a diagnosis, not a new observation",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "science.acquisition_seam.intents_for",
@@ -263,7 +284,8 @@
       "path": "science.acquisition_seam.intents_for; boundary.acquisition_intent.make_acquisition_intent",
       "evidence": "science/acquisition_seam.py; boundary/acquisition_intent.py; architecture/control_graph.yaml",
       "data_domain": "acquisition-plans",
-      "provenance": "a diagnosed gap; an intent is a question, not an answer"
+      "provenance": "a diagnosed gap; an intent is a question, not an answer",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "bridge.source_capability.resolve_sources",
@@ -275,7 +297,8 @@
       "path": "bridge.source_capability.resolve_sources; bridge.vocabulary.make_vocabulary",
       "evidence": "bridge/source_capability.py; bridge/vocabulary.py; docs/PHASE_22_SOURCE_CAPABILITY_RESOLUTION.md; docs/PHASE_23_SCIENTIFIC_VOCABULARY_NORMALIZATION.md",
       "data_domain": "acquisition-plans",
-      "provenance": "the registered source capabilities and vocabulary"
+      "provenance": "the registered source capabilities and vocabulary",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "bridge.intent_execution.operationalize_intent",
@@ -287,7 +310,8 @@
       "path": "bridge.intent_execution.operationalize_intent",
       "evidence": "bridge/intent_execution.py; docs/PHASE_21_INTENT_EXECUTION_BRIDGE.md",
       "data_domain": "acquisition-plans",
-      "provenance": "an intent and a resolved source, assembled into a plan"
+      "provenance": "an intent and a resolved source, assembled into a plan",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "science.admissibility.property",
@@ -299,7 +323,8 @@
       "path": "science.admissibility.quantity_is_typed; science.admissibility.no_context_free_property",
       "evidence": "science/admissibility.py; architecture/property_admissibility.yaml",
       "data_domain": "evidence-pool",
-      "provenance": "the quantity offered; typed with its uncertainty kind, or refused"
+      "provenance": "the quantity offered; typed with its uncertainty kind, or refused",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "science.table.observation_is_table_alignable",
@@ -311,7 +336,8 @@
       "path": "science.table.observation_is_table_alignable",
       "evidence": "science/table.py; architecture/aligned_observation_table.yaml; architecture/decisions/2026-08-26-joint-workload-decision.yaml",
       "data_domain": "evidence-pool",
-      "provenance": "the observation's own content; explicit absence is not zero"
+      "provenance": "the observation's own content; explicit absence is not zero",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "science.kalman_prerequisites",
@@ -323,7 +349,8 @@
       "path": "science.structured_uncertainty.uncertainty_corresponds_to_value; science.lineage_depth.recursive_computation_is_depth_bounded",
       "evidence": "science/structured_uncertainty.py; science/lineage_depth.py; architecture/exchange/daq_requirement_response.yaml",
       "data_domain": "numerical-kernels",
-      "provenance": "the measurement covariance offered; asserted noise is admitted as asserted"
+      "provenance": "the measurement covariance offered; asserted noise is admitted as asserted",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "assertion.property_admissibility.assess_pool",
@@ -335,7 +362,8 @@
       "path": "assertion.property_admissibility.assess_pool",
       "evidence": "assertion/property_admissibility.py; docs/PHASE_29_LIVE_PROPERTY_INGEST_INTEGRATION.md",
       "data_domain": "evidence-pool",
-      "provenance": "the pool itself; what cannot be admitted is quarantined, never dropped"
+      "provenance": "the pool itself; what cannot be admitted is quarantined, never dropped",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "epistemics.architecture.read",
@@ -347,7 +375,8 @@
       "path": "epistemics.invariants.load_invariants; epistemics.control_graph",
       "evidence": "epistemics/invariants.py; epistemics/control_graph.py; architecture/invariants.yaml; architecture/control_graph.yaml; architecture/core.yaml",
       "data_domain": "architecture-invariants",
-      "provenance": "the invariant declarations in this repository"
+      "provenance": "the invariant declarations in this repository",
+      "module_family": "topology"
     },
     {
       "capabilityId": "epistemics.generated_docs.regenerate",
@@ -360,7 +389,8 @@
       "path": "epistemics.doctrine.write; architecture/build_agent_contracts.py",
       "evidence": "epistemics/doctrine.py; architecture/build_agent_contracts.py; .github/workflows/conformance.yml",
       "data_domain": "architecture-invariants",
-      "provenance": "those declarations; the doctrine is projected, never hand-edited"
+      "provenance": "those declarations; the doctrine is projected, never hand-edited",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "exchange.artifacts.read",
@@ -372,7 +402,8 @@
       "path": "architecture/exchange/*.yaml (+ .sha256)",
       "evidence": "architecture/exchange/daq_capabilities.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/invariant_register.yaml; architecture/exchange/canonical_yaml.py",
       "data_domain": "architecture-invariants",
-      "provenance": "content-addressed canonical YAML under architecture/exchange/"
+      "provenance": "content-addressed canonical YAML under architecture/exchange/",
+      "module_family": "federation"
     },
     {
       "capabilityId": "exchange.artifacts.regenerate",
@@ -385,7 +416,8 @@
       "path": "architecture/exchange/build_*.py",
       "evidence": "architecture/exchange/build_daq_capabilities.py; architecture/exchange/build_daq_requirement_response.py; architecture/exchange/build_invariant_register.py; architecture/exchange/canonical_yaml.py",
       "data_domain": "architecture-invariants",
-      "provenance": "executable code in this repository, traced into the exchange artifacts"
+      "provenance": "executable code in this repository, traced into the exchange artifacts",
+      "module_family": "federation"
     },
     {
       "capabilityId": "exchange.verify_pair_landed",
@@ -398,7 +430,8 @@
       "path": "architecture/exchange/verify_pair_landed.py <repo-a> <repo-b>",
       "evidence": "architecture/exchange/verify_pair_landed.py",
       "data_domain": "architecture-invariants",
-      "provenance": "two repository checkouts, compared byte for byte"
+      "provenance": "two repository checkouts, compared byte for byte",
+      "module_family": "federation"
     },
     {
       "capabilityId": "conformance.gate",
@@ -410,7 +443,8 @@
       "path": ".github/workflows/conformance.yml",
       "evidence": ".github/workflows/conformance.yml; tests/test_doctrine_generation.py; tests/test_no_test_name_is_shadowed.py",
       "data_domain": "architecture-invariants",
-      "provenance": "the repository under check, on every push"
+      "provenance": "the repository under check, on every push",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "commerce.cli.templates",
@@ -423,7 +457,8 @@
       "path": "form | sheet",
       "evidence": "commerce/__main__.py; commerce/manual.py; commerce/sheet.py",
       "data_domain": "logistics",
-      "provenance": "nothing; a blank form is a shape, not a record"
+      "provenance": "nothing; a blank form is a shape, not a record",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "commerce.cli.grade",
@@ -436,7 +471,8 @@
       "path": "record <events.json> | read <sheet.csv> <authority.json>",
       "evidence": "commerce/__main__.py; commerce/stores.py; commerce/events.py; commerce/sheet.py",
       "data_domain": "carrier-identity",
-      "provenance": "a carrier rate sheet and the authority record paired with it"
+      "provenance": "a carrier rate sheet and the authority record paired with it",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "commerce.cli.commit",
@@ -450,7 +486,8 @@
       "evidence": "commerce/__main__.py; commerce/ledger.py; commerce/register.py",
       "side_effects": "appends to commerce-ledger.jsonl and the register file",
       "data_domain": "logistics",
-      "provenance": "the graded pair; the only door into the commerce ledger"
+      "provenance": "the graded pair; the only door into the commerce ledger",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "commerce.cli.book",
@@ -463,7 +500,8 @@
       "path": "book | status",
       "evidence": "commerce/__main__.py; commerce/ledger.py",
       "data_domain": "logistics",
-      "provenance": "the append-only commerce ledger, replayed"
+      "provenance": "the append-only commerce ledger, replayed",
+      "module_family": "projection"
     },
     {
       "capabilityId": "commerce.cli.residuals",
@@ -476,7 +514,8 @@
       "path": "residuals [asof]",
       "evidence": "commerce/__main__.py; commerce/residuals.py; commerce/register.py; commerce/admissibility.py",
       "data_domain": "freight-rates",
-      "provenance": "the ledger: promised against realized, computed at a stated as-of"
+      "provenance": "the ledger: promised against realized, computed at a stated as-of",
+      "module_family": "projection"
     },
     {
       "capabilityId": "commerce.cli.morning",
@@ -489,7 +528,8 @@
       "path": "morning <opportunities.json>",
       "evidence": "commerce/__main__.py; commerce/gate.py; commerce/opportunity.py; commerce/opportunity_intake.py",
       "data_domain": "logistics",
-      "provenance": "the opportunities file supplied, run through the same disposition rules"
+      "provenance": "the opportunities file supplied, run through the same disposition rules",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "commerce.cli.outbound",
@@ -502,7 +542,8 @@
       "path": "outbound <drafts.json>",
       "evidence": "commerce/__main__.py; commerce/outbound.py",
       "data_domain": "logistics",
-      "provenance": "the ledger-derived drafts; rendering is not sending"
+      "provenance": "the ledger-derived drafts; rendering is not sending",
+      "module_family": "projection"
     },
     {
       "capabilityId": "commerce.cli.vet",
@@ -515,7 +556,8 @@
       "path": "vet <carrier> <asof> [booking pickup delivery]",
       "evidence": "commerce/__main__.py; commerce/vetting.py; commerce/vetting_store.py; architecture/carrier_vetting_recon.yaml",
       "data_domain": "carrier-identity",
-      "provenance": "the carrier authority records already committed to the ledger"
+      "provenance": "the carrier authority records already committed to the ledger",
+      "module_family": "agent"
     },
     {
       "capabilityId": "commerce.cli.exceptions",
@@ -528,7 +570,8 @@
       "path": "exceptions",
       "evidence": "commerce/__main__.py; commerce/register.py",
       "data_domain": "disruptions",
-      "provenance": "the register itself, partitioned by consistency"
+      "provenance": "the register itself, partitioned by consistency",
+      "module_family": "projection"
     },
     {
       "capabilityId": "commerce.cli.facilities",
@@ -541,7 +584,8 @@
       "path": "facilities <file.json>",
       "evidence": "commerce/__main__.py; commerce/facility.py",
       "data_domain": "facilities",
-      "provenance": "the raw addresses supplied, normalised against the facilities reference"
+      "provenance": "the raw addresses supplied, normalised against the facilities reference",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "commerce.canadabuys.feeds",
@@ -553,7 +597,8 @@
       "path": "commerce.canadabuys.parse_feed; commerce.award.parse_awards",
       "evidence": "commerce/canadabuys.py; commerce/award.py; architecture/canadabuys_recon.yaml; commerce/fixtures/canadabuys_open_sample.csv",
       "data_domain": "public-procurement",
-      "provenance": "CanadaBuys tender feeds, with source URL and retrieval time preserved"
+      "provenance": "CanadaBuys tender feeds, with source URL and retrieval time preserved",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "commerce.tender.extract",
@@ -565,7 +610,8 @@
       "path": "commerce.tender.extract; commerce.agents.tender_scout.rank",
       "evidence": "commerce/tender.py; commerce/agents/tender_scout.py; commerce/opportunity.py",
       "data_domain": "public-procurement",
-      "provenance": "one notice; the grade is derived and the notice is kept"
+      "provenance": "one notice; the grade is derived and the notice is kept",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "commerce.landed_cost.assemble",
@@ -577,7 +623,8 @@
       "path": "commerce.landed_cost.assemble",
       "evidence": "commerce/landed_cost.py",
       "data_domain": "freight-rates",
-      "provenance": "the known components only; an unknown component is refused, never zeroed"
+      "provenance": "the known components only; an unknown component is refused, never zeroed",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "commerce.mileage.truck_legal",
@@ -589,7 +636,8 @@
       "path": "commerce.mileage.truck_legal",
       "evidence": "commerce/mileage.py",
       "data_domain": "trade-lanes",
-      "provenance": "the routing service, or the stated distance when one is given"
+      "provenance": "the routing service, or the stated distance when one is given",
+      "module_family": "projection"
     },
     {
       "capabilityId": "commerce.tender.issue",
@@ -601,7 +649,8 @@
       "path": "commerce.authority.dispose; commerce.tendering.issue_tender",
       "evidence": "commerce/authority.py; commerce/tendering.py; architecture/physical_commerce_founding.yaml",
       "data_domain": "public-procurement",
-      "provenance": "an operator disposition; a commitment is a decision, recorded"
+      "provenance": "an operator disposition; a commitment is a decision, recorded",
+      "module_family": "federation"
     },
     {
       "capabilityId": "commerce.outbound.send",
@@ -613,7 +662,8 @@
       "path": "commerce.outbound.send",
       "evidence": "commerce/outbound.py; docs/STANDING_PLAN.md",
       "data_domain": "logistics",
-      "provenance": "the draft; the wire boundary is where a record becomes an act"
+      "provenance": "the draft; the wire boundary is where a record becomes an act",
+      "module_family": "federation"
     },
     {
       "capabilityId": "commerce.recon_lint",
@@ -625,7 +675,8 @@
       "path": "commerce.recon_lint.lint",
       "evidence": "commerce/recon_lint.py; architecture/defect_class_eight.yaml",
       "data_domain": "logistics",
-      "provenance": "one record, linted against its own declared shape"
+      "provenance": "one record, linted against its own declared shape",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "session.cli.plan_close",
@@ -638,7 +689,8 @@
       "path": "plan <queue.json> | close <queue.json> <capture.json>",
       "evidence": "session/intake.py; session/work_order.py; session/templates/queue.template.json; architecture/sea_dog_session_instrument.yaml",
       "data_domain": "acquisition-plans",
-      "provenance": "a researcher's question queue, ranked"
+      "provenance": "a researcher's question queue, ranked",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "tools.make_fixture",
@@ -651,7 +703,8 @@
       "path": "tools/make_fixture.py --out <dir>",
       "evidence": "tools/make_fixture.py; tests/test_payload_scale_fixture.py",
       "data_domain": "automation",
-      "provenance": "synthetic: a generated fixture book, register and ledger"
+      "provenance": "synthetic: a generated fixture book, register and ledger",
+      "module_family": "adjudication"
     }
   ],
   "metadata": {

@@ -311,7 +311,8 @@
       "method": "POST",
       "path": "/api/connectors/{id}/sync",
       "evidence": "src/ui-server.js; src/connector-runner.js",
-      "side_effects": "external API calls; writes rows"
+      "side_effects": "external API calls; writes rows",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "http.import.seed",
@@ -323,7 +324,8 @@
       "method": "POST",
       "path": "/api/import/seed",
       "evidence": "src/ui-server.js; seed/README.md",
-      "provenance": "synthetic:demo"
+      "provenance": "synthetic:demo",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "http.import.file",
@@ -335,7 +337,8 @@
       "method": "POST",
       "path": "/api/import/file",
       "evidence": "src/ui-server.js; src/ai/extract-pipeline.js",
-      "side_effects": "writes rows; LLM calls"
+      "side_effects": "writes rows; LLM calls",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "http.chat",
@@ -359,7 +362,9 @@
       "method": "POST",
       "path": "/api/config",
       "evidence": "src/ui-server.js",
-      "side_effects": "rewrites config.yml"
+      "side_effects": "rewrites config.yml",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "http.admin.prune",
@@ -371,7 +376,8 @@
       "method": "POST",
       "path": "/api/admin/prune",
       "evidence": "src/ui-server.js; src/atlas.js",
-      "side_effects": "deletes rows"
+      "side_effects": "deletes rows",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "http.kb",
@@ -383,7 +389,8 @@
       "method": "POST",
       "path": "/api/kb/file",
       "evidence": "src/ui-server.js; src/ai/knowledge-engine.js",
-      "side_effects": "writes knowledge/*.md"
+      "side_effects": "writes knowledge/*.md",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "http.modules",
@@ -395,7 +402,9 @@
       "method": "POST",
       "path": "/api/modules/{id}/sync",
       "evidence": "src/ui-server.js; src/module-loader.js; src/modules/",
-      "side_effects": "external Drive calls; LLM calls; writes rows"
+      "side_effects": "external Drive calls; LLM calls; writes rows",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "webhook.events",
@@ -407,7 +416,8 @@
       "method": "POST",
       "path": "config.webhooks[].url",
       "evidence": "src/webhooks.js",
-      "side_effects": "outbound HTTP"
+      "side_effects": "outbound HTTP",
+      "module_family": "federation"
     },
     {
       "capabilityId": "cli.atlas",
@@ -417,7 +427,9 @@
       "approval": "operator",
       "surface": "cli",
       "path": "atlas <init|validate|seed|status|start>",
-      "evidence": "bin/atlas.js; package.json"
+      "evidence": "bin/atlas.js; package.json",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "contract.models",
@@ -458,7 +470,8 @@
     "license": "Apache-2.0",
     "storage": "SQLite default, PostgreSQL optional",
     "person_data": "incidental",
-    "person_data_note": "A logistics index holds carrier and dispatcher contacts as commercial records about a role."
+    "person_data_note": "A logistics index holds carrier and dispatcher contacts as commercial records about a role.",
+    "module_family": "agent"
   },
   "location": null,
   "relations": [

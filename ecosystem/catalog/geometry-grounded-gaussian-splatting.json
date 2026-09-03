@@ -178,7 +178,8 @@
     "last_pushed_at": "2026-03-16T08:08:08Z",
     "gpu_required": true,
     "license": "unrecorded",
-    "person_data": "refused"
+    "person_data": "refused",
+    "module_family": "adjudication"
   },
   "location": null,
   "relations": [

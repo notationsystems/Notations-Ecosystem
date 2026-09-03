@@ -434,7 +434,8 @@
       "path": "/api/osint/sweep",
       "evidence": "src/app/api/osint/sweep/route.ts",
       "side_effects": "outbound probes to arbitrary hosts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "osint.scanner",
@@ -447,7 +448,8 @@
       "path": "/api/scanner",
       "evidence": "src/app/api/scanner/route.ts; .env.example",
       "side_effects": "active scans against the target host",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "entity.expand",
@@ -520,7 +522,8 @@
       "path": "/api/astra",
       "evidence": "src/app/api/astra/route.ts; scratch/astra",
       "cost": "GPU minutes",
-      "side_effects": "remote GPU inference"
+      "side_effects": "remote GPU inference",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.ingest",
@@ -532,7 +535,8 @@
       "method": "POST",
       "path": "/api/sdk/ingest",
       "evidence": "src/app/api/sdk/ingest/route.ts; src/lib/sdk/types.ts; src/lib/sdk/LatticeAdapter.ts",
-      "side_effects": "mutates in-memory SDK entity store"
+      "side_effects": "mutates in-memory SDK entity store",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "sdk.ingest.status",
@@ -566,7 +570,8 @@
       "method": "POST",
       "path": "/api/github-webhook",
       "evidence": "src/app/api/github-webhook/route.ts",
-      "side_effects": "forwards payload to an external URL"
+      "side_effects": "forwards payload to an external URL",
+      "module_family": "federation"
     },
     {
       "capabilityId": "contract.polybolos_entity",
@@ -593,7 +598,8 @@
     "license": "MIT",
     "api_route_count": 70,
     "person_data": "serves",
-    "person_data_exception": "Keeps the full upstream person-targeting surface — username, phone, leaks, GitHub — that Payload Terminal removed when it forked the same code. It is a reference operator surface, not a deployed system. Ends when the recon toolkit is deleted from the fork, as it was from the terminal."
+    "person_data_exception": "Keeps the full upstream person-targeting surface — username, phone, leaks, GitHub — that Payload Terminal removed when it forked the same code. It is a reference operator surface, not a deployed system. Ends when the recon toolkit is deleted from the fork, as it was from the terminal.",
+    "module_family": "projection"
   },
   "location": null,
   "relations": [

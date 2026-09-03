@@ -13,7 +13,9 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/iam",
-      "evidence": "specs/api/paths/iam.yaml"
+      "evidence": "specs/api/paths/iam.yaml",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "api.config",
@@ -24,7 +26,9 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/config",
-      "evidence": "specs/api/paths/config.yaml"
+      "evidence": "specs/api/paths/config.yaml",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "api.flow",
@@ -35,7 +39,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/flow",
-      "evidence": "specs/api/paths/flow.yaml"
+      "evidence": "specs/api/paths/flow.yaml",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "api.librarian",
@@ -46,7 +51,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/librarian",
-      "evidence": "specs/api/paths/librarian.yaml; specs/api/paths/document-stream.yaml"
+      "evidence": "specs/api/paths/librarian.yaml; specs/api/paths/document-stream.yaml",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.knowledge",
@@ -57,7 +63,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/knowledge",
-      "evidence": "specs/api/paths/knowledge.yaml"
+      "evidence": "specs/api/paths/knowledge.yaml",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.collection_management",
@@ -68,7 +75,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/v1/collection-management",
-      "evidence": "specs/api/paths/collection-management.yaml"
+      "evidence": "specs/api/paths/collection-management.yaml",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.flow.rag",
@@ -149,7 +157,8 @@
       "method": "POST",
       "path": "/api/v1/flow/{flow}/service/document-load",
       "evidence": "specs/api/paths/flow/text-load.yaml; specs/api/paths/flow/document-load.yaml",
-      "side_effects": "triggers extraction pipeline; writes graph"
+      "side_effects": "triggers extraction pipeline; writes graph",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "api.flow.mcp_tool",
@@ -161,7 +170,8 @@
       "method": "POST",
       "path": "/api/v1/flow/{flow}/service/mcp-tool",
       "evidence": "specs/api/paths/flow/mcp-tool.yaml",
-      "side_effects": "depends on the external tool"
+      "side_effects": "depends on the external tool",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "api.import_export_core",
@@ -171,7 +181,8 @@
       "approval": "operator",
       "surface": "websocket",
       "path": "/api/v1/import-core",
-      "evidence": "specs/api/paths/import-core.yaml; specs/api/paths/export-core.yaml"
+      "evidence": "specs/api/paths/import-core.yaml; specs/api/paths/export-core.yaml",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.socket",
@@ -306,7 +317,8 @@
       "surface": "mcp",
       "path": "put_config",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "changes platform config"
+      "side_effects": "changes platform config",
+      "api_deviation": "Provider control on a machine surface: an MCP tool that writes platform configuration. infrastructure forbids credential and control surfaces, and operator_local cannot hold it because a model can reach an MCP tool. The architecture would not serve this; the mirror does, and this repository runs the mirror."
     },
     {
       "capabilityId": "mcp.delete_config",
@@ -317,7 +329,8 @@
       "surface": "mcp",
       "path": "delete_config",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "changes platform config"
+      "side_effects": "changes platform config",
+      "api_deviation": "The deleting half of mcp.put_config, and the same deviation: configuration removal reachable by any agent holding the MCP endpoint, with no operator between the request and the effect."
     },
     {
       "capabilityId": "mcp.get_prompts",
@@ -388,7 +401,8 @@
       "surface": "mcp",
       "path": "load_kg_core",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "writes graph and vector stores"
+      "side_effects": "writes graph and vector stores",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "mcp.delete_kg_core",
@@ -399,7 +413,8 @@
       "surface": "mcp",
       "path": "delete_kg_core",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "irreversible delete"
+      "side_effects": "irreversible delete",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "mcp.get_flows",
@@ -450,7 +465,8 @@
       "surface": "mcp",
       "path": "start_flow",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "launches processors"
+      "side_effects": "launches processors",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.stop_flow",
@@ -461,7 +477,8 @@
       "surface": "mcp",
       "path": "stop_flow",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "stops processors"
+      "side_effects": "stops processors",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.get_documents",
@@ -492,7 +509,8 @@
       "surface": "mcp",
       "path": "load_document",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "writes library"
+      "side_effects": "writes library",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "mcp.remove_document",
@@ -503,7 +521,8 @@
       "surface": "mcp",
       "path": "remove_document",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "irreversible delete"
+      "side_effects": "irreversible delete",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "mcp.add_processing",
@@ -514,7 +533,8 @@
       "surface": "mcp",
       "path": "add_processing",
       "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
-      "side_effects": "triggers extraction; LLM cost"
+      "side_effects": "triggers extraction; LLM cost",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "mcp.transport.streamable_http",
@@ -534,7 +554,9 @@
       "approval": "operator",
       "surface": "cli",
       "path": "tg-*",
-      "evidence": "trustgraph-cli/pyproject.toml"
+      "evidence": "trustgraph-cli/pyproject.toml",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "sdk.python_api",
@@ -581,7 +603,8 @@
     "license": "Apache-2.0",
     "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs",
     "person_data": "incidental",
-    "person_data_note": "A document-ingestion platform will extract whatever entities a document contains, including people."
+    "person_data_note": "A document-ingestion platform will extract whatever entities a document contains, including people.",
+    "module_family": "agent"
   },
   "location": null,
   "relations": [

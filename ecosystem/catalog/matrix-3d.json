@@ -172,7 +172,8 @@
     "version": "v0.1.0",
     "gpu_required": true,
     "license": "unrecorded",
-    "person_data": "refused"
+    "person_data": "refused",
+    "module_family": "adjudication"
   },
   "location": null,
   "relations": [

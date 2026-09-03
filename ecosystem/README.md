@@ -20,6 +20,9 @@ spelling they have been written as, and `validate.mjs` refuses an alias by namin
 canonical form. The distinct set per node crosses into the journal as `metadata.surfaces`
 and `metadata.data_domains`, so the dock's search answers "which systems are reachable
 over MCP?" from a snapshot alone — a vocabulary nothing can be searched by is one that
-only validates. `corpus.mjs` grades every node against [docs/CORPUS.md](../docs/CORPUS.md)
+only validates. `api.mjs` places every capability in the API architecture of
+[docs/API_PLANES.md](../docs/API_PLANES.md) — four roles, four planes, thirteen module
+families — and exits non-zero if any mutating capability reaches a public plane.
+`corpus.mjs` grades every node against [docs/CORPUS.md](../docs/CORPUS.md)
 and reports how much of each grade is verified here, taken on trust from another
 repository, or merely declared in this catalog.

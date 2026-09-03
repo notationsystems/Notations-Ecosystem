@@ -15,7 +15,8 @@
       "path": "/v2/sites/{site_id}",
       "evidence": "Webflow Data API v2 (data_sites_tool)",
       "data_domain": "site-content",
-      "provenance": "the Webflow Data API (GET /v2/sites/{site_id})"
+      "provenance": "the Webflow Data API (GET /v2/sites/{site_id})",
+      "module_family": "topology"
     },
     {
       "capabilityId": "pages.read",
@@ -28,7 +29,8 @@
       "path": "/v2/sites/{site_id}/pages",
       "evidence": "Webflow Data API v2 (data_pages_tool)",
       "data_domain": "site-content",
-      "provenance": "the Webflow Data API (GET /v2/sites/{site_id}/pages)"
+      "provenance": "the Webflow Data API (GET /v2/sites/{site_id}/pages)",
+      "module_family": "topology"
     },
     {
       "capabilityId": "cms.read",
@@ -41,7 +43,8 @@
       "path": "/v2/collections/{collection_id}/items",
       "evidence": "Webflow Data API v2 (data_cms_tool)",
       "data_domain": "site-content",
-      "provenance": "Webflow collection items, authored in Webflow"
+      "provenance": "Webflow collection items, authored in Webflow",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "cms.write",
@@ -54,7 +57,8 @@
       "path": "/v2/collections/{collection_id}/items",
       "evidence": "Webflow Data API v2 (data_cms_tool)",
       "data_domain": "site-content",
-      "provenance": "the caller; the site is the destination, never a source of estate truth"
+      "provenance": "the caller; the site is the destination, never a source of estate truth",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "site.publish",
@@ -67,7 +71,9 @@
       "path": "/v2/sites/{site_id}/publish",
       "evidence": "Webflow Data API v2 (data_sites_tool)",
       "data_domain": "site-content",
-      "provenance": "the site as it stands in Webflow at the moment of publish"
+      "provenance": "the site as it stands in Webflow at the moment of publish",
+      "module_family": "release",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "webhooks.observe",
@@ -78,7 +84,8 @@
       "surface": "webhook",
       "evidence": "Webflow Data API v2 (data_webhook_tool)",
       "data_domain": "site-content",
-      "provenance": "Webflow deliveries: form submissions, publishes and CMS changes"
+      "provenance": "Webflow deliveries: form submissions, publishes and CMS changes",
+      "module_family": "federation"
     }
   ],
   "metadata": {

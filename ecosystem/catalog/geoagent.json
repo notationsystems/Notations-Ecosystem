@@ -64,7 +64,8 @@
       "surface": "python",
       "path": "geoagent.for_leafmap",
       "evidence": "geoagent/core/factory.py; geoagent/tools/leafmap.py; geoagent/tools/anymap.py",
-      "side_effects": "mutates map widget; may write files"
+      "side_effects": "mutates map widget; may write files",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.for_qgis",
@@ -75,7 +76,8 @@
       "surface": "python",
       "path": "geoagent.for_qgis",
       "evidence": "geoagent/core/factory.py; geoagent/tools/qgis.py; README.md",
-      "side_effects": "mutates QGIS project; executes PyQGIS"
+      "side_effects": "mutates QGIS project; executes PyQGIS",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.for_stac",
@@ -152,7 +154,8 @@
       "surface": "python",
       "path": "geoagent.for_whitebox",
       "evidence": "geoagent/core/factory.py; geoagent/tools/whitebox.py",
-      "side_effects": "local compute; writes rasters"
+      "side_effects": "local compute; writes rasters",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.for_geoai",
@@ -164,7 +167,8 @@
       "path": "geoagent.for_geoai",
       "evidence": "geoagent/core/factory.py; geoagent/tools/geoai.py",
       "side_effects": "model inference; writes files",
-      "cost": "GPU minutes"
+      "cost": "GPU minutes",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.for_timelapse",
@@ -175,7 +179,8 @@
       "surface": "python",
       "path": "geoagent.for_timelapse",
       "evidence": "geoagent/core/factory.py; geoagent/tools/timelapse.py",
-      "side_effects": "writes media files"
+      "side_effects": "writes media files",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.hsae",
@@ -196,7 +201,8 @@
       "surface": "python",
       "path": "geoagent.tools.images",
       "evidence": "geoagent/tools/images.py; README.md",
-      "cost": "image-generation tokens"
+      "cost": "image-generation tokens",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.codex_oauth",
@@ -207,7 +213,9 @@
       "surface": "python",
       "path": "geoagent.login_openai_codex",
       "evidence": "geoagent/core/openai_codex.py; README.md",
-      "side_effects": "browser login; writes token file"
+      "side_effects": "browser login; writes token file",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "cli.geoagent",
@@ -217,7 +225,9 @@
       "approval": "operator",
       "surface": "cli",
       "path": "geoagent <ui|browser|codex>",
-      "evidence": "geoagent/cli.py; pyproject.toml"
+      "evidence": "geoagent/cli.py; pyproject.toml",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "http.browser.health",
@@ -239,7 +249,8 @@
       "surface": "websocket",
       "path": "/geoagent/ws",
       "evidence": "geoagent/browser/server.py; geoagent/browser/session.py; geoagent/tools/browser_maplibre.py; examples/browser_maplibre/",
-      "side_effects": "mutates browser map; LLM cost"
+      "side_effects": "mutates browser map; LLM cost",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "sdk.for_browser_maplibre",
@@ -250,7 +261,8 @@
       "surface": "python",
       "path": "geoagent.for_browser_maplibre",
       "evidence": "geoagent/tools/browser_maplibre.py; geoagent/core/factory.py",
-      "side_effects": "mutates browser map"
+      "side_effects": "mutates browser map",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "http.node_backend",
@@ -262,7 +274,9 @@
       "method": "GET",
       "path": "/geoagent/health",
       "evidence": "examples/node_maplibre_strands_typescript/src/server/main.ts; examples/node_maplibre_strands_typescript/README.md",
-      "side_effects": "mutates browser map; LLM cost"
+      "side_effects": "mutates browser map; LLM cost",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "ui.solara",
@@ -272,7 +286,9 @@
       "approval": "operator",
       "surface": "ui",
       "path": "geoagent ui",
-      "evidence": "geoagent/ui/app.py; geoagent/ui/pages/; docs/ui.md"
+      "evidence": "geoagent/ui/app.py; geoagent/ui/pages/; docs/ui.md",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "ui.qgis_plugin",
@@ -283,7 +299,9 @@
       "surface": "ui",
       "path": "qgis_geoagent/open_geoagent",
       "evidence": "qgis_geoagent/open_geoagent/metadata.txt; qgis_geoagent/README.md; docs/qgis-plugin.md",
-      "side_effects": "mutates QGIS project"
+      "side_effects": "mutates QGIS project",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     },
     {
       "capabilityId": "docs.notebooks",
@@ -311,7 +329,8 @@
     "python": ">=3.11",
     "mcp_surface": "none found in repo",
     "person_data": "incidental",
-    "person_data_note": "Earth-observation imagery can show people; nothing is stored or indexed."
+    "person_data_note": "Earth-observation imagery can show people; nothing is stored or indexed.",
+    "module_family": "agent"
   },
   "location": null,
   "relations": [

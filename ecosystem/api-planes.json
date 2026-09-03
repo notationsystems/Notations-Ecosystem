@@ -1,0 +1,339 @@
+{
+  "schema": "notations.ecosystem.api-planes.v1",
+  "description": "The API architecture of Notation Systems: four roles a module's API may play, four planes the estate exposes, and the thirteen module families that map one onto the other. Closed, and derived rather than declared per capability — a capability names the family it belongs to, and the role and plane follow from this table. A per-capability role written by hand would drift the way a written-down count does; a family that changes its treatment changes it once, here, for every capability in it.",
+  "invariant": {
+    "id": "API-000",
+    "statement": "Every API response either carries a canonical reference and a proof root, or says explicitly that it is an operational observation and states its limitations.",
+    "why": "A response with neither is the dangerous shape: it reads as authoritative, cannot be verified, and nothing in it says which. The two kinds are not a spectrum. A snapshot fold of a signed journal is a claim about canonical state and must be checkable against the chain that carries it; a liveness probe is one process's opinion of itself at a moment, and saying so is what stops it being read as the estate's state.",
+    "response_kinds": {
+      "referenced": {
+        "description": "Carries a canonical `notation://` reference and the proof root the value was read at",
+        "requires": [
+          "reference",
+          "proof_root"
+        ]
+      },
+      "operational_observation": {
+        "description": "An observation of a running system, true of that process at that moment and of nothing else",
+        "requires": [
+          "observed_at",
+          "limitations"
+        ]
+      }
+    }
+  },
+  "roles": {
+    "public_read": {
+      "description": "Publicly readable. The response is a read of held material, bounded by tenant and by what the reader is authorized to see.",
+      "mutates": false,
+      "default_response_kind": "referenced"
+    },
+    "proof_verifiable": {
+      "description": "Proof-verifiable. The caller supplies or names something and gets back a verification result that can be re-derived independently; the module never mutates what it verifies.",
+      "mutates": false,
+      "default_response_kind": "referenced"
+    },
+    "governed_write": {
+      "description": "Internally writable, and only through a governed pipeline. There is no direct canonical CRUD: a write is a submission that a named gate admits or refuses.",
+      "mutates": true,
+      "default_response_kind": "referenced"
+    },
+    "host_infrastructure": {
+      "description": "Host-only. Exposes capability and status, never storage, credentials, provider control or raw internals.",
+      "mutates": false,
+      "default_response_kind": "operational_observation"
+    }
+  },
+  "exposure": {
+    "plane": {
+      "description": "Served on the planes its family admits. Every plane rule applies.",
+      "default": true
+    },
+    "operator_local": {
+      "description": "Not served on any plane. An action a human operator triggers — a key rotation, a credential issue, a site activation, a runtime switch — rather than an endpoint anyone calls.",
+      "requires": {
+        "approval": "operator",
+        "forbidden_surface": [
+          "mcp",
+          "agent-tool",
+          "webhook"
+        ]
+      },
+      "why": "Every estate has actions that are not API, and they are usually the dangerous ones: they mint credentials, rotate keys, activate releases and switch providers. Forcing them onto a plane so the model looks tidy is how such an action acquires a route. Naming the exposure instead makes the set countable, and makes 'can a model trigger anything that mints a credential or activates a release?' a question with an answer — which is why the forbidden surfaces are the machine-reachable ones. A person decides; an agent does not get to."
+    }
+  },
+  "planes": {
+    "tenant_read": {
+      "title": "Tenant Read API",
+      "description": "Corpus, projection, search, releases, timelines, proof navigation. Every read is bound to a tenant and returns references, not unrestricted data.",
+      "public": true,
+      "admits_roles": [
+        "public_read",
+        "proof_verifiable"
+      ]
+    },
+    "verification": {
+      "title": "Verification API",
+      "description": "Any supported VerificationEnvelope, closure, checks, Warrant Graph. Answers whether something verifies, and against what root.",
+      "public": true,
+      "admits_roles": [
+        "proof_verifiable"
+      ]
+    },
+    "governance": {
+      "title": "Governance API",
+      "description": "Coverage, source-policy windows, retention, readiness, preflight, replay, challenges. Typed evidence and explicit non-authorization: a readiness answer is never an approval.",
+      "public": false,
+      "admits_roles": [
+        "public_read",
+        "governed_write",
+        "host_infrastructure"
+      ]
+    },
+    "internal_operator": {
+      "title": "Internal Ingestion / Operator API",
+      "description": "Signed federation packets and controlled operational actions. Never public canonical CRUD, and never a route by which a reader becomes a writer.",
+      "public": false,
+      "admits_roles": [
+        "governed_write",
+        "host_infrastructure"
+      ]
+    }
+  },
+  "families": {
+    "kernel": {
+      "modules": [
+        "kernel",
+        "canonical",
+        "registry",
+        "verification router"
+      ],
+      "treatment": "Universal reference resolution and proof verification; never direct mutation",
+      "role": "proof_verifiable",
+      "planes": [
+        "verification",
+        "tenant_read"
+      ],
+      "never": [
+        "direct mutation of anything it resolves or verifies"
+      ]
+    },
+    "persistence": {
+      "modules": [
+        "journal",
+        "closure persistence",
+        "PostgreSQL repository"
+      ],
+      "treatment": "Internal persistence adapters; public API reads only through tenant-bound resolvers",
+      "role": "host_infrastructure",
+      "planes": [
+        "internal_operator"
+      ],
+      "never": [
+        "a public route into the store",
+        "a read that is not tenant-bound"
+      ],
+      "note": "`host_infrastructure` describes what the module's API affords, not what the module does. A persistence adapter obviously writes; what it must never offer is a route by which a caller writes through it. A write that lands durably reaches the store through governed ingestion, so it is declared `acquisition` and the store stays behind it."
+    },
+    "acquisition": {
+      "modules": [
+        "source policy",
+        "acquisition",
+        "normalization",
+        "capture",
+        "admission",
+        "archive",
+        "retention"
+      ],
+      "treatment": "Read policy/receipt/retention status; writes only through governed ingestion",
+      "role": "governed_write",
+      "planes": [
+        "governance",
+        "internal_operator"
+      ],
+      "never": [
+        "an ingestion that bypasses the policy window"
+      ]
+    },
+    "corpus": {
+      "modules": [
+        "corpus build",
+        "profiles",
+        "identity mapping",
+        "diff",
+        "corpus release"
+      ],
+      "treatment": "Corpus catalog, build comparison, membership, provenance, and time-bound read APIs",
+      "role": "public_read",
+      "planes": [
+        "tenant_read"
+      ],
+      "never": [
+        "an admission that is not an explicit validation step"
+      ],
+      "note": "The table lists `admission` here, and its treatment sentence is read-shaped: catalog, comparison, membership, provenance, time-bound reads. Admission is the write — the explicit validation step COR-006 requires — so it sits in `acquisition`, whose treatment is exactly 'writes only through governed ingestion'. The check found this: four admission capabilities declared `corpus` and were refused for executing in a role that does not mutate."
+    },
+    "projection": {
+      "modules": [
+        "lexical projection",
+        "vector projection",
+        "spatial projection",
+        "analytical projection",
+        "graph projection",
+        "coverage projection",
+        "index projection"
+      ],
+      "treatment": "Projection catalog plus bounded query endpoints with exact proof roots",
+      "role": "public_read",
+      "planes": [
+        "tenant_read"
+      ],
+      "never": [
+        "an unbounded query",
+        "a write back to what it projects"
+      ]
+    },
+    "agent": {
+      "modules": [
+        "context packages",
+        "agent execution",
+        "authorized search"
+      ],
+      "treatment": "Tenant-bound agent/API tools; return references and authorization state, not unrestricted data",
+      "role": "public_read",
+      "planes": [
+        "tenant_read"
+      ],
+      "never": [
+        "returning material the caller is not authorized to hold"
+      ]
+    },
+    "release": {
+      "modules": [
+        "methodology",
+        "attestation",
+        "trusted signers",
+        "market release",
+        "activation"
+      ],
+      "treatment": "Release and trust-status endpoints; activation and signing stay operator-only",
+      "role": "proof_verifiable",
+      "planes": [
+        "tenant_read",
+        "internal_operator"
+      ],
+      "never": [
+        "activation or signing on a public plane"
+      ],
+      "note": "The table pairs read and write here as `corpus` did: 'Release and trust-status endpoints' are the API, while 'activation and signing stay operator-only'. Those two are not endpoints at all, and they carry `api_exposure: operator_local` — off every plane, triggered by a person."
+    },
+    "readiness": {
+      "modules": [
+        "release preflight",
+        "production readiness"
+      ],
+      "treatment": "Governance/readiness APIs with typed evidence, exceptions, and explicit non-authorization",
+      "role": "governed_write",
+      "planes": [
+        "governance"
+      ],
+      "never": [
+        "a readiness answer that reads as an authorization"
+      ]
+    },
+    "operations": {
+      "modules": [
+        "projection workers",
+        "checkpoints",
+        "telemetry",
+        "operational snapshots"
+      ],
+      "treatment": "Operations APIs for lag, replay state, bounded health, and evidence — not provider control",
+      "role": "host_infrastructure",
+      "planes": [
+        "governance",
+        "internal_operator"
+      ],
+      "never": [
+        "provider control",
+        "an unbounded health surface"
+      ],
+      "note": "'not provider control' is the operative half. Lag, replay state, bounded health and evidence are operations APIs; starting a loop or switching a model is provider control, and is `infrastructure` with `operator_local` exposure. The check found two of those on an HTTP surface with no plane that admits them."
+    },
+    "topology": {
+      "modules": [
+        "ecosystem",
+        "apparatus",
+        "Control Plane",
+        "Security Constellation"
+      ],
+      "treatment": "Architecture/topology APIs with logical views and no raw security details",
+      "role": "public_read",
+      "planes": [
+        "tenant_read"
+      ],
+      "never": [
+        "raw vulnerability detail",
+        "network topology",
+        "anything above INTERNAL"
+      ]
+    },
+    "federation": {
+      "modules": [
+        "federation",
+        "signatures",
+        "replay audit"
+      ],
+      "treatment": "Internal signed-packet ingestion plus acknowledgements, replay reports, and audit reads",
+      "role": "governed_write",
+      "planes": [
+        "internal_operator",
+        "governance"
+      ],
+      "never": [
+        "an unsigned packet admitted",
+        "a replay that rewrites history"
+      ]
+    },
+    "adjudication": {
+      "modules": [
+        "pattern adjudication",
+        "challenges",
+        "scientific harness",
+        "computation"
+      ],
+      "treatment": "Governance/research APIs for candidates, reviews, reproducibility, and outcomes",
+      "role": "governed_write",
+      "planes": [
+        "governance"
+      ],
+      "never": [
+        "a computation result presented as a measurement"
+      ]
+    },
+    "infrastructure": {
+      "modules": [
+        "object store",
+        "token auth",
+        "deployment bindings",
+        "HTTP runtime",
+        "MCP runtime"
+      ],
+      "treatment": "Infrastructure modules; expose capability/status only, not storage or credential controls",
+      "role": "host_infrastructure",
+      "planes": [
+        "internal_operator"
+      ],
+      "never": [
+        "storage control",
+        "credential control",
+        "a credential in a response"
+      ]
+    }
+  },
+  "deviation": {
+    "field": "api_deviation",
+    "description": "A sentence recording that a capability does not fit the architecture, and why it is still served. Required when a capability's declared family cannot admit what it does — most often a write reachable on a machine surface that no plane should carry.",
+    "why": "The estate deploys systems it did not write. Forcing every one of their surfaces into a family that fits would make the architecture describe a system nobody runs; refusing to place them would leave the write paths uncounted. A declared deviation does neither: it is a write the architecture would not serve, named, countable, and attached to the thing that has it. The catalog already records corpus failures this way, for the same reason — a record that cannot express a failure records only flattery."
+  }
+}

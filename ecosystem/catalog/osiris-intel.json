@@ -15,7 +15,8 @@
       "path": "/health",
       "evidence": "intel/server.js; intel/Dockerfile",
       "data_domain": "network-health",
-      "provenance": "this process: sanctions load time, Wikidata cache size and uptime"
+      "provenance": "this process: sanctions load time, Wikidata cache size and uptime",
+      "module_family": "operations"
     },
     {
       "capabilityId": "intel.resolve.aircraft",
@@ -28,7 +29,8 @@
       "path": "/resolve?type=aircraft",
       "evidence": "intel/server.js",
       "data_domain": "aviation",
-      "provenance": "Wikidata (P230 ICAO airline prefix), plus the OFAC SDN cross-reference"
+      "provenance": "Wikidata (P230 ICAO airline prefix), plus the OFAC SDN cross-reference",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.resolve.vessel",
@@ -41,7 +43,8 @@
       "path": "/resolve?type=vessel",
       "evidence": "intel/server.js",
       "data_domain": "maritime",
-      "provenance": "Wikidata SPARQL by IMO (P458) or ship-subclass label; OFAC SDN"
+      "provenance": "Wikidata SPARQL by IMO (P458) or ship-subclass label; OFAC SDN",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.resolve.company",
@@ -54,7 +57,8 @@
       "path": "/resolve?type=company",
       "evidence": "intel/server.js",
       "data_domain": "ontology",
-      "provenance": "Wikidata entity search and SPARQL; OFAC SDN"
+      "provenance": "Wikidata entity search and SPARQL; OFAC SDN",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.resolve.person",
@@ -67,7 +71,8 @@
       "path": "/resolve?type=person",
       "evidence": "intel/server.js",
       "data_domain": "person-intelligence",
-      "provenance": "Wikidata search and SPARQL, and RIPE abuse contacts; OFAC SDN"
+      "provenance": "Wikidata search and SPARQL, and RIPE abuse contacts; OFAC SDN",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.resolve.ip",
@@ -80,7 +85,8 @@
       "path": "/resolve?type=ip",
       "evidence": "intel/server.js",
       "data_domain": "network-recon",
-      "provenance": "ip-api.com geolocation, ISP, org and ASN"
+      "provenance": "ip-api.com geolocation, ISP, org and ASN",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.resolve.country",
@@ -93,7 +99,8 @@
       "path": "/resolve?type=country",
       "evidence": "intel/server.js",
       "data_domain": "local-context",
-      "provenance": "Wikidata country properties and memberships"
+      "provenance": "Wikidata country properties and memberships",
+      "module_family": "agent"
     },
     {
       "capabilityId": "intel.graph.contract",
@@ -104,7 +111,8 @@
       "surface": "contract",
       "evidence": "intel/server.js; src/app/api/entity/expand/route.ts",
       "data_domain": "ontology",
-      "provenance": "whichever resolver answered; every node keeps the source that produced it"
+      "provenance": "whichever resolver answered; every node keeps the source that produced it",
+      "module_family": "kernel"
     }
   ],
   "metadata": {

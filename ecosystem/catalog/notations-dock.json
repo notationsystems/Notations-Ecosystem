@@ -13,7 +13,8 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/MapLens.tsx",
       "data_domain": "visualisation",
-      "provenance": "GET /v1/snapshot, plus the Payload layer files this repository ships"
+      "provenance": "GET /v1/snapshot, plus the Payload layer files this repository ships",
+      "module_family": "projection"
     },
     {
       "capabilityId": "graph.observe",
@@ -24,7 +25,8 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/GraphLens.tsx",
       "data_domain": "visualisation",
-      "provenance": "GET /v1/snapshot"
+      "provenance": "GET /v1/snapshot",
+      "module_family": "projection"
     },
     {
       "capabilityId": "ledger.observe",
@@ -35,7 +37,8 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/LedgerLens.tsx",
       "data_domain": "visualisation",
-      "provenance": "GET /v1/snapshot coordination records"
+      "provenance": "GET /v1/snapshot coordination records",
+      "module_family": "topology"
     },
     {
       "capabilityId": "events.observe",
@@ -46,7 +49,8 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/TimelineLens.tsx",
       "data_domain": "visualisation",
-      "provenance": "GET /v1/events, polled; the dock stores nothing"
+      "provenance": "GET /v1/events, polled; the dock stores nothing",
+      "module_family": "topology"
     },
     {
       "capabilityId": "command.compose",
@@ -57,7 +61,8 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/ConsoleLens.tsx",
       "data_domain": "coordination",
-      "provenance": "the operator at the keyboard; validated client-side with the plane's own validator"
+      "provenance": "the operator at the keyboard; validated client-side with the plane's own validator",
+      "module_family": "federation"
     },
     {
       "capabilityId": "security.observe",
@@ -68,7 +73,9 @@
       "surface": "ui",
       "evidence": "dock/src/lenses/SecurityLens.tsx",
       "data_domain": "security-posture",
-      "provenance": "GET /v1/snapshot posture metadata; no evidence path crosses"
+      "provenance": "GET /v1/snapshot posture metadata; no evidence path crosses",
+      "module_family": "topology",
+      "response_kind": "operational_observation"
     }
   ],
   "metadata": {

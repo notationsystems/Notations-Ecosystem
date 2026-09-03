@@ -15,7 +15,8 @@
       "evidence": "src/core/argument_parser.cpp",
       "side_effects": "GPU training job; writes output dir",
       "cost": "GPU minutes to hours",
-      "data_domain": "gaussian-splat"
+      "data_domain": "gaussian-splat",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "cli.view",
@@ -39,7 +40,8 @@
       "evidence": "src/core/argument_parser.cpp (format, sog-iterations flags)",
       "side_effects": "writes export file",
       "cost": "free; SOG k-means seconds",
-      "data_domain": "gaussian-splat"
+      "data_domain": "gaussian-splat",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "cli.plugin",
@@ -51,7 +53,8 @@
       "path": "LichtFeld-Studio plugin",
       "evidence": "src/core/argument_parser.cpp; docs/plugin-system.md",
       "side_effects": "writes files under ~/.lichtfeld/plugins; creates uv venv",
-      "cost": "free"
+      "cost": "free",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.server",
@@ -87,7 +90,8 @@
       "evidence": "src/mcp/shared_scene_tools.cpp; AGENTS.md",
       "side_effects": "loads GPU memory; replaces current scene",
       "cost": "GPU memory",
-      "latency": "seconds to minutes"
+      "latency": "seconds to minutes",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.scene.nodes",
@@ -98,7 +102,8 @@
       "surface": "mcp",
       "path": "scene.*",
       "evidence": "src/mcp/shared_scene_tools.cpp; src/app/mcp_operator_tools.cpp",
-      "side_effects": "mutates in-app scene graph (undoable)"
+      "side_effects": "mutates in-app scene graph (undoable)",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.scene.export",
@@ -112,7 +117,8 @@
       "side_effects": "writes files to disk",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "gaussian-splat"
+      "data_domain": "gaussian-splat",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.training",
@@ -124,7 +130,8 @@
       "path": "training.*",
       "evidence": "src/mcp/shared_scene_tools.cpp; src/python/lfs/module.cpp; docs/docs/development/mcp/index.md",
       "side_effects": "GPU training job",
-      "cost": "GPU minutes to hours"
+      "cost": "GPU minutes to hours",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.runtime.jobs",
@@ -146,7 +153,8 @@
       "surface": "mcp",
       "path": "selection.*",
       "evidence": "src/app/mcp_gui_tools.cpp; AGENTS.md",
-      "side_effects": "changes in-app selection state"
+      "side_effects": "changes in-app selection state",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.gaussians",
@@ -158,7 +166,8 @@
       "path": "gaussians.read|gaussians.write",
       "evidence": "src/app/mcp_gui_tools.cpp",
       "side_effects": "mutates model parameters",
-      "data_domain": "gaussian-splat"
+      "data_domain": "gaussian-splat",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.transform",
@@ -169,7 +178,8 @@
       "surface": "mcp",
       "path": "transform.*",
       "evidence": "src/app/mcp_gui_tools.cpp",
-      "side_effects": "mutates node transforms (undoable)"
+      "side_effects": "mutates node transforms (undoable)",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.history",
@@ -180,7 +190,8 @@
       "surface": "mcp",
       "path": "history.*",
       "evidence": "src/app/mcp_gui_tools.cpp; docs/docs/development/mcp/index.md",
-      "side_effects": "rewinds or replays scene edits"
+      "side_effects": "rewinds or replays scene edits",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.ui",
@@ -191,7 +202,8 @@
       "surface": "mcp",
       "path": "ui.*|operator.*",
       "evidence": "src/app/mcp_ui_registry_tools.cpp; src/app/mcp_operator_tools.cpp",
-      "side_effects": "arbitrary GUI actions incl. destructive operators (check `destructive` metadata)"
+      "side_effects": "arbitrary GUI actions incl. destructive operators (check `destructive` metadata)",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.camera_render",
@@ -203,7 +215,8 @@
       "path": "camera.*|render.*",
       "evidence": "src/app/mcp_gui_tools.cpp",
       "side_effects": "writes capture images; moves viewport",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.sequencer",
@@ -215,7 +228,8 @@
       "path": "sequencer.*",
       "evidence": "src/app/mcp_sequencer_tools.cpp",
       "side_effects": "writes video file",
-      "cost": "GPU minutes"
+      "cost": "GPU minutes",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "mcp.editor",
@@ -226,7 +240,8 @@
       "surface": "mcp",
       "path": "editor.*",
       "evidence": "src/app/mcp_runtime_tools.cpp; AGENTS.md",
-      "side_effects": "arbitrary code execution inside the workstation"
+      "side_effects": "arbitrary code execution inside the workstation",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "py.lichtfeld_api",
@@ -237,7 +252,8 @@
       "surface": "python",
       "path": "lichtfeld",
       "evidence": "docs/plugins/api-reference.md; src/python/lfs/module.cpp",
-      "side_effects": "extends and mutates the running app"
+      "side_effects": "extends and mutates the running app",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "py.plugins.manage",
@@ -249,7 +265,8 @@
       "path": "lichtfeld.plugins",
       "evidence": "docs/plugin-system.md; src/python/lfs_plugins/",
       "side_effects": "installs third-party code from GitHub/registry; creates venvs",
-      "cost": "network"
+      "cost": "network",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "contract.plugin_manifest",
@@ -281,7 +298,9 @@
       "surface": "docker",
       "path": "docker/docker-compose.yml",
       "evidence": "docker/Dockerfile; docker/docker-compose.yml",
-      "side_effects": "builds image; privileged container with host network"
+      "side_effects": "builds image; privileged container with host network",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local"
     }
   ],
   "metadata": {
@@ -297,7 +316,8 @@
     "license": "GPL-3.0",
     "mcp_port": 45677,
     "gpu_required": true,
-    "person_data": "refused"
+    "person_data": "refused",
+    "module_family": "projection"
   },
   "location": null,
   "relations": [

@@ -18,7 +18,8 @@
       "latency": "seconds per share (stdlib, optional numpy)",
       "provenance": "instrument export files on the ingested share",
       "data_domain": "polymer-characterisation",
-      "side_effects": "writes or extends a corpus file"
+      "side_effects": "writes or extends a corpus file",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "cli.validate",
@@ -33,7 +34,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "architecture-invariants",
-      "provenance": "the corpus file under validation; the invariants are declared in this repository"
+      "provenance": "the corpus file under validation; the invariants are declared in this repository",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "cli.summary",
@@ -48,7 +50,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "polymer-characterisation",
-      "provenance": "the corpus file, counted"
+      "provenance": "the corpus file, counted",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "cli.show",
@@ -63,7 +66,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "polymer-characterisation",
-      "provenance": "the corpus file, per sample"
+      "provenance": "the corpus file, per sample",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "cli.detect",
@@ -78,7 +82,8 @@
       "cost": "free",
       "latency": "ms per file",
       "data_domain": "polymer-characterisation",
-      "provenance": "candidate input files, sniffed; each parser reports its own confidence"
+      "provenance": "candidate input files, sniffed; each parser reports its own confidence",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "cli.formats",
@@ -93,7 +98,8 @@
       "cost": "free",
       "latency": "ms",
       "data_domain": "polymer-characterisation",
-      "provenance": "the parser registry in this repository"
+      "provenance": "the parser registry in this repository",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "cli.terms",
@@ -108,7 +114,8 @@
       "cost": "free",
       "latency": "ms",
       "data_domain": "ontology",
-      "provenance": "the property-term vocabulary in this repository"
+      "provenance": "the property-term vocabulary in this repository",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "api.ingest",
@@ -123,7 +130,8 @@
       "latency": "seconds",
       "side_effects": "mutates the passed or new CorpusGraph in memory",
       "data_domain": "polymer-characterisation",
-      "provenance": "instrument export files on the ingested share"
+      "provenance": "instrument export files on the ingested share",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.graph.query",
@@ -137,7 +145,8 @@
       "cost": "free",
       "latency": "ms",
       "data_domain": "polymer-characterisation",
-      "provenance": "the loaded corpus graph"
+      "provenance": "the loaded corpus graph",
+      "module_family": "projection"
     },
     {
       "capabilityId": "api.graph.mutate",
@@ -152,7 +161,8 @@
       "latency": "ms",
       "side_effects": "mutates the in-memory graph",
       "data_domain": "polymer-characterisation",
-      "provenance": "the caller; every added node keeps the source file it came from"
+      "provenance": "the caller; every added node keeps the source file it came from",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "api.graph.persist",
@@ -167,7 +177,8 @@
       "latency": "seconds",
       "side_effects": "writes the corpus file",
       "data_domain": "polymer-characterisation",
-      "provenance": "the corpus graph in memory, streamed to JSONL"
+      "provenance": "the corpus graph in memory, streamed to JSONL",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "contract.corpus_jsonl",
@@ -179,7 +190,8 @@
       "path": "corpus.jsonl / corpus.jsonl.gz",
       "evidence": "ncg/graph.py (FORMAT_VERSION, to_jsonl); ncg/schema/nodes.py (NODE_TYPES); ncg/schema/edges.py (Relation, RELATION_RULES)",
       "data_domain": "polymer-characterisation",
-      "provenance": "whatever was ingested; the header counts what the body must contain"
+      "provenance": "whatever was ingested; the header counts what the body must contain",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "contract.sample_manifest",
@@ -191,7 +203,8 @@
       "path": "samples.json",
       "evidence": "ncg/ingest/sample_keys.py; README.md (Joining techniques to one sample)",
       "data_domain": "polymer-characterisation",
-      "provenance": "a hand-written alias manifest; the resolver never guesses a sample id"
+      "provenance": "a hand-written alias manifest; the resolver never guesses a sample id",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "parser.jcamp_dx",
@@ -203,7 +216,8 @@
       "method": "ncg.ingest.parsers.jcampdx",
       "evidence": "ncg/ingest/parsers/jcampdx.py; ncg/ingest/base.py (Parser, ParserRegistry)",
       "data_domain": "spectroscopy",
-      "provenance": "JCAMP-DX instrument exports (FTIR, Raman, NMR, MS)"
+      "provenance": "JCAMP-DX instrument exports (FTIR, Raman, NMR, MS)",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "parser.bruker_topspin",
@@ -215,7 +229,8 @@
       "method": "ncg.ingest.parsers.bruker",
       "evidence": "ncg/ingest/parsers/bruker.py; ncg/ingest/pipeline.py (_is_bruker_root)",
       "data_domain": "spectroscopy",
-      "provenance": "a Bruker TopSpin experiment directory (acqus and processed 1r)"
+      "provenance": "a Bruker TopSpin experiment directory (acqus and processed 1r)",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "parser.sec_ascii",
@@ -227,7 +242,8 @@
       "method": "ncg.ingest.parsers.sec",
       "evidence": "ncg/ingest/parsers/sec.py; ncg/ingest/textutil.py",
       "data_domain": "chromatography",
-      "provenance": "Agilent, Waters, Malvern, PSS and Tosoh chromatogram exports"
+      "provenance": "Agilent, Waters, Malvern, PSS and Tosoh chromatogram exports",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "parser.thermal_ascii",
@@ -239,7 +255,8 @@
       "method": "ncg.ingest.parsers.thermal",
       "evidence": "ncg/ingest/parsers/thermal.py",
       "data_domain": "thermal-analysis",
-      "provenance": "TA Instruments, Mettler STARe and Netzsch Proteus thermogram exports"
+      "provenance": "TA Instruments, Mettler STARe and Netzsch Proteus thermogram exports",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "parser.mzml",
@@ -251,7 +268,8 @@
       "method": "ncg.ingest.parsers.mzml",
       "evidence": "ncg/ingest/parsers/mzml.py",
       "data_domain": "mass-spectrometry",
-      "provenance": "mzML files from MALDI instruments"
+      "provenance": "mzML files from MALDI instruments",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "derive.sec",
@@ -263,7 +281,8 @@
       "method": "ncg.derive.sec",
       "evidence": "ncg/derive/sec.py; ncg/derive/properties.py (derive_for_run)",
       "data_domain": "chromatography",
-      "provenance": "the chromatogram's own signal and column calibration; a derivation, not a measurement"
+      "provenance": "the chromatogram's own signal and column calibration; a derivation, not a measurement",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "derive.thermal",
@@ -275,7 +294,8 @@
       "method": "ncg.derive.thermal",
       "evidence": "ncg/derive/thermal.py",
       "data_domain": "thermal-analysis",
-      "provenance": "the thermogram's own signal; a derivation, not a measurement"
+      "provenance": "the thermogram's own signal; a derivation, not a measurement",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "derive.mass_spec",
@@ -287,7 +307,8 @@
       "method": "ncg.derive.mass_spec",
       "evidence": "ncg/derive/mass_spec.py",
       "data_domain": "mass-spectrometry",
-      "provenance": "the mass spectrum's own peak series; a derivation, not a measurement"
+      "provenance": "the mass spectrum's own peak series; a derivation, not a measurement",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "derive.properties",
@@ -299,7 +320,8 @@
       "method": "ncg.derive.properties.derive_for_run",
       "evidence": "ncg/derive/properties.py; ncg/derive/signal_ops.py; ncg/schema/vocab.py",
       "data_domain": "polymer-characterisation",
-      "provenance": "the run's own signals, by technique; a derivation, not a new measurement"
+      "provenance": "the run's own signals, by technique; a derivation, not a new measurement",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "api.units",
@@ -311,7 +333,8 @@
       "method": "ncg.units",
       "evidence": "ncg/units.py; ncg/__init__.py",
       "data_domain": "polymer-characterisation",
-      "provenance": "the quantity it is given; conversion is exact or it refuses"
+      "provenance": "the quantity it is given; conversion is exact or it refuses",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "contract.schema",
@@ -323,7 +346,8 @@
       "method": "ncg.schema",
       "evidence": "ncg/schema/nodes.py; ncg/schema/vocab.py; ncg/schema/edges.py; ncg/schema/codec.py; ncg/schema/identity.py",
       "data_domain": "ontology",
-      "provenance": "the node types and vocabularies declared in this repository"
+      "provenance": "the node types and vocabularies declared in this repository",
+      "module_family": "kernel"
     }
   ],
   "metadata": {

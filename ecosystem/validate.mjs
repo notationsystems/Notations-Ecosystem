@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCommand } from '../control-plane/src/validation.js';
 import { checkCorpus, gradeNode } from './corpus.mjs';
+import { apiOf, checkNodeApi, gradeApiSurface } from './api.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const CATALOG_DIR = path.join(here, 'catalog');
@@ -32,7 +33,7 @@ const ENV_KINDS = new Set(['credential', 'configuration']);
 /** A name that reads as a credential is treated as one; the kind may not be used to duck that. */
 const CREDENTIAL_SHAPED = /(^|_)(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|CREDENTIALS|PASSWD|APIKEY)$|PASSWORD|SECRET/;
 const ENV_FIELDS = new Set(['name', 'kind', 'purpose', 'client_exposed', 'unused']);
-const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
+const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow', 'module_family', 'response_kind', 'api_exposure', 'api_deviation']);
 
 /**
  * The closed vocabulary a capability's `data_domain` must use.
@@ -96,6 +97,22 @@ export function withCorpusMetadata(entry) {
   if (subjects) metadata.data_domains = subjects;
   const surfaces = surfacesOf(entry);
   if (surfaces) metadata.surfaces = surfaces;
+
+  // The API architecture, folded to what a snapshot can carry: which planes this node is
+  // served on, and how many of its capabilities write. The family per capability stays in
+  // the catalog — the plane is the fact an operator acts on, and "which systems can write
+  // at all?" is a question the journal should be able to answer on its own.
+  const api = (entry.capabilities ?? []).map((c) => apiOf(c, entry)).filter(Boolean);
+  if (api.length) {
+    const planes = [...new Set(api.flatMap((a) => (a.exposure === 'plane' ? a.planes : [])))].sort();
+    if (planes.length) metadata.api_planes = planes.join(' ');
+    const writes = api.filter((a) => a.mutates).length;
+    if (writes) metadata.api_writes = writes;
+    const offPlane = api.filter((a) => a.exposure === 'operator_local').length;
+    if (offPlane) metadata.api_operator_only = offPlane;
+    const deviations = api.filter((a) => a.deviation).length;
+    if (deviations) metadata.api_deviations = deviations;
+  }
   metadata.corpus_role = graded.role;
   metadata.corpus_grade = graded.grade;
   if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
@@ -356,6 +373,18 @@ export function checkEntry(entry, file, known = new Set()) {
   const corpus = checkCorpus(entry);
   errors.push(...corpus.errors);
   warnings.push(...corpus.warnings);
+
+  // API architecture (docs/API_PLANES.md): which module family each capability belongs
+  // to, and therefore what its API is allowed to be. The rule with teeth is the one the
+  // four planes exist for — never public canonical CRUD.
+  const api = checkNodeApi(entry);
+  errors.push(...api.errors);
+  warnings.push(...api.warnings.filter((w) => !/declares no module_family/.test(w)));
+  if (md.maturity !== 'empty' && md.maturity !== 'upstream-mirror') {
+    const unplaced = (entry.capabilities ?? []).filter((c) => !apiOf(c, entry)).map((c) => c.capabilityId);
+    if (unplaced.length) errors.push(`${unplaced.length} capabilit${unplaced.length === 1 ? 'y' : 'ies'} on a first-party node declare no module_family: ${unplaced.slice(0, 6).join(', ')}${unplaced.length > 6 ? '…' : ''}`);
+  }
+
   return { errors, warnings };
 }
 
@@ -396,6 +425,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const credentials = env.filter((item) => item.kind === 'credential');
   const unused = credentials.filter((item) => item.unused);
   const exposed = credentials.filter((item) => item.client_exposed);
+  // The API surface, and the one number that is a defect rather than a measurement.
+  const api = gradeApiSurface(selected);
+  console.log(
+    `api: ${api.placed}/${api.total} capabilities placed, ${api.mutating} mutating, ` +
+      `${api.operatorLocal.length} on no plane, ${api.deviations.length} declared deviations` +
+      `${api.publicMutating.length ? `, ${api.publicMutating.length} PUBLIC CANONICAL CRUD` : ''}`,
+  );
+  for (const id of api.publicMutating) console.log(`  never public canonical CRUD: ${id}`);
+
   console.log(
     `environment: ${env.length} variables, ${credentials.length} credentials` +
       `${exposed.length ? `, ${exposed.length} client-exposed` : ''}` +

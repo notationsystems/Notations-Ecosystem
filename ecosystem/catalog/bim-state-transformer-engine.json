@@ -17,7 +17,8 @@
       "cost": "free",
       "latency": "seconds (19 MB clinic model in CI)",
       "provenance": "input IFC bytes (sha256-bound)",
-      "data_domain": "bim-ifc"
+      "data_domain": "bim-ifc",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "cli.check",
@@ -32,7 +33,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "bim-geometry-uncertainty",
-      "provenance": "input IFC bytes (sha256-bound), and the proposed geometry if one is given"
+      "provenance": "input IFC bytes (sha256-bound), and the proposed geometry if one is given",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "cli.verify",
@@ -47,7 +49,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "architecture-invariants",
-      "provenance": "the loaded model and the invariant registry in this repository"
+      "provenance": "the loaded model and the invariant registry in this repository",
+      "module_family": "readiness"
     },
     {
       "capabilityId": "cli.inspect",
@@ -62,7 +65,8 @@
       "cost": "free",
       "latency": "~seconds",
       "data_domain": "bim-geometry-uncertainty",
-      "provenance": "the belief state already loaded; a census, not a new observation"
+      "provenance": "the belief state already loaded; a census, not a new observation",
+      "module_family": "projection"
     },
     {
       "capabilityId": "cli.splats",
@@ -78,7 +82,8 @@
       "latency": "seconds",
       "data_domain": "gaussian-splat",
       "side_effects": "writes PLY files and manifest.json under out_dir",
-      "provenance": "the belief state, rendered as splats; variations are sampled, not observed"
+      "provenance": "the belief state, rendered as splats; variations are sampled, not observed",
+      "module_family": "projection"
     },
     {
       "capabilityId": "cli.sample",
@@ -93,7 +98,8 @@
       "cost": "free",
       "latency": "seconds",
       "data_domain": "bim-geometry-uncertainty",
-      "provenance": "Monte-Carlo realizations of the joint posterior; synthetic by construction"
+      "provenance": "Monte-Carlo realizations of the joint posterior; synthetic by construction",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "cli.report",
@@ -108,7 +114,8 @@
       "cost": "free",
       "latency": "~100 ms",
       "data_domain": "visualisation",
-      "provenance": "a gat-headless-response-v1 document, rendered"
+      "provenance": "a gat-headless-response-v1 document, rendered",
+      "module_family": "projection"
     },
     {
       "capabilityId": "cli.ledger",
@@ -123,7 +130,8 @@
       "cost": "free",
       "latency": "~100 ms",
       "data_domain": "execution-trace",
-      "provenance": "an execution ledger file, chain-verified before anything is drawn"
+      "provenance": "an execution ledger file, chain-verified before anything is drawn",
+      "module_family": "projection"
     },
     {
       "capabilityId": "cli.view",
@@ -139,7 +147,8 @@
       "latency": "seconds",
       "side_effects": "writes one HTML file",
       "data_domain": "visualisation",
-      "provenance": "the belief state and sampled as-builts, rendered offline"
+      "provenance": "the belief state and sampled as-builts, rendered offline",
+      "module_family": "projection"
     },
     {
       "capabilityId": "headless.summary",
@@ -155,7 +164,8 @@
       "latency": "~seconds",
       "workflow": "construction-acceptance",
       "data_domain": "canonical-state",
-      "provenance": "the authoritative state loaded for the request"
+      "provenance": "the authoritative state loaded for the request",
+      "module_family": "corpus"
     },
     {
       "capabilityId": "headless.acceptance",
@@ -171,7 +181,8 @@
       "latency": "~seconds",
       "workflow": "construction-acceptance",
       "data_domain": "evidence-pool",
-      "provenance": "the evidence admitted for the case; unresolved is a verdict, not a gap"
+      "provenance": "the evidence admitted for the case; unresolved is a verdict, not a gap",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "headless.beam_assurance",
@@ -187,7 +198,8 @@
       "latency": "~seconds",
       "provenance": "AISC V16.0 Companion Example F.1-1B oracle; validation/aisc360-22-f1-1b-v1.json",
       "workflow": "beam-assurance",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "headless.change_impact",
@@ -203,7 +215,8 @@
       "latency": "~seconds",
       "workflow": "rfi-impact",
       "data_domain": "bim-ifc",
-      "provenance": "the current belief with the proposed change applied; nothing is committed"
+      "provenance": "the current belief with the proposed change applied; nothing is committed",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "session.load",
@@ -217,7 +230,8 @@
       "cost": "free",
       "latency": "seconds",
       "data_domain": "bim-ifc",
-      "provenance": "input IFC, snapshot, OpenUSD or USDA bytes (sha256-bound)"
+      "provenance": "input IFC, snapshot, OpenUSD or USDA bytes (sha256-bound)",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "session.run",
@@ -232,7 +246,8 @@
       "latency": "ms to seconds (dense covariance cliff measured in docs/incremental-propagation-v1.md)",
       "side_effects": "mutates in-process canonical belief and appends ledger events",
       "data_domain": "canonical-state",
-      "provenance": "a closed operator over the belief; the transformation is recorded, not the result"
+      "provenance": "a closed operator over the belief; the transformation is recorded, not the result",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "session.record_causal",
@@ -247,7 +262,8 @@
       "latency": "ms",
       "side_effects": "appends ledger events",
       "data_domain": "execution-trace",
-      "provenance": "the operator or external system that made the assessment, named"
+      "provenance": "the operator or external system that made the assessment, named",
+      "module_family": "federation"
     },
     {
       "capabilityId": "session.export",
@@ -262,7 +278,8 @@
       "latency": "seconds",
       "side_effects": "writes files",
       "data_domain": "bim-ifc",
-      "provenance": "the posterior means and sigmas already held, in the source unit convention"
+      "provenance": "the posterior means and sigmas already held, in the source unit convention",
+      "module_family": "projection"
     },
     {
       "capabilityId": "ledger.replay",
@@ -276,7 +293,8 @@
       "cost": "free",
       "latency": "seconds",
       "data_domain": "execution-trace",
-      "provenance": "the ledger file; every accepted event regenerated rather than trusted"
+      "provenance": "the ledger file; every accepted event regenerated rather than trusted",
+      "module_family": "federation"
     },
     {
       "capabilityId": "decision.plan_evidence",
@@ -290,7 +308,8 @@
       "cost": "free",
       "latency": "ms",
       "data_domain": "evidence-pool",
-      "provenance": "the belief state; SATISFIED, VIOLATED or UNRESOLVED at a stated risk"
+      "provenance": "the belief state; SATISFIED, VIOLATED or UNRESOLVED at a stated risk",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "geometry.scan_registration",
@@ -304,7 +323,8 @@
       "cost": "free",
       "latency": "seconds",
       "data_domain": "point-cloud-evidence",
-      "provenance": "PLY scan vertices, registered; the points are evidence, the fit is not"
+      "provenance": "PLY scan vertices, registered; the points are evidence, the fit is not",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "geometry.clearance_assurance",
@@ -319,7 +339,8 @@
       "latency": "seconds",
       "workflow": "construction-acceptance",
       "data_domain": "point-cloud-evidence",
-      "provenance": "registered scan points and the proposed box; calibrated, not assumed"
+      "provenance": "registered scan points and the proposed box; calibrated, not assumed",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "analysis.sensitivity_stability",
@@ -333,7 +354,8 @@
       "cost": "free",
       "latency": "ms",
       "data_domain": "bim-geometry-uncertainty",
-      "provenance": "the covariance already held; attribution, not measurement"
+      "provenance": "the covariance already held; attribution, not measurement",
+      "module_family": "projection"
     },
     {
       "capabilityId": "proof.manifest",
@@ -347,7 +369,8 @@
       "cost": "free",
       "latency": "ms (plus backend verify)",
       "data_domain": "execution-trace",
-      "provenance": "the ledger and the numeric contract that bound the run"
+      "provenance": "the ledger and the numeric contract that bound the run",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "proof.sp1_beam",
@@ -363,7 +386,8 @@
       "side_effects": "writes beam.sp1-proof, beam_sp1_receipt.json, beam_sp1_manifest.json",
       "workflow": "beam-assurance",
       "data_domain": "execution-trace",
-      "provenance": "the SP1 guest execution; the receipt is the evidence, not the transcript"
+      "provenance": "the SP1 guest execution; the receipt is the evidence, not the transcript",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "contract.sp1_beam_request",
@@ -375,7 +399,8 @@
       "path": "beam_sp1_request.json / beam_sp1_receipt.json",
       "evidence": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs; docs/sp1-beam-guest-v1.md",
       "data_domain": "execution-trace",
-      "provenance": "the request and receipt files themselves"
+      "provenance": "the request and receipt files themselves",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "contract.material_certificate",
@@ -387,7 +412,8 @@
       "path": "material_certificate.json",
       "evidence": "gat/engineering/material_certificate.py; gat/demo/material_certificate.json",
       "data_domain": "evidence-pool",
-      "provenance": "an issuer's MEASURED certificate, with issuer and basis preserved"
+      "provenance": "an issuer's MEASURED certificate, with issuer and basis preserved",
+      "module_family": "kernel"
     },
     {
       "capabilityId": "demo.beam_assurance",
@@ -403,7 +429,8 @@
       "latency": "seconds",
       "side_effects": "writes demo artifacts under out_dir",
       "data_domain": "architecture-invariants",
-      "provenance": "the AISC Companion F.1-1B example, end to end"
+      "provenance": "the AISC Companion F.1-1B example, end to end",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "validation.fetch_ifc_corpus",
@@ -419,7 +446,8 @@
       "latency": "minutes",
       "provenance": "buildingSMART/Sample-Test-Files and public IFC models at pinned commits (CC-BY-4.0)",
       "side_effects": "outbound HTTPS to raw.githubusercontent.com; writes IFC files",
-      "data_domain": "bim-ifc"
+      "data_domain": "bim-ifc",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "integration.blender_panel",
@@ -435,7 +463,8 @@
       "latency": "interactive",
       "workflow": "construction-acceptance",
       "data_domain": "visualisation",
-      "provenance": "a completed gat-headless response; the panel computes nothing"
+      "provenance": "a completed gat-headless response; the panel computes nothing",
+      "module_family": "projection"
     }
   ],
   "metadata": {

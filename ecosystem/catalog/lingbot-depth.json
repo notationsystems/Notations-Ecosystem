@@ -128,7 +128,8 @@
     "last_pushed_at": "2026-04-21T09:42:26Z",
     "license": "Apache-2.0",
     "gpu_required": true,
-    "person_data": "refused"
+    "person_data": "refused",
+    "module_family": "adjudication"
   },
   "location": null,
   "relations": [

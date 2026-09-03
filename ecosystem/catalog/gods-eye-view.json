@@ -237,7 +237,8 @@
       "path": "/api/google/nearby-places",
       "evidence": "vite.config.js; .env.example",
       "cost": "metered Google Places",
-      "side_effects": "billable API calls"
+      "side_effects": "billable API calls",
+      "module_family": "acquisition"
     },
     {
       "capabilityId": "voice.realtime_session",
@@ -250,7 +251,8 @@
       "path": "/api/realtime/token",
       "evidence": "vite.config.js; src/voice/gevRealtime.js; src/voice/gevActions.js; src/voice/voiceCost.js",
       "cost": "metered OpenAI Realtime",
-      "side_effects": "billable LLM session"
+      "side_effects": "billable LLM session",
+      "module_family": "adjudication"
     },
     {
       "capabilityId": "voice.hud_summary",
@@ -308,7 +310,8 @@
     "live_layer_count": 13,
     "node_engines": ">=24.14 <25 || >=26 <27",
     "person_data": "incidental",
-    "person_data_note": "Public cameras and flight feeds incidentally show people and privately-owned aircraft. Nothing is stored beyond a cache."
+    "person_data_note": "Public cameras and flight feeds incidentally show people and privately-owned aircraft. Nothing is stored beyond a cache.",
+    "module_family": "projection"
   },
   "location": {
     "longitude": -97.7431,
