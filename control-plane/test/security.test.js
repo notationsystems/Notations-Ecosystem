@@ -666,3 +666,97 @@ test('SEC-SERIALIZATION the plane parses only JSON, and only into a fixed contra
     await h.close();
   }
 });
+
+test('SEC-003 actor binding is exact: no prefix pattern may stand in for an identity', async () => {
+  const { Principal, validatePrincipalRecord, issueCredential } = await import('../src/security/identity.js');
+  const principal = new Principal({ principalId: 'operator:alice', roles: ['operator'], actors: ['operator:alice'] });
+  assert.equal(principal.mayClaimActor('operator:alice'), true);
+  for (const near of ['operator:alice-evil', 'operator:Alice', 'operator:alic', 'operator:alice.', 'OPERATOR:ALICE']) {
+    assert.equal(principal.mayClaimActor(near), false, `${near} must not satisfy an exact binding`);
+  }
+  // The matcher and the validator must agree: a pattern the matcher would never honour
+  // must be refused at configuration time, not silently dropped into a 401 at runtime.
+  const { record } = issueCredential({ principalId: 'pre:fix', roles: ['registrar'], actors: ['pre:*'] });
+  assert.deepEqual(validatePrincipalRecord(record), ['invalid actor pattern pre:*']);
+  // Node scoping is where a prefix is useful, and it is validated.
+  const scoped = new Principal({ principalId: 's', roles: ['monitor'], actors: ['s'], nodes: ['payload-*'] });
+  assert.equal(scoped.mayActOnNode('payload-terminal'), true);
+  assert.equal(scoped.mayActOnNode('osiris-intel'), false);
+  const bad = issueCredential({ principalId: 's', roles: ['monitor'], nodes: ['pay load*'] });
+  assert.ok(validatePrincipalRecord(bad.record).some(problem => problem.includes('invalid node pattern')));
+});
+
+test('SEC-024 a node-scoped credential cannot declare relations for nodes it does not speak for', async () => {
+  const h = await harness({
+    principals: [
+      { principalId: 'operator:alice', roles: ['operator', 'registrar'], actors: ['operator:alice'] },
+      { principalId: 'reg:scoped', roles: ['registrar'], actors: ['reg:scoped'], nodes: ['own-node'] },
+    ],
+  });
+  try {
+    for (const id of ['own-node', 'other-node']) {
+      assert.equal((await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', ...h.node(id, OBSERVE) })).status, 201);
+    }
+    // A relation is declared from the source's point of view, so the source is scoped.
+    const foreign = await h.command(h.tokens['reg:scoped'], { actorId: 'reg:scoped', action: 'declare_relation', relationId: 'r-foreign', sourceNodeId: 'other-node', targetNodeId: 'own-node', kind: 'depends_on', description: 'A relation from a node I do not speak for.' });
+    assert.equal(foreign.status, 403);
+    assert.match(foreign.body.detail, /may not submit commands for node other-node/);
+
+    const own = await h.command(h.tokens['reg:scoped'], { actorId: 'reg:scoped', action: 'declare_relation', relationId: 'r-own', sourceNodeId: 'own-node', targetNodeId: 'other-node', kind: 'depends_on', description: 'A relation from the node I speak for.' });
+    assert.equal(own.status, 201);
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-021 disabling a credential takes effect immediately, despite the verification cache', async () => {
+  const h = await harness();
+  try {
+    const token = h.tokens['reader:dock'];
+    assert.equal((await h.call('GET', '/v1/snapshot', { token })).status, 200, 'warm the cache');
+
+    // Disable it in the live registry, as `cli.js disable` does.
+    for (const entry of h.runtime.registry.byKeyId.values()) {
+      if (entry.principal.principalId === 'reader:dock') entry.record.disabled = true;
+    }
+
+    const after = await h.call('GET', '/v1/snapshot', { token });
+    assert.equal(after.status, 401, 'a cached verification must not outlive the credential');
+    assert.equal(after.body.error, 'CONTROL_PLANE_UNAUTHORIZED');
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-030 the evidence boundary refuses encoded pointers, spaced advisories and port claims', async () => {
+  const { detectRefusedMaterial } = await import('../src/security/evidence.js');
+  const refused = [
+    ['scheme-less-url', 'See report at scanner.example/findings/17 for detail.'],
+    ['cve-with-status', 'Affected by cve 2026 1234 in the parser.'],
+    ['cve-with-status', 'CVE_2026_1234 is present.'],
+    ['ghsa-id', 'GHSA abcd efgh ijkl affects it.'],
+    ['report-artifact-path', 'Findings archived under ops/scan.json'],
+    ['report-artifact-path', 'Results in reports/scan-2026.sarif'],
+    ['port-claim', 'The service listens on 5432.'],
+    ['port-claim', 'Only port 443 is exposed.'],
+  ];
+  for (const [rule, text] of refused) {
+    const found = detectRefusedMaterial(text);
+    assert.ok(found, `must refuse: ${text}`);
+    assert.equal(found.id, rule, text);
+  }
+
+  // A boundary that refused ordinary posture prose would push attestors toward vaguer
+  // summaries, which is worse. These must pass.
+  for (const text of [
+    'All service credentials are bound to principals; one shared credential remains.',
+    'Dependency audit complete: 0 critical, 2 high, 9 medium, 31 low.',
+    'Nightly off-host replication verified by a restore drill.',
+    '30 catalogued systems: 1 externally reachable, 23 local, 6 with undeclared exposure.',
+    'Controls implemented in the security module and covered by the invariant suite.',
+    'Rotation overdue for 1 of 4 signing keys.',
+    'Coverage rose from 0.75 to 0.92 this quarter.',
+  ]) {
+    assert.equal(detectRefusedMaterial(text), null, `must allow: ${text}`);
+  }
+});

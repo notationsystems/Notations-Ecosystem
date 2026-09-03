@@ -65,6 +65,7 @@ const REFUSED_CLASSES = [
       { id: 'ipv4-address', pattern: /\b(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?\b/ },
       { id: 'ipv6-address', pattern: /\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/i },
       { id: 'host-port', pattern: /\b(?:[a-z0-9-]+\.)+[a-z]{2,}:\d{2,5}\b/i },
+      { id: 'port-claim', pattern: /\b(?:listens?|listening|bound|exposed|open)\s+on\s+(?:port\s+)?\d{1,5}\b|\bports?\s+\d{2,5}\b/i },
       { id: 'internal-hostname', pattern: /\b[a-z0-9-]+\.(?:internal|intranet|local|lan|corp|svc|cluster\.local)\b/i },
       { id: 'port-listing', pattern: /\bports?\s*[:=]?\s*\d{1,5}\s*(?:,\s*\d{1,5}\s*){1,}/i },
       { id: 'open-port-claim', pattern: /\b(?:open|listening|exposed)\s+ports?\b/i },
@@ -74,8 +75,9 @@ const REFUSED_CLASSES = [
     class: 'vulnerability-detail',
     why: 'A specific exploitable version is a targeting instruction. Report counts by severity and let the remediation system hold the detail.',
     patterns: [
-      { id: 'cve-with-status', pattern: /\bCVE-\d{4}-\d{4,7}\b/i },
-      { id: 'ghsa-id', pattern: /\bGHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}\b/i },
+      // Separators vary between tools and prose; the identifier is the same instruction.
+      { id: 'cve-with-status', pattern: /\bCVE[\s._-]?\d{4}[\s._-]\d{4,7}\b/i },
+      { id: 'ghsa-id', pattern: /\bGHSA[\s._-]?[a-z0-9]{4}[\s._-][a-z0-9]{4}[\s._-][a-z0-9]{4}\b/i },
       { id: 'vulnerable-package-version', pattern: /\b[@a-z0-9][a-z0-9/._-]*@\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.]+)?\b/ },
       { id: 'exploitability-claim', pattern: /\b(?:exploitable|remote code execution|rce|proof[- ]of[- ]concept|poc|0-?day|zero-?day)\b/i },
       { id: 'stack-trace', pattern: /\bat\s+[\w$.]+\s*\([^)]*:\d+:\d+\)/ },
@@ -97,6 +99,11 @@ const REFUSED_CLASSES = [
     why: 'A link or path to the raw finding moves the exposure rather than removing it, and invites whatever follows the pointer to fetch it.',
     patterns: [
       { id: 'url', pattern: /\b[a-z][a-z0-9+.-]*:\/\/\S+/i },
+      // A link is still a link without its scheme.
+      { id: 'scheme-less-url', pattern: /\b(?:[a-z0-9-]+\.)+[a-z]{2,}\/\S+/i },
+      // A report artifact is a pointer to findings. Source and documentation paths are
+      // not: an attestor may reasonably say which module implements a control.
+      { id: 'report-artifact-path', pattern: /\b[a-z0-9_.-]+(?:\/[a-z0-9_.-]+)+\.(?:json|csv|sarif|xml|txt|log|html|htm|zip)\b/i },
       { id: 'absolute-path', pattern: /(?:^|\s)(?:\/(?:etc|root|home|var|srv|opt|proc|Users)\/|[A-Za-z]:\\)\S*/ },
       { id: 'key-file-path', pattern: /\b\S*(?:id_rsa|id_ed25519|\.pem|\.pfx|\.p12|\.jks|\.kdbx|\.env)\b/i },
     ],

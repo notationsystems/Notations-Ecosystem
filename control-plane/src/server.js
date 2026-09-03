@@ -148,7 +148,9 @@ function authenticate(runtime, request, source) {
   }
   const token = header.slice('Bearer '.length).trim();
   const cached = verificationCache.get(token);
-  if (cached) return cached;
+  // A cache hit still re-checks disabled and expiry: the cache saves the digest
+  // comparison, never the authorization decision.
+  if (cached) return registry.revalidate(cached.principalId);
   try {
     const principal = registry.verify(token);
     verificationCache.set(token, principal);

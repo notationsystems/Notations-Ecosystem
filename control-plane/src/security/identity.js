@@ -30,6 +30,7 @@ export const MIN_SECRET_CHARACTERS = 32;
 const KEY_ID = /^[A-Za-z0-9][A-Za-z0-9:_-]{0,63}$/;
 const SECRET = /^[A-Za-z0-9_-]{32,512}$/;
 const ACTOR = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$|^\*$/;
+const NODE_PATTERN = /^(?:\*|[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}\*?)$/;
 
 /** A digest of the same length as a real one, for the unknown-key path. */
 const DUMMY_DIGEST = createHash('sha256').update('notations.control-plane.absent-credential').digest();
@@ -51,12 +52,22 @@ export class Principal {
     return rolesOf(this.roles);
   }
 
-  /** May this principal write history as `actorId`? */
+  /**
+   * May this principal write history as `actorId`?
+   *
+   * Exact match only, or the single `*` the legacy deployment token carries. The actor
+   * is the audit trail, so a prefix pattern would let one credential write as a family
+   * of identities — and `operator:alice*` also matches `operator:alice-evil`. Node
+   * scoping below is where prefixes are useful and safe.
+   */
   mayClaimActor(actorId) {
-    return this.actors.some(pattern => (pattern === '*' ? true : pattern.endsWith('*') ? actorId.startsWith(pattern.slice(0, -1)) : pattern === actorId));
+    return this.actors.some(pattern => pattern === '*' || pattern === actorId);
   }
 
-  /** May this principal submit a command naming this node? `null` means unrestricted. */
+  /**
+   * May this principal submit a command naming this node? `null` means unrestricted.
+   * A single trailing `*` is a prefix, so one monitor can cover `payload-*`.
+   */
   mayActOnNode(nodeId) {
     if (this.nodes === null) return true;
     return this.nodes.some(pattern => (pattern === '*' ? true : pattern.endsWith('*') ? nodeId.startsWith(pattern.slice(0, -1)) : pattern === nodeId));
@@ -204,11 +215,34 @@ export class PrincipalRegistry {
     }
     const matches = timingSafeEqual(supplied, entry.digest);
     if (!matches) throw unauthorized('The supplied authority is invalid.');
-    if (entry.record.disabled) throw unauthorized('This credential has been disabled.');
-    if (entry.record.expiresAt && Date.parse(entry.record.expiresAt) <= now.getTime()) throw unauthorized('This credential has expired.');
+    this.assertUsable(entry.record, now);
     return entry.principal;
   }
 }
+
+/**
+ * Liveness of a credential, checked on every request including cache hits.
+ *
+ * The verification cache exists to avoid repeating a digest comparison, not to pin an
+ * authorization decision. Caching "this credential is usable" would mean a disabled or
+ * expired credential kept working for the cache lifetime — revocation that does not
+ * revoke.
+ */
+PrincipalRegistry.prototype.assertUsable = function assertUsable(record, now = new Date()) {
+  if (record.disabled) throw unauthorized('This credential has been disabled.');
+  if (record.expiresAt && Date.parse(record.expiresAt) <= now.getTime()) throw unauthorized('This credential has expired.');
+};
+
+/** Re-check a cached principal against the current registry. */
+PrincipalRegistry.prototype.revalidate = function revalidate(principalId, now = new Date()) {
+  for (const { record, principal } of this.byKeyId.values()) {
+    if (principal.principalId !== principalId) continue;
+    this.assertUsable(record, now);
+    return principal;
+  }
+  if (this.legacy && this.legacy.principal.principalId === principalId) return this.legacy.principal;
+  throw unauthorized('The supplied authority is invalid.');
+};
 
 export function validatePrincipalRecord(record) {
   const problems = [];
@@ -221,7 +255,10 @@ export function validatePrincipalRecord(record) {
   const actors = record.actors ?? [];
   if (!Array.isArray(actors) || !actors.length) problems.push('actors must be a non-empty array');
   else for (const actor of actors) if (typeof actor !== 'string' || !ACTOR.test(actor)) problems.push(`invalid actor pattern ${actor}`);
-  if (record.nodes != null && !Array.isArray(record.nodes)) problems.push('nodes must be an array or null');
+  if (record.nodes != null) {
+    if (!Array.isArray(record.nodes)) problems.push('nodes must be an array or null');
+    else for (const pattern of record.nodes) if (typeof pattern !== 'string' || !NODE_PATTERN.test(pattern)) problems.push(`invalid node pattern ${pattern}`);
+  }
   if (record.expiresAt != null && !Number.isFinite(Date.parse(record.expiresAt))) problems.push('expiresAt must be an ISO date-time');
   return problems;
 }

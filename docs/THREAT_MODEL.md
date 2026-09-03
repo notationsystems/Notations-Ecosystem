@@ -121,3 +121,20 @@ Stated plainly, because a threat model that claims completeness is not one.
   deck.gl's WebAssembly rather than full `'unsafe-eval'`.
 - **The legacy single token** grants every role and may claim any actor. It exists for
   local development, warns at boot, and is reported as weak identity posture.
+
+- **The evidence boundary is pattern-based, and patterns have edges.** It refuses the
+  shapes attackers and tools actually produce — literal addresses, host:port, internal
+  hostnames, port claims, advisory identifiers with any separator, package@version,
+  exploit language, offensive tooling, URLs with or without a scheme, report-artifact
+  paths, and credential formats. It does **not** catch an address written as a decimal
+  or hex integer, spelled out in words, or base64-encoded, because every pattern that
+  would catch those also refuses ordinary posture prose ("2130706433 records"), and a
+  boundary that rejects legitimate summaries pushes attestors toward vaguer ones. The
+  boundary is a control against accident and casual misuse, not against an attestor
+  determined to smuggle data through a 280-character field it already controls — such an
+  attestor is inside the trust boundary and is better addressed by credential scope and
+  the audit trail.
+
+- **Report-artifact paths are refused; source and documentation paths are not.** An
+  attestor may say which module implements a control. `ops/scan.json` is a pointer to
+  findings; `security/evidence.js` is a reference to code.

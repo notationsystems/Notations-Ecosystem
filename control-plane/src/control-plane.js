@@ -223,6 +223,10 @@ function subjectNode(command) {
   switch (command.action) {
     case 'register_node':
       return command.node.nodeId;
+    case 'declare_relation':
+      // A relation is declared from the source's point of view, so the source is the
+      // node a scoped credential must be entitled to speak for.
+      return command.sourceNodeId;
     case 'record_observation':
     case 'record_security_posture':
       return command.nodeId;

@@ -10,7 +10,7 @@ Run them with `cd control-plane && npm test`.
 | --- | --- | --- | --- |
 | SEC-001 | No unauthenticated actor may read state or invoke a state transition. | `server.js` authenticates before any route but `/health`. | `SEC-001 no unauthenticated actor…` |
 | SEC-002 | Authorization is checked server-side at every privileged boundary, and fails closed. | `policy.js` `requirePermission`, called from `ControlPlane.command`. | `SEC-002 authorization is checked per action…` |
-| SEC-003 | Frontend state is never authorization evidence; the recorded actor is bound to the credential. | `policy.js` `requireActorBinding`. | `SEC-003 and SEC-006 the recorded actor…` |
+| SEC-003 | Frontend state is never authorization evidence; the recorded actor is bound to the credential, exactly. | `policy.js` `requireActorBinding`; actor patterns are exact or the single legacy `*`, never prefixes. | `SEC-003 and SEC-006 the recorded actor…`, `SEC-003 actor binding is exact…` |
 | SEC-004 | No secret may be committed to source control. | `security/scan-secrets.mjs`, run in CI. | CI job `security`, exemptions written in place. |
 | SEC-005 | No long-lived secret is stored in browser storage. | `dock/src/api/controlPlane.ts` holds the token in memory only. | `the credential never reaches browser storage` (dock) |
 | SEC-006 | Every canonical-state mutation carries an authenticated execution identity. | Actor binding plus the journal's `actorId`. | `SEC-003 and SEC-006 …` |
@@ -28,10 +28,10 @@ Run them with `cd control-plane && npm test`.
 | SEC-018 | Production services reject plaintext transport outside a documented local boundary. | `assertTransportPolicy` refuses non-loopback plaintext at boot. | `SEC-018 plaintext transport is refused…` |
 | SEC-019 | A captured command cannot be replayed outside a freshness window. | `maxCommandAgeSeconds` plus the event-id digest. | `SEC-REPLAY a captured command cannot be replayed…` |
 | SEC-020 | History cannot be silently shortened or rewritten. | `security/anchor.js` head anchor. | `SEC-014 …` (rollback case) |
-| SEC-021 | Credential guessing is bounded and locks the source out. | `ratelimit.js`. | `SEC-ABUSE credential guessing is rate limited…` |
+| SEC-021 | Credential guessing is bounded and locks the source out, and revocation is immediate. | `ratelimit.js`; the verification cache holds the digest comparison, never the authorization decision. | `SEC-ABUSE credential guessing is rate limited…`, `SEC-021 disabling a credential takes effect immediately…` |
 | SEC-022 | Unauthenticated callers learn nothing about state. | `/health` returns liveness only. | `SEC-DISCLOSURE liveness reveals no state…` |
 | SEC-023 | Reads are bounded; no caller can force unbounded work or response size. | Events pagination, body cap, verified-read cache. | `SEC-DOS reads are bounded…` |
-| SEC-024 | A node-scoped credential cannot act for another node. | `requireNodeBinding`. | `SEC-SCOPE a node-scoped credential may not attest for another node` |
+| SEC-024 | A node-scoped credential cannot act for another node, including as the source of a relation. | `requireNodeBinding` over every command with a subject node. | `SEC-SCOPE …`, `SEC-024 a node-scoped credential cannot declare relations…` |
 | SEC-025 | Secrets never appear in logs, and callers are pseudonymised. | `audit.js` `logSafe` and `sourceKey`. | `SEC-AUDIT …` |
 | SEC-026 | The dock will not send a credential to an origin it was not configured for. | `checkBaseUrl`, enforced at call time. | `the dock will not hand its credential to an arbitrary origin` (dock) |
 | SEC-027 | Only JSON is parsed, and only into the declared contract. | `readJSON` plus `exactKeys`; no other deserializer exists in the plane. | `SEC-SERIALIZATION the plane parses only JSON…` |
