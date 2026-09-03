@@ -36,18 +36,19 @@
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .mono { font-family: var(--mono); font-size: 0.92em; }
   .app { display: grid; grid-template-rows: 40px minmax(0, 1fr) auto; grid-template-columns: 236px 1fr 352px; height: 100vh; }
-  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 12px; min-width: 0; border-bottom: 1px solid var(--line); background: var(--panel); }
   .brand { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
   .brand b { color: var(--accent); font-weight: 500; }
   .chip { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); white-space: nowrap; }
   .chip.warn { color: var(--accent); border-color: var(--accent); }
   .chip.ok { color: var(--green); border-color: var(--green); }
   .chip.bad { color: var(--red); border-color: var(--red); }
-  .counts { display: flex; gap: 14px; margin-left: auto; }
+  .counts { display: flex; gap: 14px; margin-left: auto; flex: none; }
+  .edges { display: flex; gap: 4px; flex: none; }
   .counts div { text-align: right; line-height: 1.1; }
   .counts .n { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
   .counts .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .search { width: 220px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; font-family: var(--mono); font-size: 12px; }
+  .search { width: 220px; min-width: 120px; flex: 0 1 220px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; font-family: var(--mono); font-size: 12px; }
   .search::placeholder { color: var(--faint); }
   .rail { border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 14px; }
   .lenses { display: grid; gap: 2px; }
@@ -56,7 +57,14 @@
   .lens-btn.on { background: var(--panel-2); border-color: var(--line); color: var(--text); }
   .lens-btn .k { font-family: var(--mono); font-size: 11px; color: var(--faint); }
   .lens-btn.on .k, .lens-btn .k.warn { color: var(--accent); }
-  .group h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .group > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 1px 0; }
+  .group > summary::-webkit-details-marker { display: none; }
+  .group > summary::before { content: ""; width: 0; height: 0; border-left: 4px solid var(--faint); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; transition: transform .12s ease; flex: none; }
+  .group[open] > summary::before { transform: rotate(90deg); }
+  .group > summary:hover h4 { color: var(--muted); }
+  .group > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .group h4 { margin: 0; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .group > summary + * { margin-top: 6px; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; }
   .fchip { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--muted); }
   .fchip.on { color: var(--text); border-color: var(--muted); background: var(--panel-2); }
@@ -155,6 +163,13 @@
   .strip { grid-column: 1 / -1; border-top: 1px solid var(--line); background: var(--panel); display: grid; grid-template-columns: 1.4fr 1fr 1.3fr 0.9fr; gap: 0; }
   .strip > div { padding: 10px 14px; max-height: 30vh; overflow-y: auto; border-right: 1px solid var(--line-soft); min-width: 0; }
   .strip > div:last-child { border-right: none; }
+  .app.strip-min .strip > div > *:not(h4) { display: none; }
+  .app.strip-min .strip > div { padding-bottom: 8px; }
+  .app.rail-min { grid-template-columns: 0 1fr 352px; }
+  .app.rail-min .rail { display: none; }
+  .edge { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 12px; line-height: 1; padding: 5px 7px; flex: none; }
+  .edge:hover { color: var(--text); border-color: var(--muted); }
+  .edge[aria-expanded="false"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .strip h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
   .strip h4 span { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--muted); }
   input[type=range] { width: 100%; accent-color: var(--cyan); margin: 6px 0 2px; }
@@ -185,15 +200,16 @@
     <span class="chip" id="fold-chip" title="Whether this page's fold of the journal at its head matches the snapshot the plane exported">fold: checking</span>
     <div class="counts" id="counts"></div>
     <input class="search" id="search" placeholder="/ search bodies, capabilities, subjects" aria-label="Search">
+    <div class="edges"><button class="edge" id="rail-toggle" aria-expanded="true" title="Collapse the controls (\)">◧</button><button class="edge" id="strip-toggle" aria-expanded="true" title="Collapse the time and fidelity strip (-)">▁</button></div>
   </header>
 
   <nav class="rail">
     <div class="lenses" id="lenses"></div>
-    <div class="group"><h4>colour moons by</h4><div class="seg" id="moonsby"><button data-v="mode" class="on">mode</button><button data-v="maturity">maturity</button><button data-v="approval">approval</button></div></div>
-    <div class="group"><h4>layers</h4><div class="layers" id="layers"></div></div>
-    <div class="group"><h4>domains · orbits</h4><div class="chips" id="domains"></div></div>
-    <div class="group"><h4>kinds</h4><div class="chips" id="kinds"></div></div>
-    <div class="group"><h4>what the sky means</h4><div class="legend" id="legend"></div></div>
+    <details class="group" data-panel="moonsby" open><summary><h4>colour moons by</h4></summary><div class="seg" id="moonsby"><button data-v="mode" class="on">mode</button><button data-v="maturity">maturity</button><button data-v="approval">approval</button></div></details>
+    <details class="group" data-panel="layers" open><summary><h4>layers</h4></summary><div class="layers" id="layers"></div></details>
+    <details class="group" data-panel="domains" open><summary><h4>domains · orbits</h4></summary><div class="chips" id="domains"></div></details>
+    <details class="group" data-panel="kinds" open><summary><h4>kinds</h4></summary><div class="chips" id="kinds"></div></details>
+    <details class="group" data-panel="legend"><summary><h4>what the sky means</h4></summary><div class="legend" id="legend"></div></details>
   </nav>
 
   <main class="stage" id="stage">
@@ -1061,13 +1077,43 @@ function renderStrip() {
 }
 $('axis').addEventListener('input', e => setCursor(Number(e.target.value)));
 $('search').addEventListener('input', e => { state.search = e.target.value; renderAll(); });
-document.addEventListener('keydown', e => { const tag = document.activeElement?.tagName; if (['INPUT','TEXTAREA','SELECT'].includes(tag)) { if (e.key === 'Escape') document.activeElement.blur(); return; } if (e.key === '/') { e.preventDefault(); $('search').focus(); } else if (e.key === ':') { e.preventDefault(); $('cmd').focus(); } else if (e.key === 'f') fit(); else if (e.key === 'Escape') select(null); else if (e.key === '[') setCursor(Math.max(0, state.cursor - 1)); else if (e.key === ']') setCursor(Math.min(RECORDS.length, state.cursor + 1)); });
+document.addEventListener('keydown', e => { const tag = document.activeElement?.tagName; if (['INPUT','TEXTAREA','SELECT'].includes(tag)) { if (e.key === 'Escape') document.activeElement.blur(); return; } if (e.key === '/') { e.preventDefault(); $('search').focus(); } else if (e.key === ':') { e.preventDefault(); $('cmd').focus(); } else if (e.key === 'f') fit(); else if (e.key === '\\') { e.preventDefault(); $('rail-toggle').click(); } else if (e.key === '_' || e.key === '-') { e.preventDefault(); $('strip-toggle').click(); } else if (e.key === 'Escape') select(null); else if (e.key === '[') setCursor(Math.max(0, state.cursor - 1)); else if (e.key === ']') setCursor(Math.min(RECORDS.length, state.cursor + 1)); });
 const mq = window.matchMedia('(prefers-color-scheme: light)'); if (mq.addEventListener) mq.addEventListener('change', () => renderAll());
 new MutationObserver(() => renderAll()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 function renderAll() { renderRail(); renderStrip(); renderInspector(); renderView(); draw(); }
 $('fold-chip').textContent = FOLD_AGREES ? 'fold agrees with the plane at head' : 'fold DISAGREES with the plane at head'; $('fold-chip').classList.add(FOLD_AGREES ? 'ok' : 'bad');
 $('fold-chip').title = FOLD_AGREES ? `This page folded the ${RECORDS.length}-record journal itself and reached the plane's head: same revision, same bodies and health, same decisions, same bindings.` : 'The local fold and the plane’s exported snapshot differ; trust the plane.';
+// Which panels a viewer keeps open is a convenience of theirs, so it is remembered in their own
+// browser and nowhere else. Storage can be unavailable or throw outright, and the page has to open
+// correctly with nothing stored, so every read and write is guarded and the markup carries the default.
+const PANELS = 'notations.twin.panels.v1';
+function readPanels() { try { return JSON.parse(localStorage.getItem(PANELS)) ?? {}; } catch { return {}; } }
+function writePanels(next) { try { localStorage.setItem(PANELS, JSON.stringify(next)); } catch { /* a viewer who blocks storage still gets the page */ } }
+function setEdge(button, open) { button.setAttribute('aria-expanded', String(open)); button.textContent = button.id === 'rail-toggle' ? (open ? '\u25E7' : '\u25E8') : (open ? '\u2581' : '\u2594'); }
+function applyPanels() {
+  const saved = readPanels();
+  for (const el of document.querySelectorAll('.group[data-panel]')) {
+    const want = saved[el.dataset.panel];
+    if (typeof want === 'boolean') el.open = want;
+    el.addEventListener('toggle', () => { const next = readPanels(); next[el.dataset.panel] = el.open; writePanels(next); });
+  }
+  const rail = $('rail-toggle'), strip = $('strip-toggle');
+  const railOpen = saved.rail !== false, stripOpen = saved.strip !== false;
+  document.querySelector('.app').classList.toggle('rail-min', !railOpen);
+  document.querySelector('.app').classList.toggle('strip-min', !stripOpen);
+  setEdge(rail, railOpen); setEdge(strip, stripOpen);
+  const flip = (button, cls, key) => {
+    const open = button.getAttribute('aria-expanded') !== 'true';
+    document.querySelector('.app').classList.toggle(cls, !open);
+    setEdge(button, open);
+    const next = readPanels(); next[key] = open; writePanels(next);
+    draw();
+  };
+  rail.onclick = () => flip(rail, 'rail-min', 'rail');
+  strip.onclick = () => flip(strip, 'strip-min', 'strip');
+}
+applyPanels();
 $('play').onclick = () => { sky.playing = !sky.playing; renderMotion(); };
 $('speed').onclick = () => { sky.speed = SPEEDS[(SPEEDS.indexOf(sky.speed) + 1) % SPEEDS.length]; renderMotion(); };
 $('follow').onclick = () => { sky.followed = sky.followed ? null : state.selected; if (sky.followed) focusBody(sky.followed); renderMotion(); };
