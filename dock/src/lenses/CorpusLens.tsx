@@ -31,14 +31,16 @@ function gradeRank(grade: string): number {
   return at < 0 ? GRADE_ORDER.length : at;
 }
 
-function Coverage({ value }: { value: number | null }) {
+function Coverage({ value, applicable }: { value: number | null; applicable: number | null }) {
   if (value === null) return <span className="sec-coverage empty">not graded</span>;
+  // The denominator is shown, never implied: a projection exempt from seven invariants
+  // earns the same word on three that a hold earns on ten, and they are not the same claim.
   return (
-    <span className="sec-coverage" title={`${Math.round(value * 100)}% of the invariants that apply to this node are held`}>
+    <span className="sec-coverage" title={`${Math.round(value * 100)}% of the ${applicable ?? '?'} invariants that apply to this node are held`}>
       <span className="bar">
         <span className="fill" style={{ width: `${Math.round(value * 100)}%` }} />
       </span>
-      {Math.round(value * 100)}%
+      {Math.round(value * 100)}% of {applicable ?? '?'}
     </span>
   );
 }
@@ -163,7 +165,7 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
               </span>
             </span>
             <span className="sec-meta">
-              <Coverage value={standing.coverage} />
+              <Coverage value={standing.coverage} applicable={standing.applicable} />
             </span>
             {standing.fails.length || standing.unknown.length ? (
               <span className="sec-findings">

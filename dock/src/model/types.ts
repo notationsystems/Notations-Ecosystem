@@ -141,6 +141,8 @@ export interface CorpusStanding {
   role: CorpusRole | null;
   grade: CorpusGrade;
   coverage: number | null;
+  /** How many invariants apply. `sound` on three is not `sound` on ten. */
+  applicable: number | null;
   fails: string[];
   /** Invariants not yet assessed. Silence is not assent, so these count against a node. */
   unknown: string[];
@@ -160,6 +162,7 @@ export function corpusStanding(node: SnapshotNode): CorpusStanding | null {
     role: (CORPUS_ROLE_ORDER as string[]).includes(role) ? (role as CorpusRole) : null,
     grade: grade as CorpusGrade,
     coverage: typeof coverage === 'number' ? coverage : null,
+    applicable: typeof node.metadata.corpus_applicable === 'number' ? node.metadata.corpus_applicable : null,
     fails: words(fails),
     unknown: words(node.metadata.corpus_unknown),
     ownerOf: words(ownerOf),

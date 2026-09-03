@@ -60,10 +60,10 @@ Credentials: issue one per principal rather than sharing a token — see
 [SECURITY.md](SECURITY.md). Without a credential registry the plane falls back to
 `NOTATIONS_CONTROL_PLANE_TOKEN`, which holds every role, and warns at boot.
 
-Checks: `cd control-plane && npm test` (39, of which 37 are named security
+Checks: `cd control-plane && npm test` (43, of which 39 are named security
 invariants), `node ecosystem/validate.mjs` (30 nodes, 632 capabilities, 46 relations),
-`node security/scan-secrets.mjs`, `cd ecosystem && npm test` (8),
-`cd dock && npm run check && npm test && npm run build` (19).
+`node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
+`cd ecosystem && npm test` (36), `cd dock && npm run check && npm test && npm run build` (40).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`
 cannot be delivered by a `<meta>` tag. `dock/public/_headers` carries them for

@@ -45,6 +45,8 @@ Run them with `cd control-plane && npm test`.
 | SEC-035 | Retirement removes a key's authority, not only its label. | `KeyStore.verify` holds a retired key to `retiredAtRecord`; rotation drops its private half. | `SEC-035 a retired signing key cannot sign new history…` |
 | SEC-036 | A control that cannot run is refused at boot, never reported as running. | `createRuntime` refuses `requireSignatures` without a key store. | `SEC-036 a control that cannot run is refused…` |
 | SEC-037 | Material with no legitimate reading is refused in every field, not only in posture. | `assertNoWeaponisedText`, called from `validation.js` `string()` and metadata. | `SEC-037 material with no legitimate reading…` |
+| SEC-038 | The published contract names every code the plane can emit, and no code it cannot. | `openapi/control-plane.openapi.yaml` `ErrorCode`; the test walks `src/` rather than a list. | `SEC-CONTRACT the published contract names every code…` |
+| SEC-039 | Every variable the plane reads is documented, and nothing else is. | `.env.example`, checked against the source tree. | `SEC-CONFIG every variable the plane reads is documented…` |
 
 ## Recovery
 

@@ -77,6 +77,9 @@ export function withCorpusMetadata(entry) {
   metadata.corpus_role = graded.role;
   metadata.corpus_grade = graded.grade;
   if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
+  // The denominator travels with the fraction: `sound` on three invariants and `sound` on
+  // ten are the same word and not the same claim.
+  metadata.corpus_applicable = graded.applicable;
   if (graded.fails.length) metadata.corpus_fails = graded.fails.join(' ');
   // Without this a node with no declared failures is indistinguishable from one that
   // holds everything, and "not assessed" would read as "passed".

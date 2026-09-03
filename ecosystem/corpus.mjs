@@ -250,6 +250,14 @@ export function gradeEcosystem(entries) {
   const byGrade = {};
   for (const node of nodes) byGrade[node.grade] = (byGrade[node.grade] ?? 0) + 1;
   const graded = nodes.filter(n => typeof n.coverage === 'number');
+  // Per-role, because a projection exempt from seven invariants earns `sound` on three
+  // while a hold earns it on ten. Averaging the two produces a number that describes
+  // neither.
+  const byRoleCoverage = {};
+  for (const role of ROLE_IDS) {
+    const inRole = graded.filter(n => n.role === role);
+    byRoleCoverage[role] = inRole.length ? Math.round((inRole.reduce((sum, n) => sum + n.coverage, 0) / inRole.length) * 100) / 100 : null;
+  }
   const evidence = { verified: 0, remote: 0, 'self-declared': 0 };
   for (const { entry } of entries) for (const { weight } of evidencePaths(entry)) evidence[weight] += 1;
   return {
@@ -260,6 +268,7 @@ export function gradeEcosystem(entries) {
     owners: Object.fromEntries(owners),
     contested,
     unowned,
+    byRoleCoverage,
     meanCoverage: graded.length ? Math.round((graded.reduce((sum, n) => sum + n.coverage, 0) / graded.length) * 100) / 100 : null,
   };
 }
@@ -276,7 +285,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       process.stdout.write(`${pad(node.nodeId, 38)}${pad(node.role ?? '—', 12)}${pad(node.grade, 12)}${pad(node.coverage ?? '—', 7)}${pad(`${node.holds.length}/${node.applicable}`, 19)}${node.fails.join(' ')}\n`);
     }
     process.stdout.write(`\nby grade: ${Object.entries(report.byGrade).map(([g, n]) => `${g}=${n}`).join('  ')}\n`);
-    process.stdout.write(`by role:  ${Object.entries(report.byRole).map(([r, n]) => `${r}=${n}`).join('  ')}\n`);
+    process.stdout.write(`by role:  ${Object.entries(report.byRole).map(([r, n]) => `${r}=${n} (mean ${report.byRoleCoverage[r] ?? 'n/a'})`).join('  ')}\n`);
     process.stdout.write(`mean coverage across graded nodes: ${report.meanCoverage ?? 'n/a'}\n`);
     process.stdout.write(`evidence: ${report.evidence.verified} verified here, ${report.evidence.remote} in the systems' own repositories, ${report.evidence['self-declared']} declared in this catalog\n`);
     if (report.contested.length) {

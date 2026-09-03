@@ -8,10 +8,11 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { createControlPlaneServer, createRuntime, readConfig, assertTransportPolicy } from '../src/server.js';
 import { SecurityLog } from '../src/security/audit.js';
@@ -1115,4 +1116,99 @@ test('SEC-010 the identity space is reachable from the contract, and is still no
   } finally {
     await h.close();
   }
+});
+
+test('SEC-CONTRACT the published contract names every code the plane can emit', async () => {
+  const { readContract } = await import('../src/openapi.js');
+  const { codes, text, responses } = await readContract();
+
+  // Every `new ControlPlaneError(status, 'CODE', …)` and every literal `error:` the
+  // server writes, read from the whole source tree. A hand-listed set of files is the
+  // same drift this test exists to catch: the first draft of it omitted
+  // security/headers.js and therefore missed ORIGIN_NOT_ALLOWED.
+  const srcDir = fileURLToPath(new URL('../src/', import.meta.url));
+  const walk = async dir => {
+    const found = [];
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) found.push(...await walk(full));
+      else if (entry.name.endsWith('.js')) found.push(full);
+    }
+    return found;
+  };
+  const files = await walk(srcDir);
+  assert.ok(files.length >= 15, 'the walk found the source tree');
+  const sources = await Promise.all(files.map(file => readFile(file, 'utf8')));
+  const emitted = new Set();
+  for (const source of sources) {
+    for (const [, code] of source.matchAll(/ControlPlaneError\(\s*\d{3},\s*'([A-Z_]+)'/g)) emitted.add(code);
+    for (const [, code] of source.matchAll(/error:\s*'([A-Z_]+)'/g)) emitted.add(code);
+  }
+  // The helpers in errors.js mint these without a literal status at the call site.
+  for (const code of ['CONTROL_PLANE_COMMAND_INVALID', 'CONTROL_PLANE_UNAUTHORIZED', 'CONTROL_PLANE_FORBIDDEN']) emitted.add(code);
+
+  const undocumented = [...emitted].filter(code => !codes.includes(code)).sort();
+  assert.deepEqual(undocumented, [], `codes the plane emits and the contract does not name: ${undocumented.join(', ')}`);
+  // And nothing documented that the plane cannot produce, so the list stays a fact.
+  const unreachable = codes.filter(code => !emitted.has(code)).sort();
+  assert.deepEqual(unreachable, [], `codes the contract names and the plane never emits: ${unreachable.join(', ')}`);
+
+  // "Approval is not execution" is the company's central invariant, and until now it
+  // lived only in prose: a client reading the contract could not see it.
+  assert.match(text, /const: not_dispatched/);
+  assert.match(text, /The plane authorises; it never dispatches\./);
+
+  // Every route the server answers is documented with the statuses it can return.
+  assert.deepEqual(Object.keys(responses).sort(), ['/health', '/v1/commands', '/v1/events', '/v1/security/status', '/v1/snapshot']);
+  assert.ok(responses['/v1/commands'].post.includes('500'), 'even the internal error is documented, since its text is fixed');
+});
+
+test('SEC-CONTRACT the routes the server answers are exactly the routes it publishes', async () => {
+  const { readContract } = await import('../src/openapi.js');
+  const { paths } = await readContract();
+  const h = await harness();
+  try {
+    for (const route of paths) {
+      if (route === '/health') {
+        assert.equal((await h.call('GET', route)).status, 200);
+        continue;
+      }
+      if (route === '/v1/commands') continue; // exercised throughout this suite
+      const unauthenticated = await h.call('GET', route);
+      assert.equal(unauthenticated.status, 401, `${route} must exist and require a credential`);
+      assert.equal(unauthenticated.body.error, 'CONTROL_PLANE_UNAUTHORIZED');
+    }
+    // And a route it does not publish is refused by name rather than guessed at.
+    const missing = await h.call('GET', '/v1/nope', { token: h.tokens['operator:alice'] });
+    assert.equal(missing.status, 404);
+    assert.equal(missing.body.error, 'ROUTE_NOT_FOUND');
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-CONFIG every variable the plane reads is documented, and nothing else is', async () => {
+  const example = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
+  const documented = new Set(example.split('\n').filter(line => /^[A-Z]/.test(line)).map(line => line.split('=')[0]));
+
+  const srcDir = fileURLToPath(new URL('../src/', import.meta.url));
+  const walk = async dir => {
+    const found = [];
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) found.push(...await walk(full));
+      else if (entry.name.endsWith('.js')) found.push(full);
+    }
+    return found;
+  };
+  const sources = await Promise.all((await walk(srcDir)).map(file => readFile(file, 'utf8')));
+  const read = new Set(sources.flatMap(source => [...source.matchAll(/(?:env|environment|process\.env)\.([A-Z_]+)/g)].map(m => m[1])));
+
+  // An example that documents five of twenty-one variables and omits every security
+  // control is not an example, it is a trap: an operator who configures from it gets a
+  // plane with no credential registry, no signing key protection and no rate limits, and
+  // nothing tells them.
+  assert.deepEqual([...read].filter(v => !documented.has(v)).sort(), [], 'variables the plane reads and the example does not document');
+  assert.deepEqual([...documented].filter(v => !read.has(v)).sort(), [], 'variables the example documents and the plane never reads');
+  assert.ok(read.size >= 20);
 });

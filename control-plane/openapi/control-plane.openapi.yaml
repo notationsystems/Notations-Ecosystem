@@ -32,6 +32,15 @@ paths:
       responses:
         '200':
           description: The service is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service, uptimeSeconds]
+                properties:
+                  status: { const: operational }
+                  service: { const: notations-ecosystem-control-plane }
+                  uptimeSeconds: { type: integer, minimum: 0 }
   /v1/snapshot:
     get:
       summary: Get the current ecosystem graph
@@ -42,6 +51,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Snapshot'
+        '401':
+          description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: The principal does not hold snapshot.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: Request budget exceeded (CONTROL_PLANE_RATE_LIMITED) or the source is locked out (CONTROL_PLANE_LOCKED_OUT). Retry-After is set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: The journal did not verify (JOURNAL_CORRUPT), has been shortened (JOURNAL_ROLLBACK), or the plane is unconfigured (CONTROL_PLANE_NOT_CONFIGURED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /v1/events:
     get:
       summary: Read events after a known event cursor
@@ -61,18 +90,39 @@ paths:
       responses:
         '200':
           description: >-
-            Append-only events after the supplied cursor. A truncated page carries
-            `truncated: true` and `nextCursor`.
+            Append-only records after the supplied cursor, exactly as the plane wrote
+            them. A capped page carries `truncated: true` and `nextCursor`; a reader that
+            stops there loses records without being told twice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventsResponse'
         '401':
-          description: No credential, or an invalid one.
+          description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '403':
-          description: The principal does not hold events.read.
+          description: The principal does not hold events.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '409':
-          description: Cursor no longer belongs to the retained journal; refresh the snapshot.
+          description: >-
+            CURSOR_UNKNOWN: the cursor is not in this journal. Refresh the snapshot and resume from its eventCursor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429':
-          description: Request budget exceeded, or the source is locked out after repeated authentication failures.
+          description: CONTROL_PLANE_RATE_LIMITED or CONTROL_PLANE_LOCKED_OUT. Retry-After is set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '503':
-          description: The journal did not verify (JOURNAL_CORRUPT) or has been shortened (JOURNAL_ROLLBACK).
+          description: JOURNAL_CORRUPT, JOURNAL_ROLLBACK or CONTROL_PLANE_NOT_CONFIGURED.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /v1/security/status:
     get:
@@ -85,8 +135,38 @@ paths:
       responses:
         '200':
           description: Non-sensitive security status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema, generatedAt, principal, identity, authorization, transport, keyLifecycle, auditIntegrity, abuse, events]
+                properties:
+                  schema: { const: notations.control-plane.security-status.v1 }
+                  generatedAt: { type: string, format: date-time }
+                  principal: { type: string }
+                  identity: { type: object }
+                  authorization: { type: object }
+                  transport: { type: object }
+                  keyLifecycle: { type: object }
+                  auditIntegrity: { type: object }
+                  abuse: { type: object }
+                  events: { type: object }
+                  recent: { type: array, items: { type: object } }
+        '401':
+          description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '403':
-          description: The principal does not hold security.status.read.
+          description: The principal does not hold security.status.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: CONTROL_PLANE_RATE_LIMITED or CONTROL_PLANE_LOCKED_OUT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
   /v1/commands:
     post:
       summary: Append one coordination command with optimistic concurrency
@@ -104,31 +184,252 @@ paths:
                 - $ref: '#/components/schemas/ResolveCoordinationCommand'
       responses:
         '201':
-          description: Command appended.
+          description: >-
+            Command appended, or recognised as a duplicate of one already in the
+            journal. Either way the response carries the resulting snapshot, so a
+            client never needs a second round trip to learn the new revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResult'
+        '400':
+          description: >-
+            COMMAND_NOT_JSON: the body is not JSON. REQUEST_INVALID: the request itself is malformed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401':
-          description: No credential, or an invalid one.
+          description: >-
+            CONTROL_PLANE_UNAUTHORIZED: no credential, or an invalid one.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '403':
           description: >-
-            The principal lacks the permission for this action, may not claim the
-            supplied actorId, is not scoped to the subject node, or is attempting
-            to resolve a coordination it proposed (separation of duties).
+            CONTROL_PLANE_FORBIDDEN: the principal lacks the permission for this action, may not claim the supplied actorId, is not scoped to the subject node, or is resolving a coordination it proposed (separation of duties). ORIGIN_NOT_ALLOWED: the browser Origin is not in the allow-list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: >-
+            NODE_NOT_FOUND, CAPABILITY_NOT_FOUND or COORDINATION_NOT_FOUND: the command names something the journal does not hold. ROUTE_NOT_FOUND means the path itself is not part of this API.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '409':
-          description: Revision, event-id, or coordination conflict.
+          description: >-
+            REVISION_CONFLICT: the journal moved after the caller read its snapshot. EVENT_ID_CONFLICT: the same request id already identifies different content. COORDINATION_EXISTS or COORDINATION_NOT_PENDING.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '413':
-          description: The command exceeds 256 KiB.
+          description: >-
+            COMMAND_TOO_LARGE: the command exceeds 256 KiB.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '414':
+          description: >-
+            REQUEST_URI_TOO_LONG.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '422':
           description: >-
-            Command violates the capability or safety contract: unknown action,
-            unsafe text, unbounded structure, a credential-shaped value, a stale
-            timestamp (COMMAND_STALE), or refused security material.
+            CONTROL_PLANE_COMMAND_INVALID: unknown action, unsafe text, unbounded structure, a credential-shaped value, or refused security material. COMMAND_STALE: submittedAt is outside the freshness window. CAPABILITY_MODE_MISMATCH: the requested mode is not the one the capability declares.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429':
-          description: Request budget exceeded.
+          description: >-
+            CONTROL_PLANE_RATE_LIMITED or CONTROL_PLANE_LOCKED_OUT. Retry-After is set, and a well-behaved bulk writer waits rather than retrying immediately.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '500':
+          description: >-
+            CONTROL_PLANE_INTERNAL_ERROR. The text is deliberately fixed: an internal error never returns a stack trace or a path.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: >-
+            JOURNAL_CORRUPT, JOURNAL_ROLLBACK or CONTROL_PLANE_NOT_CONFIGURED. Integrity failures fail closed: the plane refuses to serve a history it cannot verify.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
   schemas:
+    Error:
+      type: object
+      required: [error, detail]
+      description: >-
+        Every failure has this shape. `error` is a stable machine code; `detail` says what
+        happened in terms safe to return to the caller; `remedy` says what to do instead.
+        A 429 also carries `retryAfterSeconds`, mirrored in the Retry-After header.
+      properties:
+        error: { $ref: '#/components/schemas/ErrorCode' }
+        detail: { type: string }
+        remedy: { type: string }
+        retryAfterSeconds: { type: integer, minimum: 1 }
+    ErrorCode:
+      type: string
+      description: >-
+        The complete set of stable codes. A client may switch on these; the prose in
+        `detail` and `remedy` may change.
+      enum:
+        - REQUEST_INVALID
+        - COMMAND_NOT_JSON
+        - COMMAND_TOO_LARGE
+        - REQUEST_URI_TOO_LONG
+        - ROUTE_NOT_FOUND
+        - CONTROL_PLANE_UNAUTHORIZED
+        - CONTROL_PLANE_FORBIDDEN
+        - ORIGIN_NOT_ALLOWED
+        - CONTROL_PLANE_RATE_LIMITED
+        - CONTROL_PLANE_LOCKED_OUT
+        - CONTROL_PLANE_COMMAND_INVALID
+        - COMMAND_STALE
+        - CAPABILITY_MODE_MISMATCH
+        - NODE_NOT_FOUND
+        - CAPABILITY_NOT_FOUND
+        - COORDINATION_NOT_FOUND
+        - COORDINATION_EXISTS
+        - COORDINATION_NOT_PENDING
+        - CURSOR_UNKNOWN
+        - REVISION_CONFLICT
+        - EVENT_ID_CONFLICT
+        - CONTROL_PLANE_NOT_CONFIGURED
+        - JOURNAL_CORRUPT
+        - JOURNAL_ROLLBACK
+        - CONTROL_PLANE_INTERNAL_ERROR
+    SnapshotNode:
+      allOf:
+        - $ref: '#/components/schemas/Node'
+        - type: object
+          required: [registeredAt, updatedAt, health]
+          properties:
+            registeredAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+            health: { type: string, enum: [unknown, healthy, degraded, offline] }
+            lastObservedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+            lastObservation:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  properties:
+                    source: { type: string, enum: [operator, health_check, webhook] }
+                    detail: { type: string }
+            security:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [attestedAt, method, attestedBy, signals]
+                  properties:
+                    attestedAt: { type: string, format: date-time }
+                    method: { type: string, enum: [automated_scan, operator_review, external_audit, self_declared] }
+                    attestedBy: { type: string }
+                    signals:
+                      type: array
+                      items: { $ref: '#/components/schemas/PostureSignal' }
+    Relation:
+      type: object
+      required: [relationId, sourceNodeId, targetNodeId, kind, description, declaredAt]
+      properties:
+        relationId: { type: string }
+        sourceNodeId: { type: string }
+        targetNodeId: { type: string }
+        kind: { type: string, enum: [supplies_context_to, coordinates, visualizes, governs, depends_on] }
+        description: >-
+          { type: string }
+        declaredAt: { type: string, format: date-time }
+    Coordination:
+      type: object
+      required: [coordinationId, requesterNodeId, targetNodeId, capabilityId, requestedMode, purpose, status, dispatch, requestedAt]
+      description: >-
+        A coordination record: what one node asked of another, and what an operator
+        decided. **Approval is not execution.** `dispatch` is the field that says so, and
+        it has exactly one value: the control plane records intent and authorisation and
+        never calls anything. An execution adapter, when one exists, is a separate
+        least-privilege boundary that this plane cannot reach.
+      properties:
+        coordinationId: { type: string }
+        uri:
+          type: string
+          readOnly: true
+          example: notation://decision/notationsystems/coord-4471
+          description: The record's name in the canonical identity space. A name, never an address.
+        requesterNodeId: { type: string }
+        targetNodeId: { type: string }
+        capabilityId: { type: string }
+        requestedMode: { type: string, enum: [observe, propose, execute] }
+        purpose: { type: string }
+        status: { type: string, enum: [ready, approval_required, approved, rejected] }
+        dispatch:
+          const: not_dispatched
+          description: Always this value. The plane authorises; it never dispatches.
+        requestedAt: { type: string, format: date-time }
+        requestedBy: { type: string }
+        resolvedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
+        resolvedBy: { oneOf: [{ type: string }, { type: 'null' }] }
+        note: { oneOf: [{ type: string }, { type: 'null' }] }
+    JournalRecord:
+      type: object
+      required: [event, previousHash, recordHash]
+      description: >-
+        One record of the append-only chain, exactly as the plane wrote it. A record
+        carries these fields and no others; anything else is refused as unverifiable,
+        because the record hash covers the event and the preceding hash, and the
+        signature covers the record hash.
+      properties:
+        event:
+          type: object
+          required: [eventId, recordedAt, commandHash, kind]
+          properties:
+            eventId: { type: string }
+            recordedAt: { type: string, format: date-time }
+            commandHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+            kind: { type: string, enum: [node_registered, relation_declared, observation_recorded, security_posture_recorded, coordination_requested, coordination_resolved] }
+            actorId: { type: string }
+        previousHash: { oneOf: [{ type: string, pattern: '^[a-f0-9]{64}$' }, { type: 'null' }] }
+        recordHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        signature:
+          type: object
+          description: Ed25519 over the record hash. Present when the plane has an active signing key.
+          properties:
+            keyId: { type: string }
+            alg: { const: ed25519 }
+            sig: { type: string }
+    EventsResponse:
+      type: object
+      required: [schema, revision, eventCursor, events, truncated]
+      properties:
+        schema: { const: notations.control-plane.events.v1 }
+        revision: { oneOf: [{ type: string }, { type: 'null' }] }
+        eventCursor: { oneOf: [{ type: string }, { type: 'null' }] }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/JournalRecord' }
+        truncated:
+          type: boolean
+          description: The page was capped. Follow `nextCursor`; stopping here drops records.
+        nextCursor: { oneOf: [{ type: string }, { type: 'null' }] }
+    CommandResult:
+      type: object
+      required: [outcome, event, snapshot]
+      properties:
+        outcome: { type: string, enum: [appended, duplicate] }
+        event:
+          type: object
+          properties:
+            eventId: { type: string }
+            kind: { type: string }
+            recordHash: { type: string }
+        snapshot: { $ref: '#/components/schemas/Snapshot' }
     CommandBase:
       type: object
       required: [requestId, actorId, submittedAt, expectedRevision, action]
@@ -145,7 +446,8 @@ components:
       properties:
         capabilityId: { type: string }
         label: { type: string }
-        description: { type: string }
+        description: >-
+          { type: string }
         mode: { type: string, enum: [observe, propose, execute] }
         approval: { type: string, enum: [automatic, operator] }
     Node:
@@ -163,7 +465,8 @@ components:
             no resolver, so nothing here can be dereferenced.
         name: { type: string }
         kind: { type: string, enum: [api, world_model, information_library, reasoning_engine, visual_dock, operator_surface] }
-        description: { type: string }
+        description: >-
+          { type: string }
         capabilities:
           type: array
           items: { $ref: '#/components/schemas/Capability' }
@@ -197,7 +500,8 @@ components:
             sourceNodeId: { type: string }
             targetNodeId: { type: string }
             kind: { type: string, enum: [supplies_context_to, coordinates, visualizes, governs, depends_on] }
-            description: { type: string }
+            description: >-
+              { type: string }
     ObservationCommand:
       allOf:
         - $ref: '#/components/schemas/CommandBase'
@@ -291,18 +595,13 @@ components:
         generatedAt: { type: string, format: date-time }
         nodes:
           type: array
-          description: >-
-            Each node carries derived health and, when attested, a `security`
-            block holding its posture signals.
-        relations: { type: array }
+          items: { $ref: '#/components/schemas/SnapshotNode' }
+        relations:
+          type: array
+          items: { $ref: '#/components/schemas/Relation' }
         coordination:
           type: array
-          description: >-
-            Each record carries `uri`, its name in the canonical identity space —
-            notation://decision/<namespace>/<coordinationId>. A decision is the terminal
-            stage of the substrate chain (docs/SUBSTRATE.md) and the one stage this plane
-            actually writes. Approval is not execution: `dispatch` is always
-            "not_dispatched".
+          items: { $ref: '#/components/schemas/Coordination' }
         constellation:
           type: object
           description: Ecosystem-wide security posture folded across every attested node, weakest-link per dimension.

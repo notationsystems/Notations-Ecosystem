@@ -11,7 +11,7 @@ const node = (metadata: Record<string, string | number | boolean>): SnapshotNode
 describe('corpus standing', () => {
   it('reads the derived metadata the seed writes, and nothing else', () => {
     const standing = corpusStanding(node({ corpus_role: 'hold', corpus_grade: 'sound', corpus_coverage: 1 }));
-    expect(standing).toEqual({ role: 'hold', grade: 'sound', coverage: 1, fails: [], unknown: [], ownerOf: [] });
+    expect(standing).toEqual({ role: 'hold', grade: 'sound', coverage: 1, applicable: null, fails: [], unknown: [], ownerOf: [] });
   });
 
   it('splits declared failures so each names an invariant', () => {

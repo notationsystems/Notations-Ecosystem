@@ -132,6 +132,13 @@ additive — a corpus with provenance but no knowledge time is genuinely better 
 with neither, and a grading rule that reports both as "failing" tells an operator
 nothing about where to work.
 
+**Coverage is comparable within a role, not across roles.** A `project` is exempt from
+seven invariants, so it earns `sound` on three; a `hold` earns the same word on ten. The
+words are the same and the claims are not, which is why the grade never appears without
+its role and its denominator — `gods-eye-view` at 2/2 and `payload-terminal` at 10/10 are
+both `sound`, and only one of them is a corpus. The estate-level mean is a rough figure
+for the same reason; the per-role means the grader prints are the comparable ones.
+
 One hard rule overrides coverage:
 
 > A node that declares `holds` for **COR-002** — it owns a canonical state — and `fails`
@@ -239,11 +246,12 @@ dock ever reading the catalog, and no evidence path leaves the repository.
 
 ## Recording an empty system
 
-Four catalog nodes are empty repositories. Grading them requires care in both directions:
+Six catalog nodes are empty repositories. Grading them requires care in both directions:
 scoring them zero is accurate but useless, and exempting them is flattery.
 
-An empty node declares `role` (what it is *for*) and `unknown` for every applicable
-invariant, and its grade is `unbuilt` rather than a coverage figure. `unbuilt` is a
-statement about the repository, not about the design — and the moment the repository has
-content, the same declaration must be filled in or the grade regresses to `0/n`, which is
-the correct and uncomfortable answer.
+An empty node declares `role` — what it is *for* — a `holding` sentence saying it holds
+nothing yet, and an empty `standing`. Every invariant is then `unknown` by the rule
+above, and the grade is `unbuilt` rather than a coverage figure. `unbuilt` is a statement
+about the repository, not about the design — and the moment the repository has content,
+the standing must be filled in or the grade regresses to `0/n`, which is the correct and
+uncomfortable answer.
