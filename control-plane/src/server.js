@@ -3,7 +3,9 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { ControlPlane } from './control-plane.js';
 import { ControlPlaneError } from './errors.js';
+import { observePayloadTerminal } from './adapters/payload-terminal.js';
 import { payloadTerminalProfile } from './profiles/payload-terminal.js';
+import { parseProfileApplication } from './validation.js';
 
 const host = process.env.CONTROL_PLANE_HOST || '127.0.0.1';
 const port = Number.parseInt(process.env.CONTROL_PLANE_PORT || '8787', 10);
@@ -64,7 +66,7 @@ export function createControlPlaneServer() {
       }
 
       const headers = originHeaders(request);
-      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands' || url.pathname === '/v1/profiles/payload-terminal' || url.pathname === '/v1/profiles/payload-terminal/apply')) {
+      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands' || url.pathname === '/v1/profiles/payload-terminal' || url.pathname === '/v1/profiles/payload-terminal/apply' || url.pathname === '/v1/adapters/payload-terminal/observe')) {
         response.writeHead(204, headers);
         return response.end();
       }
@@ -80,6 +82,19 @@ export function createControlPlaneServer() {
       if (request.method === 'POST' && url.pathname === '/v1/profiles/payload-terminal/apply') {
         const result = await controlPlane.applyProfile(await readJSON(request), payloadTerminalProfile());
         return json(response, result.outcome === 'appended' ? 201 : 200, result, { ...headers, 'cache-control': 'private, no-store' });
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/adapters/payload-terminal/observe') {
+        const envelope = parseProfileApplication(await readJSON(request));
+        const observation = await observePayloadTerminal();
+        const result = await controlPlane.command({
+          requestId: envelope.requestId,
+          actorId: envelope.actorId,
+          submittedAt: envelope.submittedAt,
+          expectedRevision: envelope.expectedRevision,
+          action: 'record_observation',
+          ...observation,
+        });
+        return json(response, result.outcome === 'appended' ? 201 : 200, { ...result, adapter: 'payload-terminal' }, { ...headers, 'cache-control': 'private, no-store' });
       }
       return json(response, 404, { error: 'ROUTE_NOT_FOUND', detail: 'This route is not part of the control-plane API.' }, headers);
     } catch (error) {

@@ -83,6 +83,23 @@ paths:
           description: The Payload nodes and relations were appended as one profile event.
         '409':
           description: The dock is stale or this profile request was already used differently.
+  /v1/adapters/payload-terminal/observe:
+    post:
+      summary: Probe the one configured Payload Terminal health surface
+      description: >-
+        The adapter accepts no target URL. It reads PAYLOAD_TERMINAL_URL from
+        deployment configuration and appends only a bounded health observation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileApplication'
+      responses:
+        '201':
+          description: The health observation was appended.
+        '503':
+          description: The trusted Payload origin is not configured.
 components:
   securitySchemes:
     bearerAuth:

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { ControlPlane } from '../src/control-plane.js';
 import { ControlPlaneError } from '../src/errors.js';
+import { observePayloadTerminal } from '../src/adapters/payload-terminal.js';
 import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 
 const NOW = '2026-09-02T00:00:00.000Z';
@@ -103,4 +104,25 @@ test('applies the detailed Payload profile as one atomic ecosystem twin', async 
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('converts a trusted Payload health response into a bounded observation', async () => {
+  const observation = await observePayloadTerminal(
+    { PAYLOAD_TERMINAL_URL: 'https://payload.example' },
+    async url => {
+      assert.equal(url.toString(), 'https://payload.example/api/health');
+      return new Response(JSON.stringify({ status: 'operational', platform: 'Payload Terminal', version: '1.0.0' }), { status: 200 });
+    },
+    () => NOW,
+  );
+  assert.deepEqual(observation, {
+    nodeId: 'payload-terminal', health: 'healthy', observedAt: NOW, source: 'health_check', detail: 'Payload Terminal reported operational at HTTP 200; 1.0.0.',
+  });
+});
+
+test('never probes arbitrary insecure non-loopback Payload URLs', async () => {
+  await assert.rejects(
+    observePayloadTerminal({ PAYLOAD_TERMINAL_URL: 'http://payload.example' }),
+    error => error instanceof ControlPlaneError && error.code === 'PAYLOAD_ADAPTER_NOT_CONFIGURED',
+  );
 });

@@ -63,3 +63,13 @@ append-only event. The request has the small `ProfileApplication` envelope in
 the OpenAPI contract; use the snapshot's `revision` as `expectedRevision`.
 This is how the dock stays realistic: it displays declared Payload surfaces and
 actual future health observations, rather than hand-authored visual fiction.
+
+### Live Payload health
+
+Set `PAYLOAD_TERMINAL_URL` to the one trusted Payload Terminal origin, then
+call `POST /v1/adapters/payload-terminal/observe` with the same four-field
+profile-application envelope. The adapter reads only `/api/health`, follows no
+redirects, accepts no caller-supplied target, limits the response to 64 KiB,
+and persists only a bounded `healthy`, `degraded`, or `offline` observation.
+It does not forward the remote body, headers, credentials, or any other
+Payload data into the control-plane journal.
