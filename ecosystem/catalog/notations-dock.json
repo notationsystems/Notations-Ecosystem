@@ -135,7 +135,7 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "none",
       "endpoint": null

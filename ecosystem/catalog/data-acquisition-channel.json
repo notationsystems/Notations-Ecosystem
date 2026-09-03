@@ -805,9 +805,17 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [
-      "COMMERCE_LEDGER",
-      "COMMERCE_FACILITIES"
+    "environment": [
+      {
+        "name": "COMMERCE_LEDGER",
+        "kind": "configuration",
+        "purpose": "Path to the append-only JSONL ledger of load descriptions; defaults to commerce-ledger.jsonl beside the process."
+      },
+      {
+        "name": "COMMERCE_FACILITIES",
+        "kind": "configuration",
+        "purpose": "Path to the facilities reference the ledger's origins and destinations are matched against."
+      }
     ],
     "health": {
       "method": "cli",

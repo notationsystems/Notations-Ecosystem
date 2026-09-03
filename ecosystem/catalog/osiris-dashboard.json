@@ -803,24 +803,92 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [
-      "SCANNER_URL",
-      "SCANNER_KEY",
-      "CLOUDFLARE_API_TOKEN",
-      "ETHERSCAN_API_KEY",
-      "HELIUS_API_KEY",
-      "FIRMS_API_KEY",
-      "OPENSKY_CLIENT_ID",
-      "OPENSKY_CLIENT_SECRET",
-      "N2YO_API_KEY",
-      "AIS_API_KEY",
-      "SDK_INGEST_KEY",
-      "GITHUB_WEBHOOK_SECRET",
-      "GITHUB_WEBHOOK_FORWARD_URL",
-      "ASTRA_GPU_URL",
-      "INTEL_URL",
-      "OSIRIS_TELEGRAM_CHANNELS",
-      "UMAMI_WEBSITE_ID"
+    "environment": [
+      {
+        "name": "SCANNER_URL",
+        "kind": "configuration",
+        "purpose": "Location of the upstream scanning service the fork still calls."
+      },
+      {
+        "name": "SCANNER_KEY",
+        "kind": "credential",
+        "purpose": "Bearer for that scanning service."
+      },
+      {
+        "name": "CLOUDFLARE_API_TOKEN",
+        "kind": "credential",
+        "purpose": "Cloudflare Radar access for the internet-disruption layer."
+      },
+      {
+        "name": "ETHERSCAN_API_KEY",
+        "kind": "credential",
+        "purpose": "Etherscan access for the chain-activity panel; optional."
+      },
+      {
+        "name": "HELIUS_API_KEY",
+        "kind": "credential",
+        "purpose": "Solana RPC access for the same panel; optional."
+      },
+      {
+        "name": "FIRMS_API_KEY",
+        "kind": "credential",
+        "purpose": "NASA FIRMS key for the active-fire layer; optional, and the layer falls back to the anonymous quota."
+      },
+      {
+        "name": "OPENSKY_CLIENT_ID",
+        "kind": "credential",
+        "purpose": "OAuth2 client id raising the OpenSky rate limit for the flight layer; optional."
+      },
+      {
+        "name": "OPENSKY_CLIENT_SECRET",
+        "kind": "credential",
+        "purpose": "The secret half of that OAuth2 client."
+      },
+      {
+        "name": "N2YO_API_KEY",
+        "kind": "credential",
+        "purpose": "N2YO access for the satellite-pass layer; optional beside CelesTrak's anonymous elements."
+      },
+      {
+        "name": "AIS_API_KEY",
+        "kind": "credential",
+        "purpose": "aisstream.io key for the maritime layer."
+      },
+      {
+        "name": "SDK_INGEST_KEY",
+        "kind": "credential",
+        "purpose": "The single shared secret the Polybolos SDK ingest endpoint accepts. One key for all callers, and the store is in-memory per process."
+      },
+      {
+        "name": "GITHUB_WEBHOOK_SECRET",
+        "kind": "credential",
+        "purpose": "HMAC secret verifying inbound GitHub webhook deliveries before they are relayed."
+      },
+      {
+        "name": "GITHUB_WEBHOOK_FORWARD_URL",
+        "kind": "configuration",
+        "purpose": "Where verified GitHub events are relayed to."
+      },
+      {
+        "name": "ASTRA_GPU_URL",
+        "kind": "configuration",
+        "purpose": "Location of the GPU service the dashboard offloads imagery work to."
+      },
+      {
+        "name": "INTEL_URL",
+        "kind": "configuration",
+        "purpose": "Location of the OSIRIS intel layer this dashboard queries for entity expansion."
+      },
+      {
+        "name": "OSIRIS_TELEGRAM_CHANNELS",
+        "kind": "configuration",
+        "purpose": "The public Telegram channels whose previews the signals panel reads. A list of names, not an access token."
+      },
+      {
+        "name": "UMAMI_WEBSITE_ID",
+        "kind": "configuration",
+        "purpose": "Public site identifier for the Umami analytics script. Identifies, it does not authorise."
+      }
     ],
     "health": {
       "method": "http",

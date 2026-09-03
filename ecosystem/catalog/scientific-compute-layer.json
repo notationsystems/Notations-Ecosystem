@@ -502,8 +502,12 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [
-      "STE_REPO"
+    "environment": [
+      {
+        "name": "STE_REPO",
+        "kind": "configuration",
+        "purpose": "Path to the Scientific Transformer Engine checkout the exchange artifacts extend. A path, and now classified as one."
+      }
     ],
     "health": {
       "method": "cli",
@@ -514,8 +518,7 @@
     "open_questions": [
       "The CUDA backend has never executed on a GPU; tests/test_cpu_cuda_equivalence.py is the single harness left to run when an RTX 2080 Super Max-Q-visible environment exists.",
       "The acquisition layer is called data-acquisition-channel-daq in SCL docs and notations-acquisition-channel in STE; confirm the catalog id data-acquisition-channel refers to that repository.",
-      "SCL owns no comparison layer: results with equal computation_identity but different annotating parameters (e.g. sample spacing) are not spectrally comparable, and nothing yet prevents a consumer from comparing them.",
-      "STE_REPO is a path, not a secret; it is listed under secrets_env only because it is the one environment variable the test suite reads."
+      "SCL owns no comparison layer: results with equal computation_identity but different annotating parameters (e.g. sample spacing) are not spectrally comparable, and nothing yet prevents a consumer from comparing them."
     ],
     "corpus": {
       "role": "transform",

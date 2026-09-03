@@ -518,9 +518,17 @@
         "auth": "GitHub token in CI only"
       }
     ],
-    "secrets_env": [
-      "GAT_IFC_VALIDATION_ROOT",
-      "SP1_PROVER"
+    "environment": [
+      {
+        "name": "GAT_IFC_VALIDATION_ROOT",
+        "kind": "configuration",
+        "purpose": "Filesystem root the IFC validation corpus is read from; the fixtures are large and live outside the repository."
+      },
+      {
+        "name": "SP1_PROVER",
+        "kind": "configuration",
+        "purpose": "Selects the SP1 proving mode (mock, local or network) for the zero-knowledge state-transition proofs. A mode name, not a credential."
+      }
     ],
     "health": {
       "method": "cli",

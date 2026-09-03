@@ -189,8 +189,12 @@
         "auth": "none for public repos (HF_TOKEN optional)"
       }
     ],
-    "secrets_env": [
-      "HF_TOKEN"
+    "environment": [
+      {
+        "name": "HF_TOKEN",
+        "kind": "credential",
+        "purpose": "Hugging Face token for pulling the gated depth-model weights."
+      }
     ],
     "health": {
       "method": "cli",

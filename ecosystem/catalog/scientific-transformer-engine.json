@@ -686,7 +686,7 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "cli",
       "endpoint": "python3 -m pytest"

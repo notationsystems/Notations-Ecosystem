@@ -401,20 +401,72 @@
         "auth": "EE credentials"
       }
     ],
-    "secrets_env": [
-      "OPENAI_API_KEY",
-      "OPENAI_CODEX_ACCESS_TOKEN",
-      "ANTHROPIC_API_KEY",
-      "GEMINI_API_KEY",
-      "GOOGLE_API_KEY",
-      "LITELLM_API_KEY",
-      "LITELLM_BASE_URL",
-      "OLLAMA_HOST",
-      "BEDROCK_MODEL",
-      "AWS_PROFILE",
-      "AWS_REGION",
-      "EARTHDATA_USERNAME",
-      "EARTHDATA_PASSWORD"
+    "environment": [
+      {
+        "name": "OPENAI_API_KEY",
+        "kind": "credential",
+        "purpose": "OpenAI access for the default Strands model provider."
+      },
+      {
+        "name": "OPENAI_CODEX_ACCESS_TOKEN",
+        "kind": "credential",
+        "purpose": "OAuth access token for the Codex provider path, used instead of an API key where the account is OAuth-bound."
+      },
+      {
+        "name": "ANTHROPIC_API_KEY",
+        "kind": "credential",
+        "purpose": "Claude access for the Anthropic model provider."
+      },
+      {
+        "name": "GEMINI_API_KEY",
+        "kind": "credential",
+        "purpose": "Google AI Studio access for the Gemini provider."
+      },
+      {
+        "name": "GOOGLE_API_KEY",
+        "kind": "credential",
+        "purpose": "The alternate spelling the same Google SDK accepts; either name reaches the same Gemini provider, and naming both is how a key ends up provisioned twice."
+      },
+      {
+        "name": "LITELLM_API_KEY",
+        "kind": "credential",
+        "purpose": "Bearer for a LiteLLM gateway when the estate routes model calls through one rather than to a provider directly."
+      },
+      {
+        "name": "LITELLM_BASE_URL",
+        "kind": "configuration",
+        "purpose": "Base URL of that gateway. A network location, not a credential."
+      },
+      {
+        "name": "OLLAMA_HOST",
+        "kind": "configuration",
+        "purpose": "Host of a local Ollama server for the offline model path."
+      },
+      {
+        "name": "BEDROCK_MODEL",
+        "kind": "configuration",
+        "purpose": "Model identifier for the AWS Bedrock provider; the credentials come from the AWS chain, not from here."
+      },
+      {
+        "name": "AWS_PROFILE",
+        "kind": "configuration",
+        "purpose": "Names which profile in the AWS credential chain to use. It selects a credential; it is not one."
+      },
+      {
+        "name": "AWS_REGION",
+        "kind": "configuration",
+        "purpose": "Region for the Bedrock endpoint."
+      },
+      {
+        "name": "EARTHDATA_USERNAME",
+        "kind": "credential",
+        "purpose": "NASA Earthdata login used by earthaccess to authorise CMR granule downloads."
+      },
+      {
+        "name": "EARTHDATA_PASSWORD",
+        "kind": "credential",
+        "purpose": "The password half of that Earthdata login."
+      }
     ],
     "health": {
       "method": "http",

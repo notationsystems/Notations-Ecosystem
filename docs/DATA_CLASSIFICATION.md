@@ -38,6 +38,44 @@ The archive exists for the third row, and the third row is why `COR-007` — evi
 before interpretation — is an invariant rather than a preference. Disclosure decides who
 may read a thing; durability decides whether there is still a thing to read.
 
+## The third axis: what provisioning it would create
+
+The two axes above ask what a thing costs to disclose and what it costs to lose. A
+credential has a third property neither captures: **it does not exist until someone makes
+it**, and a manifest that names one is an instruction to make it.
+
+The catalog used to name ninety environment variables in one list called `secrets_env`.
+In it, side by side and indistinguishable: `ATLAS_PORT`, `AWS_REGION`, `STE_REPO` — a
+port, a region, a path — and `EMAIL_PASSWORD`, `CONTROL_PLANE_KEK`, `EARTHDATA_PASSWORD`.
+One of the nodes had written a note apologising that its entry "is a path, not a secret",
+which is a manifest arguing with its own schema. Two things follow from a list like that.
+An operator standing the estate up cannot tell which entries create a standing grant, so
+they create all of them. And the word *secret* stops carrying information, which is the
+condition under which people stop reading.
+
+`reference.environment` separates them, and the validator refuses the confusion:
+
+| Kind | Meaning | Rule |
+| --- | --- | --- |
+| `credential` | Reading it uses or creates a standing grant against something | Must say in a sentence what it authorises |
+| `configuration` | A path, port, URL, region, model name, timeout, feature list | May not be *named* like a credential — rename it or admit what it is |
+
+Two further facts are declared rather than discovered. A credential marked
+`client_exposed` reaches the browser by design — a map-tiles key, a Cesium ion token —
+and cannot be protected by secrecy, so its purpose must name what does protect it:
+referrer or origin restriction, scope, metering, a quota. And `unused` marks a credential
+**nothing consumes**.
+
+That last one is the reason for the whole change. Six of the estate's sixty-two
+credentials are named by a system that does not read them: four OSIRIS keys that survived
+a fork whose routes did not (`FIRMS_API_KEY`, `OPENSKY_CLIENT_ID`, `OPENSKY_CLIENT_SECRET`,
+`N2YO_API_KEY` on Payload Terminal), and two halves of an authentication scheme OpenSky
+retired (`OPENSKY_USERNAME`, `OPENSKY_PASSWORD` on God's Eye View). An operator following
+those manifests creates six live grants against four external accounts, and no failure
+will ever reveal them: nothing calls them, so nothing breaks when they expire, and nothing
+notices when they are used by someone else. `node ecosystem/validate.mjs` prints them by
+name on every run.
+
 ## What this repository holds
 
 | Data | Class | Where | Protection |

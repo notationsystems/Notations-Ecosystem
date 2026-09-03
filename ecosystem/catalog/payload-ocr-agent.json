@@ -461,8 +461,12 @@
         "auth": "API key via MISTRAL_API_KEY"
       }
     ],
-    "secrets_env": [
-      "MISTRAL_API_KEY"
+    "environment": [
+      {
+        "name": "MISTRAL_API_KEY",
+        "kind": "credential",
+        "purpose": "Mistral OCR access; the agent's whole function is that call."
+      }
     ],
     "health": {
       "method": "cli",

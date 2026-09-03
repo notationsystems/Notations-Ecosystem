@@ -264,7 +264,7 @@
         "auth": "unknown"
       }
     ],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "http",
       "endpoint": "/health"

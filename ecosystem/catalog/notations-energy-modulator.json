@@ -42,7 +42,7 @@
     "contracts": [],
     "resources": [],
     "external_services": [],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "manifest-only",
       "endpoint": null

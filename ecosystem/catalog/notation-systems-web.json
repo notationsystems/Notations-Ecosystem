@@ -141,8 +141,12 @@
         "auth": "Webflow Cloud deploy"
       }
     ],
-    "secrets_env": [
-      "WEBFLOW_API_TOKEN"
+    "environment": [
+      {
+        "name": "WEBFLOW_API_TOKEN",
+        "kind": "credential",
+        "purpose": "Site API token for the Webflow Data API; every read and publish of the public site goes through it."
+      }
     ],
     "health": {
       "method": "http",

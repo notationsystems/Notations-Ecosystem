@@ -488,21 +488,81 @@
         "auth": "OPENAI_API_KEY (server-side, metered)"
       }
     ],
-    "secrets_env": [
-      "GOOGLE_MAPS_API_KEY",
-      "CESIUM_ION_TOKEN",
-      "OPENAI_API_KEY",
-      "AISSTREAM_API_KEY",
-      "FIRMS_MAP_KEY",
-      "TOMTOM_API_KEY",
-      "OPENSKY_CLIENT_ID",
-      "OPENSKY_CLIENT_SECRET",
-      "OPENSKY_USERNAME",
-      "OPENSKY_PASSWORD",
-      "LL2_API_TOKEN",
-      "TFL_APP_KEY",
-      "GEV_RATELIMIT_GOOGLE_PER_MIN",
-      "GEV_RATELIMIT_OPENAI_PER_MIN"
+    "environment": [
+      {
+        "name": "GOOGLE_MAPS_API_KEY",
+        "kind": "credential",
+        "purpose": "Photorealistic 3D Tiles, Places and Geocoding. Reaches the browser by design, so it is constrained at Google rather than by secrecy: HTTP-referrer restriction to the deployed origin plus per-key metering.",
+        "client_exposed": true
+      },
+      {
+        "name": "CESIUM_ION_TOKEN",
+        "kind": "credential",
+        "purpose": "Cesium ion terrain and imagery. Also client-exposed, and constrained the same way: scoped to the assets the globe reads and to the deployed origin.",
+        "client_exposed": true
+      },
+      {
+        "name": "OPENAI_API_KEY",
+        "kind": "credential",
+        "purpose": "Server-side only, for the natural-language scene queries; rate-limited per minute by GEV_RATELIMIT_OPENAI_PER_MIN."
+      },
+      {
+        "name": "AISSTREAM_API_KEY",
+        "kind": "credential",
+        "purpose": "aisstream.io websocket key for the live vessel layer."
+      },
+      {
+        "name": "FIRMS_MAP_KEY",
+        "kind": "credential",
+        "purpose": "NASA FIRMS map key for the active-fire layer."
+      },
+      {
+        "name": "TOMTOM_API_KEY",
+        "kind": "credential",
+        "purpose": "TomTom traffic incidents; optional, and the layer is absent rather than stale without it."
+      },
+      {
+        "name": "OPENSKY_CLIENT_ID",
+        "kind": "credential",
+        "purpose": "OAuth2 client id for the OpenSky flight layer, which raises the anonymous rate limit rather than unlocking new data."
+      },
+      {
+        "name": "OPENSKY_CLIENT_SECRET",
+        "kind": "credential",
+        "purpose": "The secret half of that OAuth2 client."
+      },
+      {
+        "name": "OPENSKY_USERNAME",
+        "kind": "credential",
+        "purpose": "Residue of OpenSky's retired HTTP basic authentication.",
+        "unused": "OpenSky retired basic auth in favour of the OAuth2 client-credentials flow above; nothing in this system reads this variable, and provisioning it creates an account credential with no consumer."
+      },
+      {
+        "name": "OPENSKY_PASSWORD",
+        "kind": "credential",
+        "purpose": "The password half of that retired basic-auth login.",
+        "unused": "Same retired scheme as OPENSKY_USERNAME. A password named in a manifest is a password someone will eventually create."
+      },
+      {
+        "name": "LL2_API_TOKEN",
+        "kind": "credential",
+        "purpose": "Launch Library 2 token; optional, and raises the anonymous rate limit for the launch layer."
+      },
+      {
+        "name": "TFL_APP_KEY",
+        "kind": "credential",
+        "purpose": "Transport for London application key for the JamCams layer; optional."
+      },
+      {
+        "name": "GEV_RATELIMIT_GOOGLE_PER_MIN",
+        "kind": "configuration",
+        "purpose": "Per-minute cap the server applies to Google Map Tiles calls, so a metered key cannot be drained by one session."
+      },
+      {
+        "name": "GEV_RATELIMIT_OPENAI_PER_MIN",
+        "kind": "configuration",
+        "purpose": "The same cap for the scene-query model calls."
+      }
     ],
     "health": {
       "method": "manifest-only",

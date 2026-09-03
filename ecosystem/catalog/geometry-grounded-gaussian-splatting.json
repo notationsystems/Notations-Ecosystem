@@ -259,7 +259,7 @@
       }
     ],
     "external_services": [],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "cli",
       "endpoint": "python train.py --help"

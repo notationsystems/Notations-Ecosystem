@@ -19,6 +19,19 @@ const RESOURCE_CLASSES = new Set(['public', 'internal', 'sensitive']);
 const RESOURCE_DURABILITY = new Set(['reconstructable', 'refetchable_at_risk', 'unreconstructable']);
 /** Where a system sits against the collection policy (docs/COLLECTION_POLICY.md). */
 const PERSON_DATA = new Set(['refused', 'incidental', 'serves']);
+
+/**
+ * What an environment variable *is*. The catalog used to call all of them `secrets_env`,
+ * which put a TCP port, a filesystem path, an AWS region and a mailbox password in one
+ * list of ninety names. Two things followed. An operator reading it could not tell which
+ * entries create a standing grant, and the word "secret" stopped carrying information —
+ * `scientific-compute-layer` had already written a note apologising that `STE_REPO` "is
+ * a path, not a secret", which is a manifest arguing with its own schema.
+ */
+const ENV_KINDS = new Set(['credential', 'configuration']);
+/** A name that reads as a credential is treated as one; the kind may not be used to duck that. */
+const CREDENTIAL_SHAPED = /(^|_)(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|CREDENTIALS|PASSWD|APIKEY)$|PASSWORD|SECRET/;
+const ENV_FIELDS = new Set(['name', 'kind', 'purpose', 'client_exposed', 'unused']);
 const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
 
 /**
@@ -196,6 +209,59 @@ export function checkEntry(entry, file, known = new Set()) {
     }
   }
 
+  // Every environment variable a node names is a thing an operator will provision. The
+  // ones that create a standing grant are separated from the ones that set a path, and a
+  // credential nothing consumes must say so — because a manifest is an instruction, and
+  // an instruction to create a credential with no consumer is the worst kind of drift:
+  // it leaves a live grant behind that no failure will ever reveal.
+  const env = (entry.reference ?? {}).environment;
+  if (!Array.isArray(env)) {
+    errors.push('reference.environment must be an array — every node states which environment variables it reads, even if that is none');
+  } else {
+    const seen = new Set();
+    for (const item of env) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        errors.push('reference.environment: each entry is an object { name, kind, purpose }');
+        continue;
+      }
+      const name = item.name;
+      const where = `environment ${typeof name === 'string' ? name : '(unnamed)'}`;
+      for (const field of Object.keys(item)) {
+        // No entry may carry a value, an example or a default: this file is public, and
+        // the shape is the only thing standing between a name and a leak.
+        if (!ENV_FIELDS.has(field)) errors.push(`${where}: unknown field "${field}" — an environment entry names a variable, it never carries its value`);
+      }
+      if (typeof name !== 'string' || !/^[A-Z][A-Z0-9_]*$/.test(name)) {
+        errors.push(`${where}: name must be an upper-case environment variable name`);
+      } else if (seen.has(name)) {
+        errors.push(`${where}: named twice`);
+      } else {
+        seen.add(name);
+      }
+      if (!ENV_KINDS.has(item.kind)) {
+        errors.push(`${where}: kind "${item.kind}" is not one of ${[...ENV_KINDS].join(', ')}`);
+      } else if (item.kind === 'configuration' && typeof name === 'string' && CREDENTIAL_SHAPED.test(name)) {
+        errors.push(`${where}: a variable named like a credential is treated as one — call it a credential or rename it`);
+      }
+      if (typeof item.purpose !== 'string' || item.purpose.trim().length < 25) {
+        errors.push(`${where}: purpose must say in a sentence what the variable is for`);
+      }
+      if (item.client_exposed !== undefined) {
+        if (item.client_exposed !== true) errors.push(`${where}: client_exposed is present only when true`);
+        else if (item.kind !== 'credential') errors.push(`${where}: only a credential can be client-exposed`);
+        // A credential that ships to the browser cannot be protected by secrecy, so the
+        // purpose must name what does protect it. Otherwise "it is public anyway" becomes
+        // a reason not to think about it.
+        else if (!/referrer|origin|meter|scope|quota|restrict/i.test(item.purpose)) {
+          errors.push(`${where}: a client-exposed credential must say what constrains it — referrer or origin restriction, scope, metering or quota`);
+        }
+      }
+      if (item.unused !== undefined && (typeof item.unused !== 'string' || item.unused.trim().length < 40)) {
+        errors.push(`${where}: unused must say why the variable is still named and what reading it would cost`);
+      }
+    }
+  }
+
   // For the nodes that describe this repository, the reference block is checkable, so it
   // is checked. Contracts and entrypoints are source files and must resolve; resources
   // are not, because a journal, a key store and a credential registry are runtime state
@@ -245,6 +311,24 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   const caps = selected.reduce((n, { entry }) => n + (entry.capabilities?.length ?? 0), 0);
   const rels = selected.reduce((n, { entry }) => n + (entry.relations?.length ?? 0), 0);
+
+  // The credential surface, reported rather than buried: how many standing grants this
+  // estate asks an operator to create, and which of them nothing consumes. The second
+  // number is the one that matters — an unused credential is a live grant with no
+  // failure mode to reveal it, so it is named here every run until it is gone.
+  const env = selected.flatMap(({ file, entry }) =>
+    ((entry.reference ?? {}).environment ?? []).map((item) => ({ node: path.basename(file, '.json'), ...item })),
+  );
+  const credentials = env.filter((item) => item.kind === 'credential');
+  const unused = credentials.filter((item) => item.unused);
+  const exposed = credentials.filter((item) => item.client_exposed);
+  console.log(
+    `environment: ${env.length} variables, ${credentials.length} credentials` +
+      `${exposed.length ? `, ${exposed.length} client-exposed` : ''}` +
+      `${unused.length ? `, ${unused.length} named with no consumer` : ''}`,
+  );
+  for (const item of unused) console.log(`  unused credential  ${item.node}: ${item.name}`);
+
   console.log(`${selected.length} nodes, ${caps} capabilities, ${rels} relations; errors=${errorCount} warnings=${warningCount}`);
   process.exit(errorCount ? 1 : 0);
 }

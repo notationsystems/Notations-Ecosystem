@@ -177,3 +177,81 @@ test('the collection policy is the estate\'s, and every node states where it sit
   orphaned.metadata.person_data_exception = 'because';
   assert.ok(checkEntry(orphaned, file).errors.some((e) => /is set but person_data is not "serves"/.test(e)));
 });
+
+test('every environment variable says what it is, and a credential nothing reads is named', async () => {
+  const entries = await loadCatalog();
+  const env = entries.flatMap(({ entry }) => (entry.reference.environment ?? []).map((item) => ({ node: entry.nodeId, ...item })));
+
+  // Required on every node, empty or not: "this system reads no environment" is an
+  // answer, and it is a different answer from nobody having looked.
+  for (const { entry } of entries) assert.ok(Array.isArray(entry.reference.environment), `${entry.nodeId}: no environment block`);
+  assert.equal(env.length, 90);
+
+  const credentials = env.filter((item) => item.kind === 'credential');
+  assert.equal(credentials.length, 62);
+  assert.equal(env.filter((item) => item.kind === 'configuration').length, 28);
+
+  // The whole point of the split: a port, a path and a region are no longer secrets, and
+  // a mailbox password is no longer filed beside them.
+  const config = env.filter((item) => item.kind === 'configuration').map((item) => item.name);
+  for (const name of ['ATLAS_PORT', 'AWS_REGION', 'STE_REPO', 'VISIBLE_GPU_NUM']) assert.ok(config.includes(name), `${name} is not a credential`);
+  assert.ok(credentials.some((item) => item.name === 'EMAIL_PASSWORD'));
+
+  // Six credentials the estate asks an operator to create that nothing in the estate
+  // reads. They are the reason the field exists; when they are gone this number is 0 and
+  // the assertion below is the thing that has to be changed deliberately.
+  const unused = credentials.filter((item) => item.unused).map((item) => `${item.node}:${item.name}`).sort();
+  assert.deepEqual(unused, [
+    'gods-eye-view:OPENSKY_PASSWORD',
+    'gods-eye-view:OPENSKY_USERNAME',
+    'payload-terminal:FIRMS_API_KEY',
+    'payload-terminal:N2YO_API_KEY',
+    'payload-terminal:OPENSKY_CLIENT_ID',
+    'payload-terminal:OPENSKY_CLIENT_SECRET',
+  ]);
+
+  // A client-exposed credential cannot be protected by secrecy, so it has to be
+  // protected by something the purpose names.
+  const exposed = credentials.filter((item) => item.client_exposed);
+  assert.equal(exposed.length, 2);
+  for (const item of exposed) assert.match(item.purpose, /referrer|origin|meter|scope|quota|restrict/i);
+
+  // And no entry anywhere carries a value. This file is public.
+  for (const item of env) {
+    assert.deepEqual(Object.keys(item).filter((k) => !['node', 'name', 'kind', 'purpose', 'client_exposed', 'unused'].includes(k)), []);
+  }
+});
+
+test('the validator refuses a manifest that hides what a variable is', async () => {
+  const entries = await loadCatalog();
+  const [{ entry, file }] = entries.filter((e) => e.entry.nodeId === 'payload-terminal');
+
+  const missing = structuredClone(entry);
+  delete missing.reference.environment;
+  assert.ok(checkEntry(missing, file).errors.some((e) => /reference\.environment must be an array/.test(e)));
+
+  // The one that matters: calling a key "configuration" to escape the credential rules.
+  const disguised = structuredClone(entry);
+  disguised.reference.environment.push({ name: 'STRIPE_SECRET_KEY', kind: 'configuration', purpose: 'Just some configuration for the billing integration.' });
+  assert.ok(checkEntry(disguised, file).errors.some((e) => /named like a credential is treated as one/.test(e)));
+
+  const valued = structuredClone(entry);
+  valued.reference.environment.push({ name: 'DEMO_TOKEN', kind: 'credential', purpose: 'A demonstration bearer used by nothing at all.', example: 'sk-live-abc' });
+  assert.ok(checkEntry(valued, file).errors.some((e) => /it never carries its value/.test(e)));
+
+  const mute = structuredClone(entry);
+  mute.reference.environment.push({ name: 'DEMO_TOKEN', kind: 'credential', purpose: 'a token' });
+  assert.ok(checkEntry(mute, file).errors.some((e) => /purpose must say in a sentence/.test(e)));
+
+  const unconstrained = structuredClone(entry);
+  unconstrained.reference.environment.push({ name: 'MAP_TILES_KEY', kind: 'credential', client_exposed: true, purpose: 'Basemap tiles for the terminal map, shipped to the browser.' });
+  assert.ok(checkEntry(unconstrained, file).errors.some((e) => /must say what constrains it/.test(e)));
+
+  const twice = structuredClone(entry);
+  twice.reference.environment.push({ name: 'EIA_API_KEY', kind: 'credential', purpose: 'The same variable declared a second time, by accident.' });
+  assert.ok(checkEntry(twice, file).errors.some((e) => /named twice/.test(e)));
+
+  const shrug = structuredClone(entry);
+  shrug.reference.environment.push({ name: 'LEGACY_TOKEN', kind: 'credential', purpose: 'Something the fork left behind and nobody has removed.', unused: 'residue' });
+  assert.ok(checkEntry(shrug, file).errors.some((e) => /unused must say why/.test(e)));
+});

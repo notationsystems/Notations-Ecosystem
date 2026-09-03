@@ -559,18 +559,62 @@
         "auth": "bearer, basic or api_key"
       }
     ],
-    "secrets_env": [
-      "ANTHROPIC_API_KEY",
-      "OPENAI_API_KEY",
-      "CARGOFY_MCP_TOKEN",
-      "TMS_API_TOKEN",
-      "TMS_API_KEY",
-      "RATES_API_KEY",
-      "EMAIL_PASSWORD",
-      "WEBHOOK_SECRET",
-      "ATLAS_CONFIG",
-      "ATLAS_DB_PATH",
-      "ATLAS_PORT"
+    "environment": [
+      {
+        "name": "ANTHROPIC_API_KEY",
+        "kind": "credential",
+        "purpose": "Claude access for the http.chat tool loop and the AI extraction path of file import."
+      },
+      {
+        "name": "OPENAI_API_KEY",
+        "kind": "credential",
+        "purpose": "The alternate provider for the same chat and extraction paths; one of the two is required for http.chat."
+      },
+      {
+        "name": "CARGOFY_MCP_TOKEN",
+        "kind": "credential",
+        "purpose": "Bearer for the upstream Cargofy connector that http.connectors.sync pulls shipments and tracking events from."
+      },
+      {
+        "name": "TMS_API_TOKEN",
+        "kind": "credential",
+        "purpose": "Bearer for a customer's transport-management system, read by the generic TMS connector."
+      },
+      {
+        "name": "TMS_API_KEY",
+        "kind": "credential",
+        "purpose": "The header-key form of the same TMS connector credential, for systems that key rather than bear."
+      },
+      {
+        "name": "RATES_API_KEY",
+        "kind": "credential",
+        "purpose": "Access to the freight rate provider behind mcp.get_rate_history."
+      },
+      {
+        "name": "EMAIL_PASSWORD",
+        "kind": "credential",
+        "purpose": "Mailbox password for the email connector that files documents against shipments."
+      },
+      {
+        "name": "WEBHOOK_SECRET",
+        "kind": "credential",
+        "purpose": "Shared secret signing the outbound webhook.events deliveries so a receiver can tell them from a forgery."
+      },
+      {
+        "name": "ATLAS_CONFIG",
+        "kind": "configuration",
+        "purpose": "Path to the atlas config file that names which data models, connectors and modules are enabled."
+      },
+      {
+        "name": "ATLAS_DB_PATH",
+        "kind": "configuration",
+        "purpose": "Path to the SQLite database; the operational index lives here unless PostgreSQL is configured instead."
+      },
+      {
+        "name": "ATLAS_PORT",
+        "kind": "configuration",
+        "purpose": "TCP port for the HTTP/SSE transport and REST API. Not a secret; a port number."
+      }
     ],
     "health": {
       "method": "http",

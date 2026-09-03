@@ -260,9 +260,17 @@
       }
     ],
     "external_services": [],
-    "secrets_env": [
-      "NOTATIONS_CONTROL_PLANE_TOKEN",
-      "CONTROL_PLANE_KEK"
+    "environment": [
+      {
+        "name": "NOTATIONS_CONTROL_PLANE_TOKEN",
+        "kind": "credential",
+        "purpose": "The operator bearer the seed tool and the dock present; the plane stores only its SHA-256 digest."
+      },
+      {
+        "name": "CONTROL_PLANE_KEK",
+        "kind": "credential",
+        "purpose": "The key-encryption key the journal signing key is envelope-encrypted under. Never written by this repository and never returned in a response."
+      }
     ],
     "health": {
       "method": "http",

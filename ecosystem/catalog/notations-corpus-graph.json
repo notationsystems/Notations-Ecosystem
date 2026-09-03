@@ -365,7 +365,7 @@
       }
     ],
     "external_services": [],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "cli",
       "endpoint": "ncg formats"

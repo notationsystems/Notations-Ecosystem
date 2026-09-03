@@ -247,9 +247,17 @@
         "auth": "none (public URL)"
       }
     ],
-    "secrets_env": [
-      "HF_TOKEN",
-      "VISIBLE_GPU_NUM"
+    "environment": [
+      {
+        "name": "HF_TOKEN",
+        "kind": "credential",
+        "purpose": "Hugging Face token for the gated FLUX.1 and Wan2.1 weights the three-stage pipeline downloads."
+      },
+      {
+        "name": "VISIBLE_GPU_NUM",
+        "kind": "configuration",
+        "purpose": "How many GPUs the pipeline may use. A capacity setting, not a credential."
+      }
     ],
     "health": {
       "method": "cli",

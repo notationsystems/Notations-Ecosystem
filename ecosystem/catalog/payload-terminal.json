@@ -941,19 +941,71 @@
         "auth": "GITHUB_WEBHOOK_SECRET"
       }
     ],
-    "secrets_env": [
-      "PAYLOAD_OPERATIONS_TOKEN",
-      "PAYLOAD_CARRIER_DISPATCH_TOKEN",
-      "PAYLOAD_CARRIER_WEBHOOK_SECRET",
-      "FMCSA_WEB_KEY",
-      "EIA_API_KEY",
-      "SDK_INGEST_KEY",
-      "GITHUB_WEBHOOK_SECRET",
-      "AIS_API_KEY",
-      "FIRMS_API_KEY",
-      "OPENSKY_CLIENT_ID",
-      "OPENSKY_CLIENT_SECRET",
-      "N2YO_API_KEY"
+    "environment": [
+      {
+        "name": "PAYLOAD_OPERATIONS_TOKEN",
+        "kind": "credential",
+        "purpose": "The bearer every freight operations, communications, control-tower and sources route requires; unset makes them all refuse with 503 rather than open."
+      },
+      {
+        "name": "PAYLOAD_CARRIER_DISPATCH_TOKEN",
+        "kind": "credential",
+        "purpose": "Bearer presented to the configured outbound carrier adapter when a tender is delivered."
+      },
+      {
+        "name": "PAYLOAD_CARRIER_WEBHOOK_SECRET",
+        "kind": "credential",
+        "purpose": "HMAC secret verifying inbound carrier acknowledgements and tracking events."
+      },
+      {
+        "name": "FMCSA_WEB_KEY",
+        "kind": "credential",
+        "purpose": "FMCSA QCMobile access for carrier identity, authority and out-of-service evidence."
+      },
+      {
+        "name": "EIA_API_KEY",
+        "kind": "credential",
+        "purpose": "EIA Open Data access for the weekly U.S. retail diesel benchmark."
+      },
+      {
+        "name": "SDK_INGEST_KEY",
+        "kind": "credential",
+        "purpose": "The shared secret the Polybolos SDK ingest endpoint accepts, inherited from the same upstream as osiris-dashboard."
+      },
+      {
+        "name": "GITHUB_WEBHOOK_SECRET",
+        "kind": "credential",
+        "purpose": "HMAC secret verifying inbound GitHub webhook deliveries before the relay forwards them."
+      },
+      {
+        "name": "AIS_API_KEY",
+        "kind": "credential",
+        "purpose": "aisstream.io key for the AIS vessels in feeds.maritime."
+      },
+      {
+        "name": "FIRMS_API_KEY",
+        "kind": "credential",
+        "purpose": "Residue of the OSIRIS fire layer.",
+        "unused": "This terminal kept maritime, environment, infrastructure, market and signal feeds and dropped the fire layer when it forked; no route reads this key, and an operator following this manifest would create a NASA FIRMS credential nothing calls."
+      },
+      {
+        "name": "OPENSKY_CLIENT_ID",
+        "kind": "credential",
+        "purpose": "Residue of the OSIRIS flight layer.",
+        "unused": "The fork carries no flight-tracking capability. The variable survived the fork, the routes did not."
+      },
+      {
+        "name": "OPENSKY_CLIENT_SECRET",
+        "kind": "credential",
+        "purpose": "The secret half of that unused OAuth2 client.",
+        "unused": "Same as OPENSKY_CLIENT_ID: no consumer in this system."
+      },
+      {
+        "name": "N2YO_API_KEY",
+        "kind": "credential",
+        "purpose": "Residue of the OSIRIS satellite layer.",
+        "unused": "The fork carries no satellite-pass capability; nothing reads this key."
+      }
     ],
     "health": {
       "method": "http",
@@ -965,8 +1017,8 @@
       "External exposure is decided as internal, stdio-only MCP; no public URL, auth mechanism or hosting target exists yet. Who stands the instance up, and on which host?",
       "The data-archive is replicated (GitHub to GitHub via Information-Systems-Archive) but not backed up off-provider; the restore drill onto a clean machine is an operator step not yet done.",
       "The DOCKER.md still carries upstream (simplifaisoul/osiris) image names, SCANNER_URL/SCANNER_KEY and RECON text that the README says are gone; which document is authoritative for self-hosting?",
-      "/api/entity/expand still forwards type=person to the intel layer, which resolves natural persons via Wikidata and returns RIPE abuse-contact addresses as person nodes; is that consistent with the collection policy?",
-      "The Polybolos SDK ingest/stream store is in-memory per process and the ingest key is a single shared secret; is this surface meant to stay, or is it upstream residue?",
+      "/api/entity/expand still forwards type=person to the intel layer, which resolves natural persons via Wikidata and returns RIPE abuse-contact addresses as person nodes. Answered by docs/COLLECTION_POLICY.md: it is not consistent, it is recorded as osiris-intel's COR-010 failure and as this node's routed-around CI gate, and the remaining question is who removes the forward.",
+      "The Polybolos SDK ingest/stream store is in-memory per process and SDK_INGEST_KEY is a single shared secret with no per-caller identity; is this surface meant to stay, or is it upstream residue like the four unused OSIRIS credentials this node's environment block now names?",
       "Freight operating policy (30/120 min, 24 h) is fixed in code pending a per-customer configuration ledger."
     ],
     "corpus": {

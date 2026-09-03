@@ -227,7 +227,7 @@
         "auth": "none"
       }
     ],
-    "secrets_env": [],
+    "environment": [],
     "health": {
       "method": "cli",
       "endpoint": "node sea-dog-terminal/verify.mjs"

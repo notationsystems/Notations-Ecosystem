@@ -379,11 +379,27 @@
         "auth": "none for public repos"
       }
     ],
-    "secrets_env": [
-      "LICHTFELD_MCP_ENDPOINT",
-      "LICHTFELD_MCP_START_TIMEOUT_S",
-      "LICHTFELD_MCP_BRIDGE_LOG",
-      "LICHTFELD_MCP_BRIDGE_LOCK"
+    "environment": [
+      {
+        "name": "LICHTFELD_MCP_ENDPOINT",
+        "kind": "configuration",
+        "purpose": "URL of the MCP bridge the studio is driven through; overrides the default loopback endpoint."
+      },
+      {
+        "name": "LICHTFELD_MCP_START_TIMEOUT_S",
+        "kind": "configuration",
+        "purpose": "How long the bridge waits for the studio process to come up before reporting it did not start."
+      },
+      {
+        "name": "LICHTFELD_MCP_BRIDGE_LOG",
+        "kind": "configuration",
+        "purpose": "Path the bridge writes its own log to."
+      },
+      {
+        "name": "LICHTFELD_MCP_BRIDGE_LOCK",
+        "kind": "configuration",
+        "purpose": "Lock-file path that keeps two bridges from driving one studio process."
+      }
     ],
     "health": {
       "method": "http",

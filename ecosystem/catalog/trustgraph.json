@@ -665,14 +665,42 @@
         "auth": "in-cluster"
       }
     ],
-    "secrets_env": [
-      "AUTH_ISSUER",
-      "AUTH_RESOURCE_URL",
-      "ANTHROPIC_API_KEY",
-      "OPENAI_API_KEY",
-      "COHERE_API_KEY",
-      "GOOGLE_API_KEY",
-      "MISTRAL_API_KEY"
+    "environment": [
+      {
+        "name": "AUTH_ISSUER",
+        "kind": "configuration",
+        "purpose": "OIDC issuer URL the MCP gateway validates bearer tokens against."
+      },
+      {
+        "name": "AUTH_RESOURCE_URL",
+        "kind": "configuration",
+        "purpose": "The resource identifier those tokens must be audienced to."
+      },
+      {
+        "name": "ANTHROPIC_API_KEY",
+        "kind": "credential",
+        "purpose": "Claude access for the extraction flows, when Claude is the configured provider."
+      },
+      {
+        "name": "OPENAI_API_KEY",
+        "kind": "credential",
+        "purpose": "The same, for OpenAI models and the OpenAI embedding path."
+      },
+      {
+        "name": "COHERE_API_KEY",
+        "kind": "credential",
+        "purpose": "The same, for Cohere; also the embedding path where Cohere embeddings are selected."
+      },
+      {
+        "name": "GOOGLE_API_KEY",
+        "kind": "credential",
+        "purpose": "The same, for Google's models."
+      },
+      {
+        "name": "MISTRAL_API_KEY",
+        "kind": "credential",
+        "purpose": "The same, for Mistral, including its OCR endpoint in the document-ingest flow."
+      }
     ],
     "health": {
       "method": "http",
