@@ -1,5 +1,6 @@
 import type { Snapshot, SnapshotNode } from '../model/types';
-import { KIND_LABEL, RELATION_LABEL } from '../model/types';
+import { KIND_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL } from '../model/types';
+import { githubRepoUrl } from '../model/links';
 
 export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
   snapshot: Snapshot;
@@ -64,9 +65,44 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
         ))}
       </>}
 
+      {node.security && (
+        <>
+          <h3 style={{ marginTop: 14 }}>Security posture · {node.security.signals.length} signals</h3>
+          <div className="sub" style={{ marginTop: -4, marginBottom: 6 }}>
+            {node.security.method.replace(/_/g, ' ')} · {new Date(node.security.attestedAt).toLocaleString()} · by {node.security.attestedBy}
+          </div>
+          {node.security.signals.map((signal) => {
+            const counts = (['critical', 'high', 'medium', 'low'] as const).filter((severity) => (signal.findings?.[severity] ?? 0) > 0);
+            return (
+              <div className="cap" key={signal.dimension}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6 }}>
+                  <span className="label">{POSTURE_DIMENSION_LABEL[signal.dimension] ?? signal.dimension}</span>
+                  <span className="badge" style={{ color: POSTURE_STATE_COLOR[signal.state], borderColor: POSTURE_STATE_COLOR[signal.state] }}>{signal.state}</span>
+                </div>
+                {signal.summary && <div className="desc">{signal.summary}</div>}
+                <div className="desc" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {signal.coverage !== undefined && <span>coverage {Math.round(signal.coverage * 100)}%</span>}
+                  {counts.map((severity) => <span key={severity} className={`sec-count ${severity}`}>{signal.findings?.[severity]} {severity}</span>)}
+                  {signal.evidenceRef && <span className="mono" title="An opaque reference. The dock never dereferences it.">{signal.evidenceRef.slice(0, 24)}…</span>}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
       <h3 style={{ marginTop: 14 }}>Metadata</h3>
       <div className="kv">
-        {Object.entries(md).map(([k, v]) => <><span key={`${k}-k`}>{k}</span><b key={`${k}-v`}>{k === 'repo' ? <a href={`https://github.com/${String(v)}`} target="_blank" rel="noreferrer">{String(v)}</a> : String(v)}</b></>)}
+        {Object.entries(md).map(([k, v]) => (
+          <>
+            <span key={`${k}-k`}>{k}</span>
+            <b key={`${k}-v`}>
+              {k === 'repo' && githubRepoUrl(v)
+                ? <a href={githubRepoUrl(v)!} target="_blank" rel="noreferrer">{String(v)}</a>
+                : String(v)}
+            </b>
+          </>
+        ))}
       </div>
     </aside>
   );

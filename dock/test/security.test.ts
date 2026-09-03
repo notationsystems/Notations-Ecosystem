@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { checkBaseUrl, ControlPlaneClient, loadConnection, saveConnection } from '../src/api/controlPlane';
+import { githubRepoUrl } from '../src/model/links';
 
 describe('the dock will not hand its credential to an arbitrary origin', () => {
   it('accepts same-origin paths and loopback, refuses anything else', () => {
@@ -39,5 +40,27 @@ describe('the credential never reaches browser storage', () => {
     expect(loadConnection().token).toBe('ncp.k-secret.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
     saveConnection({ baseUrl: '/cp', token: '', actorId: 'operator:dock' });
     expect(loadConnection().token).toBe('');
+  });
+});
+
+describe('untrusted metadata never becomes a link destination', () => {
+  it('links only an exact owner/repo', () => {
+    expect(githubRepoUrl('notationsystems/Payload-Terminal-V0')).toBe('https://github.com/notationsystems/Payload-Terminal-V0');
+    for (const hostile of [
+      '../../evil.example',
+      'notationsystems/../../evil',
+      '//evil.example',
+      'https://evil.example',
+      'javascript:alert(1)',
+      'owner/repo?x=1',
+      'owner/repo#frag',
+      'owner/repo/extra',
+      'owner repo',
+      '',
+      null,
+      undefined,
+    ]) {
+      expect(githubRepoUrl(hostile), String(hostile)).toBeNull();
+    }
   });
 });
