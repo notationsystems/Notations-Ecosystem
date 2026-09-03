@@ -50,3 +50,16 @@ The visual dock reads:
 The complete contract is [openapi/control-plane.openapi.yaml](openapi/control-plane.openapi.yaml).
 Render an approved coordination request as *approved, not dispatched*; it
 would be unsafe to imply that a provider action has already happened.
+
+## Payload: the first detailed twin
+
+`GET /v1/profiles/payload-terminal` returns a versioned profile for Payload
+Terminal: its corpus, spatial world model, MCP surface, operating surface, and
+provenance-safe external information libraries. The response also gives the
+dock's core/evidence layers and detail panels.
+
+`POST /v1/profiles/payload-terminal/apply` materializes that profile as one
+append-only event. The request has the small `ProfileApplication` envelope in
+the OpenAPI contract; use the snapshot's `revision` as `expectedRevision`.
+This is how the dock stays realistic: it displays declared Payload surfaces and
+actual future health observations, rather than hand-authored visual fiction.

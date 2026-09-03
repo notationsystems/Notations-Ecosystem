@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { ControlPlane } from '../src/control-plane.js';
 import { ControlPlaneError } from '../src/errors.js';
+import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 
 const NOW = '2026-09-02T00:00:00.000Z';
 
@@ -78,6 +79,27 @@ test('rejects credential-shaped metadata and stale writers', async () => {
       error => error instanceof ControlPlaneError && error.code === 'REVISION_CONFLICT',
     );
     assert.ok(first.snapshot.revision);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('applies the detailed Payload profile as one atomic ecosystem twin', async () => {
+  const { directory, plane } = await fixture();
+  try {
+    const profile = payloadTerminalProfile();
+    const applied = await plane.applyProfile({ requestId: 'bootstrap-payload', actorId: 'operator:local', submittedAt: NOW, expectedRevision: null }, profile);
+    assert.equal(applied.event.kind, 'profile_applied');
+    assert.equal(applied.snapshot.nodes.length, profile.nodes.length);
+    assert.equal(applied.snapshot.relations.length, profile.relations.length);
+    assert.equal(applied.snapshot.nodes.find(entry => entry.nodeId === 'payload-corpus').metadata.authority, 'canonical');
+
+    const execution = await submit(plane, { requestId: 'compile-payload-read-model', actorId: 'reasoner:one', submittedAt: NOW, action: 'request_capability', coordinationId: 'coord-payload-compile', requesterNodeId: 'payload-mcp', targetNodeId: 'payload-corpus', capabilityId: 'read-model.compile', requestedMode: 'execute', purpose: 'Prepare a policy-filtered query projection for an operator-approved corpus update.' });
+    assert.equal(execution.snapshot.coordination[0].status, 'approval_required');
+    assert.equal(execution.snapshot.coordination[0].dispatch, 'not_dispatched');
+
+    const repeated = await plane.applyProfile({ requestId: 'bootstrap-payload', actorId: 'operator:local', submittedAt: NOW, expectedRevision: null }, profile);
+    assert.equal(repeated.outcome, 'duplicate');
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

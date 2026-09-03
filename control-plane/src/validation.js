@@ -161,3 +161,15 @@ export function parseCommand(input) {
       throw invalid(`command.action ${action} is not supported.`);
   }
 }
+
+/** The small, shared envelope used to apply a versioned built-in ecosystem profile. */
+export function parseProfileApplication(input) {
+  const parsed = exactKeys(input, 'profile application', ['requestId', 'actorId', 'submittedAt', 'expectedRevision']);
+  return {
+    requestId: identifier(parsed.requestId, 'requestId'),
+    actorId: identifier(parsed.actorId, 'actorId'),
+    submittedAt: instant(parsed.submittedAt, 'submittedAt'),
+    expectedRevision: nullableRevision(parsed.expectedRevision),
+    raw: parsed,
+  };
+}

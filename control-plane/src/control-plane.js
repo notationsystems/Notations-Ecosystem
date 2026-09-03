@@ -1,6 +1,6 @@
 import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
-import { parseCommand } from './validation.js';
+import { parseCommand, parseProfileApplication } from './validation.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
 
@@ -41,6 +41,10 @@ function derive(records) {
         }
         break;
       }
+      case 'profile_applied':
+        for (const node of event.nodes) nodes.set(node.nodeId, node);
+        for (const relation of event.relations) relations.set(relation.relationId, relation);
+        break;
       default:
         throw new ControlPlaneError(503, 'JOURNAL_CORRUPT', `Journal contains unsupported event kind ${event.kind}.`, 'Restore a journal produced by a compatible control-plane release.');
     }
@@ -81,6 +85,14 @@ function newEventId(command) {
 function eventBase(command, recordedAt) {
   return {
     eventId: newEventId(command),
+    recordedAt,
+    commandHash: digest(command.raw),
+  };
+}
+
+function profileEventBase(command, profile, recordedAt) {
+  return {
+    eventId: `control-plane-profile:${digest({ actorId: command.actorId, requestId: command.requestId, profileId: profile.profileId, version: profile.version })}`,
     recordedAt,
     commandHash: digest(command.raw),
   };
@@ -212,6 +224,40 @@ export class ControlPlane {
     if (Date.parse(command.submittedAt) > Date.parse(recordedAt) + 60_000) throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the caller clock and submit the same command again.');
     const records = await this.journal.read();
     const event = actionEvent(command, derive(records), recordedAt);
+    const append = await this.journal.append(event, command.expectedRevision);
+    const current = await this.journal.read();
+    return frozen({
+      schema: 'notations.control-plane.command-result.v1',
+      outcome: append.outcome,
+      event: { eventId: append.record.event.eventId, kind: append.record.event.kind, recordHash: append.record.recordHash },
+      snapshot: makeSnapshot(current, 'local_jsonl_single_writer', this.clock()),
+    });
+  }
+
+  /**
+   * Atomically materialize a versioned, built-in ecosystem profile. This is
+   * the bridge between a detailed real-world ecosystem and a generic graph;
+   * the visual dock reads the same profile for its layers and labels.
+   */
+  async applyProfile(input, profile) {
+    const command = parseProfileApplication(input);
+    const recordedAt = this.clock();
+    if (Date.parse(command.submittedAt) > Date.parse(recordedAt) + 60_000) throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the caller clock and submit the same profile application again.');
+    const records = await this.journal.read();
+    const state = derive(records);
+    const nodes = profile.nodes.map(node => frozen({
+      ...node,
+      registeredAt: state.nodes.get(node.nodeId)?.registeredAt ?? recordedAt,
+      updatedAt: recordedAt,
+    }));
+    const relations = profile.relations.map(relation => frozen({ ...relation, declaredAt: recordedAt }));
+    const event = frozen({
+      ...profileEventBase(command, profile, recordedAt),
+      kind: 'profile_applied',
+      profile: { profileId: profile.profileId, version: profile.version },
+      nodes,
+      relations,
+    });
     const append = await this.journal.append(event, command.expectedRevision);
     const current = await this.journal.read();
     return frozen({

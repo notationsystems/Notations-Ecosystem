@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { ControlPlane } from './control-plane.js';
 import { ControlPlaneError } from './errors.js';
+import { payloadTerminalProfile } from './profiles/payload-terminal.js';
 
 const host = process.env.CONTROL_PLANE_HOST || '127.0.0.1';
 const port = Number.parseInt(process.env.CONTROL_PLANE_PORT || '8787', 10);
@@ -63,7 +64,7 @@ export function createControlPlaneServer() {
       }
 
       const headers = originHeaders(request);
-      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands')) {
+      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands' || url.pathname === '/v1/profiles/payload-terminal' || url.pathname === '/v1/profiles/payload-terminal/apply')) {
         response.writeHead(204, headers);
         return response.end();
       }
@@ -71,7 +72,15 @@ export function createControlPlaneServer() {
 
       if (request.method === 'GET' && url.pathname === '/v1/snapshot') return json(response, 200, await controlPlane.snapshot(), { ...headers, 'cache-control': 'private, no-store' });
       if (request.method === 'GET' && url.pathname === '/v1/events') return json(response, 200, await controlPlane.events(url.searchParams.get('after') || undefined), { ...headers, 'cache-control': 'private, no-store' });
-      if (request.method === 'POST' && url.pathname === '/v1/commands') return json(response, 201, await controlPlane.command(await readJSON(request)), { ...headers, 'cache-control': 'private, no-store' });
+      if (request.method === 'POST' && url.pathname === '/v1/commands') {
+        const result = await controlPlane.command(await readJSON(request));
+        return json(response, result.outcome === 'appended' ? 201 : 200, result, { ...headers, 'cache-control': 'private, no-store' });
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/profiles/payload-terminal') return json(response, 200, payloadTerminalProfile(), { ...headers, 'cache-control': 'private, no-store' });
+      if (request.method === 'POST' && url.pathname === '/v1/profiles/payload-terminal/apply') {
+        const result = await controlPlane.applyProfile(await readJSON(request), payloadTerminalProfile());
+        return json(response, result.outcome === 'appended' ? 201 : 200, result, { ...headers, 'cache-control': 'private, no-store' });
+      }
       return json(response, 404, { error: 'ROUTE_NOT_FOUND', detail: 'This route is not part of the control-plane API.' }, headers);
     } catch (error) {
       if (error instanceof ControlPlaneError) return json(response, error.status, error.toJSON());

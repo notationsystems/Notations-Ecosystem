@@ -63,6 +63,26 @@ paths:
           description: Revision, event-id, or coordination conflict.
         '422':
           description: Command violates the capability or safety contract.
+  /v1/profiles/payload-terminal:
+    get:
+      summary: Preview the versioned Payload Terminal ecosystem profile
+      responses:
+        '200':
+          description: A dock-ready Payload topology, its declared capabilities, and display layers.
+  /v1/profiles/payload-terminal/apply:
+    post:
+      summary: Atomically apply the versioned Payload Terminal profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileApplication'
+      responses:
+        '201':
+          description: The Payload nodes and relations were appended as one profile event.
+        '409':
+          description: The dock is stale or this profile request was already used differently.
 components:
   securitySchemes:
     bearerAuth:
@@ -177,3 +197,12 @@ components:
         nodes: { type: array }
         relations: { type: array }
         coordination: { type: array }
+    ProfileApplication:
+      type: object
+      required: [requestId, actorId, submittedAt, expectedRevision]
+      properties:
+        requestId: { type: string }
+        actorId: { type: string }
+        submittedAt: { type: string, format: date-time }
+        expectedRevision:
+          oneOf: [{ type: string, pattern: '^[a-f0-9]{64}$' }, { type: 'null' }]
