@@ -33,6 +33,7 @@ test('the probe holds its origin to the adapter\'s rules: HTTPS outside loopback
   assert.equal(configuredBase('http://127.0.0.1:3000/'), 'http://127.0.0.1:3000');
   assert.equal(configuredBase('https://payload.example'), 'https://payload.example');
   assert.throws(() => configuredBase('http://payload.example'), /HTTPS outside loopback/);
+  // secret-scan:allow a deliberately fake credential in a URL the probe must refuse
   assert.throws(() => configuredBase('https://user:secret@payload.example'), /bare origin/);
   assert.throws(() => configuredBase('https://payload.example/?probe=1'), /bare origin/);
   assert.throws(() => configuredBase('not a url'), /absolute URL/);
