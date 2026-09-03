@@ -13,7 +13,8 @@
       "surface": "python",
       "method": "import",
       "path": "core.canonical.state.CanonicalState",
-      "evidence": "core/canonical/state.py"
+      "evidence": "core/canonical/state.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "canonical.version.contract",
@@ -24,7 +25,8 @@
       "surface": "python",
       "method": "import",
       "path": "core.canonical.version",
-      "evidence": "core/canonical/version.py"
+      "evidence": "core/canonical/version.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "canonical.delta.diff",
@@ -35,7 +37,8 @@
       "surface": "python",
       "method": "call",
       "path": "core.canonical.delta.diff",
-      "evidence": "core/canonical/delta.py"
+      "evidence": "core/canonical/delta.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "canonical.validate_candidate",
@@ -46,7 +49,8 @@
       "surface": "python",
       "method": "call",
       "path": "core.canonical.validation.validate_candidate",
-      "evidence": "core/canonical/validation.py"
+      "evidence": "core/canonical/validation.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "canonical.projection.project_state",
@@ -57,7 +61,8 @@
       "surface": "python",
       "method": "call",
       "path": "core.projection.project.project_state",
-      "evidence": "core/projection/project.py"
+      "evidence": "core/projection/project.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "morpho.compile",
@@ -68,7 +73,8 @@
       "surface": "python",
       "method": "call",
       "path": "morpho.compiler.compile_morpho",
-      "evidence": "morpho/compiler.py; morpho/ir.py"
+      "evidence": "morpho/compiler.py; morpho/ir.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "morpho.hdl.parse",
@@ -79,7 +85,8 @@
       "surface": "python",
       "method": "call",
       "path": "morpho.parser",
-      "evidence": "morpho/parser.py; morpho/lexer.py; morpho/identity.py"
+      "evidence": "morpho/parser.py; morpho/lexer.py; morpho/identity.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "backend.threejs.compile",
@@ -90,7 +97,8 @@
       "surface": "python",
       "method": "call",
       "path": "backends.threejs.compiler.compile_threejs",
-      "evidence": "backends/threejs/compiler.py"
+      "evidence": "backends/threejs/compiler.py",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "backend.diagram.compile_svg",
@@ -101,7 +109,8 @@
       "surface": "python",
       "method": "call",
       "path": "backends.diagram.compiler.compile_svg",
-      "evidence": "backends/diagram/compiler.py"
+      "evidence": "backends/diagram/compiler.py",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "backend.graph.analyze",
@@ -112,7 +121,8 @@
       "surface": "python",
       "method": "call",
       "path": "backends.graph.analysis.analyze",
-      "evidence": "backends/graph/analysis.py"
+      "evidence": "backends/graph/analysis.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "backend.interface.simulation_neural",
@@ -123,7 +133,8 @@
       "surface": "python",
       "method": "import",
       "path": "backends.simulation.interface; backends.neural.interface",
-      "evidence": "backends/simulation/interface.py; backends/neural/interface.py"
+      "evidence": "backends/simulation/interface.py; backends/neural/interface.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "runtime.feedback_loop.submit",
@@ -134,7 +145,8 @@
       "surface": "python",
       "method": "call",
       "path": "runtime.feedback_loop",
-      "evidence": "runtime/feedback_loop.py"
+      "evidence": "runtime/feedback_loop.py",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "renderer.threejs.view",
@@ -145,7 +157,8 @@
       "surface": "ui",
       "method": "GET",
       "path": "renderer/index.html",
-      "evidence": "renderer/index.html; renderer/vendor/three.module.js"
+      "evidence": "renderer/index.html; renderer/vendor/three.module.js",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "scripts.generate_sample_scene",
@@ -156,7 +169,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 scripts/generate_sample_scene.py",
-      "evidence": "scripts/generate_sample_scene.py"
+      "evidence": "scripts/generate_sample_scene.py",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "adapters.json.ingest",
@@ -167,7 +181,8 @@
       "surface": "python",
       "method": "call",
       "path": "adapters.json_adapter.JSONAdapter",
-      "evidence": "adapters/json_adapter.py; adapters/interface.py"
+      "evidence": "adapters/json_adapter.py; adapters/interface.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "adapters.csv.ingest",
@@ -178,7 +193,8 @@
       "surface": "python",
       "method": "call",
       "path": "adapters.csv_adapter.CSVAdapter",
-      "evidence": "adapters/csv_adapter.py"
+      "evidence": "adapters/csv_adapter.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "evidence.pool.admit",
@@ -189,7 +205,8 @@
       "surface": "python",
       "method": "call",
       "path": "evidence.admission",
-      "evidence": "evidence/admission.py; evidence/pool.py; evidence/quarantine.py"
+      "evidence": "evidence/admission.py; evidence/pool.py; evidence/quarantine.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "evidence.trust_graph.build",
@@ -200,7 +217,8 @@
       "surface": "python",
       "method": "call",
       "path": "evidence.trust_graph.build_trust_graph",
-      "evidence": "evidence/trust_graph.py; evidence/metrics.py"
+      "evidence": "evidence/trust_graph.py; evidence/metrics.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "scout.run",
@@ -211,7 +229,8 @@
       "surface": "python",
       "method": "call",
       "path": "scout.pipeline.run_scout",
-      "evidence": "scout/pipeline.py; scout/interface.py; scout/adapters.py"
+      "evidence": "scout/pipeline.py; scout/interface.py; scout/adapters.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "retrieval.query",
@@ -222,7 +241,8 @@
       "surface": "python",
       "method": "call",
       "path": "retrieval.engine.DeterministicRetrievalEngine",
-      "evidence": "retrieval/engine.py; retrieval/query.py; retrieval/context.py"
+      "evidence": "retrieval/engine.py; retrieval/query.py; retrieval/context.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "structures.ingest_documents",
@@ -233,7 +253,8 @@
       "surface": "python",
       "method": "call",
       "path": "structures.ingest.ingest_documents",
-      "evidence": "structures/ingest.py; architecture/chemistry_reachability.yaml"
+      "evidence": "structures/ingest.py; architecture/chemistry_reachability.yaml",
+      "data_domain": "document-corpus"
     },
     {
       "capabilityId": "execution.specification.contract",
@@ -244,7 +265,8 @@
       "surface": "python",
       "method": "import",
       "path": "execution.specification.ExecutionSpecification",
-      "evidence": "execution/specification.py; execution/commitments.py"
+      "evidence": "execution/specification.py; execution/commitments.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.native.kernels",
@@ -255,7 +277,8 @@
       "surface": "wire",
       "method": "descriptor",
       "path": "crates/execution-native",
-      "evidence": "crates/execution-native/src/reference.rs; crates/execution-cli/src/main.rs"
+      "evidence": "crates/execution-native/src/reference.rs; crates/execution-cli/src/main.rs",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "execution.cli.wire",
@@ -266,7 +289,8 @@
       "surface": "cli",
       "method": "stdin/stdout",
       "path": "crates/execution-cli (target/release/execution-cli)",
-      "evidence": "crates/execution-cli/src/main.rs; crates/Cargo.toml"
+      "evidence": "crates/execution-cli/src/main.rs; crates/Cargo.toml",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.run_specification",
@@ -277,7 +301,8 @@
       "surface": "python",
       "method": "call",
       "path": "execution.engine.run_specification",
-      "evidence": "execution/engine.py"
+      "evidence": "execution/engine.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.gromacs.run",
@@ -288,7 +313,8 @@
       "surface": "python",
       "method": "call",
       "path": "execution.gromacs.run_gromacs_specification",
-      "evidence": "execution/gromacs.py; structures/gromacs_bridge.py"
+      "evidence": "execution/gromacs.py; structures/gromacs_bridge.py",
+      "data_domain": "molecular-dynamics"
     },
     {
       "capabilityId": "execution.dispatcher.dispatch",
@@ -299,7 +325,8 @@
       "surface": "python",
       "method": "call",
       "path": "execution.dispatcher.SpecificationDispatcher.dispatch",
-      "evidence": "execution/dispatcher.py; experiment/interface.py"
+      "evidence": "execution/dispatcher.py; experiment/interface.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.proving.prove_and_verify",
@@ -310,7 +337,8 @@
       "surface": "python",
       "method": "call",
       "path": "execution.proving.prove_and_verify",
-      "evidence": "execution/proving.py; execution/guest_registry.py"
+      "evidence": "execution/proving.py; execution/guest_registry.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.proving.verify_existing",
@@ -321,7 +349,8 @@
       "surface": "python",
       "method": "call",
       "path": "execution.proving.verify_existing_proof",
-      "evidence": "execution/proving.py; docs/STE_STAGE10_VERIFICATION_ARTIFACT.md"
+      "evidence": "execution/proving.py; docs/STE_STAGE10_VERIFICATION_ARTIFACT.md",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.host.wire",
@@ -332,7 +361,8 @@
       "surface": "cli",
       "method": "stdout",
       "path": "zk/sp1-adapter/src/bin/sp1_host.rs; zk/nexus/nexus-adapter; zk/risc0/risc0-adapter",
-      "evidence": "zk/sp1-adapter/src/bin/sp1_host.rs; docs/STE_NEXUS_BACKEND.md"
+      "evidence": "zk/sp1-adapter/src/bin/sp1_host.rs; docs/STE_NEXUS_BACKEND.md",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "execution.build.guest_registry",
@@ -343,7 +373,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 -m execution.build",
-      "evidence": "execution/build.py; zk/recipes/sp1-heat.recipe"
+      "evidence": "execution/build.py; zk/recipes/sp1-heat.recipe",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "campaign.run",
@@ -354,7 +385,8 @@
       "surface": "python",
       "method": "call",
       "path": "campaign.driver.run_campaign",
-      "evidence": "campaign/driver.py; campaign/policy.py; campaign/warrant_cache.py; campaign/prefetch.py"
+      "evidence": "campaign/driver.py; campaign/policy.py; campaign/warrant_cache.py; campaign/prefetch.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "experiment.run_step",
@@ -365,7 +397,8 @@
       "surface": "python",
       "method": "call",
       "path": "experiment.step.run_experiment_step",
-      "evidence": "experiment/step.py; operations/trace.py; materials/results.py"
+      "evidence": "experiment/step.py; operations/trace.py; materials/results.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "materials.program.analyze",
@@ -376,7 +409,8 @@
       "surface": "python",
       "method": "call",
       "path": "materials.program.analyze_program",
-      "evidence": "materials/program.py; materials/decision.py"
+      "evidence": "materials/program.py; materials/decision.py",
+      "data_domain": "polymer-characterisation"
     },
     {
       "capabilityId": "workbench.repl.inspect",
@@ -387,7 +421,8 @@
       "surface": "cli",
       "method": "repl",
       "path": "python -m workbench",
-      "evidence": "workbench/cli.py; workbench/__main__.py; examples/polymer_tensile_strength.json"
+      "evidence": "workbench/cli.py; workbench/__main__.py; examples/polymer_tensile_strength.json",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "workbench.repl.observe_admit",
@@ -398,7 +433,8 @@
       "surface": "cli",
       "method": "repl",
       "path": "python -m workbench (observe)",
-      "evidence": "workbench/cli.py; workbench/interaction.py; experiment/session.py"
+      "evidence": "workbench/cli.py; workbench/interaction.py; experiment/session.py",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "transformer.attention.forward",
@@ -409,7 +445,8 @@
       "surface": "python",
       "method": "call",
       "path": "transformer.model.AttentionModel",
-      "evidence": "transformer/model.py; transformer/prediction.py; architecture/transformer_contract.yaml"
+      "evidence": "transformer/model.py; transformer/prediction.py; architecture/transformer_contract.yaml",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "transformer.representation",
@@ -420,7 +457,8 @@
       "surface": "python",
       "method": "call",
       "path": "transformer.representation.molecule_representation",
-      "evidence": "transformer/representation.py; structures/molecule.py"
+      "evidence": "transformer/representation.py; structures/molecule.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "architecture.invariants.declaration",
@@ -431,7 +469,8 @@
       "surface": "file",
       "method": "yaml",
       "path": "architecture/*.yaml",
-      "evidence": "architecture/core.yaml; architecture/invariants.yaml; architecture/exchange/ste_invariant_declaration.yaml"
+      "evidence": "architecture/core.yaml; architecture/invariants.yaml; architecture/exchange/ste_invariant_declaration.yaml",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "architecture.conformance.check",
@@ -442,7 +481,8 @@
       "surface": "python",
       "method": "call",
       "path": "architecture.conformance",
-      "evidence": "architecture/conformance.py"
+      "evidence": "architecture/conformance.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "architecture.doctrine.generate",
@@ -453,7 +493,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 -m architecture.doctrine_generator",
-      "evidence": "architecture/doctrine_generator.py; architecture/generated/doctrine"
+      "evidence": "architecture/doctrine_generator.py; architecture/generated/doctrine",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "architecture.invariant_register.derive",
@@ -464,7 +505,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 architecture/exchange/build_invariant_register.py",
-      "evidence": "architecture/derive_register.py; architecture/exchange/build_invariant_register.py; architecture/exchange/invariant_register.yaml"
+      "evidence": "architecture/derive_register.py; architecture/exchange/build_invariant_register.py; architecture/exchange/invariant_register.yaml",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "scripts.reachability_probes",
@@ -475,7 +517,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 scripts/canonical_state_reachability.py",
-      "evidence": "scripts/canonical_state_reachability.py; scripts/chemistry_reachability.py; scripts/ingest_reachability_probe.py"
+      "evidence": "scripts/canonical_state_reachability.py; scripts/chemistry_reachability.py; scripts/ingest_reachability_probe.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "scripts.stage_campaigns",
@@ -486,7 +529,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 scripts/stage6_campaign.py",
-      "evidence": "scripts/stage6_campaign.py; scripts/stage11_campaign.py; scripts/structural_campaign.py"
+      "evidence": "scripts/stage6_campaign.py; scripts/stage11_campaign.py; scripts/structural_campaign.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "scripts.benchmarks",
@@ -497,7 +541,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 scripts/transformer_baseline.py",
-      "evidence": "scripts/transformer_baseline.py; scripts/engine_request_profile.py"
+      "evidence": "scripts/transformer_baseline.py; scripts/engine_request_profile.py",
+      "data_domain": "evaluation"
     }
   ],
   "metadata": {

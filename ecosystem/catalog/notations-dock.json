@@ -11,7 +11,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "ui",
-      "evidence": "dock/src/lenses/MapLens.tsx"
+      "evidence": "dock/src/lenses/MapLens.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "graph.observe",
@@ -20,7 +21,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "ui",
-      "evidence": "dock/src/lenses/GraphLens.tsx"
+      "evidence": "dock/src/lenses/GraphLens.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "ledger.observe",
@@ -29,7 +31,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "ui",
-      "evidence": "dock/src/lenses/LedgerLens.tsx"
+      "evidence": "dock/src/lenses/LedgerLens.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "events.observe",
@@ -38,7 +41,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "ui",
-      "evidence": "dock/src/lenses/TimelineLens.tsx"
+      "evidence": "dock/src/lenses/TimelineLens.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "command.compose",
@@ -47,7 +51,8 @@
       "mode": "propose",
       "approval": "automatic",
       "surface": "ui",
-      "evidence": "dock/src/lenses/ConsoleLens.tsx"
+      "evidence": "dock/src/lenses/ConsoleLens.tsx",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "security.observe",

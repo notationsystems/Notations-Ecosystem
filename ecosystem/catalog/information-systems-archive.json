@@ -28,7 +28,8 @@
       "evidence": "sea-dog-terminal/verify.mjs; README.md (Restore path step 2)",
       "cost": "free",
       "latency": "~100 ms",
-      "workflow": "archive-restore"
+      "workflow": "archive-restore",
+      "data_domain": "archive-integrity"
     },
     {
       "capabilityId": "comtrade.captures.read",
@@ -93,7 +94,8 @@
       "cost": "free",
       "latency": "minutes",
       "side_effects": "overwrites data-archive/ and snapshots/ in the target checkout",
-      "workflow": "archive-restore"
+      "workflow": "archive-restore",
+      "data_domain": "archive-integrity"
     },
     {
       "capabilityId": "mirror.refresh",
@@ -106,7 +108,8 @@
       "cost": "free",
       "latency": "minutes",
       "side_effects": "commits new capture files and MANIFEST.json to this repository",
-      "workflow": "archive-refresh"
+      "workflow": "archive-refresh",
+      "data_domain": "archive-integrity"
     }
   ],
   "metadata": {

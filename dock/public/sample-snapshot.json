@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "4d9bbac21f469a7f0f178d5df444671c6e3726925a35cee1bc935b8a7d5b8b8d",
+  "revision": "b22564663a7b5b8cf515761f70eb1ad15b588e44e2adcaaaee5aa2a91add90b2",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -301,6 +301,7 @@
         "version": "1.0.0",
         "license": "Apache-2.0",
         "storage": "SQLite default, PostgreSQL optional",
+        "data_domains": "carrier-identity disruptions fleet-assets freight-rates logistics service-levels shipments tracking-events trade-documents trade-lanes",
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.43
@@ -543,6 +544,7 @@
         "ci_lanes": "test, test-openusd, test-public-ifc, test-extras, test-sp1-beam",
         "state_formats": "IFC STEP, GatStateSnapshot v1 JSON, gat-execution-ledger v1, OpenUSD carrier v3 (usda/usdc, optional Ed25519), USDA subset fallback, 3DGS PLY",
         "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)",
+        "data_domains": "bim-geometry-uncertainty bim-ifc gaussian-splat point-cloud-evidence",
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.9,
@@ -741,6 +743,7 @@
         "signing": "ed25519",
         "at_rest": "envelope-encrypted signing key",
         "auth": "per-principal bearer credentials",
+        "data_domains": "coordination identity key-lifecycle network-health security-posture",
         "corpus_role": "coordinate",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -1240,6 +1243,7 @@
         "joint_decision": "2026-08-26-joint-workload-decision: least_squares elected with SCL; DAQ obligation = aligned observation table + explicit missing-value semantics",
         "http_server": false,
         "mcp_server": false,
+        "data_domains": "acquisition-plans architecture-invariants automation carrier-identity chromatography disruptions evidence-pool facilities freight-rates logistics numerical-kernels public-procurement scientific-literature sec-filings seismic tidal-water-level trade-lanes",
         "corpus_role": "feed",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -1467,6 +1471,7 @@
         "license": "MIT",
         "python": ">=3.11",
         "mcp_surface": "none found in repo",
+        "data_domains": "earth-observation",
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.43,
@@ -1591,6 +1596,7 @@
         "last_pushed_at": "2026-03-16T08:08:08Z",
         "capability_count": 13,
         "gpu_required": true,
+        "data_domains": "camera-trajectory evaluation gaussian-splat mesh novel-view-synthesis synthetic-scenes visualisation",
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.43
@@ -1794,6 +1800,7 @@
         "live_layer_count": 13,
         "node_engines": ">=24.14 <25 || >=26 <27",
         "capability_count": 24,
+        "data_domains": "aviation broadcast cctv defence-infrastructure infrastructure local-context maritime road-traffic seismic space terrain weather",
         "corpus_role": "project",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -1894,6 +1901,7 @@
         "comtrade_reporters": "CHL 152, PER 604, CHN 156, COD 180, IDN 360",
         "comtrade_commodities": "HS 2603 copper ores and concentrates; HS 7403 refined copper",
         "provider_independent_backup": false,
+        "data_domains": "archive-integrity beneficial-ownership commodity-markets trade-flows",
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.71,
@@ -2100,6 +2108,7 @@
         "license": "GPL-3.0",
         "mcp_port": 45677,
         "gpu_required": true,
+        "data_domains": "automation gaussian-splat visualisation",
         "corpus_role": "project",
         "corpus_grade": "developing",
         "corpus_coverage": 0.67,
@@ -2197,6 +2206,7 @@
         "capability_count": 9,
         "license": "Apache-2.0",
         "gpu_required": true,
+        "data_domains": "mesh model-weights rgbd-depth visualisation",
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.43
@@ -2314,6 +2324,7 @@
         "capability_count": 12,
         "version": "v0.1.0",
         "gpu_required": true,
+        "data_domains": "camera-trajectory gaussian-splat model-weights panorama pipeline-artifacts",
         "corpus_role": "transform",
         "corpus_grade": "developing",
         "corpus_coverage": 0.75
@@ -2677,6 +2688,7 @@
         "corpus_format": "JSONL(.gz) format_version 1",
         "ci": "ruff + pytest on Python 3.10-3.13; ncg formats/terms smoke",
         "committed_corpus": false,
+        "data_domains": "chromatography mass-spectrometry polymer-characterisation spectroscopy thermal-analysis",
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.75,
@@ -2752,6 +2764,7 @@
         "last_pushed_at": "2026-09-03T01:40:38Z",
         "default_port": 5173,
         "capability_count": 6,
+        "data_domains": "coordination security-posture visualisation",
         "corpus_role": "project",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -2960,6 +2973,7 @@
         "license": "MIT",
         "state_store": "backend/database.json (flat file)",
         "capability_count": 19,
+        "data_domains": "aviation conflict cyber defence-infrastructure financial-markets maritime news osint-social prediction-markets",
         "corpus_role": "project",
         "corpus_grade": "bare",
         "corpus_coverage": 0.33,
@@ -3335,6 +3349,7 @@
         "license": "MIT",
         "api_route_count": 70,
         "capability_count": 48,
+        "data_domains": "aviation cctv conflict crypto cyber earth-observation financial-markets infrastructure local-context logistics maritime network-health network-recon news ontology person-intelligence risk sanctions seismic space weather",
         "corpus_role": "project",
         "corpus_grade": "developing",
         "corpus_coverage": 0.5,
@@ -3707,6 +3722,7 @@
         "prompt_count": 5,
         "writes_canonical_state": false,
         "has_http_surface": false,
+        "data_domains": "automation canonical-state evidence-pool identity model-weights network-health ontology security-posture trade-documents",
         "corpus_role": "feed",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -3996,6 +4012,7 @@
         "tool_count": 11,
         "agent_binding": "window.payloadEarth.tools / invokeTool (in-page, no MCP yet)",
         "fetches_from_payload_terminal": false,
+        "data_domains": "automation canonical-state disruptions facilities synthetic-scenes terrain trade-lanes visualisation",
         "corpus_role": "project",
         "corpus_grade": "sound",
         "corpus_coverage": 1
@@ -4450,6 +4467,7 @@
         "mcp_tool_count": 12,
         "access_posture": "internal, operator-controlled; no public exposure decided",
         "capability_count": 59,
+        "data_domains": "archive-integrity canonical-state commodity-markets coordination cyber financial-markets infrastructure local-context logistics maritime network-health network-recon ontology person-intelligence risk sanctions tracking-events trade-documents visualisation weather",
         "corpus_role": "hold",
         "corpus_grade": "sound",
         "corpus_coverage": 1,
@@ -4931,6 +4949,7 @@
         "backends": "cpu (validated), cuda (compiled and linked, never GPU-executed)",
         "core_binding": "extends core@1.0.0 (extends_only)",
         "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far",
+        "data_domains": "architecture-invariants automation evaluation execution-trace molecular-dynamics numerical-kernels",
         "corpus_role": "transform",
         "corpus_grade": "developing",
         "corpus_coverage": 0.8
@@ -5283,6 +5302,7 @@
         "native_kernels": 5,
         "zkvm_backends": "SP1, Nexus, RISC Zero",
         "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)",
+        "data_domains": "architecture-invariants canonical-state document-corpus evaluation evidence-pool execution-trace molecular-dynamics numerical-kernels polymer-characterisation visualisation",
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.9,

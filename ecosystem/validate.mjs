@@ -13,6 +13,21 @@ const RELATION_KINDS = new Set(['supplies_context_to', 'coordinates', 'visualize
 const DOMAINS = new Set(['physical-economy', 'intelligence', 'scientific', 'built-environment', 'perception-3d', 'geospatial', 'archive', 'platform']);
 const MATURITIES = new Set(['empty', 'prototype', 'v0', 'active', 'archived', 'upstream-mirror', 'external']);
 const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
+
+/**
+ * The closed vocabulary a capability's `data_domain` must use.
+ *
+ * Left open it produced 84 values for 158 annotations — three spellings of RGB-D, two of
+ * gaussian-splat, `seismic` beside `seismic-events`. A coordination layer whose systems
+ * name the same subject differently cannot answer a question that spans them, which is
+ * the whole reason it exists. Aliases are recorded so the migration is legible; they are
+ * not accepted going in.
+ */
+const DATA_DOMAINS = JSON.parse(await readFile(path.join(here, 'data-domains.json'), 'utf8'));
+const DATA_DOMAIN_SUBJECTS = new Set(Object.keys(DATA_DOMAINS.subjects));
+const DATA_DOMAIN_ALIASES = new Map(
+  Object.entries(DATA_DOMAINS.subjects).flatMap(([subject, entry]) => (entry.aliases ?? []).map((a) => [a, subject])),
+);
 const NOW = '2026-01-01T00:00:00.000Z';
 
 /**
@@ -38,6 +53,8 @@ export function withCorpusMetadata(entry) {
   const metadata = { ...(entry.metadata ?? {}) };
   if (!entry.reference?.corpus) return metadata;
   const graded = gradeNode(entry);
+  const subjects = subjectsOf(entry);
+  if (subjects) metadata.data_domains = subjects;
   metadata.corpus_role = graded.role;
   metadata.corpus_grade = graded.grade;
   if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
@@ -47,6 +64,25 @@ export function withCorpusMetadata(entry) {
   // the single-owner invariant unreadable from the snapshot.
   if (graded.ownerOf.length) metadata.corpus_owner_of = graded.ownerOf.join(' ');
   return metadata;
+}
+
+/**
+ * The distinct data-domain subjects a node's capabilities touch.
+ *
+ * Per-capability annotations are catalog-only — the journal's capability contract is
+ * five fields and stays that way. But the *set* is one bounded string, and it turns
+ * "which systems touch trade-flows?" into a question a snapshot can answer, which is the
+ * thing a coordination layer exists to do.
+ */
+export function subjectsOf(entry, maximum = 480) {
+  const subjects = [...new Set((entry.capabilities ?? []).map((c) => c.data_domain).filter(Boolean))].sort();
+  let joined = subjects.join(' ');
+  // Truncate on a whole subject, never mid-word: a half-spelled subject is a wrong one.
+  while (joined.length > maximum && subjects.length) {
+    subjects.pop();
+    joined = subjects.join(' ');
+  }
+  return joined;
 }
 
 export function toRegisterCommand(entry, expectedRevision = null, actorId = 'seed:ecosystem-catalog', submittedAt = NOW) {
@@ -78,6 +114,12 @@ export function checkEntry(entry, file, known = new Set()) {
   for (const c of entry.capabilities ?? []) {
     for (const k of Object.keys(c)) if (!['capabilityId', 'label', 'description', 'mode', 'approval'].includes(k) && !CAPABILITY_EXTRA.has(k)) warnings.push(`capability ${c.capabilityId}: unknown field "${k}"`);
     if (!c.evidence) warnings.push(`capability ${c.capabilityId}: no evidence path`);
+    if (c.data_domain !== undefined && !DATA_DOMAIN_SUBJECTS.has(c.data_domain)) {
+      const canonical = DATA_DOMAIN_ALIASES.get(c.data_domain);
+      errors.push(canonical
+        ? `capability ${c.capabilityId}: data_domain "${c.data_domain}" is a recorded spelling of "${canonical}"; use the subject`
+        : `capability ${c.capabilityId}: data_domain "${c.data_domain}" is not a subject in ecosystem/data-domains.json — add it there, with the estate domain it belongs to, before using it`);
+    }
   }
   const md = entry.metadata ?? {};
   if (!DOMAINS.has(md.domain)) errors.push(`metadata.domain "${md.domain}" is not one of ${[...DOMAINS].join(', ')}`);

@@ -13,7 +13,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/v1/snapshot",
-      "evidence": "control-plane/src/server.js"
+      "evidence": "control-plane/src/server.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "events.read",
@@ -24,7 +25,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/v1/events",
-      "evidence": "control-plane/src/control-plane.js"
+      "evidence": "control-plane/src/control-plane.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "health.read",
@@ -35,7 +37,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/health",
-      "evidence": "control-plane/src/server.js"
+      "evidence": "control-plane/src/server.js",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "node.register",
@@ -46,7 +49,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
-      "evidence": "control-plane/src/validation.js"
+      "evidence": "control-plane/src/validation.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "relation.declare",
@@ -57,7 +61,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
-      "evidence": "control-plane/src/control-plane.js"
+      "evidence": "control-plane/src/control-plane.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "observation.record",
@@ -68,7 +73,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
-      "evidence": "control-plane/src/control-plane.js"
+      "evidence": "control-plane/src/control-plane.js",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "capability.request",
@@ -79,7 +85,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
-      "evidence": "control-plane/src/control-plane.js"
+      "evidence": "control-plane/src/control-plane.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "coordination.resolve",
@@ -90,7 +97,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
-      "evidence": "control-plane/src/control-plane.js"
+      "evidence": "control-plane/src/control-plane.js",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "security.status.read",

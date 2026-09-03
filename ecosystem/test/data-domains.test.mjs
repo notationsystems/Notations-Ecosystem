@@ -1,0 +1,80 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import test from 'node:test';
+import { checkEntry, loadCatalog, subjectsOf, toNode } from '../validate.mjs';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const registry = JSON.parse(await readFile(path.join(here, '..', 'data-domains.json'), 'utf8'));
+const SUBJECTS = Object.keys(registry.subjects);
+const DOMAINS = new Set(['physical-economy', 'intelligence', 'scientific', 'built-environment', 'perception-3d', 'geospatial', 'archive', 'platform']);
+
+test('the vocabulary is closed: one subject, one domain, one spelling', () => {
+  assert.ok(SUBJECTS.length >= 70);
+  const aliases = new Map();
+  for (const [subject, entry] of Object.entries(registry.subjects)) {
+    assert.ok(DOMAINS.has(entry.domain), `${subject}: "${entry.domain}" is not an estate domain`);
+    assert.ok(entry.description && entry.description.length > 10, `${subject}: needs a description`);
+    for (const alias of entry.aliases ?? []) {
+      assert.ok(!SUBJECTS.includes(alias), `${alias} is both a subject and an alias of ${subject}`);
+      assert.ok(!aliases.has(alias), `${alias} is claimed by ${aliases.get(alias)} and ${subject}`);
+      aliases.set(alias, subject);
+    }
+  }
+});
+
+test('every annotation in the catalog uses a subject, never an alias', async () => {
+  const entries = await loadCatalog();
+  const used = new Set();
+  for (const { entry } of entries) {
+    for (const capability of entry.capabilities ?? []) {
+      if (!capability.data_domain) continue;
+      assert.ok(SUBJECTS.includes(capability.data_domain), `${entry.nodeId}/${capability.capabilityId}: "${capability.data_domain}" is not a subject`);
+      used.add(capability.data_domain);
+    }
+  }
+  // A registry entry nobody uses is a subject nobody has, and would rot.
+  const unused = SUBJECTS.filter((subject) => !used.has(subject));
+  assert.deepEqual(unused, [], `unused subjects: ${unused.join(', ')}`);
+});
+
+test('an alias is refused going in, and the refusal names the subject', async () => {
+  const [{ entry, file }] = (await loadCatalog()).filter((e) => e.entry.nodeId === 'control-plane');
+  const withAlias = structuredClone(entry);
+  withAlias.capabilities[0].data_domain = 'gaussian-splats';
+  const { errors } = checkEntry(withAlias, file);
+  assert.ok(errors.some((e) => /is a recorded spelling of "gaussian-splat"/.test(e)), errors.join('; '));
+
+  const invented = structuredClone(entry);
+  invented.capabilities[0].data_domain = 'vibes';
+  assert.ok(checkEntry(invented, file).errors.some((e) => /not a subject in ecosystem\/data-domains\.json/.test(e)));
+});
+
+test('person-intelligence exists so it can be refused by name', () => {
+  // The estate declares that no first-party system may hold it. A vocabulary that simply
+  // omitted the subject could not express the refusal, only the absence.
+  assert.ok(SUBJECTS.includes('person-intelligence'));
+  assert.match(registry.subjects['person-intelligence'].description, /refused by name/i);
+});
+
+test('a node carries the set of subjects it touches, truncated on a whole subject', async () => {
+  const entries = await loadCatalog();
+  for (const { entry } of entries) {
+    const metadata = toNode(entry).metadata;
+    const declared = metadata.data_domains;
+    if (declared === undefined) {
+      assert.equal((entry.capabilities ?? []).filter((c) => c.data_domain).length, 0, `${entry.nodeId} has annotations but declares no data_domains`);
+      continue;
+    }
+    assert.ok(declared.length <= 480, `${entry.nodeId}: data_domains is ${declared.length} chars`);
+    for (const subject of declared.split(' ')) {
+      assert.ok(SUBJECTS.includes(subject), `${entry.nodeId}: "${subject}" is not a whole subject`);
+    }
+  }
+  // A long node truncates rather than overflowing, and never mid-subject.
+  const many = { capabilities: SUBJECTS.map((s, i) => ({ capabilityId: `c${i}`, data_domain: s })) };
+  const truncated = subjectsOf(many, 60);
+  assert.ok(truncated.length <= 60);
+  for (const subject of truncated.split(' ')) assert.ok(SUBJECTS.includes(subject));
+});

@@ -49,7 +49,7 @@
       "method": "GET",
       "path": "/api/radar/alarms",
       "evidence": "backend/api/radar.py",
-      "data_domain": "civil-defence",
+      "data_domain": "conflict",
       "provenance": "alerts.in.ua"
     },
     {
@@ -172,7 +172,7 @@
       "method": "GET",
       "path": "/api/economy/markets",
       "evidence": "backend/api/economy.py",
-      "data_domain": "markets",
+      "data_domain": "financial-markets",
       "provenance": "yfinance"
     },
     {
@@ -197,7 +197,7 @@
       "method": "GET",
       "path": "/api/economy/pizza",
       "evidence": "backend/api/economy.py",
-      "data_domain": "indicators"
+      "data_domain": "prediction-markets"
     },
     {
       "capabilityId": "economy.ticker",

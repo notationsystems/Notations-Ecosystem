@@ -15,7 +15,8 @@
       "path": "native/build/scl_cli",
       "evidence": "native/src/main.cpp; docs/SCL_CONTRACT.md",
       "cost": "free (local process)",
-      "latency": "~4-7 ms process/JSON boundary plus native compute"
+      "latency": "~4-7 ms process/JSON boundary plus native compute",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "cli.result.envelope",
@@ -26,7 +27,8 @@
       "surface": "cli",
       "method": "stdout",
       "path": "native/build/scl_cli",
-      "evidence": "native/src/main.cpp; native/include/scl/protocol.hpp"
+      "evidence": "native/src/main.cpp; native/include/scl/protocol.hpp",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "cli.fault_vocabulary",
@@ -37,7 +39,8 @@
       "surface": "wire",
       "method": "contract",
       "path": "native/include/scl/protocol.hpp",
-      "evidence": "native/include/scl/protocol.hpp; python/scl/errors.py"
+      "evidence": "native/include/scl/protocol.hpp; python/scl/errors.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "cli.version",
@@ -48,7 +51,8 @@
       "surface": "cli",
       "method": "argv",
       "path": "scl_cli --version",
-      "evidence": "native/src/main.cpp; native/include/scl/version.hpp"
+      "evidence": "native/src/main.cpp; native/include/scl/version.hpp",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "cli.backend.cuda",
@@ -59,7 +63,8 @@
       "surface": "cli",
       "method": "field",
       "path": "request.backend",
-      "evidence": "native/backends/cuda/lj_pairwise_cuda.cu; native/backends/cuda/fourier_cuda.cu; native/src/backend.cpp; docs/PHASE4_AUDIT.md"
+      "evidence": "native/backends/cuda/lj_pairwise_cuda.cu; native/backends/cuda/fourier_cuda.cu; native/src/backend.cpp; docs/PHASE4_AUDIT.md",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "op.lj_pairwise_energy_forces",
@@ -72,7 +77,8 @@
       "path": "lj_pairwise_energy_forces",
       "evidence": "native/src/op_lj_pairwise.cpp; native/src/lj_pairwise.cpp; docs/SCL_CONTRACT.md",
       "cost": "free (CPU)",
-      "latency": "~3.7 ms native at N=2000"
+      "latency": "~3.7 ms native at N=2000",
+      "data_domain": "molecular-dynamics"
     },
     {
       "capabilityId": "op.fourier_transform_1d",
@@ -85,7 +91,8 @@
       "path": "fourier_transform_1d",
       "evidence": "native/src/op_fourier.cpp; native/src/fourier.cpp; native/include/scl/fourier.hpp",
       "cost": "free (CPU)",
-      "latency": "~96 ms native at N=2048 (O(N^2))"
+      "latency": "~96 ms native at N=2048 (O(N^2))",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "op.least_squares",
@@ -97,7 +104,8 @@
       "method": "operation",
       "path": "least_squares",
       "evidence": "native/src/op_least_squares.cpp; native/src/least_squares.cpp; python/scl/least_squares.py",
-      "cost": "free (CPU)"
+      "cost": "free (CPU)",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "op.kalman_filter_linear",
@@ -109,7 +117,8 @@
       "method": "operation",
       "path": "kalman_filter_linear",
       "evidence": "native/src/op_kalman.cpp; native/src/kalman.cpp; python/scl/kalman.py; docs/SCL_CONTRACT.md",
-      "cost": "free (CPU)"
+      "cost": "free (CPU)",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.run_scl_request",
@@ -120,7 +129,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.run_scl_request",
-      "evidence": "python/scl/client.py; python/scl/errors.py"
+      "evidence": "python/scl/client.py; python/scl/errors.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.request.identity",
@@ -131,7 +141,8 @@
       "surface": "python",
       "method": "property",
       "path": "scl.SCLRequest.identity",
-      "evidence": "python/scl/identity.py; python/scl/client.py; docs/SCL_CONTRACT.md"
+      "evidence": "python/scl/identity.py; python/scl/client.py; docs/SCL_CONTRACT.md",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.codec.lj",
@@ -142,7 +153,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.encode_lj_configuration",
-      "evidence": "python/scl/client.py"
+      "evidence": "python/scl/client.py",
+      "data_domain": "molecular-dynamics"
     },
     {
       "capabilityId": "python.codec.fourier",
@@ -153,7 +165,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.fourier",
-      "evidence": "python/scl/fourier.py"
+      "evidence": "python/scl/fourier.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.codec.least_squares",
@@ -164,7 +177,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.least_squares",
-      "evidence": "python/scl/least_squares.py"
+      "evidence": "python/scl/least_squares.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.codec.kalman",
@@ -175,7 +189,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.kalman",
-      "evidence": "python/scl/kalman.py"
+      "evidence": "python/scl/kalman.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.quantity",
@@ -186,7 +201,8 @@
       "surface": "python",
       "method": "import",
       "path": "scl.Quantity",
-      "evidence": "python/scl/quantity.py"
+      "evidence": "python/scl/quantity.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "python.method_block",
@@ -197,7 +213,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.lj_method_block_for",
-      "evidence": "python/scl/method_block.py"
+      "evidence": "python/scl/method_block.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "ste_adapter.run_scl_specification",
@@ -208,7 +225,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.ste_adapter.run_scl_specification",
-      "evidence": "python/scl/ste_adapter.py; tests/test_ste_integration.py"
+      "evidence": "python/scl/ste_adapter.py; tests/test_ste_integration.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "ste_adapter.build_specification",
@@ -219,7 +237,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.ste_adapter.build_lj_specification",
-      "evidence": "python/scl/ste_adapter.py"
+      "evidence": "python/scl/ste_adapter.py",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "ste_adapter.interpret_result",
@@ -230,7 +249,8 @@
       "surface": "python",
       "method": "call",
       "path": "scl.ste_adapter.interpret_lj_result",
-      "evidence": "python/scl/ste_adapter.py; docs/PHASE2_AUDIT.md"
+      "evidence": "python/scl/ste_adapter.py; docs/PHASE2_AUDIT.md",
+      "data_domain": "execution-trace"
     },
     {
       "capabilityId": "contract.parameter_classes",
@@ -241,7 +261,8 @@
       "surface": "doc",
       "method": "contract",
       "path": "docs/SCL_CONTRACT.md#6",
-      "evidence": "docs/SCL_CONTRACT.md; native/include/scl/operation.hpp; tests/test_annotating_parameters.py"
+      "evidence": "docs/SCL_CONTRACT.md; native/include/scl/operation.hpp; tests/test_annotating_parameters.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "contract.reproducibility",
@@ -252,7 +273,8 @@
       "surface": "doc",
       "method": "contract",
       "path": "docs/SCL_CONTRACT.md#7",
-      "evidence": "docs/SCL_CONTRACT.md; native/CMakeLists.txt; tests/test_numerical_validation.py"
+      "evidence": "docs/SCL_CONTRACT.md; native/CMakeLists.txt; tests/test_numerical_validation.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "build.cmake",
@@ -263,7 +285,8 @@
       "surface": "cli",
       "method": "run",
       "path": "cmake -S native -B native/build",
-      "evidence": "native/CMakeLists.txt; native/tests/CMakeLists.txt; README.md"
+      "evidence": "native/CMakeLists.txt; native/tests/CMakeLists.txt; README.md",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "bench.run_benchmark",
@@ -275,7 +298,8 @@
       "method": "run",
       "path": "python3 scripts/run_benchmark.py",
       "evidence": "scripts/run_benchmark.py; docs/PHASE1_AUDIT.md",
-      "cost": "free (CPU minutes)"
+      "cost": "free (CPU minutes)",
+      "data_domain": "evaluation"
     },
     {
       "capabilityId": "native.kalman_validate",
@@ -286,7 +310,8 @@
       "surface": "cli",
       "method": "run",
       "path": "native/build/tests/kalman_validate",
-      "evidence": "native/tests/kalman_validate.cpp; architecture/kalman_validation_preregistration.yaml; tests/test_kalman_validation.py"
+      "evidence": "native/tests/kalman_validate.cpp; architecture/kalman_validation_preregistration.yaml; tests/test_kalman_validation.py",
+      "data_domain": "numerical-kernels"
     },
     {
       "capabilityId": "exchange.scl_requirements",
@@ -297,7 +322,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 architecture/exchange/build_scl_requirements.py",
-      "evidence": "architecture/exchange/build_scl_requirements.py; architecture/exchange/scl_requirements.yaml; architecture/exchange/build_scl_contract_clauses.py"
+      "evidence": "architecture/exchange/build_scl_requirements.py; architecture/exchange/scl_requirements.yaml; architecture/exchange/build_scl_contract_clauses.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "exchange.canonical_yaml",
@@ -308,7 +334,8 @@
       "surface": "python",
       "method": "call",
       "path": "architecture/exchange/canonical_yaml.py",
-      "evidence": "architecture/exchange/canonical_yaml.py; architecture/exchange/canonicalization_fixture.yaml; tests/test_shared_serializer_pin.py"
+      "evidence": "architecture/exchange/canonical_yaml.py; architecture/exchange/canonicalization_fixture.yaml; tests/test_shared_serializer_pin.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "exchange.verify_pair_landed",
@@ -319,7 +346,8 @@
       "surface": "cli",
       "method": "run",
       "path": "python3 architecture/exchange/verify_pair_landed.py",
-      "evidence": "architecture/exchange/verify_pair_landed.py; architecture/proof_integrity.yaml"
+      "evidence": "architecture/exchange/verify_pair_landed.py; architecture/proof_integrity.yaml",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "exchange.joint_workload_decision",
@@ -330,7 +358,8 @@
       "surface": "file",
       "method": "yaml",
       "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml",
-      "evidence": "architecture/decisions/2026-08-26-joint-workload-decision.yaml; tests/test_joint_workload_decision.py"
+      "evidence": "architecture/decisions/2026-08-26-joint-workload-decision.yaml; tests/test_joint_workload_decision.py",
+      "data_domain": "architecture-invariants"
     },
     {
       "capabilityId": "exchange.invariant_register_mirror",
@@ -341,7 +370,8 @@
       "surface": "file",
       "method": "yaml",
       "path": "architecture/exchange/",
-      "evidence": "architecture/exchange/invariant_register.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/ste_invariants.yaml; tests/test_exchange_artifact.py"
+      "evidence": "architecture/exchange/invariant_register.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/ste_invariants.yaml; tests/test_exchange_artifact.py",
+      "data_domain": "architecture-invariants"
     }
   ],
   "metadata": {

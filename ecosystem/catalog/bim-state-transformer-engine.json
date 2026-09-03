@@ -71,7 +71,7 @@
       "evidence": "gat/cli.py (_run_splats); gat/geometry/splat_io.py; gat/geometry/variations.py",
       "cost": "free",
       "latency": "seconds",
-      "data_domain": "gaussian-splats",
+      "data_domain": "gaussian-splat",
       "side_effects": "writes PLY files and manifest.json under out_dir"
     },
     {

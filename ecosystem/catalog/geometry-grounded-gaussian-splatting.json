@@ -17,7 +17,7 @@
       "cost": "GPU: ~tens of minutes per scene",
       "latency": "minutes to an hour",
       "provenance": "optimisation from input images",
-      "data_domain": "3d-reconstruction"
+      "data_domain": "mesh"
     },
     {
       "capabilityId": "cli.render",
@@ -141,7 +141,7 @@
       "surface": "file",
       "path": "<source>/sparse/0",
       "evidence": "scene/dataset_readers.py (readColmapSceneInfo); scene/colmap_loader.py",
-      "data_domain": "sfm"
+      "data_domain": "camera-trajectory"
     },
     {
       "capabilityId": "contract.blender_dataset",

@@ -1,0 +1,362 @@
+{
+  "schema": "notations.ecosystem.data-domains.v1",
+  "description": "The closed vocabulary a capability's data_domain must use. A subject appears once, under one estate domain, with every spelling it has been written as. An open vocabulary produced 84 values for 158 annotations, including three spellings of RGB-D and two of gaussian-splat; a coordination layer whose systems name the same subject differently cannot answer a question that spans them.",
+  "subjects": {
+    "acquisition-plans": {
+      "domain": "scientific",
+      "description": "Repeatable acquisition plans, their execution records and the checkpoints that resume them"
+    },
+    "architecture-invariants": {
+      "domain": "platform",
+      "description": "Declared invariants of a system and the conformance checks derived from them"
+    },
+    "archive-integrity": {
+      "domain": "archive",
+      "description": "Manifests, digests and verification of a holding"
+    },
+    "automation": {
+      "domain": "perception-3d",
+      "description": "Scripted or agent-driven control of a tool"
+    },
+    "aviation": {
+      "domain": "geospatial",
+      "description": "Aircraft positions, identity and movement"
+    },
+    "beneficial-ownership": {
+      "domain": "archive",
+      "description": "Who ultimately owns a legal entity"
+    },
+    "bim-geometry-uncertainty": {
+      "domain": "built-environment",
+      "description": "A belief over building geometry, with covariance"
+    },
+    "bim-ifc": {
+      "domain": "built-environment",
+      "description": "Building design intent expressed as IFC"
+    },
+    "broadcast": {
+      "domain": "geospatial",
+      "description": "Radio and broadcast stations"
+    },
+    "camera-trajectory": {
+      "domain": "perception-3d",
+      "description": "Camera poses and the structure recovered with them",
+      "aliases": [
+        "sfm"
+      ]
+    },
+    "canonical-state": {
+      "domain": "scientific",
+      "description": "A versioned, validated state of the world held by one owner"
+    },
+    "carrier-identity": {
+      "domain": "physical-economy",
+      "description": "Who a carrier is, and what vetting says about them"
+    },
+    "cctv": {
+      "domain": "geospatial",
+      "description": "Public camera feeds and their poses"
+    },
+    "chromatography": {
+      "domain": "scientific",
+      "description": "Separation measurements, including SEC/GPC",
+      "aliases": [
+        "polymer-chromatography"
+      ]
+    },
+    "commodity-markets": {
+      "domain": "physical-economy",
+      "description": "Metals and commodity price series and their basis"
+    },
+    "conflict": {
+      "domain": "intelligence",
+      "description": "Armed conflict events and civil-defence alerts",
+      "aliases": [
+        "civil-defence",
+        "events"
+      ]
+    },
+    "coordination": {
+      "domain": "platform",
+      "description": "What was proposed, approved and never dispatched"
+    },
+    "crypto": {
+      "domain": "intelligence",
+      "description": "Digital asset prices and on-chain activity"
+    },
+    "cyber": {
+      "domain": "intelligence",
+      "description": "Vulnerabilities, exploitation and threat activity"
+    },
+    "defence-infrastructure": {
+      "domain": "geospatial",
+      "description": "Military installations as located objects"
+    },
+    "disruptions": {
+      "domain": "physical-economy",
+      "description": "Events that constrain a corridor, facility or flow"
+    },
+    "document-corpus": {
+      "domain": "scientific",
+      "description": "Structured documents ingested as a body of material"
+    },
+    "earth-observation": {
+      "domain": "geospatial",
+      "description": "Satellite and airborne imagery and the catalogs that index it"
+    },
+    "evaluation": {
+      "domain": "perception-3d",
+      "description": "Benchmark scores and the runs that produced them"
+    },
+    "evidence-pool": {
+      "domain": "scientific",
+      "description": "Content-addressed evidence held for admission, with quarantine for what cannot be admitted"
+    },
+    "execution-trace": {
+      "domain": "scientific",
+      "description": "Execution specifications, the runs that discharged them and transcripts checked rather than trusted"
+    },
+    "facilities": {
+      "domain": "physical-economy",
+      "description": "Ports, terminals, mines, refineries and warehouses as places"
+    },
+    "financial-markets": {
+      "domain": "intelligence",
+      "description": "Equity, rate and derivative price series",
+      "aliases": [
+        "markets"
+      ]
+    },
+    "fleet-assets": {
+      "domain": "physical-economy",
+      "description": "Vehicles, containers and equipment as addressable assets"
+    },
+    "freight-rates": {
+      "domain": "physical-economy",
+      "description": "Quoted and settled prices for moving a load along a lane"
+    },
+    "gaussian-splat": {
+      "domain": "perception-3d",
+      "description": "3D Gaussian scene representations",
+      "aliases": [
+        "gaussian-splats"
+      ]
+    },
+    "identity": {
+      "domain": "platform",
+      "description": "Principals, actors and the credentials that bind them"
+    },
+    "infrastructure": {
+      "domain": "geospatial",
+      "description": "Fixed civil infrastructure as located objects"
+    },
+    "key-lifecycle": {
+      "domain": "platform",
+      "description": "Signing and encryption keys, their rotation and protection"
+    },
+    "local-context": {
+      "domain": "geospatial",
+      "description": "Places, boundaries and other local reference geography",
+      "aliases": [
+        "gis"
+      ]
+    },
+    "logistics": {
+      "domain": "physical-economy",
+      "description": "Operational movement of goods, taken as a whole",
+      "aliases": [
+        "supply-chain"
+      ]
+    },
+    "maritime": {
+      "domain": "geospatial",
+      "description": "Vessel positions, identity and movement"
+    },
+    "mass-spectrometry": {
+      "domain": "scientific",
+      "description": "Mass spectra and the species derived from them"
+    },
+    "mesh": {
+      "domain": "perception-3d",
+      "description": "Extracted surface geometry",
+      "aliases": [
+        "3d-reconstruction",
+        "geometry"
+      ]
+    },
+    "model-weights": {
+      "domain": "perception-3d",
+      "description": "Trained model checkpoints as artifacts"
+    },
+    "molecular-dynamics": {
+      "domain": "scientific",
+      "description": "Simulated molecular systems and the energies and forces computed over them"
+    },
+    "network-health": {
+      "domain": "intelligence",
+      "description": "Availability and behaviour of a network service"
+    },
+    "network-recon": {
+      "domain": "intelligence",
+      "description": "Addresses, routing and network attribution"
+    },
+    "news": {
+      "domain": "intelligence",
+      "description": "Reported events from news and media feeds"
+    },
+    "novel-view-synthesis": {
+      "domain": "perception-3d",
+      "description": "Renders from viewpoints never captured"
+    },
+    "numerical-kernels": {
+      "domain": "scientific",
+      "description": "Bounded numerical operations and the content-addressed requests and results that name them"
+    },
+    "ontology": {
+      "domain": "intelligence",
+      "description": "Entity identity, aliases and the links between them"
+    },
+    "osint-social": {
+      "domain": "intelligence",
+      "description": "Public social and messaging channel content"
+    },
+    "panorama": {
+      "domain": "perception-3d",
+      "description": "Omnidirectional images and the video generated from them",
+      "aliases": [
+        "panoramic-video"
+      ]
+    },
+    "person-intelligence": {
+      "domain": "intelligence",
+      "description": "Natural persons as subjects. Present so it can be refused by name: no first-party system may hold this, and the two forks that still can are graded COR-010 failed"
+    },
+    "pipeline-artifacts": {
+      "domain": "perception-3d",
+      "description": "Intermediate outputs of a multi-stage pipeline"
+    },
+    "point-cloud-evidence": {
+      "domain": "built-environment",
+      "description": "Registered scan points admitted as evidence about a building"
+    },
+    "polymer-characterisation": {
+      "domain": "scientific",
+      "description": "Structure and formulation of bespoke polymers"
+    },
+    "prediction-markets": {
+      "domain": "intelligence",
+      "description": "Traded probabilities and derived indicators",
+      "aliases": [
+        "indicators"
+      ]
+    },
+    "public-procurement": {
+      "domain": "scientific",
+      "description": "Government tenders and awards"
+    },
+    "rgbd-depth": {
+      "domain": "perception-3d",
+      "description": "RGB-D frames and the depth derived from them",
+      "aliases": [
+        "rgbd-features",
+        "rgbd-files"
+      ]
+    },
+    "risk": {
+      "domain": "intelligence",
+      "description": "Composite assessments derived from other domains"
+    },
+    "road-traffic": {
+      "domain": "geospatial",
+      "description": "Road conditions and surface mobility",
+      "aliases": [
+        "mobility"
+      ]
+    },
+    "sanctions": {
+      "domain": "intelligence",
+      "description": "Designations and the entities they name"
+    },
+    "scientific-literature": {
+      "domain": "scientific",
+      "description": "Papers, preprints and their metadata"
+    },
+    "sec-filings": {
+      "domain": "scientific",
+      "description": "Regulatory filings and their disclosures"
+    },
+    "security-posture": {
+      "domain": "platform",
+      "description": "Evidence about the state of a security control, never the material"
+    },
+    "seismic": {
+      "domain": "scientific",
+      "description": "Earthquake events and ground motion",
+      "aliases": [
+        "seismic-events"
+      ]
+    },
+    "service-levels": {
+      "domain": "physical-economy",
+      "description": "Committed transit times and the performance against them"
+    },
+    "shipments": {
+      "domain": "physical-economy",
+      "description": "Individual consignments and their lifecycle"
+    },
+    "space": {
+      "domain": "geospatial",
+      "description": "Orbital objects, launches and their predicted positions"
+    },
+    "spectroscopy": {
+      "domain": "scientific",
+      "description": "Spectroscopic measurements, including NMR and IR",
+      "aliases": [
+        "nmr"
+      ]
+    },
+    "synthetic-scenes": {
+      "domain": "perception-3d",
+      "description": "Generated scenes, which are never observations"
+    },
+    "terrain": {
+      "domain": "geospatial",
+      "description": "Elevation and land surface"
+    },
+    "thermal-analysis": {
+      "domain": "scientific",
+      "description": "DSC and TGA measurements and derived transitions"
+    },
+    "tidal-water-level": {
+      "domain": "scientific",
+      "description": "Tide and water-level station series"
+    },
+    "tracking-events": {
+      "domain": "physical-economy",
+      "description": "Timestamped position and status events against a shipment"
+    },
+    "trade-documents": {
+      "domain": "physical-economy",
+      "description": "Rate confirmations, bills of lading, proofs of delivery, invoices"
+    },
+    "trade-flows": {
+      "domain": "physical-economy",
+      "description": "Reporter-to-partner commodity trade, by value and weight, from customs vintages"
+    },
+    "trade-lanes": {
+      "domain": "physical-economy",
+      "description": "Origin-destination lanes and the corridors freight moves along"
+    },
+    "visualisation": {
+      "domain": "perception-3d",
+      "description": "Renders and views produced for a human"
+    },
+    "weather": {
+      "domain": "geospatial",
+      "description": "Atmospheric and environmental conditions and hazards",
+      "aliases": [
+        "environment"
+      ]
+    }
+  }
+}

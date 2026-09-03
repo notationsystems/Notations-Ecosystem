@@ -58,7 +58,7 @@
       "cost": "GPU 12-60 GB VRAM; ~1 h at 720p on A800",
       "latency": "minutes to an hour",
       "provenance": "synthetic: Wan2.1/2.2 video diffusion",
-      "data_domain": "panoramic-video"
+      "data_domain": "panorama"
     },
     {
       "capabilityId": "cli.video_to_3dscene_opt",

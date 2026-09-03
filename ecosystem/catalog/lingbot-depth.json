@@ -57,7 +57,7 @@
       "path": "MDMModel.infer_feat",
       "evidence": "mdm/model/v2.py",
       "cost": "GPU seconds",
-      "data_domain": "rgbd-features"
+      "data_domain": "rgbd-depth"
     },
     {
       "capabilityId": "py.utils.io",
@@ -68,7 +68,7 @@
       "surface": "python",
       "path": "mdm.utils.io",
       "evidence": "mdm/utils/io.py",
-      "data_domain": "rgbd-files"
+      "data_domain": "rgbd-depth"
     },
     {
       "capabilityId": "py.utils.geo.depth_to_pointcloud",
@@ -79,7 +79,7 @@
       "surface": "python",
       "path": "mdm.utils.geo",
       "evidence": "mdm/utils/geo.py",
-      "data_domain": "geometry"
+      "data_domain": "mesh"
     },
     {
       "capabilityId": "py.utils.vis",

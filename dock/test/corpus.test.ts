@@ -58,6 +58,22 @@ describe('the sample snapshot carries the whole estate', () => {
     for (const owner of owners) expect(owner.metadata.corpus_role).toBe('hold');
   });
 
+  it('carries the set of data-domain subjects each node touches', () => {
+    const withSubjects = sample.nodes.filter((n) => typeof n.metadata.data_domains === 'string');
+    expect(withSubjects.length).toBeGreaterThan(8);
+    for (const n of withSubjects) {
+      const subjects = String(n.metadata.data_domains).split(' ');
+      // Whole subjects only: a half-spelled subject is a wrong one, and the value is
+      // truncated on a boundary rather than at a character count.
+      expect(subjects.every((s) => /^[a-z][a-z0-9-]*$/.test(s))).toBe(true);
+      expect(new Set(subjects).size).toBe(subjects.length);
+      expect(String(n.metadata.data_domains).length).toBeLessThanOrEqual(480);
+    }
+    const terminal = sample.nodes.find((n) => n.nodeId === 'payload-terminal');
+    expect(String(terminal!.metadata.data_domains)).toContain('commodity-markets');
+    expect(String(terminal!.metadata.data_domains)).toContain('logistics');
+  });
+
   it('gives every node its canonical name, and never a dereferenceable one', () => {
     for (const n of sample.nodes) {
       expect(n.uri).toBe(`notation://node/notationsystems/${n.nodeId}`);

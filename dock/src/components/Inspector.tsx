@@ -1,5 +1,5 @@
 import type { Snapshot, SnapshotNode } from '../model/types';
-import { KIND_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL } from '../model/types';
+import { CORPUS_GRADE_COLOR, CORPUS_ROLE_LABEL, KIND_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL, corpusStanding } from '../model/types';
 import { githubRepoUrl } from '../model/links';
 
 export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
@@ -14,6 +14,10 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
   const incoming = snapshot.relations.filter((r) => r.targetNodeId === node.nodeId);
   const coordination = snapshot.coordination.filter((c) => c.targetNodeId === node.nodeId || c.requesterNodeId === node.nodeId);
   const md = node.metadata ?? {};
+  const corpus = corpusStanding(node);
+  // Per-capability annotations stay in the catalog; the set a node touches crosses, so
+  // "which systems touch trade-flows?" is answerable from a snapshot alone.
+  const subjects = typeof md.data_domains === 'string' && md.data_domains.trim() ? md.data_domains.trim().split(/\s+/) : [];
   return (
     <aside className="inspector">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8 }}>
@@ -31,6 +35,36 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
         {node.location && <span className="badge">{node.location.latitude.toFixed(2)}, {node.location.longitude.toFixed(2)}</span>}
       </div>
       <p style={{ marginTop: 0 }}>{node.description}</p>
+      {node.uri && (
+        <div className="sub mono" style={{ marginBottom: 10 }} title="This node's name in the canonical identity space. A name, not an address: nothing here dereferences one.">
+          {node.uri}
+        </div>
+      )}
+      {corpus && (
+        <div className="kv" style={{ marginBottom: 10 }}>
+          <span>corpus</span>
+          <b>
+            <span className="badge" style={{ borderColor: CORPUS_GRADE_COLOR[corpus.grade], color: CORPUS_GRADE_COLOR[corpus.grade] }}>{corpus.grade}</span>
+            {corpus.role ? ` ${CORPUS_ROLE_LABEL[corpus.role].toLowerCase()}` : ''}
+            {corpus.coverage === null ? '' : ` · ${Math.round(corpus.coverage * 100)}% of applicable invariants`}
+          </b>
+          {corpus.ownerOf.length > 0 && (<><span>owns canonical state</span><b>{corpus.ownerOf.join(', ')}</b></>)}
+          {corpus.fails.length > 0 && (
+            <>
+              <span title="Invariants this node declares it does not hold. Naming a failure is the point.">declared failures</span>
+              <b>{corpus.fails.join(' ')}</b>
+            </>
+          )}
+        </div>
+      )}
+      {subjects.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div className="sub" style={{ marginBottom: 4 }}>data domains · {subjects.length}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {subjects.map((subject) => <span className="badge" key={subject}>{subject}</span>)}
+          </div>
+        </div>
+      )}
       {node.lastObservation && <div className="kv" style={{ marginBottom: 10 }}><span>last observed</span><b>{node.lastObservedAt ? new Date(node.lastObservedAt).toLocaleString() : '—'} · {node.lastObservation.source}</b><span>detail</span><b>{node.lastObservation.detail}</b></div>}
       {onObserve && <div style={{ marginBottom: 12 }}><button className="btn small" onClick={() => onObserve(node)}>Record observation</button></div>}
 

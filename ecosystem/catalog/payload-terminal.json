@@ -13,7 +13,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy",
-      "evidence": "src/app/api/economy/route.ts"
+      "evidence": "src/app/api/economy/route.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "economy.entity.read",
@@ -24,7 +25,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/entity",
-      "evidence": "src/app/api/economy/entity/route.ts"
+      "evidence": "src/app/api/economy/entity/route.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "economy.search",
@@ -35,7 +37,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/search",
-      "evidence": "src/app/api/economy/search/route.ts"
+      "evidence": "src/app/api/economy/search/route.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "economy.table.read",
@@ -46,7 +49,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/table",
-      "evidence": "src/app/api/economy/table/route.ts"
+      "evidence": "src/app/api/economy/table/route.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "economy.refusals.read",
@@ -57,7 +61,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/refusals",
-      "evidence": "src/app/api/economy/refusals/route.ts"
+      "evidence": "src/app/api/economy/refusals/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "economy.guards.read",
@@ -68,7 +73,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/guards",
-      "evidence": "src/app/api/economy/guards/route.ts"
+      "evidence": "src/app/api/economy/guards/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "economy.validate",
@@ -79,7 +85,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/economy/validate",
-      "evidence": "src/app/api/economy/validate/route.ts"
+      "evidence": "src/app/api/economy/validate/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "economy.scenario",
@@ -90,7 +97,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/economy/scenario",
-      "evidence": "src/app/api/economy/scenario/route.ts"
+      "evidence": "src/app/api/economy/scenario/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "entity.expand",
@@ -101,7 +109,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/entity/expand",
-      "evidence": "src/app/api/entity/expand/route.ts"
+      "evidence": "src/app/api/entity/expand/route.ts",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "freight.operations.read",
@@ -112,7 +121,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/operations",
-      "evidence": "src/app/api/freight/operations/route.ts"
+      "evidence": "src/app/api/freight/operations/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.operations.command",
@@ -123,7 +133,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/freight/operations",
-      "evidence": "src/app/api/freight/operations/route.ts"
+      "evidence": "src/app/api/freight/operations/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.control_tower.read",
@@ -134,7 +145,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/control-tower",
-      "evidence": "src/app/api/freight/control-tower/route.ts"
+      "evidence": "src/app/api/freight/control-tower/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.communications.read",
@@ -145,7 +157,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/communications",
-      "evidence": "src/app/api/freight/communications/route.ts"
+      "evidence": "src/app/api/freight/communications/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.communications.send_dispatch",
@@ -156,7 +169,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/freight/communications",
-      "evidence": "src/app/api/freight/communications/route.ts"
+      "evidence": "src/app/api/freight/communications/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.carrier_events.webhook",
@@ -167,7 +181,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/freight/carrier-events",
-      "evidence": "src/app/api/freight/carrier-events/route.ts"
+      "evidence": "src/app/api/freight/carrier-events/route.ts",
+      "data_domain": "tracking-events"
     },
     {
       "capabilityId": "freight.sources.pull",
@@ -178,7 +193,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/sources",
-      "evidence": "src/app/api/freight/sources/route.ts"
+      "evidence": "src/app/api/freight/sources/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.demo.run",
@@ -189,7 +205,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/demo",
-      "evidence": "src/app/api/freight/demo/route.ts"
+      "evidence": "src/app/api/freight/demo/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "freight.world.run",
@@ -200,7 +217,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/freight/world",
-      "evidence": "src/app/api/freight/world/route.ts"
+      "evidence": "src/app/api/freight/world/route.ts",
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "osint.whois",
@@ -211,7 +229,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/whois",
-      "evidence": "src/app/api/osint/whois/route.ts"
+      "evidence": "src/app/api/osint/whois/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.dns",
@@ -222,7 +241,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/dns",
-      "evidence": "src/app/api/osint/dns/route.ts"
+      "evidence": "src/app/api/osint/dns/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.ip",
@@ -233,7 +253,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/ip",
-      "evidence": "src/app/api/osint/ip/route.ts"
+      "evidence": "src/app/api/osint/ip/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.certs",
@@ -244,7 +265,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/certs",
-      "evidence": "src/app/api/osint/certs/route.ts"
+      "evidence": "src/app/api/osint/certs/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.bgp",
@@ -255,7 +277,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/bgp",
-      "evidence": "src/app/api/osint/bgp/route.ts"
+      "evidence": "src/app/api/osint/bgp/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.mac",
@@ -266,7 +289,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/mac",
-      "evidence": "src/app/api/osint/mac/route.ts"
+      "evidence": "src/app/api/osint/mac/route.ts",
+      "data_domain": "network-recon"
     },
     {
       "capabilityId": "osint.threats",
@@ -277,7 +301,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/threats",
-      "evidence": "src/app/api/osint/threats/route.ts"
+      "evidence": "src/app/api/osint/threats/route.ts",
+      "data_domain": "cyber"
     },
     {
       "capabilityId": "osint.sanctions",
@@ -288,7 +313,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/osint/sanctions",
-      "evidence": "src/app/api/osint/sanctions/route.ts"
+      "evidence": "src/app/api/osint/sanctions/route.ts",
+      "data_domain": "sanctions"
     },
     {
       "capabilityId": "geo.directions",
@@ -299,7 +325,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/directions",
-      "evidence": "src/app/api/directions/route.ts"
+      "evidence": "src/app/api/directions/route.ts",
+      "data_domain": "local-context"
     },
     {
       "capabilityId": "geo.search",
@@ -310,7 +337,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/geosearch",
-      "evidence": "src/app/api/geosearch/route.ts; src/app/api/geo/route.ts; src/app/api/arcgis/route.ts"
+      "evidence": "src/app/api/geosearch/route.ts; src/app/api/geo/route.ts; src/app/api/arcgis/route.ts",
+      "data_domain": "local-context"
     },
     {
       "capabilityId": "feeds.maritime",
@@ -321,7 +349,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/maritime",
-      "evidence": "src/app/api/maritime/route.ts"
+      "evidence": "src/app/api/maritime/route.ts",
+      "data_domain": "maritime"
     },
     {
       "capabilityId": "feeds.environment",
@@ -332,7 +361,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/weather",
-      "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts"
+      "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts",
+      "data_domain": "weather"
     },
     {
       "capabilityId": "feeds.infrastructure",
@@ -343,7 +373,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/infrastructure",
-      "evidence": "src/app/api/infrastructure/route.ts"
+      "evidence": "src/app/api/infrastructure/route.ts",
+      "data_domain": "infrastructure"
     },
     {
       "capabilityId": "feeds.markets",
@@ -354,7 +385,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/markets",
-      "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts"
+      "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts",
+      "data_domain": "financial-markets"
     },
     {
       "capabilityId": "feeds.signals",
@@ -365,7 +397,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/news",
-      "evidence": "src/app/api/news/route.ts; src/app/api/chain/daily/route.ts"
+      "evidence": "src/app/api/news/route.ts; src/app/api/chain/daily/route.ts",
+      "data_domain": "risk"
     },
     {
       "capabilityId": "ops.health",
@@ -376,7 +409,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/health",
-      "evidence": "src/app/api/health/route.ts"
+      "evidence": "src/app/api/health/route.ts",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "ops.stats",
@@ -387,7 +421,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/stats",
-      "evidence": "src/app/api/stats/route.ts"
+      "evidence": "src/app/api/stats/route.ts",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "ops.tiles.proxy",
@@ -398,7 +433,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/proxy-tiles",
-      "evidence": "src/app/api/proxy-tiles/route.ts"
+      "evidence": "src/app/api/proxy-tiles/route.ts",
+      "data_domain": "local-context"
     },
     {
       "capabilityId": "ops.retired_routes",
@@ -409,7 +445,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/{retired}",
-      "evidence": "src/app/api/[...retired]/route.ts; src/lib/routeGate.ts"
+      "evidence": "src/app/api/[...retired]/route.ts; src/lib/routeGate.ts",
+      "data_domain": "person-intelligence"
     },
     {
       "capabilityId": "ops.github_webhook",
@@ -420,7 +457,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/github-webhook",
-      "evidence": "src/app/api/github-webhook/route.ts"
+      "evidence": "src/app/api/github-webhook/route.ts",
+      "data_domain": "coordination"
     },
     {
       "capabilityId": "sdk.ingest",
@@ -431,7 +469,8 @@
       "surface": "http",
       "method": "POST",
       "path": "/api/sdk/ingest",
-      "evidence": "src/app/api/sdk/ingest/route.ts"
+      "evidence": "src/app/api/sdk/ingest/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "sdk.ingest.status",
@@ -442,7 +481,8 @@
       "surface": "http",
       "method": "GET",
       "path": "/api/sdk/ingest",
-      "evidence": "src/app/api/sdk/ingest/route.ts"
+      "evidence": "src/app/api/sdk/ingest/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "sdk.stream",
@@ -453,7 +493,8 @@
       "surface": "sse",
       "method": "GET",
       "path": "/api/sdk/stream",
-      "evidence": "src/app/api/sdk/stream/route.ts"
+      "evidence": "src/app/api/sdk/stream/route.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "mcp.bottlenecks",
@@ -462,7 +503,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "mcp.search_entities",
@@ -471,7 +513,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "mcp.search_evidence",
@@ -480,7 +523,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "mcp.get_entity",
@@ -489,7 +533,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "mcp.get_observations",
@@ -498,7 +543,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "mcp.concentration",
@@ -507,7 +553,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "mcp.propagate",
@@ -516,7 +563,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "mcp.scenario",
@@ -525,7 +573,8 @@
       "mode": "propose",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "commodity-markets"
     },
     {
       "capabilityId": "mcp.refusals_digest",
@@ -534,7 +583,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "mcp.corpus_health",
@@ -543,7 +593,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "archive-integrity"
     },
     {
       "capabilityId": "mcp.source_registry",
@@ -552,7 +603,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "archive-integrity"
     },
     {
       "capabilityId": "mcp.validate_claim",
@@ -561,7 +613,8 @@
       "mode": "propose",
       "approval": "automatic",
       "surface": "mcp",
-      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "ui.terminal",
@@ -571,7 +624,8 @@
       "approval": "automatic",
       "surface": "ui",
       "path": "/",
-      "evidence": "src/app/page.tsx; src/components/PayloadMap.tsx; src/components/LayerPanel.tsx"
+      "evidence": "src/app/page.tsx; src/components/PayloadMap.tsx; src/components/LayerPanel.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "ui.operations",
@@ -581,7 +635,8 @@
       "approval": "automatic",
       "surface": "ui",
       "path": "/operations",
-      "evidence": "src/app/operations/page.tsx; src/components/OperationsControlTower.tsx"
+      "evidence": "src/app/operations/page.tsx; src/components/OperationsControlTower.tsx",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "ui.docs",
@@ -591,7 +646,8 @@
       "approval": "automatic",
       "surface": "ui",
       "path": "/docs",
-      "evidence": "src/app/docs/page.tsx; src/app/docs/apiCatalog.ts"
+      "evidence": "src/app/docs/page.tsx; src/app/docs/apiCatalog.ts",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "cli.smoke",
@@ -600,7 +656,8 @@
       "mode": "observe",
       "approval": "automatic",
       "surface": "cli",
-      "evidence": "scripts/smoke.mjs"
+      "evidence": "scripts/smoke.mjs",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "cli.archive_manifest",
@@ -609,7 +666,8 @@
       "mode": "execute",
       "approval": "operator",
       "surface": "cli",
-      "evidence": "scripts/archive-manifest.mjs; data-archive/MANIFEST.json"
+      "evidence": "scripts/archive-manifest.mjs; data-archive/MANIFEST.json",
+      "data_domain": "archive-integrity"
     },
     {
       "capabilityId": "contract.ocr_candidate_intake",
@@ -618,7 +676,8 @@
       "mode": "propose",
       "approval": "automatic",
       "surface": "contract",
-      "evidence": "src/lib/economy/ocrCandidateInbox.ts; src/lib/economy/ocrFreightReview.ts"
+      "evidence": "src/lib/economy/ocrCandidateInbox.ts; src/lib/economy/ocrFreightReview.ts",
+      "data_domain": "trade-documents"
     }
   ],
   "metadata": {

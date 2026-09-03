@@ -13,7 +13,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.inspect_document']",
-      "evidence": "src/agent/tools.ts; src/artifact/acquire.ts"
+      "evidence": "src/agent/tools.ts; src/artifact/acquire.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.classify_document",
@@ -24,7 +25,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.classify_document']",
-      "evidence": "src/agent/tools.ts; src/classify/classifier.ts; src/classify/documentType.ts; prompts/classify_document.v1.md"
+      "evidence": "src/agent/tools.ts; src/classify/classifier.ts; src/classify/documentType.ts; prompts/classify_document.v1.md",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.extract_fields",
@@ -35,7 +37,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.extract_fields']",
-      "evidence": "src/agent/tools.ts; src/pipeline/pipeline.ts"
+      "evidence": "src/agent/tools.ts; src/pipeline/pipeline.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.extract_table",
@@ -46,7 +49,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.extract_table']",
-      "evidence": "src/agent/tools.ts; src/model/OCRModel.ts (extractTables)"
+      "evidence": "src/agent/tools.ts; src/model/OCRModel.ts (extractTables)",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.find_evidence",
@@ -57,7 +61,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.find_evidence']",
-      "evidence": "src/agent/tools.ts; src/model/types.ts (EvidenceLocation)"
+      "evidence": "src/agent/tools.ts; src/model/types.ts (EvidenceLocation)",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.validate_extraction",
@@ -68,7 +73,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.validate_extraction']",
-      "evidence": "src/agent/tools.ts; src/extract/validate.ts"
+      "evidence": "src/agent/tools.ts; src/extract/validate.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.compare_documents",
@@ -79,7 +85,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.compare_documents']",
-      "evidence": "src/agent/tools.ts; src/conflict/detect.ts; src/conflict/subjects.ts"
+      "evidence": "src/agent/tools.ts; src/conflict/detect.ts; src/conflict/subjects.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "tool.ocr.create_observation",
@@ -90,7 +97,8 @@
       "surface": "agent-tool",
       "method": "call",
       "path": "createOcrTools(deps)['ocr.create_observation']",
-      "evidence": "src/agent/tools.ts; src/canonical/boundary.ts"
+      "evidence": "src/agent/tools.ts; src/canonical/boundary.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "api.process_document",
@@ -101,7 +109,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/pipeline/pipeline.ts#processDocument",
-      "evidence": "src/pipeline/pipeline.ts; src/index.ts"
+      "evidence": "src/pipeline/pipeline.ts; src/index.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "api.ingest_artifact",
@@ -112,7 +121,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/artifact/acquire.ts#ingestArtifact",
-      "evidence": "src/artifact/acquire.ts; src/artifact/types.ts; src/core/ids.ts"
+      "evidence": "src/artifact/acquire.ts; src/artifact/types.ts; src/core/ids.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "api.ocr_model_seam",
@@ -123,7 +133,8 @@
       "surface": "ts-api",
       "method": "interface",
       "path": "src/model/OCRModel.ts#OCRModel",
-      "evidence": "src/model/OCRModel.ts; src/model/providers/mistral.ts; src/model/providers/fixture.ts; src/model/providerSeam.test.ts"
+      "evidence": "src/model/OCRModel.ts; src/model/providers/mistral.ts; src/model/providers/fixture.ts; src/model/providerSeam.test.ts",
+      "data_domain": "model-weights"
     },
     {
       "capabilityId": "api.provider_factory",
@@ -134,7 +145,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/model/providers/index.ts#createProvider",
-      "evidence": "src/model/providers/index.ts; .env.example; docs/BOUNDARIES.md#integration-contract-for-the-host"
+      "evidence": "src/model/providers/index.ts; .env.example; docs/BOUNDARIES.md#integration-contract-for-the-host",
+      "data_domain": "model-weights"
     },
     {
       "capabilityId": "api.schema_registry",
@@ -145,7 +157,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/schema/registry.ts#schemaFor",
-      "evidence": "src/schema/registry.ts; src/schema/rateConfirmation.ts; src/schema/billOfLading.ts; src/schema/proofOfDelivery.ts; src/schema/invoice.ts"
+      "evidence": "src/schema/registry.ts; src/schema/rateConfirmation.ts; src/schema/billOfLading.ts; src/schema/proofOfDelivery.ts; src/schema/invoice.ts",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "api.normalize",
@@ -156,7 +169,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/normalize/index.ts",
-      "evidence": "src/normalize/money.ts; src/normalize/weight.ts; src/normalize/temporal.ts; docs/ARCHITECTURE.md#normalization"
+      "evidence": "src/normalize/money.ts; src/normalize/weight.ts; src/normalize/temporal.ts; docs/ARCHITECTURE.md#normalization",
+      "data_domain": "trade-documents"
     },
     {
       "capabilityId": "api.build_observation",
@@ -167,7 +181,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/observation/build.ts#buildObservation",
-      "evidence": "src/observation/build.ts; src/extract/fields.ts; src/core/epistemics.ts"
+      "evidence": "src/observation/build.ts; src/extract/fields.ts; src/core/epistemics.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "api.evidence_sink_port",
@@ -178,7 +193,8 @@
       "surface": "ts-api",
       "method": "interface",
       "path": "src/evidence/port.ts#EvidenceSink",
-      "evidence": "src/evidence/port.ts; src/evidence/bridge.ts; docs/BOUNDARIES.md"
+      "evidence": "src/evidence/port.ts; src/evidence/bridge.ts; docs/BOUNDARIES.md",
+      "data_domain": "evidence-pool"
     },
     {
       "capabilityId": "api.detect_conflicts",
@@ -189,7 +205,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/conflict/detect.ts#detectConflicts",
-      "evidence": "src/conflict/detect.ts; src/observation/types.ts (ConflictRecord)"
+      "evidence": "src/conflict/detect.ts; src/observation/types.ts (ConflictRecord)",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "api.entity_candidates",
@@ -200,7 +217,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/entity/candidates.ts#candidatesFromObservations",
-      "evidence": "src/entity/candidates.ts; docs/ARCHITECTURE.md#freight-intelligence-hooks"
+      "evidence": "src/entity/candidates.ts; docs/ARCHITECTURE.md#freight-intelligence-hooks",
+      "data_domain": "ontology"
     },
     {
       "capabilityId": "api.injection_guard",
@@ -211,7 +229,8 @@
       "surface": "ts-api",
       "method": "function",
       "path": "src/security/injection.ts",
-      "evidence": "src/security/injection.ts; prompts/classify_document.v1.md"
+      "evidence": "src/security/injection.ts; prompts/classify_document.v1.md",
+      "data_domain": "security-posture"
     },
     {
       "capabilityId": "api.prompt_registry",
@@ -222,7 +241,8 @@
       "surface": "ts-api",
       "method": "class",
       "path": "src/core/prompts.ts#PromptRegistry",
-      "evidence": "src/core/prompts.ts; prompts/"
+      "evidence": "src/core/prompts.ts; prompts/",
+      "data_domain": "model-weights"
     },
     {
       "capabilityId": "api.telemetry",
@@ -233,7 +253,8 @@
       "surface": "ts-api",
       "method": "interface",
       "path": "src/observability/telemetry.ts#TelemetrySink",
-      "evidence": "src/observability/telemetry.ts"
+      "evidence": "src/observability/telemetry.ts",
+      "data_domain": "network-health"
     },
     {
       "capabilityId": "contract.observation_bundle",
@@ -244,7 +265,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/observation/types.ts#ObservationBundle",
-      "evidence": "src/observation/types.ts; src/core/epistemics.ts; src/core/refusals.ts"
+      "evidence": "src/observation/types.ts; src/core/epistemics.ts; src/core/refusals.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "contract.canonical_state_candidate",
@@ -255,7 +277,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/canonical/boundary.ts#CanonicalStateCandidate",
-      "evidence": "src/canonical/boundary.ts; src/canonical/boundary.test.ts; docs/BOUNDARIES.md"
+      "evidence": "src/canonical/boundary.ts; src/canonical/boundary.test.ts; docs/BOUNDARIES.md",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "contract.execution_identity",
@@ -266,7 +289,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/observation/types.ts#ExtractionMeta",
-      "evidence": "src/observation/types.ts; src/core/ids.ts (executionKeyFrom, artifactIdFrom); docs/ARCHITECTURE.md#determinism"
+      "evidence": "src/observation/types.ts; src/core/ids.ts (executionKeyFrom, artifactIdFrom); docs/ARCHITECTURE.md#determinism",
+      "data_domain": "identity"
     },
     {
       "capabilityId": "contract.temporal_frame",
@@ -277,7 +301,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/core/time.ts#TemporalFrame",
-      "evidence": "src/core/time.ts; docs/ARCHITECTURE.md#temporal-semantics"
+      "evidence": "src/core/time.ts; docs/ARCHITECTURE.md#temporal-semantics",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "contract.refusals",
@@ -288,7 +313,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/core/refusals.ts",
-      "evidence": "src/core/refusals.ts; src/agent/tools.ts"
+      "evidence": "src/core/refusals.ts; src/agent/tools.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "cli.demo",
@@ -299,7 +325,8 @@
       "surface": "cli",
       "method": "npm",
       "path": "npm run demo [-- --live <pdf>]",
-      "evidence": "package.json; src/demo/rateConfirmation.demo.ts; README.md#quick-start"
+      "evidence": "package.json; src/demo/rateConfirmation.demo.ts; README.md#quick-start",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "cli.test",
@@ -310,7 +337,8 @@
       "surface": "cli",
       "method": "npm",
       "path": "npm test | npm run audit:boundary | npm run typecheck",
-      "evidence": "package.json; vitest.config.ts; src/canonical/boundary.test.ts"
+      "evidence": "package.json; vitest.config.ts; src/canonical/boundary.test.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "cli.test_live",
@@ -321,7 +349,8 @@
       "surface": "cli",
       "method": "npm",
       "path": "npm run test:live",
-      "evidence": "package.json; src/model/providers/mistral.live.test.ts; .env.example"
+      "evidence": "package.json; src/model/providers/mistral.live.test.ts; .env.example",
+      "data_domain": "automation"
     }
   ],
   "metadata": {

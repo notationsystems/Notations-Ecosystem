@@ -128,7 +128,7 @@
       "method": "GET",
       "path": "/api/gbfs",
       "evidence": "vite.config.js; src/data/bikeshare.js",
-      "data_domain": "mobility"
+      "data_domain": "road-traffic"
     },
     {
       "capabilityId": "layer.fires",
@@ -140,7 +140,7 @@
       "method": "GET",
       "path": "/api/firms",
       "evidence": "vite.config.js; src/data/firmsCsv.js; src/data/firmsHeatmap.js",
-      "data_domain": "environment",
+      "data_domain": "weather",
       "provenance": "NASA FIRMS VIIRS"
     },
     {

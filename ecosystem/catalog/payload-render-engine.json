@@ -13,7 +13,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/app/app.ts; src/earth/globe.ts; src/layers/nodesLayer.ts; src/layers/routesLayer.ts; index.html"
+      "evidence": "src/app/app.ts; src/earth/globe.ts; src/layers/nodesLayer.ts; src/layers/routesLayer.ts; index.html",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.command_bar",
@@ -24,7 +25,8 @@
       "surface": "ui",
       "method": "command",
       "path": "/ (key '/')",
-      "evidence": "src/app/commands.ts; src/ui/commandBar.ts; README.md#command-reference"
+      "evidence": "src/app/commands.ts; src/ui/commandBar.ts; README.md#command-reference",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.layer_panel",
@@ -35,7 +37,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/ui/layerPanel.ts; src/layers/layerManager.ts; src/app/api.ts (LayerId)"
+      "evidence": "src/ui/layerPanel.ts; src/layers/layerManager.ts; src/app/api.ts (LayerId)",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.inspector",
@@ -46,7 +49,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/ui/infoPanel.ts; src/ui/sparkline.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4"
+      "evidence": "src/ui/infoPanel.ts; src/ui/sparkline.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.timeline",
@@ -57,7 +61,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/ui/timeline.ts; src/core/time.ts; docs/ARCHITECTURE.md#8"
+      "evidence": "src/ui/timeline.ts; src/core/time.ts; docs/ARCHITECTURE.md#8",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.status_bar",
@@ -68,7 +73,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/ui/statusBar.ts; src/app/api.ts (AppEvents.status)"
+      "evidence": "src/ui/statusBar.ts; src/app/api.ts (AppEvents.status)",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.country_summary",
@@ -79,7 +85,8 @@
       "surface": "ui",
       "method": "view",
       "path": "/",
-      "evidence": "src/geo/countries.ts; src/app/api.ts (CountryInfo, countryInfo); src/data/store.ts (nodesInCountry, routesTouchingCountry)"
+      "evidence": "src/geo/countries.ts; src/app/api.ts (CountryInfo, countryInfo); src/data/store.ts (nodesInCountry, routesTouchingCountry)",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.compare_routes",
@@ -90,7 +97,8 @@
       "surface": "ui",
       "method": "command",
       "path": "compare <a> vs <b>",
-      "evidence": "src/app/commands.ts (compare); docs/ARCHITECTURE.md#10"
+      "evidence": "src/app/commands.ts (compare); docs/ARCHITECTURE.md#10",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "view.follow_the_load",
@@ -101,7 +109,8 @@
       "surface": "ui",
       "method": "command",
       "path": "follow the load",
-      "evidence": "src/interaction/followTheLoad.ts; src/data/synthetic/world.ts (tags demo:follow-the-load)"
+      "evidence": "src/interaction/followTheLoad.ts; src/data/synthetic/world.ts (tags demo:follow-the-load)",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "tool.fly_to",
@@ -112,7 +121,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[fly_to]",
-      "evidence": "src/app/toolSurface.ts; src/main.ts"
+      "evidence": "src/app/toolSurface.ts; src/main.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.find",
@@ -123,7 +133,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[find]",
-      "evidence": "src/app/toolSurface.ts; src/data/store.ts (search)"
+      "evidence": "src/app/toolSurface.ts; src/data/store.ts (search)",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.select_entity",
@@ -134,7 +145,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[select_entity]",
-      "evidence": "src/app/toolSurface.ts; src/interaction/selection.ts"
+      "evidence": "src/app/toolSurface.ts; src/interaction/selection.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.set_layer",
@@ -145,7 +157,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_layer]",
-      "evidence": "src/app/toolSurface.ts; src/layers/layerManager.ts"
+      "evidence": "src/app/toolSurface.ts; src/layers/layerManager.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.set_preset",
@@ -156,7 +169,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_preset]",
-      "evidence": "src/app/toolSurface.ts; src/app/api.ts (ViewPreset)"
+      "evidence": "src/app/toolSurface.ts; src/app/api.ts (ViewPreset)",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.set_flow_mode",
@@ -167,7 +181,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_flow_mode]",
-      "evidence": "src/app/toolSurface.ts; src/layers/flowsLayer.ts"
+      "evidence": "src/app/toolSurface.ts; src/layers/flowsLayer.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.set_time",
@@ -178,7 +193,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_time]",
-      "evidence": "src/app/toolSurface.ts; src/core/time.ts (setFraction)"
+      "evidence": "src/app/toolSurface.ts; src/core/time.ts (setFraction)",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.set_playing",
@@ -189,7 +205,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_playing]",
-      "evidence": "src/app/toolSurface.ts; src/core/time.ts"
+      "evidence": "src/app/toolSurface.ts; src/core/time.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.run_command",
@@ -200,7 +217,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[run_command]",
-      "evidence": "src/app/toolSurface.ts; src/app/commands.ts"
+      "evidence": "src/app/toolSurface.ts; src/app/commands.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.get_state",
@@ -211,7 +229,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[get_state]",
-      "evidence": "src/app/toolSurface.ts"
+      "evidence": "src/app/toolSurface.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "tool.follow_the_load",
@@ -222,7 +241,8 @@
       "surface": "browser-tool-registry",
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[follow_the_load]",
-      "evidence": "src/app/toolSurface.ts; src/interaction/followTheLoad.ts"
+      "evidence": "src/app/toolSurface.ts; src/interaction/followTheLoad.ts",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "api.app_facade",
@@ -233,7 +253,8 @@
       "surface": "browser-global",
       "method": "ts-api",
       "path": "window.payloadEarth.api",
-      "evidence": "src/app/api.ts; src/main.ts"
+      "evidence": "src/app/api.ts; src/main.ts",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "api.world_store",
@@ -244,7 +265,8 @@
       "surface": "ts-api",
       "method": "class",
       "path": "src/data/store.ts#WorldStore",
-      "evidence": "src/data/store.ts"
+      "evidence": "src/data/store.ts",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "events.app_bus",
@@ -255,7 +277,8 @@
       "surface": "event-stream",
       "method": "subscribe",
       "path": "api.events",
-      "evidence": "src/core/events.ts; src/app/api.ts (AppEvents)"
+      "evidence": "src/core/events.ts; src/app/api.ts (AppEvents)",
+      "data_domain": "visualisation"
     },
     {
       "capabilityId": "contract.spatial_data_provider",
@@ -266,7 +289,8 @@
       "surface": "wire-contract",
       "method": "interface",
       "path": "src/data/provider.ts#SpatialDataProvider",
-      "evidence": "src/data/provider.ts; docs/ARCHITECTURE.md#the-provider-interface"
+      "evidence": "src/data/provider.ts; docs/ARCHITECTURE.md#the-provider-interface",
+      "data_domain": "facilities"
     },
     {
       "capabilityId": "contract.world_snapshot",
@@ -277,7 +301,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#WorldSnapshot",
-      "evidence": "src/data/contracts.ts"
+      "evidence": "src/data/contracts.ts",
+      "data_domain": "facilities"
     },
     {
       "capabilityId": "contract.node_ontology",
@@ -288,7 +313,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#Facility",
-      "evidence": "src/data/contracts.ts"
+      "evidence": "src/data/contracts.ts",
+      "data_domain": "facilities"
     },
     {
       "capabilityId": "contract.route_flow",
@@ -299,7 +325,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#Route",
-      "evidence": "src/data/contracts.ts"
+      "evidence": "src/data/contracts.ts",
+      "data_domain": "trade-lanes"
     },
     {
       "capabilityId": "contract.provenance",
@@ -310,7 +337,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#Provenance",
-      "evidence": "src/data/contracts.ts; scripts/validate-provenance.mjs"
+      "evidence": "src/data/contracts.ts; scripts/validate-provenance.mjs",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "contract.assertion_observation_deviation",
@@ -321,7 +349,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#Assertion",
-      "evidence": "src/data/contracts.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4"
+      "evidence": "src/data/contracts.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "contract.events_constraints",
@@ -332,7 +361,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#WorldEvent",
-      "evidence": "src/data/contracts.ts; src/data/synthetic/world.ts (buildEvents)"
+      "evidence": "src/data/contracts.ts; src/data/synthetic/world.ts (buildEvents)",
+      "data_domain": "disruptions"
     },
     {
       "capabilityId": "contract.temporal_state",
@@ -343,7 +373,8 @@
       "surface": "wire-contract",
       "method": "schema",
       "path": "src/data/contracts.ts#TemporalState",
-      "evidence": "src/data/contracts.ts; src/core/time.ts"
+      "evidence": "src/data/contracts.ts; src/core/time.ts",
+      "data_domain": "canonical-state"
     },
     {
       "capabilityId": "data.synthetic_world",
@@ -354,7 +385,8 @@
       "surface": "dataset",
       "method": "in-process",
       "path": "src/data/synthetic/world.ts#buildWorldSnapshot",
-      "evidence": "src/data/synthetic/world.ts; src/data/synthetic/provider.ts"
+      "evidence": "src/data/synthetic/world.ts; src/data/synthetic/provider.ts",
+      "data_domain": "synthetic-scenes"
     },
     {
       "capabilityId": "data.basemap_topojson",
@@ -365,7 +397,8 @@
       "surface": "static-file",
       "method": "GET",
       "path": "/data/land-50m.json, /data/countries-110m.json",
-      "evidence": "public/data/land-50m.json; public/data/countries-110m.json; src/geo/texture.ts; src/geo/countries.ts"
+      "evidence": "public/data/land-50m.json; public/data/countries-110m.json; src/geo/texture.ts; src/geo/countries.ts",
+      "data_domain": "terrain"
     },
     {
       "capabilityId": "cli.check",
@@ -376,7 +409,8 @@
       "surface": "cli",
       "method": "npm",
       "path": "npm run check",
-      "evidence": "package.json; scripts/check-seam.mjs; scripts/validate-provenance.mjs"
+      "evidence": "package.json; scripts/check-seam.mjs; scripts/validate-provenance.mjs",
+      "data_domain": "automation"
     },
     {
       "capabilityId": "cli.dev_build",
@@ -387,7 +421,8 @@
       "surface": "cli",
       "method": "npm",
       "path": "npm run dev | build | preview",
-      "evidence": "package.json; vite.config.ts"
+      "evidence": "package.json; vite.config.ts",
+      "data_domain": "automation"
     }
   ],
   "metadata": {

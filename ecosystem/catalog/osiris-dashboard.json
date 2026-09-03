@@ -146,7 +146,7 @@
       "method": "GET",
       "path": "/api/fires",
       "evidence": "src/app/api/fires/route.ts",
-      "data_domain": "environment",
+      "data_domain": "weather",
       "provenance": "NASA FIRMS"
     },
     {
@@ -159,7 +159,7 @@
       "method": "GET",
       "path": "/api/weather",
       "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts",
-      "data_domain": "environment"
+      "data_domain": "weather"
     },
     {
       "capabilityId": "feeds.radar",
@@ -207,7 +207,7 @@
       "method": "GET",
       "path": "/api/gdelt-events",
       "evidence": "src/app/api/gdelt/route.ts; src/app/api/gdelt-events/route.ts; src/lib/gdeltEvents.ts",
-      "data_domain": "events"
+      "data_domain": "conflict"
     },
     {
       "capabilityId": "feeds.country_risk",
@@ -255,7 +255,7 @@
       "method": "GET",
       "path": "/api/markets",
       "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts; src/app/api/crypto/route.ts",
-      "data_domain": "markets"
+      "data_domain": "financial-markets"
     },
     {
       "capabilityId": "feeds.scm_suppliers",
@@ -267,7 +267,7 @@
       "method": "GET",
       "path": "/api/scm-suppliers",
       "evidence": "src/app/api/scm-suppliers/route.ts",
-      "data_domain": "supply-chain"
+      "data_domain": "logistics"
     },
     {
       "capabilityId": "feeds.cctv",
@@ -315,7 +315,7 @@
       "method": "GET",
       "path": "/api/arcgis",
       "evidence": "src/app/api/arcgis/route.ts",
-      "data_domain": "gis"
+      "data_domain": "local-context"
     },
     {
       "capabilityId": "feeds.cyber",

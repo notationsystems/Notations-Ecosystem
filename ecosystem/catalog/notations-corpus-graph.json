@@ -190,7 +190,7 @@
       "surface": "python",
       "method": "ncg.ingest.parsers.bruker",
       "evidence": "ncg/ingest/parsers/bruker.py; ncg/ingest/pipeline.py (_is_bruker_root)",
-      "data_domain": "nmr"
+      "data_domain": "spectroscopy"
     },
     {
       "capabilityId": "parser.sec_ascii",
