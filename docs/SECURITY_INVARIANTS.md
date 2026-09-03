@@ -47,6 +47,8 @@ Run them with `cd control-plane && npm test`.
 | SEC-037 | Material with no legitimate reading is refused in every field, not only in posture. | `assertNoWeaponisedText`, called from `validation.js` `string()` and metadata. | `SEC-037 material with no legitimate reading…` |
 | SEC-038 | The published contract names every code the plane can emit, and no code it cannot. | `openapi/control-plane.openapi.yaml` `ErrorCode`; the test walks `src/` rather than a list. | `SEC-CONTRACT the published contract names every code…` |
 | SEC-039 | Every variable the plane reads is documented, and nothing else is. | `.env.example`, checked against the source tree. | `SEC-CONFIG every variable the plane reads is documented…` |
+| SEC-040 | The evidence producer holds itself to the boundary it claims, not a subset of it. | `assertProducerOutputIsEvidence` runs the server's `parseSignals`. | `SEC-PRODUCER the producer holds itself…` |
+| SEC-041 | Every action the parser accepts requires a named permission. | `SUPPORTED_ACTIONS` compared against `ACTION_PERMISSIONS`, in the producer and in a test. | `SEC-PRODUCER the authorization signal measures something other than itself` |
 
 ## Recovery
 

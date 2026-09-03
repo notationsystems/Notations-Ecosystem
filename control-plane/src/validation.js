@@ -157,6 +157,23 @@ function base(input, action, fields) {
   };
 }
 
+/**
+ * Every action `parseCommand` will parse.
+ *
+ * Declared here rather than inferred from the switch, so a second list — the policy
+ * table's `ACTION_PERMISSIONS` — can be compared against it. An action this parser
+ * accepts and the permission table does not map is an action nobody has to hold anything
+ * to invoke, and until something compared the two, nothing would have noticed.
+ */
+export const SUPPORTED_ACTIONS = Object.freeze([
+  'register_node',
+  'declare_relation',
+  'record_observation',
+  'record_security_posture',
+  'request_capability',
+  'resolve_coordination',
+]);
+
 export function parseCommand(input) {
   const top = record(input, 'command');
   // Bound the shape before anything recurses over it. The command digest

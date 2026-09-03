@@ -25,7 +25,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { detectRefusedMaterial, MAX_SIGNALS_PER_ATTESTATION, POSTURE_DIMENSIONS } from '../control-plane/src/security/evidence.js';
+import { MAX_SIGNALS_PER_ATTESTATION, POSTURE_DIMENSIONS, parseSignals } from '../control-plane/src/security/evidence.js';
 import { HttpControlPlane } from '../control-plane/src/client.js';
 
 const run = promisify(execFile);
@@ -116,15 +116,70 @@ async function identityPosture(environment) {
   };
 }
 
-/** Authorization coverage: the fraction of state-changing actions with a required permission. */
+/**
+ * Authorization coverage: how many of the plane's state-changing actions the enforcement
+ * table actually covers.
+ *
+ * This used to read ACTION_PERMISSIONS and grade ACTION_PERMISSIONS — `actions.length ?
+ * 'strong' : 'unknown'` over a frozen literal of six entries, with coverage hard-coded
+ * to 1. The 'unknown' branch was unreachable and the signal could only ever say
+ * 'strong', which is a decoration rather than a measurement: an action added to
+ * validation.js and forgotten in the permission table would have left it saying 'strong'
+ * while the gap it exists to find sat open.
+ *
+ * It compares two independent lists now: the actions the validator will parse, and the
+ * actions the policy table will authorise. Coverage is the fraction, and a gap is
+ * `failing` because an action with no permission mapping is an action nobody has to hold
+ * anything to invoke.
+ */
 async function authorizationPosture() {
-  const { ACTION_PERMISSIONS, ROLES } = await import('../control-plane/src/security/policy.js');
-  const actions = Object.keys(ACTION_PERMISSIONS);
+  const [{ ACTION_PERMISSIONS, ROLES }, { SUPPORTED_ACTIONS }] = await Promise.all([
+    import('../control-plane/src/security/policy.js'),
+    import('../control-plane/src/validation.js'),
+  ]);
+  const parsed = [...SUPPORTED_ACTIONS];
+  const authorized = parsed.filter(action => Object.hasOwn(ACTION_PERMISSIONS, action));
+  const orphaned = Object.keys(ACTION_PERMISSIONS).filter(action => !parsed.includes(action));
+  const coverage = parsed.length ? clamp(authorized.length / parsed.length) : 0;
+  const gaps = parsed.length - authorized.length;
+  const state = !parsed.length ? 'unknown' : gaps > 0 ? 'failing' : orphaned.length ? 'adequate' : 'strong';
   return {
     dimension: 'authorization',
-    state: actions.length ? 'strong' : 'unknown',
-    coverage: 1,
-    summary: `${actions.length} state-changing actions each require a named permission across ${Object.keys(ROLES).length} roles, with separation of duties on approval.`,
+    state,
+    coverage,
+    findings: { critical: gaps, high: 0, medium: orphaned.length, low: 0 },
+    summary: gaps > 0
+      ? `${gaps} of ${parsed.length} parsed actions have no permission mapping and would be authorised by default.`
+      : `${authorized.length} parsed actions each require a named permission across ${Object.keys(ROLES).length} roles, with separation of duties on approval.`,
+  };
+}
+
+/**
+ * Incident state.
+ *
+ * `incident` is one of the eleven constellation dimensions and nothing in this estate
+ * ever produced it, so its tile read `unknown` forever and an operator could not tell
+ * "no incidents" from "nobody is looking". The producer can answer the second half
+ * honestly from what it does see: the plane's own security log counts authentication
+ * failures, lockouts, authorization denials and integrity failures since boot.
+ *
+ * It is deliberately narrow, and says so. A real incident process is a human one; this
+ * reports whether the process that would notice is running, and what it has counted.
+ */
+function incidentPosture(securityEvents) {
+  if (!securityEvents) {
+    return { dimension: 'incident', state: 'unknown', coverage: 0, summary: 'No incident record is reachable from this producer; the tile is unmeasured, not clear.' };
+  }
+  const integrity = securityEvents['integrity.failed'] ?? 0;
+  const lockouts = securityEvents['auth.lockout'] ?? 0;
+  const denials = securityEvents['authz.denied'] ?? 0;
+  const state = integrity > 0 ? 'failing' : lockouts > 0 ? 'weak' : denials > 0 ? 'adequate' : 'strong';
+  return {
+    dimension: 'incident',
+    state,
+    coverage: 0.4,
+    findings: { critical: integrity, high: lockouts, medium: denials, low: 0 },
+    summary: `Since boot: ${integrity} integrity failures, ${lockouts} lockouts, ${denials} authorization denials. Coverage is partial: this counts what the plane observed, not what an incident process concluded.`,
   };
 }
 
@@ -294,18 +349,27 @@ async function controlPlaneIntegrityPosture() {
  * leaks material should fail here, where the person running it sees why.
  */
 export function assertProducerOutputIsEvidence(signals) {
-  for (const signal of signals) {
-    if (!(signal.dimension in POSTURE_DIMENSIONS)) throw new Error(`Unknown constellation dimension ${signal.dimension}.`);
-    if (!signal.summary) continue;
-    const found = detectRefusedMaterial(signal.summary);
-    if (found) {
-      throw new Error(`Refusing to attest: the ${signal.dimension} summary contains ${found.class} (${found.id}). ${found.why}`);
-    }
+  // The server's own parser, not a re-implementation of two of its rules.
+  //
+  // This used to check the dimension with `in POSTURE_DIMENSIONS` and run
+  // detectRefusedMaterial over the summary, and the comment at the top of this file
+  // claimed it was "the same refusal boundary the server enforces". It was two of eight:
+  // it did not refuse an unknown field, an out-of-range coverage, a state outside the
+  // enum, a malformed expiresAt, an evidenceRef that is not an information identity, a
+  // summary over 280 characters, or a signal count over the cap — and `in` admitted
+  // every inherited property name.
+  //
+  // Running parseSignals means a careless producer fails here, loudly, at the moment it
+  // is written, rather than at a boundary someone might be tempted to work around.
+  try {
+    parseSignals(signals);
+  } catch (error) {
+    throw new Error(`Refusing to attest: ${error.detail ?? error.message}${error.remedy ? ` ${error.remedy}` : ''}`);
   }
   return signals;
 }
 
-export async function collectPosture({ environment = process.env, journalPath, packageDirectory = path.join(ROOT, 'control-plane'), skipTests = false } = {}) {
+export async function collectPosture({ environment = process.env, journalPath, packageDirectory = path.join(ROOT, 'control-plane'), skipTests = false, securityEvents = null } = {}) {
   const signals = [
     await identityPosture(environment),
     await authorizationPosture(),
@@ -315,6 +379,12 @@ export async function collectPosture({ environment = process.env, journalPath, p
     await exposurePosture(),
     await auditIntegrityPosture(journalPath ?? resolveJournalPath(environment)),
     await backupPosture(environment),
+    // Reachable only from a process that holds the plane's security log, which this
+    // producer deliberately is not — an attestor credential does not carry
+    // security.status.read, and widening it to make one tile prettier would be the wrong
+    // trade. Passing null makes the tile say "unmeasured, not clear", which is the honest
+    // answer and the one the dimension previously could not give at all.
+    incidentPosture(securityEvents),
     ...(skipTests ? [] : [await controlPlaneIntegrityPosture()]),
   ];
   return assertProducerOutputIsEvidence(signals);

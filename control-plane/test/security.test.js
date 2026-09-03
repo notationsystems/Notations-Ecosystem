@@ -1212,3 +1212,47 @@ test('SEC-CONFIG every variable the plane reads is documented, and nothing else 
   assert.deepEqual([...documented].filter(v => !read.has(v)).sort(), [], 'variables the example documents and the plane never reads');
   assert.ok(read.size >= 20);
 });
+
+test('SEC-PRODUCER the producer holds itself to the boundary it says it holds itself to', async () => {
+  const { assertProducerOutputIsEvidence } = await import('../../security/attest.mjs');
+
+  // The header of attest.mjs claims every signal is "re-checked against the same refusal
+  // boundary the server enforces". It used to check two of eight rules — the dimension
+  // with `in`, and the summary — so a producer could emit an unknown field, a coverage
+  // of 5, a state outside the enum, an authority identity as evidence, or an inherited
+  // property name as a dimension, and find out only at the server.
+  const refused = [
+    [{ dimension: 'toString', state: 'strong' }, 'an inherited property name'],
+    [{ dimension: 'identity', state: 'brilliant' }, 'a state outside the enum'],
+    [{ dimension: 'identity', state: 'strong', coverage: 5 }, 'a coverage out of range'],
+    [{ dimension: 'identity', state: 'strong', vibes: 1 }, 'an unknown field'],
+    [{ dimension: 'identity', state: 'strong', evidenceRef: 'notation://key/notationsystems/k-1' }, 'an authority identity as evidence'],
+    [{ dimension: 'identity', state: 'strong', summary: 'x'.repeat(400) }, 'a summary over the cap'],
+    // secret-scan:allow a fixture the evidence boundary must refuse
+    [{ dimension: 'exposure', state: 'weak', summary: 'Reachable on 10.4.2.7 and db.internal:5432.' }, 'network topology'],
+  ];
+  for (const [signal, why] of refused) {
+    assert.throws(() => assertProducerOutputIsEvidence([signal]), /Refusing to attest/, `${why} must be refused by the producer`);
+  }
+  assert.doesNotThrow(() => assertProducerOutputIsEvidence([{ dimension: 'identity', state: 'strong', coverage: 1, summary: 'Every credential is bound to one actor identity.' }]));
+});
+
+test('SEC-PRODUCER the authorization signal measures something other than itself', async () => {
+  const { SUPPORTED_ACTIONS } = await import('../src/validation.js');
+  const { ACTION_PERMISSIONS } = await import('../src/security/policy.js');
+
+  // The signal used to read the permission table and grade the permission table, with
+  // coverage hard-coded to 1 and the 'unknown' branch unreachable. It now compares two
+  // independent lists, so an action the parser accepts and the table does not map — an
+  // action nobody has to hold anything to invoke — is a failing signal rather than
+  // invisible.
+  const parsed = [...SUPPORTED_ACTIONS];
+  assert.ok(parsed.length >= 6);
+  assert.deepEqual(parsed.filter(action => !Object.hasOwn(ACTION_PERMISSIONS, action)), [], 'every parsed action requires a named permission');
+  assert.deepEqual(Object.keys(ACTION_PERMISSIONS).filter(action => !parsed.includes(action)), [], 'and every mapped permission names an action the parser accepts');
+
+  // The declared list is the switch, not a second thing to keep in step by hand.
+  const source = await readFile(new URL('../src/validation.js', import.meta.url), 'utf8');
+  const cases = [...source.matchAll(/^ {4}case '([a-z_]+)':/gm)].map(m => m[1]).sort();
+  assert.deepEqual(cases, [...parsed].sort());
+});
