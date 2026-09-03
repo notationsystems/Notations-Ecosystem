@@ -1,0 +1,442 @@
+{
+  "nodeId": "payload-ocr-agent",
+  "name": "Payload OCR Agent",
+  "kind": "reasoning_engine",
+  "description": "Document perception subsystem for the Payload operating system: it turns freight paperwork (rate confirmations, bills of lading, proofs of delivery, invoices, scans, PDFs) into structured, provenance-preserving Observations. Its output unit is an ObservationBundle - every field carries verbatim raw text, a normalized value, an evidence location (page + character span into preserved OCR text), separate extraction-confidence / source-reliability / verification fields, a temporal frame and full execution identity - wrapped as a CanonicalStateCandidate with adjudication fixed at 'pending'. It emits only OBSERVED / EXTRACTED / INFERRED states, detects conflicts without resolving them, proposes entity candidates without resolving identity, and hands bundles to the host's EvidencePool through an EvidenceSink port. It must never become a source of truth: no canonical-state types, stores or writers exist in the package, and tests audit the source tree to keep it that way. The OCR model (Mistral today) sits behind the OCRModel seam.",
+  "capabilities": [
+    {
+      "capabilityId": "tool.ocr.inspect_document",
+      "label": "ocr.inspect_document - perception summary",
+      "description": "Ingests an artifact (content bytes, mimeType, fileName, receivedAt, source) and runs full-document OCR via the provider; returns InspectResult {artifactId (content-addressed), pageCount, blocksPerPage, tablesPerPage, textCharsPerPage, warnings} or a typed Refusal (UNSUPPORTED_MIME, OCR_FAILED, DOCUMENT_UNREADABLE, PROVIDER_UNAVAILABLE...). Reads the document; writes nothing.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.inspect_document']",
+      "evidence": "src/agent/tools.ts; src/artifact/acquire.ts"
+    },
+    {
+      "capabilityId": "tool.ocr.classify_document",
+      "label": "ocr.classify_document - typed classification",
+      "description": "OCRs the artifact and classifies it as one of RATE_CONFIRMATION, BILL_OF_LADING, PROOF_OF_DELIVERY, INVOICE, PURCHASE_ORDER, CARRIER_PACKET, INSURANCE_CERTIFICATE, CUSTOMS_DOCUMENT, PACKING_LIST, SHIPPER_DOCUMENT, CONTRACT, EMAIL_ATTACHMENT, OTHER or UNKNOWN with a confidence; UNKNOWN is the floor (CLASSIFICATION_FLOOR 0.5). A proposal about document kind, never about truth of contents.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.classify_document']",
+      "evidence": "src/agent/tools.ts; src/classify/classifier.ts; src/classify/documentType.ts; prompts/classify_document.v1.md"
+    },
+    {
+      "capabilityId": "tool.ocr.extract_fields",
+      "label": "ocr.extract_fields - full pipeline to ObservationBundle",
+      "description": "Runs the staged pipeline: ingest/identify -> raw perception -> classify -> schema-guided extraction with versioned prompt -> zod validation + consistency checks (report, never repair) -> normalization keeping raw -> Observation construction -> conflict detection -> entity candidates -> EvidenceSink registration -> CanonicalStateCandidate. Returns PipelineOutput {bundle, candidate, receipt, entityCandidates, validationIssues, classification, artifactReprocessed}. Registers candidates with the host-supplied sink (idempotent under contentHash+executionKey); never touches canonical state.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.extract_fields']",
+      "evidence": "src/agent/tools.ts; src/pipeline/pipeline.ts"
+    },
+    {
+      "capabilityId": "tool.ocr.extract_table",
+      "label": "ocr.extract_table - tables of an artifact",
+      "description": "Ingests the artifact and returns the provider's table perception (OCRTable[] per page) in provider-neutral shape, or a typed Refusal.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.extract_table']",
+      "evidence": "src/agent/tools.ts; src/model/OCRModel.ts (extractTables)"
+    },
+    {
+      "capabilityId": "tool.ocr.find_evidence",
+      "label": "ocr.find_evidence - observation id to evidence location",
+      "description": "Looks up an observationId inside a bundle and returns {observation, location} where EvidenceLocation is text_span {artifactId, page, start, end} | page_only | region (bounding box) | artifact_only. Refuses FIELD_NOT_FOUND otherwise. No model call.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.find_evidence']",
+      "evidence": "src/agent/tools.ts; src/model/types.ts (EvidenceLocation)"
+    },
+    {
+      "capabilityId": "tool.ocr.validate_extraction",
+      "label": "ocr.validate_extraction - consistency issues of a bundle",
+      "description": "Surfaces the validation issues attached at extraction time (e.g. arithmetic_mismatch: charges vs printed total, inverted pickup/delivery windows) as ValidationIssue[] {kind, field, detail} without re-running a model. Issues are reported, never repaired.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.validate_extraction']",
+      "evidence": "src/agent/tools.ts; src/extract/validate.ts"
+    },
+    {
+      "capabilityId": "tool.ocr.compare_documents",
+      "label": "ocr.compare_documents - cross-document conflict detection",
+      "description": "Given two bundles with claimant labels, joins observations on the curated shared-subject map (no fuzzy joins) and returns ConflictRecord[] {conflictId, subjectKey, relation contradiction | supersession_candidate | under_determined, observationIds, detail, remedy}. All readings retained, no winner chosen, recency never a tiebreak; resolution is explicitly downstream.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.compare_documents']",
+      "evidence": "src/agent/tools.ts; src/conflict/detect.ts; src/conflict/subjects.ts"
+    },
+    {
+      "capabilityId": "tool.ocr.create_observation",
+      "label": "ocr.create_observation - bundle to canonical-state CANDIDATE",
+      "description": "Wraps a sealed ObservationBundle as CanonicalStateCandidate {kind: 'canonical_state_candidate', adjudication: 'pending', bundle, requiredPath: ['EvidencePool','EntityResolution','Validation']}. Refuses CANONICAL_STATE_BREACH if any observation claims a non-perception status or a verification other than UNVERIFIED. The only shape allowed to travel toward canonical state; adjudication happens downstream.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "agent-tool",
+      "method": "call",
+      "path": "createOcrTools(deps)['ocr.create_observation']",
+      "evidence": "src/agent/tools.ts; src/canonical/boundary.ts"
+    },
+    {
+      "capabilityId": "api.process_document",
+      "label": "processDocument(deps, req) pipeline entry",
+      "description": "Public TypeScript entry for the staged lifecycle behind ocr.extract_fields. PipelineDeps = {provider: OCRModel, sink: EvidenceSink, prompts?, telemetry?, register?: ArtifactRegister, now?}. Returns Result<PipelineOutput>; PIPELINE_VERSION is stamped into every ExtractionMeta.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/pipeline/pipeline.ts#processDocument",
+      "evidence": "src/pipeline/pipeline.ts; src/index.ts"
+    },
+    {
+      "capabilityId": "api.ingest_artifact",
+      "label": "ingestArtifact / ArtifactRegister (INGEST, IDENTIFY)",
+      "description": "Content-addressed artifact identity: IngestRequest {content: Uint8Array, mimeType, fileName?, receivedAt, source, maxBytes? (default 50 MiB)} -> ArtifactWithContent with artifactId derived from bytes; refuses unsupported MIME types and oversize input. ArtifactRegister records Sightings so the same bytes seen twice never become two evidence objects.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/artifact/acquire.ts#ingestArtifact",
+      "evidence": "src/artifact/acquire.ts; src/artifact/types.ts; src/core/ids.ts"
+    },
+    {
+      "capabilityId": "api.ocr_model_seam",
+      "label": "OCRModel provider interface",
+      "description": "The only model surface the system sees: {providerName, deterministic, extractDocument(artifact), extractPages(artifact, pages), extractLayout(artifact), extractTables(artifact), extractStructured({artifact, jsonSchema, schemaVersion, prompt, promptVersion})}, all returning Result in the agent's refusal vocabulary. Implementations: MistralOCRProvider (data-URL documents, markdown pages, document_annotation JSON-schema extraction) and FixtureOCRProvider (deterministic test corpus). A structural test fails if provider names leak outside src/model/providers/.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "interface",
+      "path": "src/model/OCRModel.ts#OCRModel",
+      "evidence": "src/model/OCRModel.ts; src/model/providers/mistral.ts; src/model/providers/fixture.ts; src/model/providerSeam.test.ts"
+    },
+    {
+      "capabilityId": "api.provider_factory",
+      "label": "createProvider / providerFromEnv",
+      "description": "Configuration-time construction of the OCR provider: createProvider({provider:'mistral', config}) or ({provider:'fixture', fixtures}); providerFromEnv() selects Mistral when MISTRAL_API_KEY is set and otherwise refuses PROVIDER_UNAVAILABLE with a remedy. Hosts must not import MistralOCRProvider outside configuration code.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/model/providers/index.ts#createProvider",
+      "evidence": "src/model/providers/index.ts; .env.example; docs/BOUNDARIES.md#integration-contract-for-the-host"
+    },
+    {
+      "capabilityId": "api.schema_registry",
+      "label": "Freight document schemas (zod) and registry",
+      "description": "schemaFor(documentType) / registeredSchemas(): versioned zod schemas for RATE_CONFIRMATION, BILL_OF_LADING, PROOF_OF_DELIVERY and INVOICE, each paired with a versioned prompt; the JSON Schema handed to extractStructured is derived from the zod schema and its schemaVersion is stamped on every observation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/schema/registry.ts#schemaFor",
+      "evidence": "src/schema/registry.ts; src/schema/rateConfirmation.ts; src/schema/billOfLading.ts; src/schema/proofOfDelivery.ts; src/schema/invoice.ts"
+    },
+    {
+      "capabilityId": "api.normalize",
+      "label": "Deterministic normalizers (money, weight, temporal)",
+      "description": "Normalize money ('$1,850 USD' -> 1850 + USD), weight ('42,000 lbs' -> 42000 + lb) and document-stated times ('Sept 3 8:00 AM' -> '--09-03T08:00' at written precision, zone 'unstated') while always keeping raw beside the value. Divergence between the normalizer and the provider's typed reading is retained on the observation and warned on the bundle.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/normalize/index.ts",
+      "evidence": "src/normalize/money.ts; src/normalize/weight.ts; src/normalize/temporal.ts; docs/ARCHITECTURE.md#normalization"
+    },
+    {
+      "capabilityId": "api.build_observation",
+      "label": "buildObservation / observationsFromExtraction",
+      "description": "Construction checkpoint for the Observation unit: refuses (ObservationConstructionError) unless source location, temporal frame and execution identity are present, and asserts the epistemic state is OBSERVED, EXTRACTED or INFERRED (INFERRED requires a stated rule and input observation ids). observationsFromExtraction flattens a validated extraction into observations; locateInPages finds verbatim spans in preserved page text. Typed values without a verbatim source are dropped as unwarranted.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/observation/build.ts#buildObservation",
+      "evidence": "src/observation/build.ts; src/extract/fields.ts; src/core/epistemics.ts"
+    },
+    {
+      "capabilityId": "api.evidence_sink_port",
+      "label": "EvidenceSink port and registerBundle bridge",
+      "description": "Outbound port to the host's authoritative EvidencePool: EvidenceSink.register(bundle) -> Result<EvidenceReceipt {bundleId, evidenceIds (pool-assigned, aligned to observations), deduplicated, registeredAt}>, required idempotent under (artifact.contentHash, extraction.executionKey). registerBundle re-checks warrants before crossing; RecordingEvidenceSink is an in-memory stub for tests/demo, explicitly not an evidence store. The agent never mints evidence ids.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "interface",
+      "path": "src/evidence/port.ts#EvidenceSink",
+      "evidence": "src/evidence/port.ts; src/evidence/bridge.ts; docs/BOUNDARIES.md"
+    },
+    {
+      "capabilityId": "api.detect_conflicts",
+      "label": "detectConflicts(SubjectObservation[])",
+      "description": "Library entry behind ocr.compare_documents: classifies incompatible readings of a shared subject into contradiction / supersession_candidate / under_determined, keeping every supporting observation and prescribing a remedy for downstream reconciliation. Vocabulary matches the Terminal's claim relations so it can be ingested without translation.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/conflict/detect.ts#detectConflicts",
+      "evidence": "src/conflict/detect.ts; src/observation/types.ts (ConflictRecord)"
+    },
+    {
+      "capabilityId": "api.entity_candidates",
+      "label": "candidatesFromObservations - EntityCandidate emission",
+      "description": "Derives typed EntityCandidate {kind shipment|load|carrier|shipper|consignee|facility|address|lane|commodity|equipment|invoice|order, raw verbatim text, observationId, location, resolution: 'unresolved', schemeHint?} from a bundle. Addresses are candidates for the spatial layer (address -> facility -> coordinates -> network node -> route) to resolve; nothing is merged on similarity here.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/entity/candidates.ts#candidatesFromObservations",
+      "evidence": "src/entity/candidates.ts; docs/ARCHITECTURE.md#freight-intelligence-hooks"
+    },
+    {
+      "capabilityId": "api.injection_guard",
+      "label": "envelopeDocumentText / findInjectionAttempts",
+      "description": "Document content is data, never instructions: OCR text is wrapped in a delimiter-neutralized DOCUMENT CONTENT envelope before any prompt, and mechanical injection detection returns InjectionFinding[] surfaced as bundle warnings only (never blocking, never acted on).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "function",
+      "path": "src/security/injection.ts",
+      "evidence": "src/security/injection.ts; prompts/classify_document.v1.md"
+    },
+    {
+      "capabilityId": "api.prompt_registry",
+      "label": "Versioned prompt registry",
+      "description": "PromptRegistry / defaultPromptRegistry load prompts/*.vN.md (classify_document, extract_rate_confirmation, extract_bol, extract_pod, extract_invoice); prompt identity = name + content hash and the promptVersion is recorded on every extraction. Prompts are never inline literals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "class",
+      "path": "src/core/prompts.ts#PromptRegistry",
+      "evidence": "src/core/prompts.ts; prompts/"
+    },
+    {
+      "capabilityId": "api.telemetry",
+      "label": "TelemetrySink / ExecutionRecord",
+      "description": "Operational telemetry channel: ExecutionRecord carries counts, provider/model/prompt/schema/pipeline versions, latency and refusal codes and has structurally no slot for a document value; InMemoryTelemetry is the default sink. Telemetry and evidence never share a channel.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ts-api",
+      "method": "interface",
+      "path": "src/observability/telemetry.ts#TelemetrySink",
+      "evidence": "src/observability/telemetry.ts"
+    },
+    {
+      "capabilityId": "contract.observation_bundle",
+      "label": "ObservationBundle / Observation (the emitted evidence contract)",
+      "description": "Observation {observationId 'obs:<hash>' deterministic under (artifact, field, executionKey), field subject key e.g. 'rate_confirmation/total_rate', value {raw, normalized, unit} | typed Absence (NOT_PRESENT, NOT_READABLE, NOT_EXTRACTED, NOT_APPLICABLE, UNKNOWN, CONFLICTING), status OBSERVED|EXTRACTED|INFERRED, extractionConfidence, rawConfidence?, sourceReliability 'unassessed', verificationStatus 'UNVERIFIED', location, temporal, extraction, inference?, notes?}. Bundle adds bundleId, artifact, documentType, classificationConfidence, conflicts, ambiguities, warnings, refusals, ocrExecutions.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire-contract",
+      "method": "schema",
+      "path": "src/observation/types.ts#ObservationBundle",
+      "evidence": "src/observation/types.ts; src/core/epistemics.ts; src/core/refusals.ts"
+    },
+    {
+      "capabilityId": "contract.canonical_state_candidate",
+      "label": "CanonicalStateCandidate (adjudication: pending)",
+      "description": "The only shape that may travel toward canonical state: {kind 'canonical_state_candidate', adjudication 'pending' (no constructor argument exists to change it), bundle, requiredPath ['EvidencePool','EntityResolution','Validation']}. The boundary test walks the source tree and fails if any module outside src/canonical/ names canonical state.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire-contract",
+      "method": "schema",
+      "path": "src/canonical/boundary.ts#CanonicalStateCandidate",
+      "evidence": "src/canonical/boundary.ts; src/canonical/boundary.test.ts; docs/BOUNDARIES.md"
+    },
+    {
+      "capabilityId": "contract.execution_identity",
+      "label": "ExtractionMeta / execution identity",
+      "description": "Every bundle and observation carries {modelProvider, model, modelVersion, promptVersion, schemaVersion, pipelineVersion, executionKey = hash(contentHash, provider, modelVersion, promptVersion, schemaVersion, pipelineVersion), executionId per run}. Same artifact + same configuration -> same observationId/bundleId, so re-processing is comparable even with a nondeterministic provider.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire-contract",
+      "method": "schema",
+      "path": "src/observation/types.ts#ExtractionMeta",
+      "evidence": "src/observation/types.ts; src/core/ids.ts (executionKeyFrom, artifactIdFrom); docs/ARCHITECTURE.md#determinism"
+    },
+    {
+      "capabilityId": "contract.temporal_frame",
+      "label": "TemporalFrame",
+      "description": "Distinguishes documentCreatedAt / documentReceivedAt / eventTime / effectiveTime / knownAt / extractedAt; knownAt is bounded by artifact receipt and can never postdate extraction (assertFrameCoherent). Document-stated times keep their written precision with no fabricated year, zone or midnight instant.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire-contract",
+      "method": "schema",
+      "path": "src/core/time.ts#TemporalFrame",
+      "evidence": "src/core/time.ts; docs/ARCHITECTURE.md#temporal-semantics"
+    },
+    {
+      "capabilityId": "contract.refusals",
+      "label": "Typed Refusal / Absence vocabulary",
+      "description": "Whole-operation failures are Refusal {code (OCR_FAILED, DOCUMENT_UNREADABLE, CLASSIFICATION_UNCERTAIN, CONFLICT_DETECTED, PROVIDER_UNAVAILABLE, UNSUPPORTED_MIME, FIELD_NOT_FOUND, CANONICAL_STATE_BREACH ...), detail, remedy, stage, artifactIds}; field-level absence is a typed Absence with reason. null never stands where the reason for absence matters. Result<T> = ok | refusal is the return type of every tool and provider method.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire-contract",
+      "method": "schema",
+      "path": "src/core/refusals.ts",
+      "evidence": "src/core/refusals.ts; src/agent/tools.ts"
+    },
+    {
+      "capabilityId": "cli.demo",
+      "label": "npm run demo (rate confirmation -> operator surface)",
+      "description": "Milestone demo: fixture provider offline by default (deterministic); with --live path/to/ratecon.pdf and MISTRAL_API_KEY it sends a real PDF to the Mistral OCR API and prints shipment observations with confidence, status, evidence locations and entity candidates. The live path spends external API calls and transmits document content to a third party.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "npm",
+      "path": "npm run demo [-- --live <pdf>]",
+      "evidence": "package.json; src/demo/rateConfirmation.demo.ts; README.md#quick-start"
+    },
+    {
+      "capabilityId": "cli.test",
+      "label": "npm test / typecheck / audit:boundary (offline)",
+      "description": "vitest suite over the fixture corpus incl. adversarial shapes; npm run audit:boundary runs only the canonical-state boundary audit (source-tree walk + guard tests); npm run typecheck runs tsc --noEmit. Deterministic, no network, no secrets.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "npm",
+      "path": "npm test | npm run audit:boundary | npm run typecheck",
+      "evidence": "package.json; vitest.config.ts; src/canonical/boundary.test.ts"
+    },
+    {
+      "capabilityId": "cli.test_live",
+      "label": "npm run test:live (opt-in Mistral integration)",
+      "description": "RUN_LIVE_TESTS=1 vitest run: exercises MistralOCRProvider against the real Mistral API (requires MISTRAL_API_KEY); external calls and spend.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "npm",
+      "path": "npm run test:live",
+      "evidence": "package.json; src/model/providers/mistral.live.test.ts; .env.example"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/PayLoad-OCR-Agent",
+    "domain": "physical-economy",
+    "maturity": "v0",
+    "language": "TypeScript",
+    "framework": "Node ESM library (zod 4, vitest 2, tsx)",
+    "exposure": "library",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-31T22:09:31Z",
+    "capability_count": 29,
+    "version": "0.1.0",
+    "ocr_provider": "mistral (behind OCRModel seam); fixture provider for tests",
+    "document_types": "RATE_CONFIRMATION, BILL_OF_LADING, PROOF_OF_DELIVERY, INVOICE (+10 classify-only types)",
+    "epistemic_states_emitted": "OBSERVED, EXTRACTED, INFERRED",
+    "tool_count": 8,
+    "prompt_count": 5,
+    "writes_canonical_state": false,
+    "has_http_surface": false
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "payload-ocr-agent--supplies_context_to--payload-terminal",
+      "targetNodeId": "payload-terminal",
+      "kind": "supplies_context_to",
+      "description": "Observation bundles and CanonicalStateCandidates flow from the OCR agent into Payload's EvidencePool -> EntityResolution -> Validation -> canonical state, which the Payload Terminal owns; the agent ships only an EvidenceSink port the host implements. Direction: agent -> terminal, candidates only. Inferred from docs and code comments (ARCHITECTURE.md, BOUNDARIES.md integration contract, 'the terminal's claim relations' in observation/types.ts and conflict/detect.ts); no import or network call to the Terminal exists in this repo.",
+      "evidence": "docs/BOUNDARIES.md#integration-contract-for-the-host; docs/ARCHITECTURE.md#position-in-payload; src/evidence/port.ts; src/observation/types.ts; src/conflict/detect.ts"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "src/index.ts",
+        "src/demo/rateConfirmation.demo.ts"
+      ],
+      "run": [
+        "npm install",
+        "npm test",
+        "npm run demo",
+        "MISTRAL_API_KEY=... npm run demo -- --live path/to/ratecon.pdf"
+      ],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "ocr.* tool surface",
+        "path": "src/agent/tools.ts",
+        "summary": "Eight tools (inspect_document, classify_document, extract_fields, extract_table, find_evidence, validate_extraction, compare_documents, create_observation) returning Result<T> in the agent's own vocabulary."
+      },
+      {
+        "name": "ObservationBundle",
+        "path": "src/observation/types.ts",
+        "summary": "Emitted evidence contract: observations with raw+normalized value, epistemic status, confidence fields, evidence location, temporal frame, execution identity; conflicts, ambiguities, warnings, refusals."
+      },
+      {
+        "name": "CanonicalStateCandidate",
+        "path": "src/canonical/boundary.ts",
+        "summary": "Proposal wrapper with adjudication fixed at 'pending' and requiredPath EvidencePool -> EntityResolution -> Validation."
+      },
+      {
+        "name": "EvidenceSink port",
+        "path": "src/evidence/port.ts",
+        "summary": "Host-implemented, idempotent register(bundle) -> EvidenceReceipt; the pool assigns evidence ids."
+      },
+      {
+        "name": "OCRModel seam",
+        "path": "src/model/OCRModel.ts",
+        "summary": "Provider interface: extractDocument / extractPages / extractLayout / extractTables / extractStructured."
+      },
+      {
+        "name": "Prompts",
+        "path": "prompts/",
+        "summary": "Versioned prompt files (classify_document, extract_rate_confirmation, extract_bol, extract_pod, extract_invoice), identity = name + content hash."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Fixture freight corpus",
+        "classification": "internal",
+        "path": "src/testkit/freightCorpus.ts",
+        "description": "Deterministic synthetic rate confirmations / BOLs / PODs / invoices including adversarial shapes (injection text, arithmetic mismatch, ambiguous amounts)."
+      },
+      {
+        "name": "Versioned prompts",
+        "classification": "public",
+        "path": "prompts/",
+        "description": "Five v1 prompt files with the document-content-is-data envelope discipline."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "Mistral OCR API",
+        "domain": "api.mistral.ai",
+        "purpose": "Raw perception (markdown pages, layout, tables) and document_annotation schema-guided extraction",
+        "auth": "API key via MISTRAL_API_KEY"
+      }
+    ],
+    "secrets_env": [
+      "MISTRAL_API_KEY"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "npm test"
+    },
+    "spatial": "Carries no coordinates: addresses and lanes are emitted as unresolved EntityCandidates for the spatial layer to geocode and map to network nodes and routes.",
+    "temporal": "TemporalFrame per observation (documentCreatedAt, documentReceivedAt, eventTime, effectiveTime, knownAt, extractedAt) with written precision preserved; knownAt bounded by artifact receipt.",
+    "open_questions": [
+      "Who implements EvidenceSink over the real EvidencePool - Payload Terminal, or a separate evidence service? No adapter exists in any repo seen here.",
+      "There is no HTTP/MCP wrapper: higher-level Payload agents must import createOcrTools in-process. Should the control plane expose the ocr.* tools via an MCP binding?",
+      "Only four extraction schemas exist (rate confirmation, BOL, POD, invoice); the other ten classification types have no structured pass yet.",
+      "Document content is transmitted to Mistral in live mode; a data-handling policy for sensitive freight paperwork should be recorded at the platform level."
+    ]
+  }
+}

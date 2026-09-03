@@ -1,0 +1,55 @@
+{
+  "nodeId": "notations-archival-swarm",
+  "name": "Notations Archival Swarm",
+  "kind": "information_library",
+  "description": "Planned swarm of archival agents that capture and re-verify unreconstructable external datasets, the class of data the Information Systems Archive mirrors. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+  "capabilities": [
+    {
+      "capabilityId": "charter.observe",
+      "label": "Repository placeholder",
+      "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "github",
+      "evidence": "https://github.com/notationsystems/Notations-Archival-Swarm"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Notations-Archival-Swarm",
+    "domain": "archive",
+    "maturity": "empty",
+    "language": "",
+    "framework": "",
+    "exposure": "unknown",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-25T23:15:57Z",
+    "capability_count": 1
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "notations-archival-swarm--supplies_context_to--information-systems-archive",
+      "targetNodeId": "information-systems-archive",
+      "kind": "supplies_context_to",
+      "description": "Planned (inferred): continuous captures feeding the archive mirror.",
+      "evidence": "Information-Systems-Archive README (unreconstructable captures)"
+    }
+  ],
+  "reference": {
+    "runtime": {},
+    "contracts": [],
+    "resources": [],
+    "external_services": [],
+    "secrets_env": [],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": null
+    },
+    "spatial": "Not yet defined.",
+    "temporal": "Not yet defined.",
+    "open_questions": [
+      "What is the first contract this repository will expose?"
+    ]
+  }
+}

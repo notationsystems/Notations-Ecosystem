@@ -1,0 +1,588 @@
+{
+  "nodeId": "scientific-transformer-engine",
+  "name": "Scientific Transformer Engine (Deterministic State Architecture)",
+  "kind": "world_model",
+  "description": "The canonical-state compiler pipeline of the scientific vertical: a single versioned, immutable CanonicalState is the sole source of truth, validate_candidate is the only door to a new Version, and every Morpho IR document, Three.js scene, SVG diagram, graph metric, simulation or neural candidate downstream is a pure, deterministic projection that can never write state back. Around that core sit the SCOUT evidence pool and Trust Graph, a read-only retrieval engine, the materials/experiment decision layer and its workbench REPL, and the STE execution vertical: ExecutionSpecification -> a zero-dependency Rust execution-cli (checked, not trusted) or GROMACS -> DispatchedMeasurement -> evidence admission, optionally proved on SP1, Nexus or RISC Zero. It also declares core@1.0.0 and derives the cross-repository invariant register that binds the acquisition (DAQ) and compute (SCL) layers. It must never become a place where an inferred relation, a simulation candidate, or an execution transcript silently becomes canonical evidence, and it never claims that a computation is a measurement.",
+  "capabilities": [
+    {
+      "capabilityId": "canonical.state.contract",
+      "label": "CanonicalState data contract",
+      "description": "Frozen dataclass over an immutable mapping: schema_version, a map of Field(id, type, value, unit) whose id must equal its dictionary key, and a tuple of explicit EdgeRecord relationships (never inferred). Updating state always means producing a new CanonicalState; nothing in morpho/, backends/ or renderer/ may reach it.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "import",
+      "path": "core.canonical.state.CanonicalState",
+      "evidence": "core/canonical/state.py"
+    },
+    {
+      "capabilityId": "canonical.version.contract",
+      "label": "Version identity and VersionStore",
+      "description": "Version.id is a SHA-256 over (schema_version, fields, edges) only; id, parent, provenance and timestamp are excluded, so identical content yields identical ids across processes and PYTHONHASHSEED values. create_genesis_version is the only Version built outside validation; InMemoryVersionStore implements the VersionStore protocol.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "import",
+      "path": "core.canonical.version",
+      "evidence": "core/canonical/version.py"
+    },
+    {
+      "capabilityId": "canonical.delta.diff",
+      "label": "Diff two canonical states into a StateDelta",
+      "description": "diff(old, new, provenance) produces path-addressed leaf-level Changes (fields.mass.value, edges[0].type) with add/remove/replace operations in deterministic sorted order; apply_changes replays CandidateChanges onto a base state. Produces a delta for review; writes nothing canonical.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "core.canonical.delta.diff",
+      "evidence": "core/canonical/delta.py"
+    },
+    {
+      "capabilityId": "canonical.validate_candidate",
+      "label": "Validate a candidate and mint a new Version",
+      "description": "The one door into a new version: candidate -> schema validation -> constraint validation -> accept -> new Version, or reject with ValidationErrors touching no state. validate_candidate is the only function in the codebase that can produce a new CanonicalState or Version; tests/test_architecture_boundaries.py enforces that no backend or renderer can reach it.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "core.canonical.validation.validate_candidate",
+      "evidence": "core/canonical/validation.py"
+    },
+    {
+      "capabilityId": "canonical.projection.project_state",
+      "label": "Project a frozen Version into a ProjectedState",
+      "description": "project_state(version) and restore_projection(store, version_id, config) are pure functions from a frozen Version to the ProjectedState that the Morpho compiler consumes. Deterministic under replay (tests/test_replay.py).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "core.projection.project.project_state",
+      "evidence": "core/projection/project.py"
+    },
+    {
+      "capabilityId": "morpho.compile",
+      "label": "Compile a ProjectedState to Morpho IR",
+      "description": "compile_morpho(projected, CompilerConfig) -> MorphoDocument: the domain-neutral intermediate representation of entities, relations, coordinate frames, groups and constraints, each with explicit provenance. Every MorphoRelation carries is_canonical and inference_status; constructing one that is both canonical and inferred raises.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "morpho.compiler.compile_morpho",
+      "evidence": "morpho/compiler.py; morpho/ir.py"
+    },
+    {
+      "capabilityId": "morpho.hdl.parse",
+      "label": "Parse Morpho HDL text",
+      "description": "Lexer and parser for the human-readable Morpho HDL grammar (ARCHITECTURE_SPEC section 7 as corrected by docs/CONTRADICTIONS.md) producing the AST in morpho/ast.py; identity functions node_id/cell_id/visual_id/geometry_id are the identity on field_name in v1.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "morpho.parser",
+      "evidence": "morpho/parser.py; morpho/lexer.py; morpho/identity.py"
+    },
+    {
+      "capabilityId": "backend.threejs.compile",
+      "label": "Compile Morpho IR to a Three.js scene descriptor",
+      "description": "compile_threejs(ir, ThreeJSRenderConfig) returns a plain JSON-serializable ThreeJSSceneDescriptor (geometries, materials, meshes, hierarchy) keyed by geometry_id/visual_id so a renderer can update meshes in place. Never constructs a THREE.* object.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "backends.threejs.compiler.compile_threejs",
+      "evidence": "backends/threejs/compiler.py"
+    },
+    {
+      "capabilityId": "backend.diagram.compile_svg",
+      "label": "Compile Morpho IR to an SVG document",
+      "description": "compile_svg(ir, DiagramLayoutConfig) returns a complete, deterministically laid-out SVG document string for the projected state.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "backends.diagram.compiler.compile_svg",
+      "evidence": "backends/diagram/compiler.py"
+    },
+    {
+      "capabilityId": "backend.graph.analyze",
+      "label": "Descriptive graph metrics over Morpho IR",
+      "description": "analyze(ir) -> GraphAnalysisReport with node/edge counts, adjacency and degree over the relations the IR already contains; it never invents inferred relations.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "backends.graph.analysis.analyze",
+      "evidence": "backends/graph/analysis.py"
+    },
+    {
+      "capabilityId": "backend.interface.simulation_neural",
+      "label": "Simulation and neural interface shapes",
+      "description": "Protocol/dataclass shapes only (DynamicsSpec, Action, Observation, StructuredObservation, BeliefState, Estimator) per spec sections 16-17. No engine and no model are implemented; they define what a future simulation or estimator must return to enter the feedback loop.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "import",
+      "path": "backends.simulation.interface; backends.neural.interface",
+      "evidence": "backends/simulation/interface.py; backends/neural/interface.py"
+    },
+    {
+      "capabilityId": "runtime.feedback_loop.submit",
+      "label": "Submit a simulation candidate or neural belief toward canonical state",
+      "description": "submit_simulation_candidate / submit_neural_belief are the only bridge from a CandidateNextState or BeliefState back toward canonical state, and both hand the candidate to validate_candidate like a manual edit. No alternate fast path exists (runtime/test_feedback_loop.py).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "runtime.feedback_loop",
+      "evidence": "runtime/feedback_loop.py"
+    },
+    {
+      "capabilityId": "renderer.threejs.view",
+      "label": "Three.js renderer page",
+      "description": "renderer/index.html fetches a ThreeJSSceneDescriptor JSON and renders it with vendored three.js, keeping a geometry_id/visual_id cache so value-only changes update meshes in place and deleted entities are removed. It has no code path back into canonical state.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "method": "GET",
+      "path": "renderer/index.html",
+      "evidence": "renderer/index.html; renderer/vendor/three.module.js"
+    },
+    {
+      "capabilityId": "scripts.generate_sample_scene",
+      "label": "Generate demo scene descriptors",
+      "description": "python3 scripts/generate_sample_scene.py runs the full pipeline (CanonicalState -> validation -> projection -> Morpho -> Three.js backend) over a 10-field schema and writes demo ThreeJSSceneDescriptor JSON files for the renderer.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 scripts/generate_sample_scene.py",
+      "evidence": "scripts/generate_sample_scene.py"
+    },
+    {
+      "capabilityId": "adapters.json.ingest",
+      "label": "Normalize external JSON to a CandidateDelta",
+      "description": "JSONAdapter and infer_schema_from_record turn arbitrary JSON (nested objects, arrays, units/timestamps when supplied, relationships) into ExternalRecords and a CandidateDelta at the adapters.interface boundary. Output is a candidate for validation, never canonical state.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "adapters.json_adapter.JSONAdapter",
+      "evidence": "adapters/json_adapter.py; adapters/interface.py"
+    },
+    {
+      "capabilityId": "adapters.csv.ingest",
+      "label": "Normalize CSV rows to a CandidateDelta",
+      "description": "parse_csv_rows / CSVAdapter / build_candidate_from_rows normalize single-row and multi-row CSV onto the same CandidateChange boundary as the JSON adapter (docs/DATA_CAPABILITIES.md lists exactly what is supported).",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "adapters.csv_adapter.CSVAdapter",
+      "evidence": "adapters/csv_adapter.py"
+    },
+    {
+      "capabilityId": "evidence.pool.admit",
+      "label": "Admit documents, records, observations and referents into the EvidencePool",
+      "description": "admit_document / admit_record / admit_observation / admit_referent / admit_claimed_relationship / admit_derived_value / admit_derived_grounding return the admitted object or a list of AdmissionErrors. The pool is append-only and content-addressed (EvidencePool.fingerprint()); quarantine and provenance are enforced at admission.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "evidence.admission",
+      "evidence": "evidence/admission.py; evidence/pool.py; evidence/quarantine.py"
+    },
+    {
+      "capabilityId": "evidence.trust_graph.build",
+      "label": "Build the Trust Graph and network metrics",
+      "description": "build_trust_graph derives a read-only TrustGraph view over referents and claimed relationships in the pool; evidence/metrics.py computes the SCOUT network metrics documented in docs/SCOUT_ARCHITECTURE.md.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "evidence.trust_graph.build_trust_graph",
+      "evidence": "evidence/trust_graph.py; evidence/metrics.py"
+    },
+    {
+      "capabilityId": "scout.run",
+      "label": "Run the SCOUT observation pipeline",
+      "description": "run_scout drives a SourceAdapter (RawDocument) through an Extractor (ExtractionCandidate with entities and relations) and admits the result into an EvidencePool, returning ScoutFindings and ScoutAdmissionFailures. Deterministic sources only; stops at evidence attachment, before any autonomous experimentation.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "scout.pipeline.run_scout",
+      "evidence": "scout/pipeline.py; scout/interface.py; scout/adapters.py"
+    },
+    {
+      "capabilityId": "retrieval.query",
+      "label": "Deterministic read-only retrieval over the evidence pool",
+      "description": "make_retrieval_query + DeterministicRetrievalEngine produce RetrievalResults and a ContextPackage via exact lookup, Trust Graph traversal and text-substring matching only (no embeddings, no vector search, no database). Never writes to evidence/ or core.canonical.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "retrieval.engine.DeterministicRetrievalEngine",
+      "evidence": "retrieval/engine.py; retrieval/query.py; retrieval/context.py"
+    },
+    {
+      "capabilityId": "structures.ingest_documents",
+      "label": "Ingest chemistry documents through the content gate",
+      "description": "ingest_documents(adapter, extractor, pool, ...) runs molecule/crystal/substance payloads through chemistry_content_gate, which refuses violating payloads with per-invariant refusal codes (architecture/verticals/chemistry) before anything reaches the pool.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "structures.ingest.ingest_documents",
+      "evidence": "structures/ingest.py; architecture/chemistry_reachability.yaml"
+    },
+    {
+      "capabilityId": "execution.specification.contract",
+      "label": "ExecutionSpecification and canonical input encoders",
+      "description": "ExecutionSpecification(program, configuration, input_payload) with identity commit('scout.execution.specification.v1', ...) over exactly three fields (no timestamps, hosts or versions-as-metadata). encode_positions, encode_heat_input, encode_rg_input, encode_crystal_input and encode_attention_input are the one canonical byte encoding per kernel.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "import",
+      "path": "execution.specification.ExecutionSpecification",
+      "evidence": "execution/specification.py; execution/commitments.py"
+    },
+    {
+      "capabilityId": "execution.native.kernels",
+      "label": "Registered deterministic native kernels",
+      "description": "Five integer-exact kernels with self-describing program descriptors: scout.native.pairwise-energy-kernel.v1, heat-diffusion-kernel.v1, radius-of-gyration-kernel.v1, crystal-lattice-kernel.v1 and attention-kernel.v1 (hardmax). Each descriptor states input layout, bounds, arithmetic and fault codes; the registry is a fixed array with no dynamic loading.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire",
+      "method": "descriptor",
+      "path": "crates/execution-native",
+      "evidence": "crates/execution-native/src/reference.rs; crates/execution-cli/src/main.rs"
+    },
+    {
+      "capabilityId": "execution.cli.wire",
+      "label": "execution-cli stdin/stdout execution protocol",
+      "description": "One Rust process per request stream: stdin carries B>=1 requests of three u64-LE length-prefixed fields [program descriptor][configuration][input]; stdout answers each with an 'ste-execution-result v1' block (spec, program, input, occurrence, status completed|halted|unrunnable, exit_code, output hex, output_id, computation, detail). Process exit 0 = answered, 2 = protocol error and nothing ran.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "stdin/stdout",
+      "path": "crates/execution-cli (target/release/execution-cli)",
+      "evidence": "crates/execution-cli/src/main.rs; crates/Cargo.toml"
+    },
+    {
+      "capabilityId": "execution.run_specification",
+      "label": "Run a specification through the checked engine",
+      "description": "run_specification / run_specifications spawn execution-cli, recompute every echoed identity (specification, program, input, output, computation) from bytes Python holds, and raise EngineIdentityMismatch on disagreement, ExecutionRefused for unrunnable requests, EngineProtocolError for a malformed stream. Returns ExecutionResult.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "execution.engine.run_specification",
+      "evidence": "execution/engine.py"
+    },
+    {
+      "capabilityId": "execution.gromacs.run",
+      "label": "Run a GROMACS workload as an execution",
+      "description": "run_gromacs_specification (grompp -> mdrun nsteps=0 -> energy), run_gromacs_trajectory_specification and run_gromacs_minimization_specification wrap an external gmx binary. program = version line + topology, configuration = .mdp, input = .gro; output bytes are gmx's own text verbatim. Declared, not checked: this layer computes all identities.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "execution.gromacs.run_gromacs_specification",
+      "evidence": "execution/gromacs.py; structures/gromacs_bridge.py"
+    },
+    {
+      "capabilityId": "execution.dispatcher.dispatch",
+      "label": "Dispatch a candidate through the execution seam",
+      "description": "SpecificationDispatcher is an ActionDispatcher whose runner (default run_specification; alternatives GROMACS or an external layer such as SCL's ste_adapter) is substitutable below the seam. dispatch(candidate) returns a DispatchedMeasurement declaring extraction_method 'simulation:...' whose execution transcript rides in the Record, never in the Observation.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "execution.dispatcher.SpecificationDispatcher.dispatch",
+      "evidence": "execution/dispatcher.py; experiment/interface.py"
+    },
+    {
+      "capabilityId": "execution.proving.prove_and_verify",
+      "label": "Prove and independently verify an execution on a zkVM",
+      "description": "prove_and_verify / prove_and_verify_result / proved_runner run the native execution, then an SP1, Nexus or RISC Zero host binary to prove and verify it, returning a ProvedRun only when every commitment agrees; otherwise ProvedRunError. Guest ELFs must be registered in execution.guest_registry. A ProvedRun never claims a measurement occurred.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "execution.proving.prove_and_verify",
+      "evidence": "execution/proving.py; execution/guest_registry.py"
+    },
+    {
+      "capabilityId": "execution.proving.verify_existing",
+      "label": "Verify an existing proof artifact",
+      "description": "verify_existing_proof re-runs the backend verifier against a stored proof and its Expectation; export_verification_artifact writes the Stage 10 verification artifact so a third party can re-verify without the prover. Produces a validation; writes no evidence.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "execution.proving.verify_existing_proof",
+      "evidence": "execution/proving.py; docs/STE_STAGE10_VERIFICATION_ARTIFACT.md"
+    },
+    {
+      "capabilityId": "execution.host.wire",
+      "label": "zkVM host prove/verify line protocol",
+      "description": "sp1_host, the Nexus host and the RISC Zero host accept 'prove' and 'verify' subcommands and answer with the shared 'ste-host-result v1' line protocol, so execution.proving is backend-neutral. Fork revisions and toolchains are pinned in zk/recipes/*.recipe.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "stdout",
+      "path": "zk/sp1-adapter/src/bin/sp1_host.rs; zk/nexus/nexus-adapter; zk/risc0/risc0-adapter",
+      "evidence": "zk/sp1-adapter/src/bin/sp1_host.rs; docs/STE_NEXUS_BACKEND.md"
+    },
+    {
+      "capabilityId": "execution.build.guest_registry",
+      "label": "Reproducibly rebuild zkVM guests and regenerate the registry",
+      "description": "python3 -m execution.build rebuilds every guest from its zk/recipes/*.recipe (backend, guest crate, target, toolchain identity, rustflags, source file digests), verifies the ELF sha256 against the recipe, and regenerates execution/guest_registry.py. verify_build lets a distrusting verifier re-derive an artifact identity from source.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 -m execution.build",
+      "evidence": "execution/build.py; zk/recipes/sp1-heat.recipe"
+    },
+    {
+      "capabilityId": "campaign.run",
+      "label": "Run a verification campaign under a policy",
+      "description": "run_campaign executes CampaignPoints through one EvidencePool and one OperationTrace under a VerificationPolicy (lanes: routine Nexus, deterministic RISC Zero and SP1 samples, escalation), reusing WarrantRecords from the warrant cache and prefetching proofs in parallel. Returns a CampaignReport.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "campaign.driver.run_campaign",
+      "evidence": "campaign/driver.py; campaign/policy.py; campaign/warrant_cache.py; campaign/prefetch.py"
+    },
+    {
+      "capabilityId": "experiment.run_step",
+      "label": "Run an experiment step and admit its result",
+      "description": "run_experiment_step takes what a dispatcher returns, admits the Record into the pool, hands semantic facts to materials.results (the sole semantic write boundary) and records the OperationOccurrence in the operations ledger; a failed dispatch records FAILED and admits nothing.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "experiment.step.run_experiment_step",
+      "evidence": "experiment/step.py; operations/trace.py; materials/results.py"
+    },
+    {
+      "capabilityId": "materials.program.analyze",
+      "label": "Analyze a material research programme",
+      "description": "analyze_program(pool, engine, query) answers a MaterialProgramQuery with formulation/process associations and property evidence drawn only from the pool via the retrieval engine; the wider materials/ package provides candidates, predictions, utility ranking and counterfactuals as read-only projections.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "materials.program.analyze_program",
+      "evidence": "materials/program.py; materials/decision.py"
+    },
+    {
+      "capabilityId": "workbench.repl.inspect",
+      "label": "Workbench REPL: inspect, decide, explore and review",
+      "description": "python -m workbench [--scenario file.json] launches the SCOUT retrieval workbench. Commands scenario, status, candidates, predict, inspect, decide, explain, select, explore <value>, branches, compare, timeline, thread, state, criterion, history and diagnostics render existing domain objects; UNDETERMINED is rendered literally and hypotheticals are double-ruled.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "repl",
+      "path": "python -m workbench",
+      "evidence": "workbench/cli.py; workbench/__main__.py; examples/polymer_tensile_strength.json"
+    },
+    {
+      "capabilityId": "workbench.repl.observe_admit",
+      "label": "Workbench REPL: admit an external result",
+      "description": "The 'observe <value> [unit]' command admits an externally supplied experimental result for the active candidate into the session's experiment state, advancing the real state trajectory. Recommendation is never action: only this command and 'select' change session state.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "repl",
+      "path": "python -m workbench (observe)",
+      "evidence": "workbench/cli.py; workbench/interaction.py; experiment/session.py"
+    },
+    {
+      "capabilityId": "transformer.attention.forward",
+      "label": "Run the hardmax attention model through the engine",
+      "description": "AttentionModel (three content-addressed integer d x d matrices, ste.transformer.model.v1) forwards a TransformerRepresentation token matrix through scout.native.attention-kernel.v1 via the unchanged execution boundary, yielding a Prediction with explicit uncertainty_kind that is structurally not evidence. Batched forwards amortize process spawn.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "transformer.model.AttentionModel",
+      "evidence": "transformer/model.py; transformer/prediction.py; architecture/transformer_contract.yaml"
+    },
+    {
+      "capabilityId": "transformer.representation",
+      "label": "Project a molecule to typed transformer tokens",
+      "description": "molecule_representation(molecule) -> TransformerRepresentation (ste.transformer.representation.v1): typed tokens mass_amu, x_pm, y_pm, z_pm derived from a canonical structures.Molecule.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "transformer.representation.molecule_representation",
+      "evidence": "transformer/representation.py; structures/molecule.py"
+    },
+    {
+      "capabilityId": "architecture.invariants.declaration",
+      "label": "Core and invariant declarations",
+      "description": "architecture/core.yaml declares core@1.0.0 (moves only under bend_protocol, never on release); invariants.yaml lists 26 enforceable core invariants with status and named enforcement; evidence_class.yaml, model_binding.yaml, transformer_contract.yaml and exchange/ste_invariant_declaration.yaml are the contracts sibling repositories extend.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "method": "yaml",
+      "path": "architecture/*.yaml",
+      "evidence": "architecture/core.yaml; architecture/invariants.yaml; architecture/exchange/ste_invariant_declaration.yaml"
+    },
+    {
+      "capabilityId": "architecture.conformance.check",
+      "label": "Check vertical contracts, core closure and doctrine currency",
+      "description": "check_vertical_contract(path), check_core_closure() and check_doctrine_current() verify that a vertical extends the declared core, that the core imports nothing vendor-specific, and that the generated doctrine matches its sources; core_version() refuses a declaration derived from packaging.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "architecture.conformance",
+      "evidence": "architecture/conformance.py"
+    },
+    {
+      "capabilityId": "architecture.doctrine.generate",
+      "label": "Generate the vendor-free doctrine",
+      "description": "python3 -m architecture.doctrine_generator renders architecture/generated/doctrine from the YAML declarations within a budget (DoctrineBudgetError) and lints it vendor-free.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 -m architecture.doctrine_generator",
+      "evidence": "architecture/doctrine_generator.py; architecture/generated/doctrine"
+    },
+    {
+      "capabilityId": "architecture.invariant_register.derive",
+      "label": "Derive the cross-repository invariant register",
+      "description": "derive() reads the three bound repositories STE, DAQ (notations-acquisition-channel) and SCL (scientific-compute-layer), establishes provenance and remote currency per party, and emits architecture/exchange/invariant_register.yaml with a sha256 sidecar; build_invariant_register.py is the CLI. Fails closed on an unreachable or unbound party.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 architecture/exchange/build_invariant_register.py",
+      "evidence": "architecture/derive_register.py; architecture/exchange/build_invariant_register.py; architecture/exchange/invariant_register.yaml"
+    },
+    {
+      "capabilityId": "scripts.reachability_probes",
+      "label": "Reachability probes for admission gates and invariants",
+      "description": "canonical_state_reachability.py, chemistry_reachability.py and ingest_reachability_probe.py plant violating payloads against each gate and report REACHABLE / DEAD / UNREACHED per invariant, so a clean rejection rate is never read as evidence that a gate is on the path. The mutate_* scripts probe the probes themselves.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 scripts/canonical_state_reachability.py",
+      "evidence": "scripts/canonical_state_reachability.py; scripts/chemistry_reachability.py; scripts/ingest_reachability_probe.py"
+    },
+    {
+      "capabilityId": "scripts.stage_campaigns",
+      "label": "Stage 6-11 execution and proof campaigns",
+      "description": "stage6_campaign.py through stage11_campaign.py and structural_campaign.py run real heat-diffusion sweeps, molecular/crystal structures, GROMACS trajectories, policy-verified proofs (Nexus, RISC Zero, SP1), warrant reuse and parallel prefetch through one pool and one operation trace. Each spawns engines and provers and admits evidence.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 scripts/stage6_campaign.py",
+      "evidence": "scripts/stage6_campaign.py; scripts/stage11_campaign.py; scripts/structural_campaign.py"
+    },
+    {
+      "capabilityId": "scripts.benchmarks",
+      "label": "Engine and transformer benchmarks",
+      "description": "transformer_baseline.py, transformer_batch_bench.py, engine_request_profile.py and checker_profile.py measure per-forward, per-request and per-item costs of the execution boundary by differential measurement; they spawn engine processes but admit nothing.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 scripts/transformer_baseline.py",
+      "evidence": "scripts/transformer_baseline.py; scripts/engine_request_profile.py"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Scientific-Transformer-Engine",
+    "domain": "scientific",
+    "maturity": "active",
+    "language": "Python, Rust",
+    "framework": "stdlib Python >=3.10 (zero dependencies), zero-dependency Rust workspace (9 crates), vendored three.js renderer",
+    "exposure": "python library, subprocess CLIs (execution-cli, zkVM hosts), workbench REPL",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-29T23:52:25Z",
+    "capability_count": 45,
+    "package_version": "1.0.0",
+    "spec_version": "Deterministic State Architecture Frozen Specification v1.0.0",
+    "core_version": "core@1.0.0",
+    "native_kernels": 5,
+    "zkvm_backends": "SP1, Nexus, RISC Zero",
+    "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)"
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "scientific-transformer-engine--governs--scientific-compute-layer",
+      "targetNodeId": "scientific-compute-layer",
+      "kind": "governs",
+      "description": "STE declares core@1.0.0 and the ExecutionSpecification/ExecutionResult seam; SCL is bound to the register in extends_only mode, extends core@1.0.0 in its exchange artifacts, and mirrors STE's program/configuration/input dimension mapping and fault-code conventions. Confirmed by code and generated artifacts in this repository.",
+      "evidence": "architecture/core.yaml; architecture/derive_register.py; architecture/exchange/invariant_register.yaml; docs/DERIVED_INVARIANT_REGISTER.md; execution/dispatcher.py"
+    },
+    {
+      "relationId": "scientific-transformer-engine--depends_on--scientific-compute-layer",
+      "targetNodeId": "scientific-compute-layer",
+      "kind": "depends_on",
+      "description": "The invariant-register derivation reads a local SCL clone (BOUND_REPOSITORIES) and fails closed if it is unreachable or not in sync with its remote; and SCL's ste_adapter is the intended external runner for SpecificationDispatcher when C++/CUDA compute is needed. Runtime dependence is optional and plugged in from SCL's side; the derivation dependence is confirmed by code.",
+      "evidence": "architecture/derive_register.py; architecture/exchange/invariant_register.yaml; docs/TRANSFORMER_ENGINE.md"
+    },
+    {
+      "relationId": "scientific-transformer-engine--governs--data-acquisition-channel",
+      "targetNodeId": "data-acquisition-channel",
+      "kind": "governs",
+      "description": "STE owns the core invariant set that the acquisition channel extends and pins as a submodule; ste_invariant_declaration.yaml is STE's authored answer to the acquisition layer's reconstruction request, and the derived register records which invariants DAQ owns versus extends. Confirmed by files in this repository; the acquisition channel's side of the binding is inferred from its exchange artifacts as read here.",
+      "evidence": "architecture/exchange/ste_invariant_declaration.yaml; architecture/exchange/invariant_register.yaml; docs/CANONICAL_STATE_REACHABILITY.md; docs/DERIVED_INVARIANT_REGISTER.md"
+    },
+    {
+      "relationId": "scientific-transformer-engine--depends_on--data-acquisition-channel",
+      "targetNodeId": "data-acquisition-channel",
+      "kind": "depends_on",
+      "description": "The invariant-register derivation binds a local clone of notations-acquisition-channel as a sibling party, checks its remote currency, and reports the register as only as current as its worst sibling; the acquisition channel is also the documented upstream of the SCOUT/evidence boundary (acquisition -> normalization -> evidence). Derivation dependence confirmed by code; data-flow dependence inferred from docs.",
+      "evidence": "architecture/derive_register.py; architecture/exchange/invariant_register.yaml; docs/COMPUTATIONAL_COMMONS.md"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["python -m workbench", "crates/execution-cli/src/main.rs", "python3 -m execution.build", "python3 -m architecture.doctrine_generator", "python3 architecture/exchange/build_invariant_register.py", "renderer/index.html"],
+      "run": ["pip install pytest && python3 -m pytest", "cargo build --release --manifest-path crates/Cargo.toml", "python3 scripts/generate_sample_scene.py", "python -m workbench --scenario examples/polymer_tensile_strength.json"],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      { "name": "Deterministic State Architecture Frozen Specification v1.0.0", "path": "docs/ARCHITECTURE_SPEC.md", "summary": "CanonicalState -> validation -> projection -> Morpho IR -> backends; the frozen contract everything implements, with docs/CONTRADICTIONS.md recording three grammar fixes." },
+      { "name": "execution-cli wire protocol", "path": "crates/execution-cli/src/main.rs", "summary": "Length-prefixed [program][configuration][input] requests on stdin; 'ste-execution-result v1' line blocks on stdout; statuses completed|halted|unrunnable; process exit 0 or 2." },
+      { "name": "ste-host-result v1", "path": "zk/sp1-adapter/src/bin/sp1_host.rs", "summary": "Line protocol shared by SP1, Nexus and RISC Zero host binaries for prove/verify." },
+      { "name": "Build recipe (scout.execution.build-recipe.v1)", "path": "zk/recipes/sp1-heat.recipe", "summary": "Reproducible guest build: backend, guest crate, target, toolchain identity, rustflags, fork commit, source digests." },
+      { "name": "Transformer contract", "path": "architecture/transformer_contract.yaml", "summary": "ste.transformer.representation.v1 and ste.transformer.model.v1 identities and the attention path." },
+      { "name": "Core and invariants", "path": "architecture/core.yaml", "summary": "core@1.0.0 declaration; invariants.yaml (26 entries) with enforcement status; exchange/invariant_register.yaml derived across STE/DAQ/SCL." }
+    ],
+    "resources": [
+      { "name": "Evidence pool (in-memory)", "classification": "internal", "path": "evidence/pool.py", "description": "Append-only content-addressed pool of Documents, Records, Observations, Referents and ClaimedRelationships; no persistence layer exists." },
+      { "name": "Guest registry", "classification": "public", "path": "execution/guest_registry.py", "description": "Generated index from program identity to zkVM guest recipes and ELF digests; not a root of trust." },
+      { "name": "Example scenarios", "classification": "public", "path": "examples/", "description": "polymer_tensile_strength.json and polymer_multi_property.json workbench scenarios." },
+      { "name": "Vendored three.js", "classification": "public", "path": "renderer/vendor/three.module.js", "description": "MIT-licensed renderer dependency vendored so the page has no CDN dependency." }
+    ],
+    "external_services": [
+      { "name": "GROMACS (gmx)", "domain": "local binary", "purpose": "Single-point, trajectory and minimization energies via grompp/mdrun/energy; built from the notationsystems fork in-session.", "auth": "none" },
+      { "name": "SP1 / Nexus / RISC Zero zkVM toolchains", "domain": "local forks under zk/", "purpose": "Proof generation and verification of native kernel executions.", "auth": "none" }
+    ],
+    "secrets_env": [],
+    "health": { "method": "cli", "endpoint": "python3 -m pytest" },
+    "spatial": "No geography: coordinates are molecular/lattice positions in picometres and abstract projection frames, not places.",
+    "temporal": "Versions form a hash-linked lineage and operation occurrences are ordered per process; there are no wall-clock reads in any compiler stage and timestamps are excluded from identity.",
+    "open_questions": [
+      "The catalog node id for the acquisition layer is data-acquisition-channel, but STE binds it as notations-acquisition-channel and SCL docs call it data-acquisition-channel-daq; confirm they are the same repository.",
+      "STE never imports SCL; the compute path is plugged in from SCL's ste_adapter. Decide whether the ecosystem wants the runtime edge modelled from the SCL side only.",
+      "GROMACS and the zkVM forks are built in-session from notationsystems forks; no container or pinned binary distribution exists for them.",
+      "No persistence: EvidencePool, VersionStore and OperationTrace are in-memory only."
+    ]
+  }
+}

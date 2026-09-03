@@ -1,0 +1,538 @@
+{
+  "nodeId": "bim-state-transformer-engine",
+  "name": "BIM State Transformer Engine (GAT)",
+  "kind": "world_model",
+  "description": "Portable, decision-focused computational state runtime for BIM. Its GAT (Gaussian Architectural Transformer) core compiles IFC design intent into an architectural IR and a joint Gaussian belief (mu, Sigma), absorbs calibrated physical evidence (scan PLY registration, material certificates) by Bayesian conditioning, propagates consequences through analytic Jacobians, verifies invariants with rollback, and records every accepted or rejected transition in a hash-chained execution ledger. It is the built-environment world model of the universe: one addressable computational state with explicit IFC, JSON-snapshot and optionally Ed25519-signed OpenUSD carriers, a read-only gat-headless JSON boundary for hosts (Blender, CI), an SP1 zero-knowledge guest that attests one bounded ANSI/AISC 360-22 beam calculation, and a Blender 4.2 sidebar. It must never authorize a physical intervention, never let a probabilistic assessment become an approval, never let a USD view or a splat become truth without passing the typed measurement boundary, and is not an HTTP service (pure Python + numpy, optional usd-core).",
+  "capabilities": [
+    {
+      "capabilityId": "cli.audit",
+      "label": "Fail-closed IFC compatibility audit",
+      "description": "`gat audit model.ifc [--text|--html|--compact] [-o path]` (alias `gat-ifc-audit`) inventories an IFC STEP file without mutating or partially importing it: schema, unit context, missing quantities, geometry fallbacks, placement limits, lower/compile/verify outcome, bound to the input bytes. Exit 0 pipeline-ready, 2 unsupported content, 3 I/O. Never authorizes a decision.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat audit",
+      "path": "<model.ifc> [--text|--html|--compact] [-o path]",
+      "evidence": "gat/cli.py; gat/ifc_audit.py; docs/real-ifc-validation-v1.md",
+      "cost": "free",
+      "latency": "seconds (19 MB clinic model in CI)",
+      "provenance": "input IFC bytes (sha256-bound)",
+      "data_domain": "bim-ifc"
+    },
+    {
+      "capabilityId": "cli.check",
+      "label": "Probabilistic clash report",
+      "description": "`gat check model.ifc [--proposed duct.json] [--max-clearance 0.5] [--fail-above 0.5] [--json]` scores every solid element pair under the joint belief: clearance, sigma via the relative Jacobian, P(clash)=Phi(-c/sigma), overlap mass, chi-square separation significance and witness axes; a proposed oriented box ({origin, extents, angle_deg, position_sigma}) is scored against all existing elements. Exit 1 when any P(clash) reaches the threshold.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat check",
+      "path": "<model.ifc|usda|usdc> [--proposed spec.json] [--json]",
+      "evidence": "gat/cli.py (_run_check); gat/geometry/clash.py",
+      "cost": "free",
+      "latency": "~seconds",
+      "data_domain": "bim-geometry-uncertainty"
+    },
+    {
+      "capabilityId": "cli.verify",
+      "label": "Invariants and compliance under uncertainty",
+      "description": "`gat verify model.ifc [--json]` runs the full invariant registry plus every compliance rule as a margin with mean and sigma under the joint belief (P(satisfied)=Phi(mu/sigma), PASS/MARGINAL/FAIL). Exit 0 when all pass, 1 on findings, 2 on input errors.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat verify",
+      "path": "<model> [--json]",
+      "evidence": "gat/cli.py (_run_verify); gat/engine/verify.py; gat/geometry/compliance.py",
+      "cost": "free",
+      "latency": "~seconds"
+    },
+    {
+      "capabilityId": "cli.inspect",
+      "label": "State census, sensitivities and variance attribution",
+      "description": "`gat inspect model.ifc [--var Entity-Name.Quantity] [--top N] [--json]` prints the entity census, raw/derived variable counts, state digest and sampled spread; with --var it returns mean +- sigma, exact d(target)/d(raw) sensitivities and a variance attribution that sums to one.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat inspect",
+      "path": "<model> [--var Entity.Quantity] [--json]",
+      "evidence": "gat/cli.py (_run_inspect); gat/engine/sensitivity.py",
+      "cost": "free",
+      "latency": "~seconds"
+    },
+    {
+      "capabilityId": "cli.splats",
+      "label": "3DGS splat export with belief-sampled variations",
+      "description": "`gat splats model.ifc out/ [--variations N] [--seed S] [--spacing 0.75]` writes building.ply in the standard 3D Gaussian Splatting PLY layout (positions, quaternions, log-scales, SH DC colour by semantic class) loadable in stock 3DGS viewers, plus N sampled realizations of N(mu, Sigma) with a manifest.json recording each sample's dimensions and verification status. Writes files to a caller-chosen directory; never mutates the model.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat splats",
+      "path": "<model> <out_dir> [--variations N]",
+      "evidence": "gat/cli.py (_run_splats); gat/geometry/splat_io.py; gat/geometry/variations.py",
+      "cost": "free",
+      "latency": "seconds",
+      "data_domain": "gaussian-splats",
+      "side_effects": "writes PLY files and manifest.json under out_dir"
+    },
+    {
+      "capabilityId": "cli.sample",
+      "label": "Monte-Carlo invariant checking over belief realizations",
+      "description": "`gat sample model.ifc [--n 500] [--seed 0] [--json]` samples realizations of the joint belief and reports pass rate and per-invariant violation rates; the test suite asserts these agree with the analytic delta-method clash scores within Monte-Carlo error.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat sample",
+      "path": "<model> [--n N] [--json]",
+      "evidence": "gat/cli.py (_run_sample); gat/engine/sampling.py",
+      "cost": "free",
+      "latency": "seconds"
+    },
+    {
+      "capabilityId": "cli.report",
+      "label": "Render a gat-headless response for humans",
+      "description": "`gat report response.json|- [--html] [-o out]` renders any gat-headless-response-v1 (summary, acceptance disposition, beam-assurance verdict change, change-impact preview, or error) as terminal text or a self-contained script-free HTML page sharing one signal palette with the Blender panel. Exit 0 rendered, 1 rendered error response, 2 invalid input, 3 I/O.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat report",
+      "path": "<response.json|-> [--html] [-o out.html]",
+      "evidence": "gat/cli.py (_run_report); gat/report.py; docs/design-language-v1.md",
+      "cost": "free",
+      "latency": "~100 ms"
+    },
+    {
+      "capabilityId": "cli.ledger",
+      "label": "Render a chain-verified execution-ledger timeline",
+      "description": "`gat ledger ledger.json [--html] [-o out]` decodes a gat-execution-ledger v1 file, verifies the hash chain and renders accepted/rejected transitions, assessments, policies, approvals and external actions as a timeline. Exit 2 on an invalid or tampered chain.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat ledger",
+      "path": "<ledger.json> [--html] [-o out.html]",
+      "evidence": "gat/cli.py (_run_ledger); gat/report.py (decode_ledger); docs/execution-ledger-v1.md",
+      "cost": "free",
+      "latency": "~100 ms"
+    },
+    {
+      "capabilityId": "cli.view",
+      "label": "Offline 3D viewer of belief and sampled as-builts",
+      "description": "`gat view model.ifc -o viewer.html [--variations N] [--seed S] [--spacing]` writes a single self-contained HTML page with the derived scene JSON embedded, showing the nominal belief and sampled realizations without any server.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat view",
+      "path": "<model> -o viewer.html",
+      "evidence": "gat/cli.py (_run_view); gat/geometry/viewer.py",
+      "cost": "free",
+      "latency": "seconds",
+      "side_effects": "writes one HTML file"
+    },
+    {
+      "capabilityId": "headless.summary",
+      "label": "gat-headless: summary of a loaded authoritative state",
+      "description": "`gat-headless request.json [-o response.json] [--trusted-key KEY_ID=PATH]` with operation `summary` returns source, entity/relationship/constraint counts, raw/derived variable counts, invariant pass/warn/fail counts and the world digest for a state of kind ifc | snapshot | openusd | usd. Deterministic command handler, not a server; stdin `-` supported. Error responses carry {type, message} and exit 2.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat-headless",
+      "path": "request.operation=summary",
+      "evidence": "gat/headless.py (handle_request, _summary); docs/workflow-deployment-v1.md",
+      "cost": "free",
+      "latency": "~seconds",
+      "workflow": "construction-acceptance"
+    },
+    {
+      "capabilityId": "headless.acceptance",
+      "label": "gat-headless: fail-closed acceptance case disposition",
+      "description": "Operation `acceptance` evaluates an AcceptanceCase (workflow AS_BUILT_CLEARANCE | OPENING_VERIFICATION | design-change; checks of kind clearance, minimum, difference bound to one world digest) under the gat-safe-acceptance-v1 policy and returns exactly one disposition: ACCEPT, REJECT or REQUEST_EVIDENCE. Evidence receipts must resolve to a verified ObserveLinearized transition in the ledger carried in an OpenUSD file whose Ed25519 signature verifies against a deployment-configured trusted key. ACCEPT is a recommendation, not an ApprovalRecord.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat-headless",
+      "path": "request.operation=acceptance",
+      "evidence": "gat/headless.py (_acceptance); gat/workflows/acceptance.py; docs/workflow-deployment-v1.md",
+      "cost": "free",
+      "latency": "~seconds",
+      "workflow": "construction-acceptance"
+    },
+    {
+      "capabilityId": "headless.beam_assurance",
+      "label": "gat-headless: evidence-driven ANSI/AISC 360-22 beam assurance",
+      "description": "Operation `beam_assurance` loads a beam state and a strict versioned material certificate, conditions an ephemeral session (Gaussian update of fy), executes the validated ansi-aisc-360-22-f2-1-lrfd-v1 chain in memory and returns prior/revised capacity distributions, SATISFIED/VIOLATED/UNRESOLVED verdict change, evidence identity, transition/assessment ledger hashes, code/oracle identities and `may_authorize: false`. Never edits the source IFC or certificate.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat-headless",
+      "path": "request.operation=beam_assurance",
+      "evidence": "gat/headless.py (_beam_assurance); gat/engineering/aisc360_22.py; gat/engineering/material_certificate.py; docs/aisc360-22-beam-validation-v1.md",
+      "cost": "free",
+      "latency": "~seconds",
+      "provenance": "AISC V16.0 Companion Example F.1-1B oracle; validation/aisc360-22-f1-1b-v1.json",
+      "workflow": "beam-assurance"
+    },
+    {
+      "capabilityId": "headless.change_impact",
+      "label": "gat-headless: non-mutating design-change / RFI impact preview",
+      "description": "Operation `change_impact` previews a set_parameter, shift_parameter or scale_parameter change through the exact apply -> propagate -> verify pipeline and returns candidate impacts and invariant failures without committing; the authoritative world is unchanged.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "gat-headless",
+      "path": "request.operation=change_impact",
+      "evidence": "gat/headless.py (_change_impact); gat/workflows/change_impact.py",
+      "cost": "free",
+      "latency": "~seconds",
+      "workflow": "rfi-impact"
+    },
+    {
+      "capabilityId": "session.load",
+      "label": "Python API: load a session from IFC, snapshot, OpenUSD or USDA",
+      "description": "`GatSession.load_ifc(path)`, `load_snapshot(path)`, `load_openusd(path, trusted_public_keys=, require_signature=)` and `load_usd(path)` compile a source into IR -> Gaussian belief and run the full invariant registry. OpenUSD carriers v1/v2/v3 are accepted under bounded read budgets; the ledger head must match the restored world; signature verification fails closed when required.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.GatSession.load_ifc | load_snapshot | load_openusd | load_usd",
+      "evidence": "gat/session.py; gat/adapters/ifc; gat/adapters/openusd.py; gat/adapters/usd_io.py; docs/openusd-carrier-v0.md",
+      "cost": "free",
+      "latency": "seconds"
+    },
+    {
+      "capabilityId": "session.run",
+      "label": "Python API: commit a verified transformation to the belief",
+      "description": "`session.run(op, provenance=)` applies a closed operator (SetParameter/ShiftParameter/ScaleParameter do-interventions, ObserveQuantity/ObserveLinearized Gaussian conditioning, EvolveLinearGaussian process step), re-propagates derived state incrementally, runs every invariant, and either commits or rolls back with digest proof; both outcomes are appended to the session's hash-chained gat-execution-ledger. This is the only path by which canonical belief changes.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "gat.GatSession.run",
+      "evidence": "gat/session.py (run); gat/engine/executor.py; gat/engine/transform.py; gat/engine/dynamics.py; gat/ledger.py",
+      "cost": "free",
+      "latency": "ms to seconds (dense covariance cliff measured in docs/incremental-propagation-v1.md)",
+      "side_effects": "mutates in-process canonical belief and appends ledger events"
+    },
+    {
+      "capabilityId": "session.record_causal",
+      "label": "Python API: record assessments, policies, approvals and external actions",
+      "description": "`session.record_assessment`, `record_policy`, `record_approval`, `record_external_action` append typed, state-bound causal events (gat/causal.py) that must preserve the world digest; approval and external-action ids follow explicit lifecycles and stale assessments fail closed. Names such as `authority` are not identity proofs.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "gat.GatSession.record_*",
+      "evidence": "gat/session.py; gat/causal.py; docs/causal-events-v1.md",
+      "cost": "free",
+      "latency": "ms",
+      "side_effects": "appends ledger events"
+    },
+    {
+      "capabilityId": "session.export",
+      "label": "Python API: export IFC, JSON, snapshot, ledger, USDA and OpenUSD carriers",
+      "description": "`export_ifc` round-trips posterior means and sigmas in the source unit convention; `export_json` writes the compact dashboard projection; `export_snapshot` writes GatStateSnapshot v1 (closed IR, raw order, dense covariance, integrity digest); `export_ledger` writes the ledger; `export_usd` the zero-dependency USDA proof; `export_openusd(path, signing_key=)` the native carrier v3 with /State authoritative, /View derived, and an optional Ed25519 signature over belief, trace and ledger head.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.GatSession.export_*",
+      "evidence": "gat/session.py; gat/state_snapshot.py; gat/adapters/openusd.py; docs/openusd-carrier-v0.md",
+      "cost": "free",
+      "latency": "seconds",
+      "side_effects": "writes files"
+    },
+    {
+      "capabilityId": "ledger.replay",
+      "label": "Python API: replay and verify an execution ledger",
+      "description": "`read_ledger(path)` and `replay_ledger(checkpoint_world, ledger)` regenerate every accepted commit and rejected attempt from a trusted checkpoint and must reproduce the exact dense joint belief and digests; bounded parsing detects edits, deletion and reordering. An unsigned chain does not establish publisher identity.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.read_ledger / gat.replay_ledger",
+      "evidence": "gat/ledger.py; gat/demo/ledger_replay.py; docs/execution-ledger-v1.md",
+      "cost": "free",
+      "latency": "seconds"
+    },
+    {
+      "capabilityId": "decision.plan_evidence",
+      "label": "Python API: decision assessment and active-inference evidence planning",
+      "description": "`assess_decision(world, MinimumDecision)` returns SATISFIED/VIOLATED/UNRESOLVED at a required confidence; `plan_decision_evidence(world, decision, [ObservationCandidate])` ranks scalar observations by a one-step expected-free-energy proxy (pragmatic risk + cost in nats - mutual information). Selecting an action never mutates state; only a later real reading conditions the belief.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.assess_decision / gat.plan_decision_evidence",
+      "evidence": "gat/engine/decision.py; gat/engine/active_inference.py; gat/demo/active_inference.py",
+      "cost": "free",
+      "latency": "ms"
+    },
+    {
+      "capabilityId": "geometry.scan_registration",
+      "label": "Python API: register an external scan PLY and quarantine evidence",
+      "description": "`load_ply_points(path)` reads ASCII or binary-little-endian PLY vertices (including mesh vertices such as Geometry-Grounded-Gaussian-Splatting's recon_post.ply); `ScanRegistrar(derive_scene(world)).register(points)` runs robust GMM scan-to-BIM registration (8 starts, EM, Gauss-Newton yaw) and `registrar.evidence(points, registration)` yields a per-element evidence report bound to the scan SHA-256 and scene version. Evidence stops before conditioning BIM dimensions.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.geometry.load_ply_points / ScanRegistrar",
+      "evidence": "gat/geometry/scan_io.py; gat/geometry/registration.py",
+      "cost": "free",
+      "latency": "seconds",
+      "data_domain": "point-cloud-evidence"
+    },
+    {
+      "capabilityId": "geometry.clearance_assurance",
+      "label": "Python API: as-built MEP clearance assurance and calibrated scan likelihood",
+      "description": "`assess_clearance(scene, ClearanceDecision)` evaluates a proposed oriented box against every solid element with dependence-safe bounds max(Pi) <= P(any) <= min(1, sum Pi); `plan_clearance_evidence` recommends a calibrated element measurement or targeted rescan; `adapt_clearance_likelihood` turns accepted scan evidence plus an independent survey/SLAM pose covariance into a belief-bound ObserveLinearized that can enter session.run after provenance, support, alignment, coverage, pose-agreement and innovation gates.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.geometry.assess_clearance / plan_clearance_evidence / adapt_clearance_likelihood",
+      "evidence": "gat/geometry/assurance.py; gat/geometry/scan_likelihood.py",
+      "cost": "free",
+      "latency": "seconds",
+      "workflow": "construction-acceptance"
+    },
+    {
+      "capabilityId": "analysis.sensitivity_stability",
+      "label": "Python API: sensitivities, variance attribution, Lyapunov stability, configuration digest",
+      "description": "`sensitivities_of(world, var)`, `variance_attribution(world, var)`, `gat.engine.stability.analyze(world, ops)` (contracting/marginal/amplifying with an uncertainty-energy trace) and `configuration_digest(world)` (identity modulo relabeling, rigid motion and re-encoding); `forecast_process(world, EvolveLinearGaussian, steps)` rolls a calibrated linear-Gaussian process forward without mutation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.engine.sensitivity / stability / configuration / dynamics",
+      "evidence": "gat/engine/sensitivity.py; gat/engine/stability.py; gat/engine/configuration.py; gat/engine/dynamics.py; docs/temporal-dynamics-v1.md",
+      "cost": "free",
+      "latency": "ms"
+    },
+    {
+      "capabilityId": "proof.manifest",
+      "label": "Python API: proof-carrying computation manifest binding and verification",
+      "description": "`create_computation_proof_manifest(ledger, event_seq=, numeric_contract=, ... proof_artifact=)` packages one accepted ledger transition as a gat-computation-proof-manifest v1 binding prior/result worlds, operation, verification, ledger head, program and verifying-key digests, numerical contract and proof bytes; `verify_computation_proof_manifest(manifest, ledger, proof_bytes, verifier=)` checks the binding and delegates to a host-supplied backend verifier. Binding alone is not proof verification.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "gat.create_computation_proof_manifest / verify_computation_proof_manifest",
+      "evidence": "gat/proof_manifest.py; docs/proof-carrying-state-v1.md",
+      "cost": "free",
+      "latency": "ms (plus backend verify)"
+    },
+    {
+      "capabilityId": "proof.sp1_beam",
+      "label": "SP1 zero-knowledge guest: execute, prove, verify the bounded beam claim",
+      "description": "Rust host `gat-sp1-beam {execute|prove|verify} --request r.json [--proof p --receipt rc]` runs the pinned SP1 v6.5.0 (circuit v6.1.0) RISC-V guest that commits domain, public-statement digest, fixed-computation digest, nominal and available capacity (milli-N*mm), demand and PASS/FAIL for the checked fixed-point F2-1 calculation. `python -m gat.demo.beam_sp1 out --executable <host>` generates a core proof, verifies it and binds it into the manifest via `sp1_beam_subprocess_verifier`. Proves computation integrity only, never certificate truth, Gaussian correctness, code applicability or safety.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "gat-sp1-beam prove | python -m gat.demo.beam_sp1",
+      "evidence": "sp1/beam/script/src/main.rs; sp1/beam/program/src/main.rs; sp1/beam/lib/src/lib.rs; gat/sp1_beam.py; docs/sp1-beam-guest-v1.md; .github/workflows/ci.yml (test-sp1-beam)",
+      "cost": "CPU prover minutes (CI timeout 2400 s)",
+      "latency": "minutes",
+      "side_effects": "writes beam.sp1-proof, beam_sp1_receipt.json, beam_sp1_manifest.json",
+      "workflow": "beam-assurance"
+    },
+    {
+      "capabilityId": "contract.sp1_beam_request",
+      "label": "Wire contract: SP1 beam request and receipt JSON",
+      "description": "`read_sp1_beam_request`/`write_sp1_beam_request` and `read_sp1_beam_receipt` define the strict request (format, schema_version, sp1_version, sp1_circuit_version, transition_event_seq, public_statement_digest, numeric_contract beam-milli-mpa-mm3-milli-nmm-v1, claim, expected_public_values_hex) and receipt (program, verifying-key, proof, statement and result commitments) shared byte-for-byte between Python and Rust with a checked known vector.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "beam_sp1_request.json / beam_sp1_receipt.json",
+      "evidence": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs; docs/sp1-beam-guest-v1.md"
+    },
+    {
+      "capabilityId": "contract.material_certificate",
+      "label": "Wire contract: strict versioned material certificate",
+      "description": "`read_material_certificate(path)` accepts a MEASURED certificate preserving issuer, batch, specimen, calibration and exact source identity (demo fixture gat/demo/material_certificate.json: fy 325 +- 2 MPa). Signature, revocation and issuer trust are explicitly unverified.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "material_certificate.json",
+      "evidence": "gat/engineering/material_certificate.py; gat/demo/material_certificate.json"
+    },
+    {
+      "capabilityId": "demo.beam_assurance",
+      "label": "Reference experiment: complete evidence-to-verification beam chain",
+      "description": "`python -m gat.demo.beam_assurance out/beam` runs IfcBeam -> canonical state -> typed certificate -> Gaussian conditioning -> bending capacity -> verdict -> state-bound assessment -> replay/snapshot -> checked fixed-point claim, writing IFC, snapshot, ledger, summary and SP1 proof request to out_dir. Self-asserting; the sibling demos (`python -m gat.demo`, `.geometry`, `.active_inference`, `.portability`, `.openusd_portability`, `.beam_openusd_portability`, `.temporal_process`, `.workflow`, `.usd`, `.ledger_replay`, `.incremental_scale`) are the same kind of executable proof.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python -m gat.demo.beam_assurance",
+      "path": "<out_dir>",
+      "evidence": "gat/demo/beam_assurance.py; gat/demo/__main__.py; docs/beam-assurance-reference-chain.md; .github/workflows/ci.yml",
+      "cost": "free",
+      "latency": "seconds",
+      "side_effects": "writes demo artifacts under out_dir"
+    },
+    {
+      "capabilityId": "validation.fetch_ifc_corpus",
+      "label": "Fetch and verify the commit-pinned public IFC validation corpus",
+      "description": "`python validation/fetch_ifc_corpus.py <dir> [--include-large]` downloads models declared in validation/ifc-corpus-v1.json (buildingSMART sample files, Medical-Dental Clinic 19 MB, optional 65 MB Schependomlaan) from pinned GitHub commits and refuses any size or sha256 mismatch; tests.test_public_ifc_corpus then checks measured audit baselines (GAT_IFC_VALIDATION_ROOT).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python validation/fetch_ifc_corpus.py",
+      "path": "<output_directory> [--include-large]",
+      "evidence": "validation/fetch_ifc_corpus.py; validation/ifc-corpus-v1.json; docs/real-ifc-validation-v1.md",
+      "cost": "network download (up to ~85 MB)",
+      "latency": "minutes",
+      "provenance": "buildingSMART/Sample-Test-Files and public IFC models at pinned commits (CC-BY-4.0)",
+      "side_effects": "outbound HTTPS to raw.githubusercontent.com; writes IFC files"
+    },
+    {
+      "capabilityId": "integration.blender_panel",
+      "label": "Blender 4.2+ GAT Evidence and Assurance sidebar",
+      "description": "Extension `gat_assurance` v0.2.0 (integrations/blender) loads a completed gat-headless `acceptance` or `beam_assurance` response, shows disposition, next evidence request or capacity/verdict change with method and oracle identity, and colours matching Blender/Bonsai objects by name or `gat_entity_name` property. Read-only: no IFC edits, no transformations, no probabilities recomputed; requests local file access only. Build: `blender --command extension build --source-dir integrations/blender/gat_assurance`.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "method": "Blender extension",
+      "path": "integrations/blender/gat_assurance",
+      "evidence": "integrations/blender/gat_assurance/__init__.py; integrations/blender/gat_assurance/bridge.py; integrations/blender/gat_assurance/blender_manifest.toml; docs/workflow-deployment-v1.md",
+      "cost": "free",
+      "latency": "interactive",
+      "workflow": "construction-acceptance"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/BIM-State-Transformer-Engine",
+    "domain": "built-environment",
+    "maturity": "prototype",
+    "language": "Python 3.11+ (numpy); Rust SP1 guest",
+    "framework": "gat-bim 0.1.0 (setuptools); SP1 v6.5.0; OpenUSD usd-core 26.8 optional",
+    "exposure": "cli",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-02T06:02:55Z",
+    "capability_count": 29,
+    "license": "MIT (engine); GPL-3.0-or-later (Blender extension)",
+    "console_scripts": "gat, gat-headless, gat-ifc-audit",
+    "http_server": false,
+    "mcp_server": false,
+    "test_runner": "python -m unittest discover (41 test modules)",
+    "ci_lanes": "test, test-openusd, test-public-ifc, test-extras, test-sp1-beam",
+    "state_formats": "IFC STEP, GatStateSnapshot v1 JSON, gat-execution-ledger v1, OpenUSD carrier v3 (usda/usdc, optional Ed25519), USDA subset fallback, 3DGS PLY",
+    "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)"
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "bim-state-transformer-engine--depends_on--building-information-corpus",
+      "targetNodeId": "building-information-corpus",
+      "kind": "depends_on",
+      "description": "Inferred from naming and from the building-information-corpus catalog entry (which declares supplies_context_to this engine); no import, path or URL in this repository references the corpus. Recorded so the built-environment cluster is connected; to be confirmed when the corpus has content.",
+      "evidence": "ecosystem/catalog/building-information-corpus.json; no code reference in BIM-State-Transformer-Engine"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "gat (gat.cli:main)",
+        "gat-headless (gat.headless:main)",
+        "gat-ifc-audit (gat.cli:ifc_audit_main)",
+        "python -m gat.demo[.<name>]",
+        "sp1/beam target gat-sp1-beam (Rust)"
+      ],
+      "run": [
+        "pip install -e .",
+        "pip install -e \".[openusd]\"",
+        "gat audit gat/demo/model.ifc --text",
+        "gat-headless request.json -o response.json",
+        "python -m unittest discover",
+        "cargo build --locked --release --manifest-path sp1/beam/Cargo.toml -p gat-sp1-beam"
+      ],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "gat-headless-request-v1 / gat-headless-response-v1",
+        "path": "gat/headless.py; docs/workflow-deployment-v1.md",
+        "summary": "Five-field request {format, request_id, operation, state{kind,path,require_signature}, payload}; read-only operations summary, acceptance, beam_assurance, change_impact; trusted keys only via --trusted-key."
+      },
+      {
+        "name": "GatStateSnapshot v1",
+        "path": "gat/state_snapshot.py",
+        "summary": "Versioned integrity-bound restart record: identities, topology, constraints, closed expression trees, provenance, raw order, dense covariance; derived state is rebuilt by the receiver."
+      },
+      {
+        "name": "gat-execution-ledger v1",
+        "path": "gat/ledger.py; docs/execution-ledger-v1.md",
+        "summary": "Hash-chained accepted/rejected transitions with prior/result digests, verification record, provenance; exact replay from genesis."
+      },
+      {
+        "name": "OpenUSD carrier v3",
+        "path": "gat/adapters/openusd.py; docs/openusd-carrier-v0.md",
+        "summary": "/State authoritative (entities, quantities, relationships, constraints, belief arrays, provenance, ledger events), /View derived; optional Ed25519 signature; migrate_openusd for v1/v2."
+      },
+      {
+        "name": "gat-computation-proof-manifest v1",
+        "path": "gat/proof_manifest.py; docs/proof-carrying-state-v1.md",
+        "summary": "Backend-neutral binding of one ledger transition to an external proof (SP1 beam guest first)."
+      },
+      {
+        "name": "SP1 beam request/receipt",
+        "path": "gat/sp1_beam.py; sp1/beam/lib/src/lib.rs",
+        "summary": "Domain-separated big-endian public values; numeric profile beam-milli-mpa-mm3-milli-nmm-v1; resistance factor fixed at 900000 ppm."
+      },
+      {
+        "name": "Scan artifact boundary (PLY)",
+        "path": "gat/geometry/scan_io.py; gat/geometry/registration.py",
+        "summary": "ASCII / binary-little-endian PLY vertices (e.g. Geometry-Grounded-Gaussian-Splatting recon_post.ply) enter registration; evidence bound to scan sha256 and scene version."
+      },
+      {
+        "name": "3DGS splat PLY export",
+        "path": "gat/geometry/splat_io.py",
+        "summary": "Standard 3D Gaussian Splatting PLY layout viewable in stock viewers; variations manifest.json."
+      },
+      {
+        "name": "gat-ifc-validation-corpus-v1",
+        "path": "validation/ifc-corpus-v1.json",
+        "summary": "Commit-pinned public IFC models with sha256, size, expected audit outcomes."
+      },
+      {
+        "name": "Material certificate",
+        "path": "gat/engineering/material_certificate.py",
+        "summary": "Strict versioned MEASURED certificate; issuer trust and signature explicitly unverified."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Demo IFC models",
+        "classification": "public",
+        "path": "gat/demo/model.ifc; gat/demo/beam_model.ifc",
+        "description": "Two-office milestone model (24 raw + 39 derived variables) and the reference beam."
+      },
+      {
+        "name": "Validation baselines",
+        "classification": "public",
+        "path": "validation/*.json",
+        "description": "AISC F.1-1B oracle, IFC corpus manifest, incremental-scale reference."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "raw.githubusercontent.com",
+        "domain": "raw.githubusercontent.com",
+        "purpose": "Fetch commit-pinned public IFC corpus in CI",
+        "auth": "none"
+      },
+      {
+        "name": "SP1 toolchain (sp1up.succinct.xyz)",
+        "domain": "sp1up.succinct.xyz",
+        "purpose": "Install pinned SP1 v6.5.0 prover toolchain in the CI lane",
+        "auth": "GitHub token in CI only"
+      }
+    ],
+    "secrets_env": [
+      "GAT_IFC_VALIDATION_ROOT",
+      "SP1_PROVER"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "gat audit gat/demo/model.ifc --text"
+    },
+    "spatial": "Carries building-local metric geometry (entity placements, oriented boxes, Gaussian primitives) normalised to metres; exact affine transport into geo-referenced frames exists but no model ships with world coordinates.",
+    "temporal": "Time is explicit process state: EvolveLinearGaussian steps over declared intervals, forecast_process rollouts, and a hash-chained ledger of transitions and causal events; evidence age is causal order, not wall-clock expiry.",
+    "open_questions": [
+      "Geometry-Grounded-Gaussian-Splatting's recon_post.ply is the declared first scan-evidence input (README, gat/geometry/scan_io.py); the reverse relation geometry-grounded-gaussian-splatting--supplies_context_to--bim-state-transformer-engine belongs on that node and should be declared there.",
+      "No HTTP or MCP surface exists; a future network service must source trusted Ed25519 keys from deployment configuration, not callers. Which system will host gat-headless for the universe?",
+      "Whether building-information-corpus / building-information-graph will feed IFC or evidence into GAT is inferred from naming only.",
+      "pyproject project.urls points at notationsystems/BIM-State-Transformer while the remote is BIM-State-Transformer-Engine.",
+      "The OpenUSD carrier is the declared bridge to Blender, Omniverse and other USD hosts; no ecosystem node (lichtfeld-studio, matrix-3d) is referenced by this repository."
+    ]
+  }
+}

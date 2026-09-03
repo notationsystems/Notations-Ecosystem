@@ -1,0 +1,133 @@
+{
+  "nodeId": "notations-dock",
+  "name": "Notations Universe Dock",
+  "kind": "visual_dock",
+  "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It never talks to a provider directly and holds no credentials of its own.",
+  "capabilities": [
+    {
+      "capabilityId": "map.observe",
+      "label": "Kepler.gl universe map",
+      "description": "Located nodes as points sized by capability count and coloured by kind; relations as arcs; health as colour; flows from world models as extra layers.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/MapLens.tsx"
+    },
+    {
+      "capabilityId": "graph.observe",
+      "label": "Capability graph",
+      "description": "Force-directed graph of every node and relation with a node inspector listing capabilities by mode and approval.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/GraphLens.tsx"
+    },
+    {
+      "capabilityId": "ledger.observe",
+      "label": "Coordination ledger",
+      "description": "Every coordination record with status (ready, approval_required, approved, rejected) and its dispatch state, always not_dispatched.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/LedgerLens.tsx"
+    },
+    {
+      "capabilityId": "events.observe",
+      "label": "Event timeline",
+      "description": "Incremental journal events after the last cursor, with automatic snapshot refresh on cursor loss.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/TimelineLens.tsx"
+    },
+    {
+      "capabilityId": "command.compose",
+      "label": "Command console",
+      "description": "Composes register_node, declare_relation, record_observation, request_capability and resolve_coordination commands, validated with the control plane's own validator, and submits them with the current revision.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/ConsoleLens.tsx"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Notations-Ecosystem",
+    "domain": "platform",
+    "maturity": "v0",
+    "language": "TypeScript",
+    "framework": "Vite + React + Kepler.gl",
+    "exposure": "local-only",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-03T01:40:38Z",
+    "default_port": 5173,
+    "capability_count": 5
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "notations-dock--visualizes--control-plane",
+      "targetNodeId": "control-plane",
+      "kind": "visualizes",
+      "description": "The dock renders the control plane's snapshot, coordination records and events.",
+      "evidence": "dock/src/api/controlPlane.ts"
+    },
+    {
+      "relationId": "notations-dock--depends_on--control-plane",
+      "targetNodeId": "control-plane",
+      "kind": "depends_on",
+      "description": "Every command the dock submits goes through /v1/commands with the snapshot revision; without the control plane the dock only shows the bundled sample snapshot.",
+      "evidence": "dock/src/api/controlPlane.ts"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "dock/src/main.tsx"
+      ],
+      "run": [
+        "cd dock && npm install",
+        "npm run dev",
+        "npm run build",
+        "npm test"
+      ],
+      "ports": [
+        5173
+      ],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "Control plane OpenAPI",
+        "path": "control-plane/openapi/control-plane.openapi.yaml",
+        "summary": "The only contract the dock consumes."
+      }
+    ],
+    "resources": [
+      {
+        "name": "sample snapshot",
+        "classification": "public",
+        "path": "dock/public/sample-snapshot.json",
+        "description": "Generated from the catalog for offline rendering; labelled as a sample, never live."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "CARTO basemaps",
+        "domain": "basemaps.cartocdn.com",
+        "purpose": "Token-free dark basemap tiles for Kepler.gl",
+        "auth": "none"
+      }
+    ],
+    "secrets_env": [],
+    "health": {
+      "method": "none",
+      "endpoint": null
+    },
+    "spatial": "Renders every located node; itself unlocated.",
+    "temporal": "Event timeline and observation timestamps.",
+    "open_questions": [
+      "Where is the dock hosted for the team, and which origin goes into CONTROL_PLANE_ALLOWED_ORIGINS?"
+    ]
+  }
+}

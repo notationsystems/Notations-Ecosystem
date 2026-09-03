@@ -1,0 +1,55 @@
+{
+  "nodeId": "notations-energy-modulator",
+  "name": "Notations Energy Modulator",
+  "kind": "information_library",
+  "description": "Planned energy and compute modulation layer for long-running archival and scientific workloads. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+  "capabilities": [
+    {
+      "capabilityId": "charter.observe",
+      "label": "Repository placeholder",
+      "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "github",
+      "evidence": "https://github.com/notationsystems/Notations-Energy-Modulator"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Notations-Energy-Modulator",
+    "domain": "archive",
+    "maturity": "empty",
+    "language": "",
+    "framework": "",
+    "exposure": "unknown",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-25T23:14:51Z",
+    "capability_count": 1
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "notations-energy-modulator--governs--notations-archival-swarm",
+      "targetNodeId": "notations-archival-swarm",
+      "kind": "governs",
+      "description": "Planned (inferred): sets the energy budget the swarm runs under.",
+      "evidence": "created together on 2026-08-25; naming"
+    }
+  ],
+  "reference": {
+    "runtime": {},
+    "contracts": [],
+    "resources": [],
+    "external_services": [],
+    "secrets_env": [],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": null
+    },
+    "spatial": "Not yet defined.",
+    "temporal": "Not yet defined.",
+    "open_questions": [
+      "What is the first contract this repository will expose?"
+    ]
+  }
+}

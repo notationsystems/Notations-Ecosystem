@@ -1,0 +1,55 @@
+{
+  "nodeId": "building-information-graph",
+  "name": "Building Information Graph",
+  "kind": "information_library",
+  "description": "Planned provenance-tracked graph over building information, the built-environment counterpart of the Notations Corpus Graph. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+  "capabilities": [
+    {
+      "capabilityId": "charter.observe",
+      "label": "Repository placeholder",
+      "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "github",
+      "evidence": "https://github.com/notationsystems/Building-Information-Graph-"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Building-Information-Graph-",
+    "domain": "built-environment",
+    "maturity": "empty",
+    "language": "",
+    "framework": "",
+    "exposure": "unknown",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-01T06:24:19Z",
+    "capability_count": 1
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "building-information-graph--depends_on--building-information-corpus",
+      "targetNodeId": "building-information-corpus",
+      "kind": "depends_on",
+      "description": "Corpus-to-graph pairing (planned, inferred from naming), mirroring the Payload and Notations corpus graphs.",
+      "evidence": "repo naming"
+    }
+  ],
+  "reference": {
+    "runtime": {},
+    "contracts": [],
+    "resources": [],
+    "external_services": [],
+    "secrets_env": [],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": null
+    },
+    "spatial": "Not yet defined.",
+    "temporal": "Not yet defined.",
+    "open_questions": [
+      "What is the first contract this repository will expose?"
+    ]
+  }
+}

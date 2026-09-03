@@ -1,0 +1,157 @@
+{
+  "nodeId": "notation-systems-web",
+  "name": "Notation Systems website (Webflow)",
+  "kind": "operator_surface",
+  "description": "The public web presence of Notation Systems, hosted on Webflow (site 'notation-systems', English primary locale, no custom domain attached yet, last published 2026-09-03). Reachable through the Webflow Data API, which makes the site a programmable node: pages, CMS collections, assets, forms and publishing. A Webflow Cloud app (tradewind-scm-nextjs, a Next.js + OpenNext starter) is mounted under it.",
+  "capabilities": [
+    {
+      "capabilityId": "site.read",
+      "label": "Read site details",
+      "description": "Site domains, locales and publish state (GET /v2/sites/{site_id}).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v2/sites/{site_id}",
+      "evidence": "Webflow Data API v2 (data_sites_tool)"
+    },
+    {
+      "capabilityId": "pages.read",
+      "label": "List pages",
+      "description": "Enumerate pages and their metadata (GET /v2/sites/{site_id}/pages).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v2/sites/{site_id}/pages",
+      "evidence": "Webflow Data API v2 (data_pages_tool)"
+    },
+    {
+      "capabilityId": "cms.read",
+      "label": "Read CMS items",
+      "description": "Read collection items; a public catalogue of ecosystem nodes could be published here from the control plane.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v2/collections/{collection_id}/items",
+      "evidence": "Webflow Data API v2 (data_cms_tool)"
+    },
+    {
+      "capabilityId": "cms.write",
+      "label": "Create or update CMS items",
+      "description": "Write collection items (POST/PATCH /v2/collections/{collection_id}/items).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v2/collections/{collection_id}/items",
+      "evidence": "Webflow Data API v2 (data_cms_tool)"
+    },
+    {
+      "capabilityId": "site.publish",
+      "label": "Publish the site",
+      "description": "Publish to the Webflow subdomain and custom domains (POST /v2/sites/{site_id}/publish).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v2/sites/{site_id}/publish",
+      "evidence": "Webflow Data API v2 (data_sites_tool)"
+    },
+    {
+      "capabilityId": "webhooks.observe",
+      "label": "Site webhooks",
+      "description": "Form submissions, publishes and CMS changes can be delivered as webhook observations into the control plane.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "webhook",
+      "evidence": "Webflow Data API v2 (data_webhook_tool)"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/tradewind-scm-nextjs",
+    "domain": "platform",
+    "maturity": "external",
+    "language": "Webflow / Next.js",
+    "framework": "Webflow + Webflow Cloud (OpenNext on Cloudflare)",
+    "exposure": "deployed",
+    "upstream": "Webflow",
+    "visibility": "private",
+    "last_pushed_at": "2026-08-31T02:47:31Z",
+    "webflow_site_id": "6a98a59e681119615d9c67c0",
+    "timezone": "Asia/Saigon",
+    "capability_count": 6
+  },
+  "location": {
+    "longitude": 106.7009,
+    "latitude": 10.7769,
+    "label": "Ho Chi Minh City"
+  },
+  "relations": [
+    {
+      "relationId": "notation-systems-web--visualizes--control-plane",
+      "targetNodeId": "control-plane",
+      "kind": "visualizes",
+      "description": "Intended public catalogue: CMS items rendered from control-plane node registrations (not yet built).",
+      "evidence": "catalog intent; Webflow CMS API"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "src/app/page.tsx"
+      ],
+      "run": [
+        "npm run dev",
+        "npm run deploy (webflow cloud deploy)"
+      ],
+      "ports": [
+        3000
+      ],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "Webflow Data API v2",
+        "path": "https://developers.webflow.com/data/reference",
+        "summary": "REST API for sites, pages, CMS, assets, forms and webhooks."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Webflow site 6a98a59e681119615d9c67c0",
+        "classification": "public",
+        "path": "",
+        "description": "Site 'Notation Systems', short name notation-systems, workspace 6a09dcfddbfa63efcfa741ff."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "Webflow",
+        "domain": "api.webflow.com",
+        "purpose": "Hosting, CMS, Data/Designer APIs",
+        "auth": "OAuth 2 / site API token"
+      },
+      {
+        "name": "Cloudflare Workers (via Webflow Cloud)",
+        "domain": "workers.dev",
+        "purpose": "Runs the Next.js app through OpenNext",
+        "auth": "Webflow Cloud deploy"
+      }
+    ],
+    "secrets_env": [
+      "WEBFLOW_API_TOKEN"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/v2/sites/6a98a59e681119615d9c67c0"
+    },
+    "spatial": "Site timezone Asia/Saigon; anchored at Ho Chi Minh City as the operating locale.",
+    "temporal": "Publish timestamps and CMS item history.",
+    "open_questions": [
+      "Which custom domain will the site use?",
+      "Should the control plane publish a public catalogue into a CMS collection?"
+    ]
+  }
+}

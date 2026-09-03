@@ -1,0 +1,273 @@
+{
+  "nodeId": "pythia-oracle-engine",
+  "name": "PYTHIA Oracle Engine",
+  "kind": "reasoning_engine",
+  "description": "A FastAPI forecasting oracle (\"Osiris world data in, future predictions out\") found in engine/ of the Payload-Terminal-V0 repository as Python 3.14 bytecode only, with its ledger in runs/ledger.jsonl. It reads the terminal's public /api/* feeds (OSIRIS_URL) into a prose world brief, asks a local OpenAI-compatible LLM (Ollama by default, no cloud) for concrete predictions per horizon, optionally has a swarm council of persona agents deliberate and weight votes by their resolved Brier scores, persists every forecast to an append-only ledger, and later LLM-judges each forecast against the archived world to keep a scorecard. It exposes SSE and agent views for other agents and pushes outbound webhooks above probability/salience thresholds. It is a prototype whose source is not committed and whose intake targets routes the terminal has since retired; it must never be treated as canonical state or as validated risk, and its forecasts should be catalogued as proposals until the source and the intake are restored.",
+  "capabilities": [
+    {
+      "capabilityId": "oracle.health",
+      "label": "Engine health",
+      "description": "GET /health reports osiris_up, oracle_up, prediction_count, uptime and version (PYTHIA Oracle 0.2.0). (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/health",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.config",
+      "label": "Engine configuration",
+      "description": "GET /config returns the effective configuration: OSIRIS_URL (world-data source, default http://localhost:3000), LLM base URL (default http://localhost:11434/v1, Ollama OpenAI-compatible), LLM_MODEL, ENGINE_PORT, SWARM_ENABLED/SWARM_MODELS, loop and track-record settings. GET /links lists related endpoints. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/config",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.world.read",
+      "label": "World brief and live state",
+      "description": "GET /world returns the assembled prose world brief and top events (503-style message \"no world brief yet - run /predict\" before the first pass); GET /state returns the in-memory engine state; GET /runs lists oracle pass records (RunRecord: brief -> model -> prediction ids). (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/world",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.state.stream",
+      "label": "SSE state stream",
+      "description": "GET /state/stream opens a text/event-stream fed by the engine's async pub/sub (ping keepalives, forecast and event updates) for external agents and the UI. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "sse",
+      "method": "GET",
+      "path": "/state/stream",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/state.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.agent.view",
+      "label": "Consolidated machine-readable world view",
+      "description": "GET /agent/view returns one view for external agents: the assembled brief, every live event with coordinates, and current predictions. GET /agent/events returns live world events filtered by domain, source, min_salience, since (epoch ms) and limit, most-salient first, with domains_available for discovery. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/agent/view",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.predictions.read",
+      "label": "Current forecasts",
+      "description": "GET /predictions returns live forecasts (statement, horizon 24h|week|month|year, probability, location, lat/lng, reasoning, per-persona agent views, brief_id, resolve_after) optionally filtered by horizon and min_probability. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/predictions",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; runs/ledger.jsonl"
+    },
+    {
+      "capabilityId": "oracle.predict.run",
+      "label": "Run an oracle pass",
+      "description": "POST /predict senses the world (reads the terminal's /api/* feeds), builds the brief, asks the local LLM for concrete predictions per horizon, optionally runs the swarm council, persists every forecast to runs/ledger.jsonl and publishes to subscribers. Returns started or \"already running\". Triggers LLM compute and durable ledger writes. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/predict",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/pipeline.cpython-314.pyc; engine/__pycache__/oracle.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.scorecard.read",
+      "label": "Track record",
+      "description": "GET /scorecard returns overall Brier score, hit rate, per-horizon and per-persona accuracy, calibration bins and recent resolutions computed from the append-only ledger, where an LLM judge grades each forecast against the archived world once its horizon expires. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/scorecard",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/ledger.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.scorecard.resolve",
+      "label": "Grade due forecasts now",
+      "description": "POST /scorecard/resolve runs a resolution pass immediately instead of waiting for the hourly ResolveLoop: LLM-judges due forecasts (bounded per pass), voids those long past their grace window, and appends resolutions to the ledger. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/scorecard/resolve",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.whatif",
+      "label": "Counterfactual forecast",
+      "description": "POST /whatif {scenario: \"the Strait of Hormuz closes tonight\"} asks the oracle for knock-on effects grounded in the live world; ephemeral, nothing stored, nothing enters the track record. Returns {scenario, narrative, predictions}. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/whatif",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.chat",
+      "label": "Ask the oracle",
+      "description": "POST /chat {message} answers a free-text question with the live sources and current predictions in context; returns {answer}. Calls the LLM; stores nothing. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/chat",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.models",
+      "label": "List and switch LLM models",
+      "description": "GET /models lists installed local (Ollama) models and the one in use; POST /model {model} switches the oracle's model at runtime. GET /swarm/models and POST /swarm/model {persona, model} read or set per-persona overrides for the swarm council (persisted to swarm_models.json). (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/model",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/swarm.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.loop",
+      "label": "Continuous forecasting loop control",
+      "description": "/loop controls the OracleLoop (re-forecast on an interval when enabled) alongside the SenseLoop (refresh live events without the LLM) and ResolveLoop (hourly grading). (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/loop",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.webhooks",
+      "label": "Outbound webhook registration",
+      "description": "GET /webhooks lists registered hooks; POST /webhooks {url, min_probability, min_salience} registers an http(s) URL; DELETE unregisters by exact URL. After each oracle pass the engine POSTs {kind:\"forecasts\", ts, forecasts[{statement, horizon, probability, location, lat, lng, reasoning}]} or {kind:\"events\", ...} when thresholds are crossed. (Route recovered from compiled bytecode; no Python source is committed.)",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/webhooks",
+      "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/webhooks.cpython-314.pyc"
+    },
+    {
+      "capabilityId": "oracle.ledger",
+      "label": "Forecast ledger (append-only JSONL)",
+      "description": "runs/ledger.jsonl is the engine's accountability record: kind=brief (archived top signals, at most hourly, ~500 snapshots of world memory) and kind=forecast (id, statement, horizon, probability, base_probability, location, lat/lng, reasoning, agents, brief_id, resolve_after, resolution). Hydrated at boot so live forecasts survive restart.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "evidence": "runs/ledger.jsonl; engine/__pycache__/ledger.cpython-314.pyc"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Payload-Terminal-V0",
+    "domain": "intelligence",
+    "maturity": "prototype",
+    "language": "Python",
+    "framework": "FastAPI + uvicorn + httpx; Ollama-compatible LLM",
+    "exposure": "local-only",
+    "upstream": "MiroFish (swarm idea, per docstrings)",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-01T06:28:31Z",
+    "subdirectory": "engine/",
+    "source_state": "bytecode-only (engine/__pycache__/*.cpython-314.pyc); no .py committed",
+    "ledger_records": 9,
+    "capability_count": 15
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "pythia-oracle-engine--depends_on--payload-terminal",
+      "targetNodeId": "payload-terminal",
+      "kind": "depends_on",
+      "description": "Confirmed by bytecode strings: osiris_intake reads OSIRIS_URL (default http://localhost:3000) routes /api/economy, /api/markets, /api/weather, /api/infrastructure, /api/health and many retired ones (/api/conflicts, /api/gdelt, /api/fires, /api/earthquakes, /api/polymarket...) as its only world source; without the terminal the oracle has no brief. Several of those routes now answer 503 route_retired.",
+      "evidence": "engine/__pycache__/osiris_intake.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc; src/lib/routeGate.ts"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "engine/run.py (absent; only engine/__pycache__/run.cpython-314.pyc)"
+      ],
+      "run": [
+        "# source not committed; bytecode compiled for CPython 3.14 from C:\\Users\\mrads\\osiris\\engine",
+        "# expected: uvicorn engine.server:app --port $ENGINE_PORT with Ollama at http://localhost:11434/v1"
+      ],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "Forecast record",
+        "path": "runs/ledger.jsonl",
+        "summary": "{kind:\"forecast\", id, statement, horizon, probability, base_probability, location, lat, lng, reasoning, split, ts, resolve_after, agents[], brief_id}."
+      },
+      {
+        "name": "Outbound webhook payload",
+        "path": "engine/__pycache__/webhooks.cpython-314.pyc",
+        "summary": "POST {kind:\"forecasts\"|\"events\", ts, forecasts[...]} to registered URLs above min_probability / min_salience."
+      },
+      {
+        "name": "Oracle prompt contract",
+        "path": "engine/__pycache__/oracle.cpython-314.pyc",
+        "summary": "Strict JSON array of {statement, horizon, probability 0-100, reasoning, location, lat, lng}; Polymarket odds and futures curves are named as anchors in the prompt."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Forecast ledger",
+        "classification": "internal",
+        "path": "runs/ledger.jsonl",
+        "description": "9 records (1 brief, 8 forecasts) from July 2026; append-only; the judge's evidence base."
+      },
+      {
+        "name": "Swarm persona model overrides",
+        "classification": "internal",
+        "path": "swarm_models.json (runtime, not committed)",
+        "description": "Per-persona LLM overrides saved by POST /swarm/model."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "Ollama / OpenAI-compatible LLM",
+        "domain": "localhost:11434",
+        "purpose": "Forecasting, swarm personas, judge, chat",
+        "auth": "none"
+      },
+      {
+        "name": "Payload Terminal feeds",
+        "domain": "OSIRIS_URL (localhost:3000)",
+        "purpose": "World events, markets, weather, infrastructure",
+        "auth": "none"
+      },
+      {
+        "name": "Kalshi websocket (per run.py docstring)",
+        "domain": "kalshi.com",
+        "purpose": "Market odds intake",
+        "auth": "unknown"
+      }
+    ],
+    "secrets_env": [],
+    "health": {
+      "method": "http",
+      "endpoint": "/health"
+    },
+    "spatial": "Forecasts carry approximate lat/lng and a location string; events carry coordinates from the terminal feeds.",
+    "temporal": "Horizons 24h|week|month|year with resolve_after deadlines; hourly resolve loop; brief snapshots archived at most hourly (~3 weeks of memory).",
+    "open_questions": [
+      "Where is the Python source for engine/? Only CPython 3.14 bytecode compiled on a Windows path is committed; this node is reconstructed from strings and should be re-catalogued from source.",
+      "Is the engine meant to live in this repository, in osiris-dashboard/osint-war-room, or be retired? Its intake targets 20+ terminal routes that are now 503 route_retired.",
+      "Which LLM backend, Kalshi credentials and ENGINE_PORT are intended for deployment?",
+      "Forecasts and briefs mix simulated LLM output with sourced data; how should the terminal's valueKind/provenance discipline apply if any of this is ever surfaced there?"
+    ]
+  }
+}

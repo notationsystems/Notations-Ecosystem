@@ -1,0 +1,911 @@
+{
+  "nodeId": "payload-terminal",
+  "name": "Payload Terminal V0",
+  "kind": "api",
+  "description": "Payload Supply Chain Management, the physical-commerce operating system: a Next.js 16 terminal that holds a provenance-preserving world state for commodities (copper, aluminium) and freight (loads, lanes, carriers, commitments) in which every figure carries source, basis and the date it became knowable, and an unanswerable question returns a typed refusal (value null + refusalType + remedy) instead of a zero. It is the operator surface of the Payload ecosystem: HTTP projections under /api/economy and /api/freight, a stdio MCP server of 12 read-only tools that call those same routes, conditional OSINT attribution routes, and append-only hash-chained freight journals. Machine clients send x-payload-client: machine (legacy x-sea-dog-client) and are served identically but segregated from the frozen researcher demand instruments into data-archive/mcp-sessions.jsonl. It must never become a person-intelligence tool (username, breach, phone and scanning capabilities were deleted, and CI gates every route), never turn a refusal into a zero, and never accept an export back into state.",
+  "capabilities": [
+    {
+      "capabilityId": "economy.state.read",
+      "label": "Physical-economy projections (map/analytics/timeline/graph/state)",
+      "description": "GET /api/economy?commodity=copper|aluminium&view=map|analytics|timeline|graph|state. map: entities and flows with disruption flags at the evaluation date; analytics: concentration (HHI with partition), centrality, bottlenecks, anomalies, propagation, corpusHealth, sources; timeline: playback range; graph: force-graph projection; state: full canonical state. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf). Unanswerable questions return typed refusals (value null + refusalType + remedy), never a zero.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy",
+      "evidence": "src/app/api/economy/route.ts"
+    },
+    {
+      "capabilityId": "economy.entity.read",
+      "label": "Entity inspector",
+      "description": "GET /api/economy/entity?commodity=&id=ent:... returns one entity's canonical state: observations with unit/basis/valueKind/source/knownAt, capacities, flows in/out, events, and resolved upstream/downstream chains so a client never owns graph logic. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/entity",
+      "evidence": "src/app/api/economy/entity/route.ts"
+    },
+    {
+      "capabilityId": "economy.search",
+      "label": "Entity and evidence search",
+      "description": "GET /api/economy/search?q= searches the canonical register (mines, smelters, refineries, ports, companies, countries) by name, operator, country or kind; the index IS the register. Queries whose first token names an epistemic state (refused[:type], stale[:type], contested[:class], vintage) search the evidence layer instead. A true miss names registered-but-unbuilt sources (registryGaps). Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/search",
+      "evidence": "src/app/api/economy/search/route.ts"
+    },
+    {
+      "capabilityId": "economy.table.read",
+      "label": "Corpus table and period x edition grid",
+      "description": "GET /api/economy/table?commodity=[&metric=&subject=&format=json|md] renders the corpus as rows carrying record_id, the five axes, source, period, known_at, attestation and a server-rendered claim sentence; refused subjects are null-valued rows with a remedy. view=grid&subject=&metric= returns the period x edition grid (null cell = not covered, never zero). GET-only by design; CSV/XLSX refused. Exports are logged to data-archive/export-log.jsonl. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/table",
+      "evidence": "src/app/api/economy/table/route.ts"
+    },
+    {
+      "capabilityId": "economy.refusals.read",
+      "label": "Refusals digest and session telemetry",
+      "description": "GET /api/economy/refusals?commodity=[&asOf=&knowledge=] returns everything the instrument declined to answer, grouped by refusal type with the type's shared remedy, most-blocking mechanism first: a work queue. ?view=session returns the session telemetry digest (queries, misses, withheld, exports) with no query strings and no personal data.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/refusals",
+      "evidence": "src/app/api/economy/refusals/route.ts"
+    },
+    {
+      "capabilityId": "economy.guards.read",
+      "label": "Runtime guard evaluation and build identity",
+      "description": "GET /api/economy/guards[?now=YYYY-MM-DD] evaluates the validWhile guards of every deferred ledger decision against the state this instance is actually serving (not CI's verdict on the repository) and reports version.commit / commit_source (unstamped-build when PAYLOAD_BUILD_SHA is absent). Used as the S-6 session baseline capture.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/guards",
+      "evidence": "src/app/api/economy/guards/route.ts"
+    },
+    {
+      "capabilityId": "economy.validate",
+      "label": "Claim validator as a service",
+      "description": "GET /api/economy/validate?claim=...&records=obs:a,obs:b[&commodity=&asOf=&knowledge=] judges the support relation between a natural-language claim (from any model) and the records it cites. Verdicts: supported, partially_supported, unsupported, overstated, inadmissible (rests on representative-attested input). Never recomputes analytics, never supplies uncited evidence; the claim text is never logged.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/validate",
+      "evidence": "src/app/api/economy/validate/route.ts"
+    },
+    {
+      "capabilityId": "economy.scenario",
+      "label": "Counterfactual scenario injection",
+      "description": "POST /api/economy/scenario {commodity?, asOf?, knowledge?, label, events[]} runs the propagation engine twice on the same frame (reconstruction and with hypothetical events injected) and returns both plus the delta on an explicit counterfactual frame. Nothing is written; the scenario exists only in the response.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/economy/scenario",
+      "evidence": "src/app/api/economy/scenario/route.ts"
+    },
+    {
+      "capabilityId": "entity.expand",
+      "label": "Entity expansion via the OSIRIS intel layer",
+      "description": "GET /api/entity/expand?type=aircraft|vessel|company|person|ip|country&id=[&registration&model&icao24] validates the request and forwards it to the osiris-intel service (INTEL_URL, default http://payload-intel:4000 in production) returning its {nodes, links} ontology graph. Rate-limited 30/min per client IP; response cached 1h.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/entity/expand",
+      "evidence": "src/app/api/entity/expand/route.ts"
+    },
+    {
+      "capabilityId": "freight.operations.read",
+      "label": "Read load-operation projections",
+      "description": "GET /api/freight/operations[?operationId=] lists or reads the replayable load-operation projections (opportunity intake, alternatives, authorization, assignment, dispatch, outcome) derived from the append-only hash-chained operations journal (PAYLOAD_OPERATIONS_LOG). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/operations",
+      "evidence": "src/app/api/freight/operations/route.ts"
+    },
+    {
+      "capabilityId": "freight.operations.command",
+      "label": "Advance a load operation (typed commands)",
+      "description": "POST /api/freight/operations {command, payload} appends to the operations journal. Commands: register_opportunity, register_alternative, authorize_alternative, open_episode, record_assignment, explore_assignment, dispatch, capture_outcome, capture_settlement. 201 on append, 200 on idempotent replay, 409 on phase/id conflicts, 422 on typed refusals, 413 above 1 MB (raw documents do not belong in the journal). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/freight/operations",
+      "evidence": "src/app/api/freight/operations/route.ts"
+    },
+    {
+      "capabilityId": "freight.control_tower.read",
+      "label": "Control-tower read model",
+      "description": "GET /api/freight/control-tower joins the operations and carrier-communication journals into an exception-first desk queue: load/carrier/lane/episode identity, authorization through settlement state, pickup/delivery commitments, tracking freshness, quoted cost, invoice, margin. Every item names an issue, severity, deadline, evidence count and operator remedy; no composite score. Journal corruption makes the whole view refuse rather than show an empty desk. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/control-tower",
+      "evidence": "src/app/api/freight/control-tower/route.ts"
+    },
+    {
+      "capabilityId": "freight.communications.read",
+      "label": "Read carrier-communication projections",
+      "description": "GET /api/freight/communications[?operationId=] exposes tender delivery attempts, receipts and carrier-event projections from the carrier-communications journal (PAYLOAD_CARRIER_COMMUNICATIONS_LOG). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/communications",
+      "evidence": "src/app/api/freight/communications/route.ts"
+    },
+    {
+      "capabilityId": "freight.communications.send_dispatch",
+      "label": "Deliver a tender to the carrier adapter",
+      "description": "POST /api/freight/communications {command:\"send_dispatch\", payload} delivers the journal-derived tender to the configured outbound carrier adapter (PAYLOAD_CARRIER_DISPATCH_URL, bearer PAYLOAD_CARRIER_DISPATCH_TOKEN) with a stable Idempotency-Key, at-least-once across a crash. The carrier receives only the selected rate and sanitized load facts, never the shipper target rate. 503 carrier_gateway_not_configured when the adapter is unset. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/freight/communications",
+      "evidence": "src/app/api/freight/communications/route.ts"
+    },
+    {
+      "capabilityId": "freight.carrier_events.webhook",
+      "label": "Inbound carrier acknowledgement/tracking webhook",
+      "description": "POST /api/freight/carrier-events records carrier acknowledgements and tracking updates into the communications journal. Authenticated by x-payload-timestamp and x-payload-signature = sha256=HMAC-SHA256(timestamp + \".\" + rawBody) under PAYLOAD_CARRIER_WEBHOOK_SECRET (>= 32 bytes; 300 s skew; 256 KB cap). Events bind to immutable dispatch identities; orphan or mismatched histories are refused.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/freight/carrier-events",
+      "evidence": "src/app/api/freight/carrier-events/route.ts"
+    },
+    {
+      "capabilityId": "freight.sources.pull",
+      "label": "Authoritative carrier and diesel evidence pull-through",
+      "description": "GET /api/freight/sources?usdot=&carrierId=[&includeDiesel=1] pulls FMCSA QCMobile identity/authority/out-of-service evidence and the fixed EIA weekly U.S. diesel benchmark (FMCSA_WEB_KEY, EIA_API_KEY). Returns a gate-ready authorizationCarrier with insurance expiry and cargo cover deliberately null; excludes carrier address/telephone; partial upstream failure is a typed source refusal, never a stale value or inferred pass. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/sources",
+      "evidence": "src/app/api/freight/sources/route.ts"
+    },
+    {
+      "capabilityId": "freight.demo.run",
+      "label": "End-to-end freight run over the simulated backend",
+      "description": "GET /api/freight/demo[?format=text&now=ISO] runs nine hand-built loads through the notary, lifecycle engine and spatial abstraction and pins every refusal. The clock is a query parameter defaulted to the fixture instant so two responses can be diffed.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/demo",
+      "evidence": "src/app/api/freight/demo/route.ts"
+    },
+    {
+      "capabilityId": "freight.world.run",
+      "label": "Detector discrimination run over a generated freight world",
+      "description": "GET /api/freight/world?now=ISO&seed=int generates a ~520-load population with planted signals and reports whether each detector (lane residuals, carrier vetting, exception queue) found what the world manifest says it planted. Same seed, byte-identical world.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/freight/world",
+      "evidence": "src/app/api/freight/world/route.ts"
+    },
+    {
+      "capabilityId": "osint.whois",
+      "label": "WHOIS/RDAP domain attribution",
+      "description": "GET /api/osint/whois resolves a domain's registrant organisation via RDAP and cross-checks registrant/org names against the OFAC SDN list (OpenSanctions mirror), surfacing an inline alert. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/whois",
+      "evidence": "src/app/api/osint/whois/route.ts"
+    },
+    {
+      "capabilityId": "osint.dns",
+      "label": "DNS lookup (DoH)",
+      "description": "GET /api/osint/dns resolves records for a domain via Google DNS-over-HTTPS. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/dns",
+      "evidence": "src/app/api/osint/dns/route.ts"
+    },
+    {
+      "capabilityId": "osint.ip",
+      "label": "IP geolocation, ASN and OFAC screening of the announcing org",
+      "description": "GET /api/osint/ip returns geolocation, reputation and ASN owner for an address block and screens the ASN owner against the OFAC SDN list. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/ip",
+      "evidence": "src/app/api/osint/ip/route.ts"
+    },
+    {
+      "capabilityId": "osint.certs",
+      "label": "Certificate-transparency lookup",
+      "description": "GET /api/osint/certs lists certificates issued for a domain via crt.sh. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/certs",
+      "evidence": "src/app/api/osint/certs/route.ts"
+    },
+    {
+      "capabilityId": "osint.bgp",
+      "label": "BGP/ASN lookup",
+      "description": "GET /api/osint/bgp attributes an autonomous system or prefix to its operating organisation via ip-api.com and RIPE Stat. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/bgp",
+      "evidence": "src/app/api/osint/bgp/route.ts"
+    },
+    {
+      "capabilityId": "osint.mac",
+      "label": "MAC OUI vendor lookup",
+      "description": "GET /api/osint/mac returns the hardware vendor that registered a MAC prefix; the subject is a vendor, never a device owner. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/mac",
+      "evidence": "src/app/api/osint/mac/route.ts"
+    },
+    {
+      "capabilityId": "osint.threats",
+      "label": "Threat-indicator feed",
+      "description": "GET /api/osint/threats serves AlienVault OTX public pulses and Tor exit-node indicators for infrastructure attribution. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/threats",
+      "evidence": "src/app/api/osint/threats/route.ts"
+    },
+    {
+      "capabilityId": "osint.sanctions",
+      "label": "Counterparty sanctions screening (organisations, vessels, aircraft)",
+      "description": "GET /api/osint/sanctions screens carriers, brokers, shippers, consignees, vessels and aircraft against the OFAC SDN list (OpenSanctions us_ofac_sdn mirror) with substring and alias matching, schema-filterable. The Person schema is not addressable and is filtered out of every result set, not merely omitted from the allowlist.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/sanctions",
+      "evidence": "src/app/api/osint/sanctions/route.ts"
+    },
+    {
+      "capabilityId": "geo.directions",
+      "label": "Turn-by-turn routing",
+      "description": "GET /api/directions returns normalised routes with narrative maneuvers from Valhalla (auto/bicycle/pedestrian costing, avoid options) with OSRM as driving-only fallback; both keyless OSM services, one response shape.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/directions",
+      "evidence": "src/app/api/directions/route.ts"
+    },
+    {
+      "capabilityId": "geo.search",
+      "label": "Location search and geocoding",
+      "description": "GET /api/geosearch merges Photon (prefix/fuzzy autocomplete) with Nominatim into one ranked result list for the route planner. Companion routes: GET /api/geo (client IP geolocation with provider cascade) and GET /api/arcgis (search public ArcGIS feature services or spatially query one by bbox, returning GeoJSON).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/geosearch",
+      "evidence": "src/app/api/geosearch/route.ts; src/app/api/geo/route.ts; src/app/api/arcgis/route.ts"
+    },
+    {
+      "capabilityId": "feeds.maritime",
+      "label": "Ports, chokepoints and AIS vessels",
+      "description": "GET /api/maritime returns a static global port and chokepoint reference (top container ports with TEU volumes) plus live AIS vessel positions via aisstream.io when AIS_API_KEY is set.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/maritime",
+      "evidence": "src/app/api/maritime/route.ts"
+    },
+    {
+      "capabilityId": "feeds.environment",
+      "label": "Severe weather and air quality",
+      "description": "GET /api/weather aggregates NASA EONET events, NOAA/NWS alerts (U.S.) and GDACS cyclones/floods/droughts into one severity-and-coordinate shape for transit risk; GET /api/air-quality returns OpenAQ PM2.5 latest measurements. Both keyless.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/weather",
+      "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts"
+    },
+    {
+      "capabilityId": "feeds.infrastructure",
+      "label": "Critical infrastructure reference",
+      "description": "GET /api/infrastructure serves a curated static list of nuclear power facilities worldwide (id, coordinates, status, reactors, capacity, owner).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/infrastructure",
+      "evidence": "src/app/api/infrastructure/route.ts"
+    },
+    {
+      "capabilityId": "feeds.markets",
+      "label": "Market quotes and price history",
+      "description": "GET /api/markets returns grouped quotes (indices, rates, FX, energy, commodities incl. COMEX copper, crypto) from Yahoo v8 chart with a month of closes for sparklines and session-open state; GET /api/markets/history?symbol=&range= returns OHLC candles at a range-appropriate interval (case-sensitive ranges: 1m vs 1M).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/markets",
+      "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts"
+    },
+    {
+      "capabilityId": "feeds.signals",
+      "label": "News wire and daily chain-threat brief",
+      "description": "GET /api/news fetches Telegram OSINT channels with RSS fallbacks (BBC, Al Jazeera) as disruption signals against lanes; GET /api/chain/daily?days= aggregates DefiLlama exploits, NVD blockchain CVEs and newly designated OFAC wallets into a dated digest whose sections degrade independently and say why.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/news",
+      "evidence": "src/app/api/news/route.ts; src/app/api/chain/daily/route.ts"
+    },
+    {
+      "capabilityId": "ops.health",
+      "label": "Health and boot report",
+      "description": "GET /api/health returns liveness plus the seaDogTerminal block: build identity, boot report (archive path writable, commodities ready), runtime guard verdict (reported as warming while state assembles so a liveness probe never hangs), process report, outbound rate stats and spend-governor tally.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/health",
+      "evidence": "src/app/api/health/route.ts"
+    },
+    {
+      "capabilityId": "ops.stats",
+      "label": "Aggregate counters",
+      "description": "GET /api/stats serves small counters (weather events, nuclear facilities) and names retired feeds in not_collected instead of reporting zero; null where a feed exists but did not answer.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/stats",
+      "evidence": "src/app/api/stats/route.ts"
+    },
+    {
+      "capabilityId": "ops.tiles.proxy",
+      "label": "Basemap tile proxy",
+      "description": "GET /api/proxy-tiles?url= proxies CARTO basemap tiles (cartocdn.com only) so no tile key reaches the client; per-IP throttle (240/min) and a credit governor whose budget is registered by deployment, with governance stated in response headers.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/proxy-tiles",
+      "evidence": "src/app/api/proxy-tiles/route.ts"
+    },
+    {
+      "capabilityId": "ops.retired_routes",
+      "label": "Retired-route contract (503 route_retired)",
+      "description": "Any method on a retired general-purpose route (flights, satellites, cctv, gdelt, conflicts, ai/*, etc.) hits the catch-all and returns the same 503 route_retired payload the routes had before their handlers were deleted. The live/retired disposition is one map in src/lib/routeGate.ts and is enforced by routeSurfacePolicy.test.ts.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/{retired}",
+      "evidence": "src/app/api/[...retired]/route.ts; src/lib/routeGate.ts"
+    },
+    {
+      "capabilityId": "ops.github_webhook",
+      "label": "GitHub webhook relay",
+      "description": "POST /api/github-webhook verifies x-hub-signature-256 against GITHUB_WEBHOOK_SECRET and forwards the raw payload to GITHUB_WEBHOOK_FORWARD_URL; fail-closed 503 when either is unset.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/github-webhook",
+      "evidence": "src/app/api/github-webhook/route.ts"
+    },
+    {
+      "capabilityId": "sdk.ingest",
+      "label": "Polybolos SDK entity ingest",
+      "description": "POST /api/sdk/ingest {source, apiKey, entities[]} accepts Polybolos-format entities (id, position.lat/lng, domain, entityType, threat, classification) from external platforms and merges them into the in-memory common operating picture shared with the SSE stream. Fail-closed 503 when SDK_INGEST_KEY is unset; 401 on key mismatch. Store is per-process and not persisted.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/sdk/ingest",
+      "evidence": "src/app/api/sdk/ingest/route.ts"
+    },
+    {
+      "capabilityId": "sdk.ingest.status",
+      "label": "SDK ingest status",
+      "description": "GET /api/sdk/ingest returns sdk name/version, current entity count and the last ten ingestions.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/sdk/ingest",
+      "evidence": "src/app/api/sdk/ingest/route.ts"
+    },
+    {
+      "capabilityId": "sdk.stream",
+      "label": "SDK entity SSE stream",
+      "description": "GET /api/sdk/stream opens a text/event-stream that emits a status event, a heartbeat every 15 s and entity_update batches (up to 500 entities) every 5 s when the ingest store changed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "sse",
+      "method": "GET",
+      "path": "/api/sdk/stream",
+      "evidence": "src/app/api/sdk/stream/route.ts"
+    },
+    {
+      "capabilityId": "mcp.bottlenecks",
+      "label": "MCP tool: bottlenecks - Ranked candidate chokepoints",
+      "description": "Candidate chokepoints in the flow graph ranked by contained metal routed, utilization, modeled alternatives and dependents. Triage signals, not validated risk; an empty list arrives with empty_because. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.search_entities",
+      "label": "MCP tool: search_entities - Search the canonical entity register",
+      "description": "Search mines, smelters, refineries, ports, companies and countries by name, operator, country or kind; withheld entities under as_known_then are counted. Reads /api/economy/search. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.search_evidence",
+      "label": "MCP tool: search_evidence - Search the epistemic state",
+      "description": "Search refused (by type), stale, contested and vintage records; zero items returns a note saying which zero it is. Reads /api/economy/search with an evidence-kind token. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.get_entity",
+      "label": "MCP tool: get_entity - Full canonical state of one entity",
+      "description": "Observations with unit/basis/valueKind/source/knownAt, capacities, flows, events and upstream/downstream chains; a missing axis is null and flagged. Reads /api/economy/entity. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.get_observations",
+      "label": "MCP tool: get_observations - Corpus rows or the period x edition grid",
+      "description": "The corpus table as rows (record_id, subject, metric, value, axes, claim) or as a grid with view=grid; withheld rows counted in the header. Reads /api/economy/table. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.concentration",
+      "label": "MCP tool: concentration - Concentration indices",
+      "description": "HHI by country, facility and operator (control and economic-interest bases) with partition, completeness and rendered claim; null HHI is a refusal over zero attributed tonnage. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.propagate",
+      "label": "MCP tool: propagate - Observed disruption propagation",
+      "description": "How recorded disruption events propagate through the flow graph: tonnage touched, downstream reach, alternatives with spare capacity; null disruptedKtPerYear means not statable at this date. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.scenario",
+      "label": "MCP tool: scenario - Counterfactual event injection",
+      "description": "Hypothetical events run through the same propagation engine on an explicit counterfactual frame; under as_known_then this backtests the analytical layer. Nothing is written. Calls POST /api/economy/scenario. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.refusals_digest",
+      "label": "MCP tool: refusals_digest - Everything currently refused, as a work queue",
+      "description": "Refusals grouped by type with each type's shared remedy, most-blocking first; do not fill from external knowledge. Reads /api/economy/refusals. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.corpus_health",
+      "label": "MCP tool: corpus_health - The instrument watching its own blindness",
+      "description": "Sources past cadence, degradation-ladder position, plausibility-suspect sources, aging topology; an empty array is the healthy state. Reads /api/economy?view=analytics corpusHealth. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.source_registry",
+      "label": "MCP tool: source_registry - Every known source, built or not",
+      "description": "Built adapters with owner and maintenance cadence plus registered-but-unbuilt sources (adapter null) ranked by miss-log demand; also carries each source's redistribution posture. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "mcp.validate_claim",
+      "label": "MCP tool: validate_claim - Validate a claim against cited records",
+      "description": "Verdict (supported, partially_supported, unsupported, overstated, inadmissible) from the substrate for a claim any model produced; judges only the support relation. Calls /api/economy/validate. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "mcp",
+      "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts"
+    },
+    {
+      "capabilityId": "ui.terminal",
+      "label": "Terminal map and research panels",
+      "description": "The principal view at /: GPU-rendered MapLibre globe with physical-economy layers (production, smelting/refining, ports and logistics, material flows as great-circle arcs, bottleneck candidates), evidence panels, refusals, vintages and temporal playback scrubber.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/",
+      "evidence": "src/app/page.tsx; src/components/PayloadMap.tsx; src/components/LayerPanel.tsx"
+    },
+    {
+      "capabilityId": "ui.operations",
+      "label": "Operations control tower workspace",
+      "description": "The /operations workspace where a human operator supplies PAYLOAD_OPERATIONS_TOKEN (kept only in tab memory), reads GET /api/freight/control-tower every 30 s and works the exception-first queue with explicit remedies. Fixed policy: 30 min to acknowledge a tender, 120 min before in-motion tracking is stale, 24 h after delivery before settlement is high priority.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/operations",
+      "evidence": "src/app/operations/page.tsx; src/components/OperationsControlTower.tsx"
+    },
+    {
+      "capabilityId": "ui.docs",
+      "label": "Documentation and API reference",
+      "description": "The /docs page renders the hand-maintained machine-readable API catalog (src/app/docs/apiCatalog.ts) with endpoint cards, params, sample URLs and a command palette.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/docs",
+      "evidence": "src/app/docs/page.tsx; src/app/docs/apiCatalog.ts"
+    },
+    {
+      "capabilityId": "cli.smoke",
+      "label": "Post-deploy smoke check",
+      "description": "node scripts/smoke.mjs [base-url] (npm run smoke) hits the real endpoints of a running instance and asserts the instrument answers; exit 0 only when every check holds. The rule: never deploy under a researcher without running it against a staging copy first.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "evidence": "scripts/smoke.mjs"
+    },
+    {
+      "capabilityId": "cli.archive_manifest",
+      "label": "Regenerate the data-archive manifest",
+      "description": "node scripts/archive-manifest.mjs rewrites data-archive/MANIFEST.json with sha256 and a durability class (unreconstructable, refetchable_at_risk, refetchable, documentation) for every archive file; the suite verifies tree and manifest in both directions and refuses unclassified files.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "evidence": "scripts/archive-manifest.mjs; data-archive/MANIFEST.json"
+    },
+    {
+      "capabilityId": "contract.ocr_candidate_intake",
+      "label": "OCR candidate intake boundary (EvidencePool)",
+      "description": "Typed contract for candidates arriving from the OCR agent: only a canonical_state_candidate with adjudication pending, complete ObservationBundle identity (bundle id, artifact content hash, execution key), a temporal frame (documentReceivedAt/knownAt/extractedAt) and per-field OBSERVED/EXTRACTED/INFERRED or typed absence. Intake stages evidence for resolution and validation; it is deliberately not a write to the freight book. Not yet exposed on an HTTP route.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "contract",
+      "evidence": "src/lib/economy/ocrCandidateInbox.ts; src/lib/economy/ocrFreightReview.ts"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Payload-Terminal-V0",
+    "domain": "physical-economy",
+    "maturity": "v0",
+    "language": "TypeScript",
+    "framework": "Next.js 16 (App Router) + MapLibre GL + MCP SDK",
+    "exposure": "docker",
+    "upstream": "simplifaisoul/osiris (MIT fork; recon capabilities removed)",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-01T06:28:31Z",
+    "default_port": 3000,
+    "license": "GPL-3.0",
+    "image": "ghcr.io/notationsystems/sea-dog-payload-terminal-v0",
+    "machine_client_header": "x-payload-client: machine",
+    "mcp_transport": "stdio",
+    "mcp_tool_count": 12,
+    "access_posture": "internal, operator-controlled; no public exposure decided",
+    "capability_count": 59
+  },
+  "location": {
+    "longitude": 103.85,
+    "latitude": 1.29,
+    "label": "Port of Singapore (representative anchor; the terminal models global freight and no home port is named in the docs)"
+  },
+  "relations": [
+    {
+      "relationId": "payload-terminal--depends_on--osiris-intel",
+      "targetNodeId": "osiris-intel",
+      "kind": "depends_on",
+      "description": "Confirmed by code: /api/entity/expand is a thin proxy that forwards resolve requests to the intel service at INTEL_URL (http://payload-intel:4000 in production, localhost:4000 in dev), and docker-compose.yml runs payload-intel beside the terminal. Entity expansion in the terminal cannot work without it.",
+      "evidence": "src/app/api/entity/expand/route.ts; docker-compose.yml"
+    },
+    {
+      "relationId": "payload-terminal--supplies_context_to--pythia-oracle-engine",
+      "targetNodeId": "pythia-oracle-engine",
+      "kind": "supplies_context_to",
+      "description": "Confirmed by bytecode only (no Python source is committed): engine/__pycache__/osiris_intake.*.pyc reads the terminal's /api/* routes at OSIRIS_URL (default http://localhost:3000) to assemble a world brief for the PYTHIA oracle. Many of the routes it names (conflicts, gdelt, fires, earthquakes...) are now retired and answer 503, so the flow is partly broken.",
+      "evidence": "engine/__pycache__/osiris_intake.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc; src/lib/routeGate.ts"
+    },
+    {
+      "relationId": "payload-terminal--supplies_context_to--information-systems-archive",
+      "targetNodeId": "information-systems-archive",
+      "kind": "supplies_context_to",
+      "description": "Inferred from docs: the off-repository copy of data-archive/ (the unreconstructable Comtrade vintages, MANIFEST.json and demand logs) lives in the Information-Systems-Archive repository under sea-dog-terminal/ with its own verifier; the restore drill was executed once (ledger phase 35/36). Terminal data flows into the archive; a provider-independent backup is still an open operator step.",
+      "evidence": "docs/OPERATIONS.md (D-9); docs/ARCHITECTURE_LEDGER.md (S-2); data-archive/README.md"
+    },
+    {
+      "relationId": "payload-terminal--governs--payload-ocr-agent",
+      "targetNodeId": "payload-ocr-agent",
+      "kind": "governs",
+      "description": "Inferred from module docs: the terminal defines the EvidencePool intake contract an OCR candidate must satisfy (canonical_state_candidate, adjudication pending, complete bundle identity, temporal frame) and states that the OCR Agent owns document perception, not operational truth; the terminal depends on the published boundary, never the OCR package runtime. No HTTP route is wired yet.",
+      "evidence": "src/lib/economy/ocrCandidateInbox.ts; src/lib/economy/ocrFreightReview.ts; src/lib/economy/ocrFreightReview.test.ts"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "src/app (Next.js App Router)",
+        "src/mcp/server.ts",
+        "scripts/smoke.mjs"
+      ],
+      "run": [
+        "npm install",
+        "npm run dev  # http://localhost:3000",
+        "npm run build && npm start",
+        "PAYLOAD_URL=http://localhost:3000 npm run mcp  # stdio MCP server",
+        "npm test  # vitest incl. policy gates and validWhile guards",
+        "docker compose up -d  # payload:3000, payload-cache (nginx):8080, payload-intel:4000"
+      ],
+      "ports": [
+        3000,
+        8080
+      ],
+      "container": true
+    },
+    "contracts": [
+      {
+        "name": "Refusal contract",
+        "path": "src/lib/economy/mcpTools.ts",
+        "summary": "A refusal is a successful return: value null + refusalType (basis|component|topology|scope|attribution|resolution) + remedy. Null and zero are different answers. Errors are for parameter faults only."
+      },
+      {
+        "name": "Knowledge state",
+        "path": "src/lib/economy/mcpTools.ts",
+        "summary": "asOf (YYYY-MM-DD) and mode/knowledge best_known|as_known_then bound every figure; required on every MCP tool, optional on HTTP routes."
+      },
+      {
+        "name": "Machine-client header",
+        "path": "src/lib/economy/machineClient.ts",
+        "summary": "x-payload-client: machine (legacy x-sea-dog-client, read never written) segregates machine traffic from session telemetry, miss log and export log into data-archive/mcp-sessions.jsonl."
+      },
+      {
+        "name": "Operations bearer auth",
+        "path": "src/lib/economy/operationsHttpAuth.ts",
+        "summary": "Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN on /api/freight/operations, /communications, /control-tower, /sources; 503 when unset."
+      },
+      {
+        "name": "Carrier webhook signature",
+        "path": "src/app/api/freight/carrier-events/route.ts",
+        "summary": "x-payload-timestamp + x-payload-signature sha256=HMAC-SHA256(timestamp \".\" rawBody) with PAYLOAD_CARRIER_WEBHOOK_SECRET."
+      },
+      {
+        "name": "Route disposition map",
+        "path": "src/lib/routeGate.ts",
+        "summary": "freight | infrastructure-conditional | general-purpose | ops; every route on disk must be classified; prohibited capabilities scanned in source by routeSurfacePolicy.test.ts."
+      },
+      {
+        "name": "API catalog",
+        "path": "src/app/docs/apiCatalog.ts",
+        "summary": "Hand-maintained machine-readable description of the public routes rendered at /docs."
+      },
+      {
+        "name": "OCR candidate intake",
+        "path": "src/lib/economy/ocrCandidateInbox.ts",
+        "summary": "Shape the OCR agent must deliver; staged, never written to the freight book."
+      },
+      {
+        "name": "Source registry and redistribution posture",
+        "path": "src/lib/economy/sourceRegistry.ts",
+        "summary": "public_domain | attributed | internal_only | unresolved per source; internal_only/unresolved withheld from machine clients."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Comtrade vintage archive",
+        "classification": "unreconstructable",
+        "path": "data-archive/comtrade/",
+        "description": "Every live UN Comtrade retrieval keyed by date and request; upstream revises in place, so lost files are knowledge states gone permanently. Mount as a volume in containers."
+      },
+      {
+        "name": "Archive manifest",
+        "classification": "public",
+        "path": "data-archive/MANIFEST.json",
+        "description": "sha256 and durability class for every archive and snapshot file; verified in CI both directions."
+      },
+      {
+        "name": "OpenOwnership export",
+        "classification": "internal",
+        "path": "data-archive/openownership/",
+        "description": "Frozen 2023 S3 export of a retired product; refetchable at risk."
+      },
+      {
+        "name": "Demand instruments",
+        "classification": "internal",
+        "path": "data-archive/export-log.jsonl; data-archive/mcp-sessions.jsonl; data-archive/search-misses.jsonl",
+        "description": "Export log, MCP session log and miss log read by the frozen S-7 continue criterion; canonical vocabulary only, no free text or person data."
+      },
+      {
+        "name": "Freight journals",
+        "classification": "sensitive",
+        "path": "PAYLOAD_OPERATIONS_LOG; PAYLOAD_CARRIER_COMMUNICATIONS_LOG (default /app/runtime-data/*.jsonl)",
+        "description": "Append-only hash-chained commercial evidence; one application writer; excluded from git and the manifest; back up the payload-runtime volume."
+      },
+      {
+        "name": "Committed snapshots",
+        "classification": "public",
+        "path": "src/data/economy/snapshots/",
+        "description": "The vintages the engine serves from on the degradation ladder (USGS MCS, Comtrade, CFTC, Westmetall, curated flow topology)."
+      },
+      {
+        "name": "Architecture ledger and docs",
+        "classification": "public",
+        "path": "docs/",
+        "description": "ARCHITECTURE_LEDGER.md (phased decision record), PHYSICAL_ECONOMY.md, OPERATIONS.md, DEPLOYMENT.md, EXPOSURE_OPTIONS.md, DEFECT_CLASSES.md, RUNBOOK.md."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "USGS Mineral Commodity Summaries",
+        "domain": "usgs.gov",
+        "purpose": "Production and capacity observations",
+        "auth": "none"
+      },
+      {
+        "name": "UN Comtrade",
+        "domain": "comtradeapi.un.org",
+        "purpose": "Trade flows (archived on every retrieval)",
+        "auth": "none"
+      },
+      {
+        "name": "CFTC COT",
+        "domain": "cftc.gov",
+        "purpose": "Positioning",
+        "auth": "none"
+      },
+      {
+        "name": "Yahoo Finance v8 chart",
+        "domain": "query1.finance.yahoo.com",
+        "purpose": "COMEX benchmark and market quotes (internal_only posture)",
+        "auth": "none"
+      },
+      {
+        "name": "Westmetall",
+        "domain": "westmetall.com",
+        "purpose": "LME republish scrape (internal_only; licensed LME feed is the remedy)",
+        "auth": "none"
+      },
+      {
+        "name": "FMCSA QCMobile",
+        "domain": "mobile.fmcsa.dot.gov",
+        "purpose": "USDOT carrier identity, authority, out-of-service",
+        "auth": "FMCSA_WEB_KEY"
+      },
+      {
+        "name": "EIA Open Data v2",
+        "domain": "api.eia.gov",
+        "purpose": "Weekly U.S. retail diesel benchmark",
+        "auth": "EIA_API_KEY"
+      },
+      {
+        "name": "Valhalla / OSRM / Photon / Nominatim",
+        "domain": "valhalla1.openstreetmap.de; router.project-osrm.org; photon.komoot.io; nominatim.openstreetmap.org",
+        "purpose": "Routing and geocoding",
+        "auth": "none"
+      },
+      {
+        "name": "NASA EONET, NOAA NWS, GDACS, OpenAQ",
+        "domain": "eonet.gsfc.nasa.gov; api.weather.gov; gdacs.org; api.openaq.org",
+        "purpose": "Weather, disasters, air quality",
+        "auth": "none"
+      },
+      {
+        "name": "OpenSanctions us_ofac_sdn",
+        "domain": "data.opensanctions.org",
+        "purpose": "OFAC SDN screening of organisations, vessels, aircraft",
+        "auth": "none"
+      },
+      {
+        "name": "RDAP, Google DoH, crt.sh, RIPE Stat, ip-api.com, AlienVault OTX",
+        "domain": "rdap.org; dns.google; crt.sh; stat.ripe.net; ip-api.com; otx.alienvault.com",
+        "purpose": "Organisational infrastructure attribution",
+        "auth": "none"
+      },
+      {
+        "name": "aisstream.io",
+        "domain": "stream.aisstream.io",
+        "purpose": "AIS vessel positions",
+        "auth": "AIS_API_KEY"
+      },
+      {
+        "name": "CARTO basemaps",
+        "domain": "basemaps.cartocdn.com",
+        "purpose": "Map tiles via /api/proxy-tiles and the nginx cache",
+        "auth": "none"
+      },
+      {
+        "name": "Configured carrier dispatch adapter",
+        "domain": "PAYLOAD_CARRIER_DISPATCH_URL",
+        "purpose": "Outbound tender delivery; must honour Idempotency-Key and return receiptId",
+        "auth": "PAYLOAD_CARRIER_DISPATCH_TOKEN"
+      },
+      {
+        "name": "GitHub webhook forward target",
+        "domain": "GITHUB_WEBHOOK_FORWARD_URL",
+        "purpose": "Relay of verified GitHub events",
+        "auth": "GITHUB_WEBHOOK_SECRET"
+      }
+    ],
+    "secrets_env": [
+      "PAYLOAD_OPERATIONS_TOKEN",
+      "PAYLOAD_CARRIER_DISPATCH_TOKEN",
+      "PAYLOAD_CARRIER_WEBHOOK_SECRET",
+      "FMCSA_WEB_KEY",
+      "EIA_API_KEY",
+      "SDK_INGEST_KEY",
+      "GITHUB_WEBHOOK_SECRET",
+      "AIS_API_KEY",
+      "FIRMS_API_KEY",
+      "OPENSKY_CLIENT_ID",
+      "OPENSKY_CLIENT_SECRET",
+      "N2YO_API_KEY"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/api/health"
+    },
+    "spatial": "Natively geographic: mines, smelters, refineries, ports and chokepoints with coordinates, great-circle material flows, truck routing, AIS vessels, weather events; the map is the primary view.",
+    "temporal": "Every observation carries period and knownAt; every projection accepts asOf and knowledge=best_known|as_known_then for temporal playback; freight journals are append-only with occurredAt/knownAt/recordedAt.",
+    "open_questions": [
+      "External exposure is decided as internal, stdio-only MCP; no public URL, auth mechanism or hosting target exists yet. Who stands the instance up, and on which host?",
+      "The data-archive is replicated (GitHub to GitHub via Information-Systems-Archive) but not backed up off-provider; the restore drill onto a clean machine is an operator step not yet done.",
+      "The DOCKER.md still carries upstream (simplifaisoul/osiris) image names, SCANNER_URL/SCANNER_KEY and RECON text that the README says are gone; which document is authoritative for self-hosting?",
+      "/api/entity/expand still forwards type=person to the intel layer, which resolves natural persons via Wikidata and returns RIPE abuse-contact addresses as person nodes; is that consistent with the collection policy?",
+      "The Polybolos SDK ingest/stream store is in-memory per process and the ingest key is a single shared secret; is this surface meant to stay, or is it upstream residue?",
+      "Freight operating policy (30/120 min, 24 h) is fixed in code pending a per-customer configuration ledger."
+    ]
+  }
+}

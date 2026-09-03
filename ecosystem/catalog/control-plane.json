@@ -1,0 +1,161 @@
+{
+  "nodeId": "control-plane",
+  "name": "Notations Ecosystem Control Plane",
+  "kind": "api",
+  "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked journal of node registrations, relations, health observations and capability requests. It records intent and operator approval but never stores provider credentials and never dispatches an external call; every write carries expectedRevision so a stale dock or agent cannot overwrite newer state. Execution adapters are a later, separate least-privilege boundary.",
+  "capabilities": [
+    {
+      "capabilityId": "snapshot.read",
+      "label": "Read the ecosystem snapshot",
+      "description": "GET /v1/snapshot: current nodes (with derived health), relations, coordination records, revision and event cursor.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v1/snapshot",
+      "evidence": "control-plane/src/server.js"
+    },
+    {
+      "capabilityId": "events.read",
+      "label": "Read events after a cursor",
+      "description": "GET /v1/events?after=<eventCursor>: append-only records after a known cursor; 409 CURSOR_UNKNOWN means refresh the snapshot.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v1/events",
+      "evidence": "control-plane/src/control-plane.js"
+    },
+    {
+      "capabilityId": "health.read",
+      "label": "Liveness and journal summary",
+      "description": "GET /health (unauthenticated): service status, revision and node count.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/health",
+      "evidence": "control-plane/src/server.js"
+    },
+    {
+      "capabilityId": "node.register",
+      "label": "Register or revise a node",
+      "description": "POST /v1/commands action=register_node with expectedRevision. Declares a node's kind, capabilities (observe/propose/execute), bounded metadata and optional location.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/validation.js"
+    },
+    {
+      "capabilityId": "relation.declare",
+      "label": "Declare a relation between nodes",
+      "description": "POST /v1/commands action=declare_relation: supplies_context_to, coordinates, visualizes, governs or depends_on between two registered nodes.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/control-plane.js"
+    },
+    {
+      "capabilityId": "observation.record",
+      "label": "Record a health observation",
+      "description": "POST /v1/commands action=record_observation from an operator, health check or webhook; derives the node's health in the snapshot.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/control-plane.js"
+    },
+    {
+      "capabilityId": "capability.request",
+      "label": "Request a capability of another node",
+      "description": "POST /v1/commands action=request_capability: a reasoning engine or dock states intent to use a target capability in its declared mode; execute intents become approval_required and stay dispatch=not_dispatched.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/control-plane.js"
+    },
+    {
+      "capabilityId": "coordination.resolve",
+      "label": "Approve or reject a coordination request",
+      "description": "POST /v1/commands action=resolve_coordination by an operator. Approval is not execution: the record remains not_dispatched.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/control-plane.js"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Notations-Ecosystem",
+    "domain": "platform",
+    "maturity": "v0",
+    "language": "JavaScript",
+    "framework": "node:http (dependency-free)",
+    "exposure": "local-only",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-03T01:40:38Z",
+    "durability": "local_jsonl_single_writer",
+    "default_port": 8787,
+    "capability_count": 8
+  },
+  "location": null,
+  "relations": [],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "control-plane/src/server.js"
+      ],
+      "run": [
+        "cd control-plane && cp .env.example .env",
+        "npm start",
+        "npm test"
+      ],
+      "ports": [
+        8787
+      ],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "OpenAPI 3.1 contract",
+        "path": "control-plane/openapi/control-plane.openapi.yaml",
+        "summary": "Snapshot, events and the five command shapes."
+      },
+      {
+        "name": "Record hash chain",
+        "path": "control-plane/src/journal.js",
+        "summary": "sha256(domain | previousHash | canonical(event)); duplicates by eventId are idempotent."
+      }
+    ],
+    "resources": [
+      {
+        "name": "coordination journal",
+        "classification": "internal",
+        "path": "control-plane/data/control-plane.jsonl",
+        "description": "Append-only hash-linked JSONL. Keep on durable storage."
+      }
+    ],
+    "external_services": [],
+    "secrets_env": [
+      "NOTATIONS_CONTROL_PLANE_TOKEN"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/health"
+    },
+    "spatial": "Carries node locations declared at registration; has no location of its own.",
+    "temporal": "Every record has recordedAt; observations carry observedAt; snapshot carries generatedAt and a revision.",
+    "open_questions": [
+      "Which execution adapters will sit behind approved intents, and where will they run?"
+    ]
+  }
+}

@@ -1,0 +1,780 @@
+{
+  "nodeId": "data-acquisition-channel",
+  "name": "Data Acquisition Channel (DAQ / Data Acquisition Fabric)",
+  "kind": "api",
+  "description": "The acquisition entry of the Notations scientific substrate. Adapters for permitted external sources (arXiv, SEC EDGAR, USGS earthquakes, NOAA water levels, local and GPC datasets) feed the vendored Scientific Transformer Engine's SCOUT admission contract, persisting content-addressed evidence, execution records and quarantine into a durable pool behind a source catalog, repeatable plans and checkpoints. A neutral intent/bridge seam turns scientific information gaps into acquisition plans, and 52 architecture invariants plus content-addressed exchange artifacts are shared with the Scientific Compute Layer. It also hosts Notation Physical Commerce (commerce/): an append-only freight ledger, CanadaBuys tender ingest, landed cost, carrier vetting and an operator CLI, placed here while Sea Dog Terminal is frozen. Kind is api, not information_library: no corpus is committed (every evidence pool is built per run against a local root) and the surface is Python contracts plus CLIs; no HTTP or MCP server exists. It must never write canonical state directly (STE promotes), never let an interpretation become its own evidence, and never let an agent bind the firm.",
+  "capabilities": [
+    {
+      "capabilityId": "daf.catalog.cli.list_sources",
+      "label": "List registered acquisition sources",
+      "description": "`python -m daf.catalog.cli <root> list-sources` prints every persisted SourceDefinition (source_id, name, domain, adapter_id, enabled) from `<root>/sources/*.json`. `inspect-source <source_id>` prints one definition in full. Read-only over operator-declared catalog state.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python -m daf.catalog.cli",
+      "path": "<root> list-sources | inspect-source <source_id>",
+      "evidence": "daf/catalog/cli.py"
+    },
+    {
+      "capabilityId": "daf.catalog.cli.list_plans",
+      "label": "List and inspect repeatable acquisition plans",
+      "description": "`list-plans` prints every persisted AcquisitionPlan (plan_id, source_id, enabled, schedule) from `<root>/plans/`; `inspect-plan <plan_id>` prints one. Plans are declarative {plan_id, source_id, parameters, enabled, schedule, mode snapshot|incremental, interval_seconds}; nothing here executes them.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python -m daf.catalog.cli",
+      "path": "<root> list-plans | inspect-plan <plan_id>",
+      "evidence": "daf/catalog/cli.py; daf/catalog/plan.py"
+    },
+    {
+      "capabilityId": "daf.catalog.cli.validate_plan",
+      "label": "Validate an acquisition plan without running it",
+      "description": "`validate-plan <plan_id>` runs `daf.catalog.plan.validate_plan` and prints PlanValidationIssue codes (unknown/disabled source, unknown adapter, disabled plan, missing required parameters, INVALID_MODE, incremental mode on a source that does not declare it). Exit 1 on any issue. Structural, non-raising, no network.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python -m daf.catalog.cli",
+      "path": "<root> validate-plan <plan_id>",
+      "evidence": "daf/catalog/cli.py; daf/catalog/plan.py"
+    },
+    {
+      "capabilityId": "daf.catalog.cli.execute_plan",
+      "label": "Execute an acquisition plan (checkpoint-aware ingest)",
+      "description": "`execute-plan <plan_id> <requested_at>` restores the DurablePool from `<root>/evidence`, runs `daf.scheduling.runner.execute_plan` through the unmodified SCOUT admission path, prints outcome (acquired|duplicate|source_unavailable|adapter_failure|extraction_failure|persistence_failure) and each artifact_id/version_id/is_new, and advances the plan checkpoint only on acquired/duplicate. Live network for arxiv, edgar-daily-index, usgs-earthquakes and noaa-water-level bindings. At-least-once, deduplicated by content address.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python -m daf.catalog.cli",
+      "path": "<root> execute-plan <plan_id> <requested_at>",
+      "evidence": "daf/catalog/cli.py; daf/scheduling/runner.py",
+      "side_effects": "writes <root>/evidence, <root>/checkpoints; outbound HTTPS to the source"
+    },
+    {
+      "capabilityId": "daf.catalog.register",
+      "label": "Register a source definition or acquisition plan (Python API)",
+      "description": "`SourceCatalog(root).register(SourceDefinition)` and `PlanCatalog(root).register(AcquisitionPlan)` persist operator configuration as last-write-wins JSON per id (deliberately not content-addressed: catalog entries are mutable configuration, never evidence). Registration is programmatic only; there is no CLI verb, mirroring `daf.orchestration.bindings` as the single place adapters are wired.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "daf.catalog.source_catalog.SourceCatalog.register; daf.catalog.plan_catalog.PlanCatalog.register",
+      "evidence": "daf/catalog/source_catalog.py; daf/catalog/plan_catalog.py; docs/DAF_CATALOG_AND_PLANS.md"
+    },
+    {
+      "capabilityId": "daf.orchestration.run",
+      "label": "Run one acquisition request through the orchestrator",
+      "description": "`AcquisitionOrchestrator(sources, adapters, pool).run(AcquisitionRequest{source_id, parameters, requested_at}) -> AcquisitionResult{source_id, outcome, artifacts, admission_failures, error}`. Selects the source, builds its adapter, fetches, then admits via the vendored `scout.pipeline.run_scout`; it never calls a pool mutator or `evidence.admission` directly (AST-verified). Failures are classified by stage and reported, never raised. Callers in a fresh process must use `DurablePool.restore` for duplicate detection.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "daf.orchestration.orchestrator.AcquisitionOrchestrator.run",
+      "evidence": "daf/orchestration/orchestrator.py; daf/orchestration/request.py; daf/orchestration/result.py; docs/DAF_ORCHESTRATION.md"
+    },
+    {
+      "capabilityId": "daf.scheduling.run_due_plans",
+      "label": "Run every plan that is due (scheduler interface, not a daemon)",
+      "description": "`is_due(plan, checkpoints, now)`, `due_plans(plans, checkpoints, now)` and `run_due_plans(...)` are pure functions of (plan.interval_seconds, checkpoint.updated_at, now) that call `execute_plan` for each due plan and return the AcquisitionResults. Nothing reads the clock; the caller supplies `now`. Deterministic and testable; no background process exists.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "daf.scheduling.due.run_due_plans",
+      "evidence": "daf/scheduling/due.py; daf/scheduling/runner.py; daf/catalog/checkpoint.py"
+    },
+    {
+      "capabilityId": "daf.execution.execute_plan_recorded",
+      "label": "Execute a plan with a durable execution record and quarantine",
+      "description": "`execute_plan_recorded(...) -> RecordedExecution(result, execution, quarantine)`: mints a stable operation_id from the plan and an execution_id before anything runs, executes the unmodified Phase-E path, then persists an ExecutionRecord (two-hash identity: id over {operation_id, runtime_id, started_at}, content_digest over everything else) to `<root>/executions/` and one QuarantineRecord per refused admission to `<root>/quarantine/`. Records are never evidence and never change the pool fingerprint.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "daf.execution.recorded.execute_plan_recorded",
+      "evidence": "daf/execution/recorded.py; daf/execution/record.py; daf/execution/quarantine.py; daf/execution/store.py; architecture/execution_record.yaml"
+    },
+    {
+      "capabilityId": "daf.execution.ingest_report",
+      "label": "Ingest rejection metrics and unclassified backlog",
+      "description": "`rejection_metrics`, `unclassified_backlog` and `ingest_report` compute per-invariant rejection rates per ingest run and the backlog of evidence with no class, purely over existing execution/quarantine/class records. Derived views with no identity and no persistence, so they cannot drift from what they describe. Raises QuarantineAccountingError if the buckets do not conserve.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "daf.execution.metrics.ingest_report",
+      "evidence": "daf/execution/metrics.py; docs/PHASE_27_INGEST_REJECTION_METRICS.md"
+    },
+    {
+      "capabilityId": "daf.storage.pool.read",
+      "label": "Read the durable evidence pool",
+      "description": "`DurablePool.restore(FilesystemEvidenceStore(root))` / `load_pool(store)` expose the vendored EvidencePool read surface (get_*/has_*/all_*/fingerprint/fingerprint_history) over content-addressed JSON files, with lazy hydration so hot-path lookups are O(1) file reads. `ClassifiedPool` additionally returns the evidence class assigned at ingest (class_assigned_at_ingest invariant). Reads only; every write path is the SCOUT pipeline.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "daf.storage.durable_pool.DurablePool.restore; daf.storage.classified_pool.ClassifiedPool",
+      "evidence": "daf/storage/durable_pool.py; daf/storage/classified_pool.py; daf/storage/filesystem_store.py; docs/DAF_DURABLE_STORAGE.md"
+    },
+    {
+      "capabilityId": "daf.storage.artifact_store.read",
+      "label": "Artifact / version / content identity queries",
+      "description": "`ArtifactStore(store)` answers `exists(artifact_id, version_id)`, `get`, `list_versions(artifact_id)`, `find_by_content_hash`, `list_source_artifacts(source_id)`; `daf.catalog.history.known_versions/has_ever_been_acquired` derive acquisition history from it. artifact_id = hash(source_id, locator) is a derived, non-authoritative grouping key; version_id is the real Document.id; content_hash is the raw bytes alone.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "daf.storage.artifact_store.ArtifactStore; daf.catalog.history",
+      "evidence": "daf/storage/artifact_store.py; daf/catalog/history.py"
+    },
+    {
+      "capabilityId": "daf.storage.metadata_index.query",
+      "label": "SQLite metadata index over the evidence store",
+      "description": "`MetadataIndex(path)` stores only ids and the columns real queries need (artifact_id, source_id, content_hash, retrieved_at, locator) and answers list_versions, find_by_content_hash, list_source_artifacts, locator_for_document, all_ids(category), is_empty; `rebuild(store)` re-derives it from the filesystem store, which remains the sole authority for what evidence exists. Never raw content.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "daf.storage.metadata_index.MetadataIndex",
+      "evidence": "daf/storage/metadata_index.py; docs/DAF_INDEXED_STORAGE.md"
+    },
+    {
+      "capabilityId": "daf.adapter.arxiv",
+      "label": "Acquire arXiv papers (Atom API, snapshot-by-id)",
+      "description": "`ArxivSourceAdapter` (adapter_id `arxiv`) issues one HTTPS GET to export.arxiv.org/api/query?id_list=... and emits one RawDocument per Atom <entry> holding the raw substring byte-identical to what arXiv sent (source_kind paper, retrieval_method http:arxiv_api_v1, retrieved_at caller-supplied). `ArxivExtractor` yields paper and author referents and relations. Assigns no identity of its own; fetch_bytes is injectable for tests.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http-client",
+      "method": "GET",
+      "path": "https://export.arxiv.org/api/query",
+      "evidence": "daf/adapters/arxiv.py; daf/extractors/arxiv.py; daf/orchestration/bindings.py; docs/SCOUT_VERTICAL_SLICE.md",
+      "data_domain": "scientific-literature"
+    },
+    {
+      "capabilityId": "daf.adapter.edgar_daily_index",
+      "label": "Acquire SEC EDGAR daily index files (incremental)",
+      "description": "`EdgarDailyIndexSourceAdapter` (adapter_id `edgar-daily-index`) lists sec.gov/Archives/edgar/daily-index/<year>/<qtr>/index.json and fetches at most max_dates_per_fetch (default 5) daily .idx files newer than the checkpoint position, under a declared EDGAR_USER_AGENT per SEC fair-access policy, retrying only 429/5xx at most twice. Volume per call is bounded; there is deliberately NO request-rate ceiling (recorded as not_enforced in architecture/daq_agent_instruments.yaml). Extractor: text:edgar_daily_index_v1.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http-client",
+      "method": "GET",
+      "path": "https://www.sec.gov/Archives/edgar/daily-index/",
+      "evidence": "daf/adapters/edgar_daily_index.py; daf/extractors/edgar_daily_index.py; architecture/daq_agent_instruments.yaml; docs/DAF_EDGAR_ADAPTER.md",
+      "data_domain": "sec-filings"
+    },
+    {
+      "capabilityId": "daf.adapter.usgs_earthquakes",
+      "label": "Acquire USGS earthquake events (FDSN event service, incremental)",
+      "description": "`UsgsEarthquakesSourceAdapter` (adapter_id `usgs-earthquakes`) queries earthquake.usgs.gov/fdsnws/event/1/query and event detail documents, advancing an epoch-ms position per run. The extractor carries the source's own method provenance and quantity semantics (magnitude type, units) into Observation content rather than inventing them.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http-client",
+      "method": "GET",
+      "path": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+      "evidence": "daf/adapters/usgs_earthquakes.py; daf/extractors/usgs_earthquakes.py; docs/DAF_USGS_EARTHQUAKE_ADAPTER.md; docs/PHASE_31_USGS_METHOD_PROVENANCE_AND_QUANTITY_SEMANTICS.md",
+      "data_domain": "seismic-events"
+    },
+    {
+      "capabilityId": "daf.adapter.noaa_water_level",
+      "label": "Acquire NOAA CO-OPS water-level series (window and per-reading)",
+      "description": "`NoaaWaterLevelSourceAdapter` (adapter_ids `noaa-water-level` and `noaa-water-level-measurements`) fetches api.tidesandcurrents.noaa.gov datagetter windows for a station/datum/unit and emits either one window document or one Observation per reading with scalar value, measurement_time, unit, sigma (uncertainty_kind stated) and conditions={datum}. The only live external scientific modality supplied today. Known gaps: time_zone=gmt is dropped; ordering and sampling interval are not represented; method provenance is MISSING, so readings stay inadmissible for canonical assertion.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http-client",
+      "method": "GET",
+      "path": "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+      "evidence": "daf/adapters/noaa_water_level.py; daf/extractors/noaa_water_level_measurements.py; docs/DAF_NOAA_WATER_LEVEL_ADAPTER.md; architecture/exchange/daq_capabilities.yaml",
+      "data_domain": "tidal-water-level"
+    },
+    {
+      "capabilityId": "daf.adapter.local_datasets",
+      "label": "Acquire local JSON datasets (snapshot, incremental cursor, graph)",
+      "description": "Three file-based adapters through the same SourceAdapter Protocol: `local-dataset` reads a whole JSON file (extractor emits zero entities by design); `incremental-dataset` returns records whose caller-authored integer `sequence` exceeds the checkpoint position; `graph-dataset` passes structured records with declared property/subject fields through verbatim. Deterministic, no network; they prove the orchestrator generalises across acquisition shapes.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "adapter_id local-dataset | incremental-dataset | graph-dataset",
+      "evidence": "daf/adapters/local_dataset.py; daf/adapters/incremental_dataset.py; daf/extractors/graph_dataset.py; docs/DAF_INCREMENTAL_ACQUISITION.md"
+    },
+    {
+      "capabilityId": "daf.adapter.gpc_reports",
+      "label": "Acquire GPC/SEC chromatography reports and physico-chemical study fixtures",
+      "description": "`GpcReportSourceAdapter` emits one RawDocument per RUN (run identity on the locator, never in content) from a JSON report, and `GpcSummaryExportSourceAdapter` reads vendor CSV-with-header exports where replicates are rows. Both require caller-declared `data_provenance`, `sample_kind`, `method`, `unit` marked `acquisition_declared`, refuse when missing, and carry conditions verbatim. Anchors: EPA P-22-0051 Waters Empower report, R190048 Impact export, WIL 505902 OECD 105 study. Local files only; the polymer vertical's first ingest path.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "daf.adapters.gpc_report.GpcReportSourceAdapter; daf.adapters.gpc_summary_export.GpcSummaryExportSourceAdapter",
+      "evidence": "daf/adapters/gpc_report.py; daf/adapters/gpc_summary_export.py; daf/extractors/gpc_report.py; docs/PHASE_38_GPC_EXTRACTOR.md; docs/PHASE_40_THE_ANCHORS_STOP_BEING_CHROMATOGRAMS.md",
+      "data_domain": "polymer-chromatography"
+    },
+    {
+      "capabilityId": "daf.agent.edgar_scout.contract",
+      "label": "EDGAR_SCOUT agent contract and candidate-filing schema validation",
+      "description": "The generated contract `docs/generated/AGENT_EDGAR_SCOUT.md` authorises an executing model to PROPOSE which SEC filings are worth acquiring (rank, estimate relevance in [0,1], decline with a query_gap) and forbids network requests, invented identifiers, and writing state. `daf.agents.candidate_filing.validate(payload, schema)` mechanically refuses output violating `architecture/schemas/candidate_filing.schema.json`, and refuses any schema keyword it does not implement.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "contract",
+      "path": "architecture/schemas/candidate_filing.schema.json; daf.agents.candidate_filing.validate",
+      "evidence": "daf/agents/candidate_filing.py; architecture/daq_agent_instruments.yaml; docs/generated/AGENT_EDGAR_SCOUT.md"
+    },
+    {
+      "capabilityId": "science.information_gap.diagnose",
+      "label": "Diagnose the information gap of a scientific model state",
+      "description": "`diagnose_information_gap(state, candidate, iteration) -> Optional[InformationGap]` joins the vendored materials layer's two axes (whether the ModelState can resolve a cell; what the evidence fails to establish against the criteria) into one gap carrying the EvidenceRequirements verbatim. science/ imports materials and never daf. Produces a diagnosis for review; changes nothing.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "science.information_gap.diagnose_information_gap",
+      "evidence": "science/information_gap.py; docs/PHASE_20_INFORMATION_GAP_ACQUISITION_SEAM.md"
+    },
+    {
+      "capabilityId": "science.acquisition_seam.intents_for",
+      "label": "Translate evidence requirements into neutral AcquisitionIntents",
+      "description": "`intent_for(requirement)` / `intents_for(gap)` reduce a materials EvidenceRequirement to `boundary.acquisition_intent.AcquisitionIntent{subject_natural_key, subject_kind, property, role OBSERVED|PREDICTED, target_context}`, content-hashed with evidence.identity.content_hash. Thresholds, gap category, pool state and any source/adapter/plan naming are deliberately absent. This is the mandatory, exclusive return edge from derived_state to acquisition in the control graph.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "science.acquisition_seam.intents_for; boundary.acquisition_intent.make_acquisition_intent",
+      "evidence": "science/acquisition_seam.py; boundary/acquisition_intent.py; architecture/control_graph.yaml"
+    },
+    {
+      "capabilityId": "bridge.source_capability.resolve_sources",
+      "label": "Resolve which registered sources could satisfy an intent",
+      "description": "`resolve_sources(intent, capabilities, sources, vocabulary) -> CandidateSource[]` matches an AcquisitionIntent against declared `SourceCapability{properties, subject_kinds, roles, context_keys}` after one-hop alias normalisation from an explicit `Vocabulary` (EXACT_EQUIVALENT only; RELATED never matches; chains refused). Unknown is not compatible; results carry reasons and no ranking, in source_id order.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "bridge.source_capability.resolve_sources; bridge.vocabulary.make_vocabulary",
+      "evidence": "bridge/source_capability.py; bridge/vocabulary.py; docs/PHASE_22_SOURCE_CAPABILITY_RESOLUTION.md; docs/PHASE_23_SCIENTIFIC_VOCABULARY_NORMALIZATION.md"
+    },
+    {
+      "capabilityId": "bridge.intent_execution.operationalize_intent",
+      "label": "Operationalise an intent into an AcquisitionPlan for a caller-chosen source",
+      "description": "`operationalize_intent(intent, source, plan_id=, parameters=, context_parameters=, mode=) -> AcquisitionPlan` verifies every key of the intent's target_context maps onto a declared source parameter and raises IntentNotOperationalizable otherwise, so scientific conditioning (datum, temperature) is never silently dropped. Pure, side-effect free; source selection stays a caller decision and execution stays `execute_plan`.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "bridge.intent_execution.operationalize_intent",
+      "evidence": "bridge/intent_execution.py; docs/PHASE_21_INTENT_EXECUTION_BRIDGE.md"
+    },
+    {
+      "capabilityId": "science.admissibility.property",
+      "label": "Property admissibility validators (typed quantity, context, method)",
+      "description": "`quantity_is_typed` (unit, uncertainty, uncertainty_kind in stated|estimated|propagated|absent, numeric value; vectors refused UNTYPED_QUANTITY) and `no_context_free_property` (method + non-empty conditions required) return an Admissibility with named refusal codes. Applied to already-admitted evidence for canonical assertion, never as an ingest gate (ingest lives in the vendored run_scout).",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "science.admissibility.quantity_is_typed; science.admissibility.no_context_free_property",
+      "evidence": "science/admissibility.py; architecture/property_admissibility.yaml"
+    },
+    {
+      "capabilityId": "science.table.observation_is_table_alignable",
+      "label": "Aligned observation table admissibility (least_squares obligation)",
+      "description": "`observation_is_table_alignable(content)` and `is_explicitly_absent(content)` state what an Observation must carry to be joined into a (sample, variable) table: typed sample identity, typed variable identity, recoverable conditions, and an explicit absent-value representation rather than a sentinel or a dropped row. Built as DAQ's half of the 2026-08-26 joint workload decision with SCL; no table artifact is introduced.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "science.table.observation_is_table_alignable",
+      "evidence": "science/table.py; architecture/aligned_observation_table.yaml; architecture/decisions/2026-08-26-joint-workload-decision.yaml"
+    },
+    {
+      "capabilityId": "science.kalman_prerequisites",
+      "label": "Structured measurement uncertainty and bounded evidence-lineage depth",
+      "description": "`uncertainty_corresponds_to_value` admits a measurement covariance R only when its outer dimension and per-component units correspond to an n-component value (scalar sigma on a vector, or a matrix on a scalar, refused). `lineage_depth` / `recursive_computation_is_depth_bounded` record and bound (MAX_LINEAGE_DEPTH=3) evidence-lineage depth for recursive computations with a composition guard. Both are DAQ's responses to SCL's kalman_filter_linear requirements; the five covariance shape rules stay SCL's.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "science.structured_uncertainty.uncertainty_corresponds_to_value; science.lineage_depth.recursive_computation_is_depth_bounded",
+      "evidence": "science/structured_uncertainty.py; science/lineage_depth.py; architecture/exchange/daq_requirement_response.yaml"
+    },
+    {
+      "capabilityId": "assertion.property_admissibility.assess_pool",
+      "label": "Assess real acquired evidence and quarantine the inadmissible",
+      "description": "`assess_pool(pool, execution_id, quarantine_store)` filters every admitted Observation whose content declares a `property`, applies `no_context_free_property` unchanged, and writes a QuarantineRecord (stage canonical_assertion) for each inadmissible candidate, returning a PropertyAdmissibilityReport whose buckets conserve. A filter, never a transformation: nothing adds or renames keys to pass the gate.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "assertion.property_admissibility.assess_pool",
+      "evidence": "assertion/property_admissibility.py; docs/PHASE_29_LIVE_PROPERTY_INGEST_INTEGRATION.md"
+    },
+    {
+      "capabilityId": "epistemics.architecture.read",
+      "label": "Read the invariant register and verify the control graph",
+      "description": "`epistemics.invariants.load_invariants/by_status` read the 52 invariants in architecture/invariants.yaml with a closed status vocabulary (enforced, vacuously_enforced, partially_enforced, represented_unenforced, blocked, absent); `epistemics.control_graph` checks architecture/control_graph.yaml is a single 8-stage cycle whose only producer of evidence is acquisition and whose only exit from derived_state is acquisition, raising ControlGraphViolation otherwise. `core_version()` reads core.yaml (core@1.0.0 at submodule commit 5e146d5).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "epistemics.invariants.load_invariants; epistemics.control_graph",
+      "evidence": "epistemics/invariants.py; epistemics/control_graph.py; architecture/invariants.yaml; architecture/control_graph.yaml; architecture/core.yaml"
+    },
+    {
+      "capabilityId": "epistemics.generated_docs.regenerate",
+      "label": "Regenerate doctrine and agent contracts from architecture YAML",
+      "description": "`python -c \"import epistemics.doctrine as d; d.write()\"` projects architecture/*.yaml into docs/generated/DOCTRINE.md (word budget fails closed, vendor names linted out); `python3 architecture/build_agent_contracts.py` renders docs/generated/AGENT_*.md from daq_agent_instruments.yaml with a digest over instrument record plus schema. CI diffs both regenerations against the tree; a drift fails the conformance gate.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python",
+      "path": "epistemics.doctrine.write; architecture/build_agent_contracts.py",
+      "evidence": "epistemics/doctrine.py; architecture/build_agent_contracts.py; .github/workflows/conformance.yml"
+    },
+    {
+      "capabilityId": "exchange.artifacts.read",
+      "label": "Read the DAQ/SCL/STE exchange artifacts and their digests",
+      "description": "Content-addressed canonical YAML under architecture/exchange/: daq_capabilities.yaml (measured modality inventory, EXISTING|REUSABLE|SMALL EXTENSION|MISSING|OUT OF SCOPE, contains no workload selection), daq_requirement_response.yaml (DAQ evidence per SCL requirement row, states no status), invariant_register.yaml (three-party register), ste_invariants.yaml (reconstructed, labelled inference), plus read-only mirrors scl_requirements.yaml and scl_contract_clauses.yaml. Each has a .sha256 sidecar; the shared canonicalization fixture hashes identically in both repositories.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "architecture/exchange/*.yaml (+ .sha256)",
+      "evidence": "architecture/exchange/daq_capabilities.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/invariant_register.yaml; architecture/exchange/canonical_yaml.py"
+    },
+    {
+      "capabilityId": "exchange.artifacts.regenerate",
+      "label": "Regenerate DAQ's exchange artifacts under the pinned canonical emitter",
+      "description": "`build_daq_capabilities.py`, `build_daq_requirement_response.py`, `build_invariant_register.py` and `build_ste_invariants.py` re-emit their artifacts through the stdlib-only `canonical_yaml.py` (sorted keys, always-quoted strings, sequence-in-sequence refused) and rewrite the .sha256 sidecars. Changing bytes of a bound artifact obliges a REISSUE of the joint decision record, which pins their digests.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python3",
+      "path": "architecture/exchange/build_*.py",
+      "evidence": "architecture/exchange/build_daq_capabilities.py; architecture/exchange/build_daq_requirement_response.py; architecture/exchange/build_invariant_register.py; architecture/exchange/canonical_yaml.py"
+    },
+    {
+      "capabilityId": "exchange.verify_pair_landed",
+      "label": "Verify a coordinated DAQ/SCL reissue landed in both repositories",
+      "description": "`python3 architecture/exchange/verify_pair_landed.py <repo-a> <repo-b>` asks both REMOTES (not local clones) whether each branch is in sync and compares every file both repositories hold under architecture/ byte-for-byte; exit 0 only when both are pushed and identical. Built after one half of a reissue reached its remote and the other did not.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3",
+      "path": "architecture/exchange/verify_pair_landed.py <repo-a> <repo-b>",
+      "evidence": "architecture/exchange/verify_pair_landed.py"
+    },
+    {
+      "capabilityId": "conformance.gate",
+      "label": "Conformance gate (CI): doctrine diff, vendored substrate unmodified, tests, types",
+      "description": "GitHub Actions workflow on every push/PR: regenerates doctrine and diffs docs/generated/, asserts `git -C vendor/scout-retrieval-agent diff` is empty, runs pytest (about 1900 tests, full history checkout so pre-registration probes can prove their expectations predate the run) and mypy over daf/ science/ boundary/ bridge/ epistemics/ session/ commerce/ tools/. Local green is a hypothesis until the pushed tree agrees.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ci",
+      "path": ".github/workflows/conformance.yml",
+      "evidence": ".github/workflows/conformance.yml; tests/test_doctrine_generation.py; tests/test_no_test_name_is_shadowed.py"
+    },
+    {
+      "capabilityId": "commerce.cli.templates",
+      "label": "Print blank load event form and sheet header",
+      "description": "`python3 -m commerce form` prints a blank JSON events form (authority + events with kind, value, unit, basis, known_at, source) and `python3 -m commerce sheet` prints the blank CSV sheet header an operator types loads into. Pure output; the entry point for Phase 0 (one real transaction recorded by hand).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "form | sheet",
+      "evidence": "commerce/__main__.py; commerce/manual.py; commerce/sheet.py"
+    },
+    {
+      "capabilityId": "commerce.cli.grade",
+      "label": "Grade one load or a sheet: commitments vs outcomes",
+      "description": "`record <events.json>` and `read <sheet.csv> <authority.json>` pair every promise (rate_quoted, pickup_promised, transit_estimated) with its settlement (rate_invoiced, pickup_actual, transit_realized) through the three-store split (CommitmentStore/OutcomeStore/diverge) and print residuals. Refuses a missing authority, a known_at equal to typing time, or unlike bases. Exit 2 unusable input, 1 refusals present, 0 gradeable. Nothing is written.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "record <events.json> | read <sheet.csv> <authority.json>",
+      "evidence": "commerce/__main__.py; commerce/stores.py; commerce/events.py; commerce/sheet.py"
+    },
+    {
+      "capabilityId": "commerce.cli.commit",
+      "label": "Append a sheet to the append-only ledger and load register",
+      "description": "`python3 -m commerce commit <sheet.csv> <authority.json>` is the ONLY commerce command that writes: it appends readable rows as events to the JSONL ledger (COMMERCE_LEDGER, default commerce-ledger.jsonl), appends load descriptions (carrier, origin, destination, month) to the register beside it, then grades the whole book. Mistakes are superseded by later entries, never edited. Refused rows are reported and not appended.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "commit <sheet.csv> <authority.json>",
+      "evidence": "commerce/__main__.py; commerce/ledger.py; commerce/register.py",
+      "side_effects": "appends to commerce-ledger.jsonl and the register file"
+    },
+    {
+      "capabilityId": "commerce.cli.book",
+      "label": "Replay the ledger and show status",
+      "description": "`python3 -m commerce book` replays the JSONL ledger (current vs superseded entries, unreadable lines counted) and `status` gives one screen: ledger path, line counts, loads with unsettled promises and what each awaits. Exit 1 when the book is empty or does not conserve.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "book | status",
+      "evidence": "commerce/__main__.py; commerce/ledger.py"
+    },
+    {
+      "capabilityId": "commerce.cli.residuals",
+      "label": "Lane memory: residuals by carrier, lane, season and receiver",
+      "description": "`python3 -m commerce residuals [asof]` computes promised-vs-realized residuals per carrier, per lane, per lane-and-season and receiver appointment slippage from the book joined to the register, optionally filtered to what was knowable at `asof` (known_at, not line order). Refuses an ungrouped mean when no register exists, and states the admissibility standing of the data (a representative fixture is never admissible).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "residuals [asof]",
+      "evidence": "commerce/__main__.py; commerce/residuals.py; commerce/register.py; commerce/admissibility.py"
+    },
+    {
+      "capabilityId": "commerce.cli.morning",
+      "label": "Morning view: priced, blocked-with-a-named-gap, refused",
+      "description": "`python3 -m commerce morning <opportunities.json>` runs every opportunity through the gate in cost order (eligibility by activity class, compliance by credential with a cannot-determine state, then economics) and prints three lists. The middle list is the product: an unpriceable opportunity is un-ranked with WHO KNOWS the missing field, never dropped. Exit 1 if the lists do not conserve.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "morning <opportunities.json>",
+      "evidence": "commerce/__main__.py; commerce/gate.py; commerce/opportunity.py; commerce/opportunity_intake.py"
+    },
+    {
+      "capabilityId": "commerce.cli.outbound",
+      "label": "Outbound queue: what is waiting for a person",
+      "description": "`python3 -m commerce outbound <drafts.json>` renders the OutboundQueue of agent-drafted messages (quotes, check-ins, tenders) and why each needs a human hand before it leaves the firm. Read-only rendering; nothing is sent.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "outbound <drafts.json>",
+      "evidence": "commerce/__main__.py; commerce/outbound.py"
+    },
+    {
+      "capabilityId": "commerce.cli.vet",
+      "label": "Carrier vetting verdict as of a date (cleared / blocked / undetermined)",
+      "description": "`python3 -m commerce vet <carrier> <asof> [booking pickup delivery]` replays persisted VettingObservations (insurance certificate window, operating authority, recent reincarnation) into a three-state Verdict as it stood at `asof`; with movement dates the insurance predicate covers the WHOLE period (SOR/2005-180 s.7 basis, CAD 100,000). Exit 0 cleared, 1 blocked, 3 undetermined, so a shell cannot collapse the third state.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "vet <carrier> <asof> [booking pickup delivery]",
+      "evidence": "commerce/__main__.py; commerce/vetting.py; commerce/vetting_store.py; architecture/carrier_vetting_recon.yaml",
+      "data_domain": "carrier-identity"
+    },
+    {
+      "capabilityId": "commerce.cli.exceptions",
+      "label": "Exceptions queue: loads where two claims about one movement disagree",
+      "description": "`python3 -m commerce exceptions` partitions the register into consistent / divergent (tendered carrier differs from bill-of-lading carrier, the double-brokering signal) / unknowable (no BOL captured), asserts they conserve, and exits 0, 1 (divergences to work), 2 (does not conserve) or 3 (cannot be fully answered).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "exceptions",
+      "evidence": "commerce/__main__.py; commerce/register.py"
+    },
+    {
+      "capabilityId": "commerce.cli.facilities",
+      "label": "Facility register duplicate scan (surfaced, never merged)",
+      "description": "`python3 -m commerce facilities <file.json>` normalises raw addresses (conservative fallback, or libpostal statistical parser when installed, recorded as part of the basis), scans for suspect duplicate pairs above a similarity floor, lists pairs that differ only by house number as distinct, and reports register health. Exit 1 suspects found, 3 cannot answer to zero, 0 only under the statistical normaliser with no pair above the floor.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m commerce",
+      "path": "facilities <file.json>",
+      "evidence": "commerce/__main__.py; commerce/facility.py"
+    },
+    {
+      "capabilityId": "commerce.canadabuys.feeds",
+      "label": "Parse CanadaBuys open-tender and award CSV feeds",
+      "description": "`commerce.canadabuys.parse_feed(bytes, source_url=, retrieved_at=)` and `commerce.award.parse_awards(...)` turn the Government of Canada open-tender (67 fields, licence ca-ogl-lgo) and award feeds into Notice/Award records with a degradation ladder carried on the result (LIVE / PUBLISHED_NO_ROWS / UNPARSEABLE / UNREACHABLE) and row accounting (admitted / rejected with reason / filtered with predicate named). The 13 contactInfo person columns have no field to land in. Bytes are caller-supplied; no fetch code exists here.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "commerce.canadabuys.parse_feed; commerce.award.parse_awards",
+      "evidence": "commerce/canadabuys.py; commerce/award.py; architecture/canadabuys_recon.yaml; commerce/fixtures/canadabuys_open_sample.csv",
+      "data_domain": "public-procurement"
+    },
+    {
+      "capabilityId": "commerce.tender.extract",
+      "label": "Extract a structured Opportunity from a tender notice, or say why not",
+      "description": "`commerce.tender.extract(notice) -> Opportunity` grades a notice against the founding order's ten fields; five (quantity, incoterms, origin, equipment, contract value) have NO COLUMN in the CanadaBuys source and are reported as NO_COLUMN_IN_THIS_SOURCE versus EMPTY_IN_THIS_NOTICE with an attachment remedy. `census()` totals the absences across notices. `commerce.agents.tender_scout.rank/propose` orders opportunities by answerability and can only emit a Proposal to the ReviewQueue.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "commerce.tender.extract; commerce.agents.tender_scout.rank",
+      "evidence": "commerce/tender.py; commerce/agents/tender_scout.py; commerce/opportunity.py"
+    },
+    {
+      "capabilityId": "commerce.landed_cost.assemble",
+      "label": "Landed cost with stated bases, currency dates and ranges",
+      "description": "`commerce.landed_cost.assemble(components, priced_at=)` composes known / bounded / unknown Components, each carrying basis, currency, the date the currency was priced at and a completeness, into a LandedCost that yields a range or a refusal (CostRefusal) rather than a zero for an unknown component; undeclared components are printed as such. Motivated by 196/3056 awards with amount 0.00 and blank currency.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "commerce.landed_cost.assemble",
+      "evidence": "commerce/landed_cost.py"
+    },
+    {
+      "capabilityId": "commerce.mileage.truck_legal",
+      "label": "Truck-legal route estimate carrying distance AND duration",
+      "description": "`commerce.mileage.truck_legal(origin, destination, distance_km=, duration_s=, ...)` / `consumer(...)` build RouteEstimates from an external router's answer, `compare()` and `validation_lane_is_discriminating()` decide whether a lane can validate a truck profile (measured 2026-08-31 on a public Valhalla instance: crossing the 4.6 m height threshold moved distance -0.3% and time +68%), and `mileage_for_pricing` refuses an estimate without duration. No routing engine is hosted here.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "commerce.mileage.truck_legal",
+      "evidence": "commerce/mileage.py"
+    },
+    {
+      "capabilityId": "commerce.tender.issue",
+      "label": "Dispose a proposal into a commitment and issue a carrier tender",
+      "description": "`commerce.authority.dispose(proposal, verdict, disposal) -> Commitment` is the single function that turns an agent Proposal into a Commitment (issuer, authority, idempotency key, revocation path), and `commerce.tendering.issue_tender(vetting_verdict, proposal, ...)` is the only constructor of a CarrierTender, gated on a CLEARED vetting Verdict supplied by the caller. A source scan over commerce/agents/ asserts no agent can reach either. Binds the firm to a counterparty.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "commerce.authority.dispose; commerce.tendering.issue_tender",
+      "evidence": "commerce/authority.py; commerce/tendering.py; architecture/physical_commerce_founding.yaml"
+    },
+    {
+      "capabilityId": "commerce.outbound.send",
+      "label": "Send an outbound message (the only way anything leaves the firm)",
+      "description": "`commerce.outbound.send(draft, sender, at=) -> Sent` is the wire boundary: agents may draft, rank, check in and propose, but only a human Actor may send, and OutboundRefusal is raised otherwise. Today `send` records the act; no mail/API transport is wired. Quotes, tenders, bookings and filings to a counterparty are escalation items under STANDING_PLAN section 4.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "commerce.outbound.send",
+      "evidence": "commerce/outbound.py; docs/STANDING_PLAN.md"
+    },
+    {
+      "capabilityId": "commerce.recon_lint",
+      "label": "Lint a reconnaissance record for constraints measured but not carried",
+      "description": "`commerce.recon_lint.lint(name, record) -> LintReport` reads a record's machine-readable constraints_measured block and scans every other text field for proposing sentences naming a forbidden act (defect class 8, named after a probe quoted Quebec's terms of use and then recommended a snapshot store). Surfaces candidates for a reader; deliberately does not decide.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "commerce.recon_lint.lint",
+      "evidence": "commerce/recon_lint.py; architecture/defect_class_eight.yaml"
+    },
+    {
+      "capabilityId": "session.cli.plan_close",
+      "label": "Sea Dog research session instrument: plan a work order, close a graded session",
+      "description": "`python3 -m session plan <queue.json>` ranks a researcher's question queue by expected yield per minute into a WorkOrder with per-item time boxes, dropping items that change no decision (NO_DECISION_IT_COULD_CHANGE); `close <queue.json> <capture.json>` grades the session: every ranked item lands in exactly one of worked / abandoned_at_its_box / not_reached, findings must cite sources, residue must be stated, and an acceptance test written after the work is refused. JSON in, text out; nothing persisted.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "python3 -m session",
+      "path": "plan <queue.json> | close <queue.json> <capture.json>",
+      "evidence": "session/intake.py; session/work_order.py; session/templates/queue.template.json; architecture/sea_dog_session_instrument.yaml"
+    },
+    {
+      "capabilityId": "tools.make_fixture",
+      "label": "Generate the representative freight fixture at scale",
+      "description": "`python3 tools/make_fixture.py --out <dir>` writes book.jsonl, register.jsonl and vetting.jsonl (40 carriers, 60 facilities, 120 lanes, 400 loads over 18 months, seed 20260831) with planted signals (over-billing carrier, lapsing insurance, slipping receiver, seasonal lane, double-brokered load, duplicate facility) in exactly the format `python3 -m commerce` reads. Every event is tagged representative_fixture and is inadmissible by construction.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "python3",
+      "path": "tools/make_fixture.py --out <dir>",
+      "evidence": "tools/make_fixture.py; tests/test_payload_scale_fixture.py"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Data-Acquisition-Channel",
+    "domain": "scientific",
+    "maturity": "active",
+    "language": "Python",
+    "framework": "stdlib only (dependencies = []); pytest/mypy/ruff/pyyaml as test-time checkers",
+    "exposure": "python-package+cli",
+    "upstream": "notationsystems/scout-retrieval-agent (vendored read-only submodule at vendor/scout-retrieval-agent, core@1.0.0 = deterministic-state-architecture, the Scientific Transformer Engine)",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-31T06:21:50Z",
+    "capability_count": 52,
+    "package_name": "data-acquisition-fabric",
+    "package_version": "0.1.0",
+    "python_requires": ">=3.10",
+    "second_programme": "Notation Physical Commerce (commerce/, session/, tools/) hosted here while Sea Dog Terminal is frozen at 5a6def1; Phase 0 (one real transaction) not yet discharged",
+    "invariant_count": 52,
+    "test_function_count": 1907,
+    "adapter_ids": "arxiv, local-dataset, graph-dataset, incremental-dataset, edgar-daily-index, usgs-earthquakes, noaa-water-level, noaa-water-level-measurements, gpc-report, gpc-summary-export",
+    "external_sources": "export.arxiv.org, www.sec.gov/data.sec.gov, earthquake.usgs.gov, api.tidesandcurrents.noaa.gov, canadabuys.canada.ca (parsed from captured bytes)",
+    "joint_decision": "2026-08-26-joint-workload-decision: least_squares elected with SCL; DAQ obligation = aligned observation table + explicit missing-value semantics",
+    "http_server": false,
+    "mcp_server": false
+  },
+  "location": {
+    "longitude": -79.3832,
+    "latitude": 43.6532,
+    "label": "Toronto, ON (measured Toronto-Montreal truck lane; CanadaBuys federal tenders; NOAA station 8454000 Providence RI is the scientific anchor)"
+  },
+  "relations": [
+    {
+      "relationId": "data-acquisition-channel--depends_on--scientific-transformer-engine",
+      "targetNodeId": "scientific-transformer-engine",
+      "kind": "depends_on",
+      "description": "Confirmed by code: the Scientific Transformer Engine (pyproject name deterministic-state-architecture 1.0.0, the same package as notationsystems/scout-retrieval-agent) is vendored read-only as the git submodule vendor/scout-retrieval-agent and put on sys.path by daf/_vendor.py; every DAQ import of scout.interface, scout.pipeline.run_scout, evidence.*, materials.* and retrieval.* resolves to it. architecture/core.yaml declares it the core (core@1.0.0, submodule commit 5e146d5, modifiable: false) and CI fails if the vendored tree is modified.",
+      "evidence": ".gitmodules; daf/_vendor.py; boundary/_vendor.py; science/_vendor.py; architecture/core.yaml; .github/workflows/conformance.yml"
+    },
+    {
+      "relationId": "data-acquisition-channel--supplies_context_to--scientific-transformer-engine",
+      "targetNodeId": "scientific-transformer-engine",
+      "kind": "supplies_context_to",
+      "description": "Confirmed by code: DAQ is the acquisition stage of the STE control loop. Adapters produce RawDocuments that the vendored scout.pipeline.run_scout admits into an EvidencePool (DurablePool/ClassifiedPool subclasses), from which STE's materials ModelState, trust graph and retrieval derive; science/ reads materials' EvidenceRequirements and returns AcquisitionIntents as the loop's only exit from derived_state. DAQ never writes canonical state (system rule: STE promotes).",
+      "evidence": "architecture/control_graph.yaml; daf/orchestration/orchestrator.py; daf/storage/durable_pool.py; science/acquisition_seam.py; architecture/daq_agent_instruments.yaml (system_rules)"
+    },
+    {
+      "relationId": "data-acquisition-channel--supplies_context_to--scientific-compute-layer",
+      "targetNodeId": "scientific-compute-layer",
+      "kind": "supplies_context_to",
+      "description": "Confirmed by code and shared files: DAQ emits daq_capabilities.yaml and daq_requirement_response.yaml (content-addressed with the byte-identical canonical_yaml.py emitter) as its half of the two-artifact exchange with the Scientific Compute Layer, mirrors SCL's scl_requirements.yaml and scl_contract_clauses.yaml read-only, and the two repositories co-sign the 2026-08-26 joint workload decision (least_squares) that obliges DAQ to build the aligned observation table. verify_pair_landed.py checks the shared architecture/ subtree is byte-identical across both remotes.",
+      "evidence": "architecture/exchange/build_daq_capabilities.py; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/scl_requirements.yaml; architecture/decisions/2026-08-26-joint-workload-decision.yaml; architecture/exchange/verify_pair_landed.py; docs/PHASE_36_SCIENTIFIC_MODALITY_AND_SCL_INTERFACE.md"
+    },
+    {
+      "relationId": "data-acquisition-channel--supplies_context_to--payload-terminal",
+      "targetNodeId": "payload-terminal",
+      "kind": "supplies_context_to",
+      "description": "Inferred from docs and naming, not from a code call: the commerce/ programme (Notation Physical Commerce) and the sea_dog_session instrument are recorded as belonging to the Sea Dog Terminal lineage and are hosted here only because that terminal is frozen at 5a6def1 (STANDING_PLAN section 1; physical_commerce_founding.yaml placement; defect_class_eight.yaml). Payload-Terminal-V0 exposes the same instrument as its `seaDogTerminal` health block and SEA_DOG_* env names, and the commerce status screen is titled PAYLOAD. No import, HTTP or file contract links the two repositories today.",
+      "evidence": "docs/STANDING_PLAN.md; architecture/physical_commerce_founding.yaml; architecture/sea_dog_session_instrument.yaml; architecture/defect_class_eight.yaml; commerce/__main__.py (_status); tools/make_fixture.py"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "python -m daf.catalog.cli <root> <command>",
+        "python3 -m commerce <command>",
+        "python3 -m session plan|close",
+        "python3 tools/make_fixture.py --out <dir>",
+        "python3 architecture/exchange/build_*.py",
+        "python3 architecture/build_agent_contracts.py"
+      ],
+      "run": [
+        "git submodule update --init --recursive",
+        "python -m pip install pytest mypy ruff pyyaml",
+        "python -m pytest -q",
+        "python -m mypy daf/ science/ boundary/ bridge/ epistemics/ session/ commerce/ tools/"
+      ],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "SCOUT admission contract (vendored)",
+        "path": "vendor/scout-retrieval-agent/scout/interface.py",
+        "summary": "RawDocument / SourceAdapter.fetch / ExtractionCandidate / Extractor.extract; every DAQ adapter and extractor implements these Protocols unchanged."
+      },
+      {
+        "name": "AcquisitionIntent",
+        "path": "boundary/acquisition_intent.py",
+        "summary": "Neutral statement of what class of evidence is wanted: subject_natural_key, subject_kind, property, role, target_context; content-hashed; names no source."
+      },
+      {
+        "name": "SourceDefinition / AcquisitionPlan / AcquisitionRequest / AcquisitionResult",
+        "path": "daf/orchestration/source_registry.py; daf/catalog/plan.py; daf/orchestration/request.py; daf/orchestration/result.py",
+        "summary": "Catalog and orchestration value types; plans persist as <root>/plans/<plan_id>.json, sources as <root>/sources/<source_id>.json, checkpoints as <root>/checkpoints/."
+      },
+      {
+        "name": "ExecutionRecord / QuarantineRecord",
+        "path": "daf/execution/record.py; daf/execution/quarantine.py; architecture/execution_record.yaml",
+        "summary": "Two-hash execution identity, discriminated kind with shared core agreed with SCL; never evidence."
+      },
+      {
+        "name": "Exchange canonical YAML",
+        "path": "architecture/exchange/canonical_yaml.py",
+        "summary": "Byte-exact YAML 1.2 emitter shared with SCL; sha256 sidecars; shared fixture digest ed57b41f..."
+      },
+      {
+        "name": "candidate_filing schema (EDGAR_SCOUT output)",
+        "path": "architecture/schemas/candidate_filing.schema.json",
+        "summary": "The only thing the EDGAR_SCOUT agent may emit."
+      },
+      {
+        "name": "Commerce ledger / register / vetting JSONL",
+        "path": "commerce/ledger.py; commerce/register.py; commerce/vetting_store.py",
+        "summary": "Append-only, replayable, keyed by known_at; the import when a real store is justified."
+      },
+      {
+        "name": "Session queue and capture templates",
+        "path": "session/templates/queue.template.json; session/templates/capture.template.json",
+        "summary": "Operator forms for the sea_dog_session instrument."
+      }
+    ],
+    "resources": [
+      {
+        "name": "architecture/*.yaml",
+        "classification": "public",
+        "path": "architecture/",
+        "description": "52 invariants, control graph, doctrine, pre-registrations, anchor results, probes, proposals and the joint decision record."
+      },
+      {
+        "name": "Anchor fixtures (real documents)",
+        "classification": "public",
+        "path": "tests/fixtures/gpc_report_anchor_epa_p22_0051.json; tests/fixtures/gpc_summary_export_anchor_impact_r190048*.csv; tests/fixtures/physchem_study_anchor_wil_505902_*.json",
+        "description": "Transcriptions of EPA ChemView P-22-0051, an Impact R190048 export and WIL 505902 (regulations.gov EPA-HQ-OPPT-2019-0495-0004) with provenance sidecars."
+      },
+      {
+        "name": "Live NOAA fixture",
+        "classification": "public",
+        "path": "tests/fixtures/noaa_live_8454000_20240115_*.json",
+        "description": "240 real readings, station 8454000, 2024-01-15, MLLW and STND datums."
+      },
+      {
+        "name": "CanadaBuys samples",
+        "classification": "public",
+        "path": "commerce/fixtures/",
+        "description": "Open and award feed samples; contactInfo columns are never projected."
+      },
+      {
+        "name": "Evidence pool roots",
+        "classification": "internal",
+        "path": "<root>/evidence, <root>/executions, <root>/quarantine, <root>/checkpoints",
+        "description": "Per-run local filesystem state; nothing is committed to the repository."
+      },
+      {
+        "name": "Commerce ledger",
+        "classification": "sensitive",
+        "path": "$COMMERCE_LEDGER (default commerce-ledger.jsonl)",
+        "description": "Real loads, quotes and carrier vetting observations once Phase 0 is discharged; commitments bind the firm."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "arXiv API",
+        "domain": "export.arxiv.org",
+        "purpose": "paper metadata (Atom)",
+        "auth": "none"
+      },
+      {
+        "name": "SEC EDGAR",
+        "domain": "www.sec.gov / data.sec.gov",
+        "purpose": "daily index files and submissions",
+        "auth": "none; declared User-Agent required by fair-access policy"
+      },
+      {
+        "name": "USGS Earthquake Hazards FDSN",
+        "domain": "earthquake.usgs.gov",
+        "purpose": "event listings and detail",
+        "auth": "none"
+      },
+      {
+        "name": "NOAA CO-OPS Tides & Currents",
+        "domain": "api.tidesandcurrents.noaa.gov",
+        "purpose": "water-level series per station/datum",
+        "auth": "none"
+      },
+      {
+        "name": "CanadaBuys open data",
+        "domain": "canadabuys.canada.ca",
+        "purpose": "open tender and award CSV feeds (licence ca-ogl-lgo); bytes captured by recon, parsed offline",
+        "auth": "none"
+      },
+      {
+        "name": "Valhalla (public instance)",
+        "domain": "unspecified public endpoint",
+        "purpose": "truck vs auto route measurement recorded in commerce/mileage.py; not called by code",
+        "auth": "none"
+      },
+      {
+        "name": "Wikidata",
+        "domain": "www.wikidata.org",
+        "purpose": "mechanical-property alias terms captured as a fixture for vocabulary generalisation",
+        "auth": "none"
+      }
+    ],
+    "secrets_env": [
+      "COMMERCE_LEDGER",
+      "COMMERCE_FACILITIES"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "python -m pytest -q (conformance gate); python -m daf.catalog.cli <root> list-sources"
+    },
+    "spatial": "Natively carries geography in two places: scientific adapters key on NOAA station ids and USGS event coordinates, and the commerce programme carries facilities, lanes (origin/destination), truck-legal routing and Canadian federal tenders.",
+    "temporal": "Every evidence object separates retrieved_at / known_at (when a value became available) from the period it describes; checkpoints record acquisition progress; the commerce ledger is queried as-known-at; pre-registrations must predate the runs they judge (verified via git history).",
+    "open_questions": [
+      "Is Sea Dog Terminal exactly Payload-Terminal-V0 (its health route exposes a seaDogTerminal block), and should the commerce/ programme relocate there once the 5a6def1 freeze lifts?",
+      "No relation to notations-corpus-graph is evidenced from this repository; does the corpus graph consume DAQ's durable evidence pool or exchange artifacts anywhere?",
+      "Phase 0 (one real transaction) is not discharged; QCMobile webKey, ORS registration, load-board terms, AIS and LME are blocked on a person.",
+      "STE has not declared its own invariant set; ste_invariants.yaml is a reconstruction and bent:zero is entailed only by the vendored bytes being unmodified at the pin.",
+      "Should the vendored submodule be replaced by a pip-installable, namespaced package from upstream (docs/SCOUT_VERTICAL_SLICE.md known limitation)?",
+      "The Valhalla endpoint used for the 2026-08-31 routing measurement is not recorded in code."
+    ]
+  }
+}

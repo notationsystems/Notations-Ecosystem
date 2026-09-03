@@ -1,0 +1,55 @@
+{
+  "nodeId": "building-information-corpus",
+  "name": "Building Information Corpus",
+  "kind": "information_library",
+  "description": "Planned corpus of building information (documents, drawings, IFC/OpenUSD evidence) that the BIM State Transformer will absorb as evidence. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+  "capabilities": [
+    {
+      "capabilityId": "charter.observe",
+      "label": "Repository placeholder",
+      "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "github",
+      "evidence": "https://github.com/notationsystems/Building-Information-Corpus"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Building-Information-Corpus",
+    "domain": "built-environment",
+    "maturity": "empty",
+    "language": "",
+    "framework": "",
+    "exposure": "unknown",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-01T06:27:12Z",
+    "capability_count": 1
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "building-information-corpus--supplies_context_to--bim-state-transformer-engine",
+      "targetNodeId": "bim-state-transformer-engine",
+      "kind": "supplies_context_to",
+      "description": "Intended evidence source for the GAT belief state (planned, inferred from naming and the BIM State Transformer README).",
+      "evidence": "repo naming; BIM-State-Transformer-Engine README"
+    }
+  ],
+  "reference": {
+    "runtime": {},
+    "contracts": [],
+    "resources": [],
+    "external_services": [],
+    "secrets_env": [],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": null
+    },
+    "spatial": "Not yet defined.",
+    "temporal": "Not yet defined.",
+    "open_questions": [
+      "What is the first contract this repository will expose?"
+    ]
+  }
+}

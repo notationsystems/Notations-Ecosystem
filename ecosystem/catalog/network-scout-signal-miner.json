@@ -1,0 +1,55 @@
+{
+  "nodeId": "network-scout-signal-miner",
+  "name": "Network Scout Signal Miner",
+  "kind": "information_library",
+  "description": "Planned signal-mining scout over network and open-source feeds, a candidate upstream for the OSIRIS intel layer. Repository created on GitHub with no commits yet; the node is registered so the universe shows where it will sit and what it is expected to relate to.",
+  "capabilities": [
+    {
+      "capabilityId": "charter.observe",
+      "label": "Repository placeholder",
+      "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "github",
+      "evidence": "https://github.com/notationsystems/Network-Scout-Signal-Miner"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Network-Scout-Signal-Miner",
+    "domain": "intelligence",
+    "maturity": "empty",
+    "language": "",
+    "framework": "",
+    "exposure": "unknown",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-22T02:32:57Z",
+    "capability_count": 1
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "network-scout-signal-miner--supplies_context_to--osiris-intel",
+      "targetNodeId": "osiris-intel",
+      "kind": "supplies_context_to",
+      "description": "Planned (inferred): mined signals feeding the intel ontology engine.",
+      "evidence": "naming (scout/signal); OSIRIS intel feed model"
+    }
+  ],
+  "reference": {
+    "runtime": {},
+    "contracts": [],
+    "resources": [],
+    "external_services": [],
+    "secrets_env": [],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": null
+    },
+    "spatial": "Not yet defined.",
+    "temporal": "Not yet defined.",
+    "open_questions": [
+      "What is the first contract this repository will expose?"
+    ]
+  }
+}

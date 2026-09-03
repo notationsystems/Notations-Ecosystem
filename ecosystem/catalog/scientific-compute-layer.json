@@ -1,0 +1,424 @@
+{
+  "nodeId": "scientific-compute-layer",
+  "name": "Scientific Compute Layer (SCL)",
+  "kind": "api",
+  "description": "A reusable native scientific-computation layer in C++17/CUDA behind a process boundary: scl_cli reads one JSON request from stdin, dispatches on the operation field through a fixed registry (lj_pairwise_energy_forces, fourier_transform_1d, least_squares, kalman_filter_linear), and writes one JSON result to stdout with a staged fault vocabulary that is never collapsed to a generic failure. A dependency-free Python client (scl) encodes requests, drives the binary and content-addresses requests and results; a separate, explicitly imported scl.ste_adapter translates STE's ExecutionSpecification/ExecutionResult so SCL can be plugged in as a runner at STE's SpecificationDispatcher seam. SCL also holds its half of the requirement/capability exchange with the acquisition layer (DAQ). It is one integration environment for STE, not defined by it; it never admits evidence, never touches STE's Rust workspace, and never claims that a computation is a measurement. The CUDA backend compiles and links but has never executed on a GPU in any session.",
+  "capabilities": [
+    {
+      "capabilityId": "cli.request.envelope",
+      "label": "scl_cli request: one JSON object on stdin",
+      "description": "Request {operation, backend: cpu|cuda, configuration_hex, input_hex}. The envelope, hex framing and backend-availability check are operation-agnostic; the operation owns decoding, validation and dispatch. One process per computation. A request naming an unknown operation or backend is answered as halted with exit_code 10 (PROTOCOL); an unavailable backend halts with 12 before any bytes are decoded.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "stdin",
+      "path": "native/build/scl_cli",
+      "evidence": "native/src/main.cpp; docs/SCL_CONTRACT.md",
+      "cost": "free (local process)",
+      "latency": "~4-7 ms process/JSON boundary plus native compute"
+    },
+    {
+      "capabilityId": "cli.result.envelope",
+      "label": "scl_cli result: one JSON object on stdout",
+      "description": "Response {status: completed|halted, exit_code, backend_used, backend_version ('scl-cli/0.1.0'), output_hex (null when halted), detail (null when completed), metrics{...}} such as native_compute_seconds and n_particles. Process exit code is 0 whenever a well-formed JSON answer was produced, including halted; a non-zero process exit means the CLI could not answer at all.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "stdout",
+      "path": "native/build/scl_cli",
+      "evidence": "native/src/main.cpp; native/include/scl/protocol.hpp"
+    },
+    {
+      "capabilityId": "cli.fault_vocabulary",
+      "label": "Staged fault codes",
+      "description": "exit_code 0 completed; 10 PROTOCOL (malformed envelope, unknown operation); 11 VALIDATION (bad parameters/input); 12 BACKEND_UNAVAILABLE (cuda without toolkit or device); 13 COMPUTATION (coincident particles, non-finite result); 14 INTERNAL (unexpected exception). Single source of truth in protocol.hpp, mirrored in python/scl/errors.py and ste_adapter FAULT_* constants.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "wire",
+      "method": "contract",
+      "path": "native/include/scl/protocol.hpp",
+      "evidence": "native/include/scl/protocol.hpp; python/scl/errors.py"
+    },
+    {
+      "capabilityId": "cli.version",
+      "label": "Report the native binary version",
+      "description": "scl_cli --version prints the kernel version string (scl-cli/0.1.0), the same value echoed as backend_version in every response and folded into STE's program bytes by the adapter, so a kernel version bump is a new program identity.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "argv",
+      "path": "scl_cli --version",
+      "evidence": "native/src/main.cpp; native/include/scl/version.hpp"
+    },
+    {
+      "capabilityId": "cli.backend.cuda",
+      "label": "CUDA backend selection",
+      "description": "backend 'cuda' routes lj_pairwise and fourier (cuFFT) to native/backends/cuda when built with -DSCL_WITH_CUDA=ON and a device is visible; otherwise halts with 12. Implemented, compiled and linked against CUDA 12, 51/51 native tests, but never GPU-executed in any session (cudaGetDeviceCount()==0); CPU-CUDA equivalence, determinism and performance are explicitly not claimed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "field",
+      "path": "request.backend",
+      "evidence": "native/backends/cuda/lj_pairwise_cuda.cu; native/backends/cuda/fourier_cuda.cu; native/src/backend.cpp; docs/PHASE4_AUDIT.md"
+    },
+    {
+      "capabilityId": "op.lj_pairwise_energy_forces",
+      "label": "Compute truncated Lennard-Jones energy and forces",
+      "description": "operation 'lj_pairwise_energy_forces': configuration 24 bytes = epsilon, sigma, cutoff as f64 LE; input N*24 bytes of (x,y,z) f64 LE; output 8 + N*24 bytes = total_energy then per-particle (fx,fy,fz). V(r)=4eps[(s/r)^12-(s/r)^6] for r<=cutoff, plain truncation. Faults: sigma/epsilon/cutoff not finite or <=0 (11), zero particles (11), coincident particles (13). Bitwise reproducible on the same binary and machine.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "operation",
+      "path": "lj_pairwise_energy_forces",
+      "evidence": "native/src/op_lj_pairwise.cpp; native/src/lj_pairwise.cpp; docs/SCL_CONTRACT.md",
+      "cost": "free (CPU)",
+      "latency": "~3.7 ms native at N=2000"
+    },
+    {
+      "capabilityId": "op.fourier_transform_1d",
+      "label": "Compute the 1-D discrete Fourier transform",
+      "description": "operation 'fourier_transform_1d': configuration 24 bytes = int32 direction(+1 forward|-1 inverse), int32 normalization(0 none|1 1/N|2 1/sqrt N), int32 has_sample_spacing, int32 reserved=0, f64 sample_spacing_seconds; input N*16 bytes complex (re,im) f64; output N complex bins k=0..N-1, no fftshift. Any N>=1; CPU evaluates the O(N^2) defining sum. Spacing bytes under has_sample_spacing=0 are refused, never ignored.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "operation",
+      "path": "fourier_transform_1d",
+      "evidence": "native/src/op_fourier.cpp; native/src/fourier.cpp; native/include/scl/fourier.hpp",
+      "cost": "free (CPU)",
+      "latency": "~96 ms native at N=2048 (O(N^2))"
+    },
+    {
+      "capabilityId": "op.least_squares",
+      "label": "Solve a (weighted) linear least-squares fit",
+      "description": "operation 'least_squares': configuration = int32 weighted, three int32 zeros, f64 rank_tolerance (relative singular-value cutoff, explicit at every call site); input = int32 n_rows, int32 n_cols, X row-major f64, y f64, optional per-row weights f64; output = coefficient vector f64 LE. Weights are inputs, not parameters, so parameters_identity stays comparable across datasets. Row order is not significant.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "operation",
+      "path": "least_squares",
+      "evidence": "native/src/op_least_squares.cpp; native/src/least_squares.cpp; python/scl/least_squares.py",
+      "cost": "free (CPU)"
+    },
+    {
+      "capabilityId": "op.kalman_filter_linear",
+      "label": "Run a linear Kalman filter over a measurement stream",
+      "description": "operation 'kalman_filter_linear': configuration = int32 n, m, Q provenance (always ASSERTED=0), R provenance (0 asserted|1 supplied), two reserved, f64 symmetry_tolerance, psd_tolerance, then F(n*n), H(m*n), Q(n*n), R(m*m) f64; input = int32 steps, int32 source_identity_length, x0, P0, measurements (ordered), source identity bytes. supplied on Q, or a source identity under asserted R, is a validation fault. Order of measurements is significant.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "operation",
+      "path": "kalman_filter_linear",
+      "evidence": "native/src/op_kalman.cpp; native/src/kalman.cpp; python/scl/kalman.py; docs/SCL_CONTRACT.md",
+      "cost": "free (CPU)"
+    },
+    {
+      "capabilityId": "python.run_scl_request",
+      "label": "Drive scl_cli from Python",
+      "description": "run_scl_request(SCLRequest, cli_path=default_cli_path(), timeout=60.0) -> SCLResult. Spawns one scl_cli process, marshals JSON, decodes output bytes. Raises SCLProtocolError (missing binary, unparseable stdout, non-zero process exit) or SCLTimeoutError for channel failures; a halted computation is returned as a normal SCLResult, convertible to a typed exception with raise_for_result.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.run_scl_request",
+      "evidence": "python/scl/client.py; python/scl/errors.py"
+    },
+    {
+      "capabilityId": "python.request.identity",
+      "label": "Content-addressed request and result identities",
+      "description": "SCLRequest exposes operation_identity, parameters_identity, input_identity and identity(); SCLResult exposes output_identity and computation_identity. Scheme: length-prefixed tag + fields, SHA-256, lowercase hex under scl.request.*.v1 / scl.result.*.v1 domain tags, a separate namespace from STE's scout.execution.* identities. Annotating parameters (e.g. sample spacing) change request identity but not computation identity.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "property",
+      "path": "scl.SCLRequest.identity",
+      "evidence": "python/scl/identity.py; python/scl/client.py; docs/SCL_CONTRACT.md"
+    },
+    {
+      "capabilityId": "python.codec.lj",
+      "label": "Encode/decode Lennard-Jones wire payloads",
+      "description": "encode_lj_configuration(epsilon, sigma, cutoff), encode_lj_positions(positions), decode_lj_configuration(bytes) and decode_lj_output(bytes) -> (total_energy, forces) produce and read exactly the byte layout scl_cli expects (little-endian float64).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.encode_lj_configuration",
+      "evidence": "python/scl/client.py"
+    },
+    {
+      "capabilityId": "python.codec.fourier",
+      "label": "Encode/decode Fourier payloads and derive the frequency axis",
+      "description": "encode_fourier_configuration, decode_fourier_configuration, encode_complex_signal, encode_real_signal, decode_complex_spectrum, frequency_bins(n, sample_spacing) (returns None with no spacing; never assumes dt=1) and spectral_power_total; constants FORWARD/INVERSE and NORMALIZATION_NONE/ONE_OVER_N/ONE_OVER_SQRT_N.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.fourier",
+      "evidence": "python/scl/fourier.py"
+    },
+    {
+      "capabilityId": "python.codec.least_squares",
+      "label": "Encode/decode least-squares payloads and residuals",
+      "description": "encode_least_squares_configuration(rank_tolerance, weighted), encode_least_squares_input(design, response, weights), decode_least_squares_output, residuals and normal_equation_residual helpers for independent checking of a returned fit.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.least_squares",
+      "evidence": "python/scl/least_squares.py"
+    },
+    {
+      "capabilityId": "python.codec.kalman",
+      "label": "Encode Kalman configuration and input",
+      "description": "encode_kalman_configuration(F, H, Q, R, measurement_noise_provenance=ASSERTED, symmetry_tolerance, psd_tolerance) and encode_kalman_input(x0, P0, measurements, source_identity=None). There is deliberately no process-noise provenance argument: Q is always asserted.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.kalman",
+      "evidence": "python/scl/kalman.py"
+    },
+    {
+      "capabilityId": "python.quantity",
+      "label": "Typed Quantity with explicit uncertainty kind",
+      "description": "Quantity(value, unit, uncertainty_kind in stated|estimated|propagated|absent, uncertainty) and absent_uncertainty(value, unit): a JSON-serializable shape for values placed inside STE's open Observation.content, not a second evidence system.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "import",
+      "path": "scl.Quantity",
+      "evidence": "python/scl/quantity.py"
+    },
+    {
+      "capabilityId": "python.method_block",
+      "label": "Domain method blocks for computed results",
+      "description": "LJMethodBlock / lj_method_block_for and FourierMethodBlock / fourier_method_block_for record what was computed (potential form, cutoff handling, algorithm, normalization, frequency-axis applicability) with every non-applicable field marked applicable: false and a reason, never omitted or fabricated.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.lj_method_block_for",
+      "evidence": "python/scl/method_block.py"
+    },
+    {
+      "capabilityId": "ste_adapter.run_scl_specification",
+      "label": "Run an STE ExecutionSpecification on SCL",
+      "description": "run_scl_specification(spec, cli_path, timeout) is a drop-in runner for STE's SpecificationDispatcher (alternative to execution.gromacs). It splits the program descriptor 'ste.scl.<operation>.v1\\n<version line>\\n[backend]\\n<cpu|cuda>', runs scl_cli, recomputes output_identity and computation_identity with execution.commitments from bytes it holds, and returns STE's ExecutionResult with the same FAULT_* codes. Only this module imports STE.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.ste_adapter.run_scl_specification",
+      "evidence": "python/scl/ste_adapter.py; tests/test_ste_integration.py"
+    },
+    {
+      "capabilityId": "ste_adapter.build_specification",
+      "label": "Build an STE specification for an SCL operation",
+      "description": "build_lj_specification and build_fourier_specification assemble an ExecutionSpecification whose program folds the kernel descriptor, scl_cli version line and backend (two backends are two programs), whose configuration is the operation parameters and whose input_payload is the data. scl_version_line reads the version from the binary.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.ste_adapter.build_lj_specification",
+      "evidence": "python/scl/ste_adapter.py"
+    },
+    {
+      "capabilityId": "ste_adapter.interpret_result",
+      "label": "Interpret an SCL ExecutionResult as evidence-classed content",
+      "description": "interpret_lj_result(candidate, result) and interpret_fourier_result produce the semantic content mapping (evidence_class 'computed', typed Quantity values, method block) that the caller wraps into a DispatchedMeasurement for STE's own admission path. SCL never calls admission itself.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "scl.ste_adapter.interpret_lj_result",
+      "evidence": "python/scl/ste_adapter.py; docs/PHASE2_AUDIT.md"
+    },
+    {
+      "capabilityId": "contract.parameter_classes",
+      "label": "Participating, annotating and provenance parameter rules",
+      "description": "Every configuration field is participating (read by the mathematics; enters output and computation identity) or annotating (enters request identity only, e.g. sample spacing); noise matrices additionally carry a supplied|asserted provenance discriminant that participates. A guarded payload must have exactly one encoding per meaning and is refused when unused. Enforced registry-wide by tests/test_annotating_parameters.py and test_operation_registry_contract.py.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "doc",
+      "method": "contract",
+      "path": "docs/SCL_CONTRACT.md#6",
+      "evidence": "docs/SCL_CONTRACT.md; native/include/scl/operation.hpp; tests/test_annotating_parameters.py"
+    },
+    {
+      "capabilityId": "contract.reproducibility",
+      "label": "Scoped reproducibility claims",
+      "description": "Claimed and tested: bitwise reproducibility on the same binary, machine and backend (-fno-fast-math, no SIMD flags); numerical agreement of forces with the finite-difference energy gradient; semantic identity (same request => same identity). Not claimed: physical correspondence to a measurement, cross-machine or cross-compiler bitwise equality, CPU-CUDA agreement.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "doc",
+      "method": "contract",
+      "path": "docs/SCL_CONTRACT.md#7",
+      "evidence": "docs/SCL_CONTRACT.md; native/CMakeLists.txt; tests/test_numerical_validation.py"
+    },
+    {
+      "capabilityId": "build.cmake",
+      "label": "Build the native substrate",
+      "description": "cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release [-DSCL_WITH_CUDA=ON] && cmake --build native/build produces the scl_core static library and the scl_cli executable (requires nlohmann_json >= 3.9; CUDAToolkit when CUDA is on). ctest runs the native suites; python3 -m pytest tests/ builds native/ automatically if needed.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "cmake -S native -B native/build",
+      "evidence": "native/CMakeLists.txt; native/tests/CMakeLists.txt; README.md"
+    },
+    {
+      "capabilityId": "bench.run_benchmark",
+      "label": "Run the CPU performance baseline sweep",
+      "description": "python3 scripts/run_benchmark.py [--out results.json] sweeps particle count N and records wall_clock_seconds, native_compute_seconds, ste_overhead_seconds and payload sizes per run, to establish the measured cost of the process boundary rather than optimize it.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 scripts/run_benchmark.py",
+      "evidence": "scripts/run_benchmark.py; docs/PHASE1_AUDIT.md",
+      "cost": "free (CPU minutes)"
+    },
+    {
+      "capabilityId": "native.kalman_validate",
+      "label": "Run the pre-registered Kalman validation scenarios",
+      "description": "kalman_validate <seed> <steps> runs the pre-registered scenarios and prints statistics only; it applies no thresholds. The thresholds live in architecture/kalman_validation_preregistration.yaml and are applied by tests/test_kalman_validation.py, so the judgement cannot be adjusted in the commit that makes it pass.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "method": "run",
+      "path": "native/build/tests/kalman_validate",
+      "evidence": "native/tests/kalman_validate.cpp; architecture/kalman_validation_preregistration.yaml; tests/test_kalman_validation.py"
+    },
+    {
+      "capabilityId": "exchange.scl_requirements",
+      "label": "Generate the SCL requirements artifact",
+      "description": "build_scl_requirements.py traces the substrate inventory from executable code and emits architecture/exchange/scl_requirements.yaml with a sha256 sidecar: measured facts and per-workload requirements addressed to the acquisition layer (daq), CUDA library presence, and core-vocabulary candidates. Deliberately contains no ranking or workload selection.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 architecture/exchange/build_scl_requirements.py",
+      "evidence": "architecture/exchange/build_scl_requirements.py; architecture/exchange/scl_requirements.yaml; architecture/exchange/build_scl_contract_clauses.py"
+    },
+    {
+      "capabilityId": "exchange.canonical_yaml",
+      "label": "Canonical YAML serializer shared with the acquisition layer",
+      "description": "canonical_yaml.py fixes the exchange encoding: YAML 1.2 block style, keys sorted at every level, shortest round-trip floats with explicit exponent sign, UTF-8/LF, sha256 over the serialized bytes referenced as sha256:<hex>; canonicalization_fixture.yaml is the shared agreement fixture held byte-identical in both repositories.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "method": "call",
+      "path": "architecture/exchange/canonical_yaml.py",
+      "evidence": "architecture/exchange/canonical_yaml.py; architecture/exchange/canonicalization_fixture.yaml; tests/test_shared_serializer_pin.py"
+    },
+    {
+      "capabilityId": "exchange.verify_pair_landed",
+      "label": "Verify a coordinated reissue landed in both repositories",
+      "description": "python3 architecture/exchange/verify_pair_landed.py <repo-a> <repo-b> asks the remotes, not the locals: exit 0 only if both branches are in sync with their remotes and every shared file (serializer, fixture, proof_integrity.yaml) is byte-identical across the compute and acquisition repositories.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "method": "run",
+      "path": "python3 architecture/exchange/verify_pair_landed.py",
+      "evidence": "architecture/exchange/verify_pair_landed.py; architecture/proof_integrity.yaml"
+    },
+    {
+      "capabilityId": "exchange.joint_workload_decision",
+      "label": "Joint workload decision record",
+      "description": "architecture/decisions/2026-08-26-joint-workload-decision.yaml binds, by sha256, the measured SCL requirements and DAQ capabilities artifacts to the decision to build least_squares first (entry point of the least_squares -> linear algebra -> Kalman -> PCA chain), with authorship provenance disclosed and obligations recorded; it must be reissued, not edited, if either input changes.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "method": "yaml",
+      "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml",
+      "evidence": "architecture/decisions/2026-08-26-joint-workload-decision.yaml; tests/test_joint_workload_decision.py"
+    },
+    {
+      "capabilityId": "exchange.invariant_register_mirror",
+      "label": "Held copies of the cross-repository register and STE/DAQ artifacts",
+      "description": "architecture/exchange holds the derived invariant_register.yaml, a byte-identical mirror of daq_requirement_response.yaml, and ste_invariants.yaml (a reconstruction, explicitly not STE's own statement), each with sha256 sidecars, so SCL's binding to core@1.0.0 in extends_only mode is auditable from this repository alone.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "method": "yaml",
+      "path": "architecture/exchange/",
+      "evidence": "architecture/exchange/invariant_register.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/ste_invariants.yaml; tests/test_exchange_artifact.py"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Scientific-Compute-Layer-SCL-",
+    "domain": "scientific",
+    "maturity": "v0",
+    "language": "C++17, CUDA, Python",
+    "framework": "CMake, nlohmann_json, CUDA 12 toolkit (optional), stdlib Python >=3.10 (zero dependencies)",
+    "exposure": "subprocess CLI (scl_cli, JSON stdin/stdout) and python package scl",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-29T23:21:01Z",
+    "capability_count": 30,
+    "package_version": "0.1.0",
+    "binary_version": "scl-cli/0.1.0",
+    "operations": "lj_pairwise_energy_forces, fourier_transform_1d, least_squares, kalman_filter_linear",
+    "backends": "cpu (validated), cuda (compiled and linked, never GPU-executed)",
+    "core_binding": "extends core@1.0.0 (extends_only)",
+    "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far"
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "scientific-compute-layer--supplies_context_to--scientific-transformer-engine",
+      "targetNodeId": "scientific-transformer-engine",
+      "kind": "supplies_context_to",
+      "description": "Computed results flow from SCL into STE: scl.ste_adapter.run_scl_specification returns STE's ExecutionResult at the SpecificationDispatcher runner seam, and interpret_*_result shapes evidence-classed 'computed' content that the caller hands to STE's own admission path. Confirmed by code and by the no-mock integration suite against a real STE checkout.",
+      "evidence": "python/scl/ste_adapter.py; tests/test_ste_integration.py; tests/test_phase2_evidence_conformance.py"
+    },
+    {
+      "relationId": "scientific-compute-layer--depends_on--scientific-transformer-engine",
+      "targetNodeId": "scientific-transformer-engine",
+      "kind": "depends_on",
+      "description": "Only in the integrated configuration: scl.ste_adapter imports execution.commitments, execution.engine and execution.specification from an STE checkout (STE_REPO), and the exchange artifacts extend STE's core@1.0.0. The standalone path (import scl) has zero STE dependency, proven in a fresh interpreter by tests/test_standalone_boundary.py. Confirmed by code.",
+      "evidence": "python/scl/ste_adapter.py; tests/conftest.py; tests/test_standalone_boundary.py; docs/SCL_STANDALONE_BOUNDARY.md"
+    },
+    {
+      "relationId": "scientific-compute-layer--supplies_context_to--data-acquisition-channel",
+      "targetNodeId": "data-acquisition-channel",
+      "kind": "supplies_context_to",
+      "description": "SCL publishes its measured requirements per workload (stable variable identity, missing-value semantics, measurement-noise provenance) to the acquisition layer through the requirement/capability exchange, and holds the shared serializer, fixture and proof_integrity.yaml byte-identical with that repository. Inferred from exchange artifacts and verify_pair_landed; there is no code call path between the two.",
+      "evidence": "architecture/exchange/scl_requirements.yaml; architecture/exchange/daq_requirement_response.yaml; architecture/exchange/verify_pair_landed.py; architecture/proof_integrity.yaml"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["native/build/scl_cli", "python/scl/client.py (run_scl_request)", "python/scl/ste_adapter.py (run_scl_specification)", "scripts/run_benchmark.py", "native/build/tests/kalman_validate"],
+      "run": ["cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release && cmake --build native/build", "ctest --test-dir native/build --output-on-failure", "pip install pytest && python3 -m pytest tests/ -v", "cmake -S native -B native/build_cuda -DCMAKE_BUILD_TYPE=Release -DSCL_WITH_CUDA=ON"],
+      "ports": [],
+      "container": false
+    },
+    "contracts": [
+      { "name": "SCL wire contract", "path": "docs/SCL_CONTRACT.md", "summary": "scl_cli JSON request/response, per-operation byte layouts, fault vocabulary, STE dimension mapping, identity rules (participating/annotating/provenance), scoped reproducibility claims." },
+      { "name": "Operation contract", "path": "native/include/scl/operation.hpp", "summary": "What every registered scl::Operation must satisfy (clauses enforced registry-wide by tests/test_operation_registry_contract.py)." },
+      { "name": "Fault vocabulary", "path": "native/include/scl/protocol.hpp", "summary": "exit_code 0/10/11/12/13/14 and process exit 0/1." },
+      { "name": "Standalone boundary", "path": "docs/SCL_STANDALONE_BOUNDARY.md", "summary": "SCL Core Independence invariant: only ste_adapter.py imports STE; proven in a fresh interpreter." },
+      { "name": "Exchange canonicalization", "path": "architecture/exchange/canonical_yaml.py", "summary": "Canonical YAML + sha256 sidecar shared with the acquisition layer." }
+    ],
+    "resources": [
+      { "name": "Exchange artifacts", "classification": "public", "path": "architecture/exchange/", "description": "scl_requirements, scl_contract_clauses, invariant_register, daq_requirement_response mirror, ste_invariants reconstruction, canonicalization fixture, each with sha256 sidecar." },
+      { "name": "Joint workload decision", "classification": "public", "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml", "description": "Hash-bound decision to build least_squares first." },
+      { "name": "Kalman pre-registration", "classification": "public", "path": "architecture/kalman_validation_preregistration.yaml", "description": "Validation thresholds fixed before the implementation existed." },
+      { "name": "Audit reports", "classification": "public", "path": "docs/PHASE1_AUDIT.md", "description": "Phase 1-4 audits: numerical validation, failure paths, CPU performance, STE evidence conformance, CUDA build status." }
+    ],
+    "external_services": [
+      { "name": "CUDA toolkit / cuFFT / cuBLAS / cuSOLVER", "domain": "local libraries", "purpose": "Optional CUDA backend build; presence is a build fact only, no device visible in any session so far.", "auth": "none" },
+      { "name": "Scientific Transformer Engine checkout", "domain": "local path via STE_REPO", "purpose": "Integrated configuration and the no-mock integration tests; skipped cleanly when absent.", "auth": "none" }
+    ],
+    "secrets_env": ["STE_REPO"],
+    "health": { "method": "cli", "endpoint": "native/build/scl_cli --version" },
+    "spatial": "No geography: particle positions and lattice coordinates are dimensionless model coordinates, never places.",
+    "temporal": "Measurement streams for the Kalman operation are ordered sequences and Fourier sample spacing is an optional annotating parameter; SCL keeps no clocks, timestamps or history of its own.",
+    "open_questions": [
+      "The CUDA backend has never executed on a GPU; tests/test_cpu_cuda_equivalence.py is the single harness left to run when an RTX 2080 Super Max-Q-visible environment exists.",
+      "The acquisition layer is called data-acquisition-channel-daq in SCL docs and notations-acquisition-channel in STE; confirm the catalog id data-acquisition-channel refers to that repository.",
+      "SCL owns no comparison layer: results with equal computation_identity but different annotating parameters (e.g. sample spacing) are not spectrally comparable, and nothing yet prevents a consumer from comparing them.",
+      "STE_REPO is a path, not a secret; it is listed under secrets_env only because it is the one environment variable the test suite reads."
+    ]
+  }
+}

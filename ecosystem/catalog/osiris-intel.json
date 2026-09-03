@@ -1,0 +1,200 @@
+{
+  "nodeId": "osiris-intel",
+  "name": "OSIRIS Intelligence Layer (payload-intel)",
+  "kind": "api",
+  "description": "A small Express 5 service (intel/server.js, port 4000, container payload-intel) that acts as the ontology brain other Payload services query through GET /resolve: it ingests the OpenSanctions OFAC SDN CSV into an in-memory alias-normalised index refreshed every 24 h, queries Wikidata SPARQL and entity search on demand behind an LRU cache, and enriches IP addresses through ip-api.com and RIPE Stat, returning every answer as a typed {nodes, links} graph with SANCTIONS MATCH edges. Outbound requests are restricted to an allowlist of five domains, SPARQL inputs are sanitized, and each client IP is limited to 30 requests per minute. It holds no canonical state and writes nothing durable; the index is rebuilt at boot and a failed refresh keeps the stale copy. It must never become a person-profiling service: the person and abuse-contact paths it still serves sit in tension with the terminal's collection policy and are flagged for review.",
+  "capabilities": [
+    {
+      "capabilityId": "intel.health",
+      "label": "Service health",
+      "description": "GET /health returns status, sanctions_entries, sanctions_loaded_at, wikidata_cache_size and uptime_seconds; used by the container HEALTHCHECK every 30 s.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/health",
+      "evidence": "intel/server.js; intel/Dockerfile"
+    },
+    {
+      "capabilityId": "intel.resolve.aircraft",
+      "label": "Resolve an aircraft callsign",
+      "description": "GET /resolve?type=aircraft&id=<callsign>[&registration&model&icao24]: decodes the ICAO airline prefix via Wikidata (P230) into operator, HQ country, CEO and parent org; maps the registration prefix to a country; attaches the model; screens callsign, airline and registration against the OFAC SDN index. Returns {nodes[{id,label,type,properties}], links[{source,target,label}], entity, source, sanctions_index_size, timestamp}; cached 24 h in an LRU of 10,000 keys; Cache-Control s-maxage=3600. Rate-limited 30/min per client IP; id sanitized, 2-200 chars.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=aircraft",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.resolve.vessel",
+      "label": "Resolve a vessel by IMO or name",
+      "description": "GET /resolve?type=vessel&id=<imo|name>: Wikidata SPARQL by IMO number (P458) or English label under ship subclasses, yielding OWNED BY, OPERATED BY and FLAG STATE links, plus OFAC SDN cross-reference. Returns {nodes[{id,label,type,properties}], links[{source,target,label}], entity, source, sanctions_index_size, timestamp}; cached 24 h in an LRU of 10,000 keys; Cache-Control s-maxage=3600. Rate-limited 30/min per client IP; id sanitized, 2-200 chars.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=vessel",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.resolve.company",
+      "label": "Resolve a company",
+      "description": "GET /resolve?type=company&id=<name>: Wikidata entity search to a QID then SPARQL for HEADQUARTERED country, PARENT ORG and CEO, plus OFAC SDN cross-reference of the company name. Returns {nodes[{id,label,type,properties}], links[{source,target,label}], entity, source, sanctions_index_size, timestamp}; cached 24 h in an LRU of 10,000 keys; Cache-Control s-maxage=3600. Rate-limited 30/min per client IP; id sanitized, 2-200 chars.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=company",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.resolve.person",
+      "label": "Resolve a natural person (policy tension)",
+      "description": "GET /resolve?type=person&id=<name>: Wikidata search then SPARQL for NATIONALITY, EMPLOYER and POSITION HELD, plus OFAC SDN cross-reference. This path returns natural-person graphs, which the terminal's collection policy explicitly refuses on its own sanctions route; it is reachable through /api/entity/expand and should be reviewed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=person",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.resolve.ip",
+      "label": "Resolve an IP address",
+      "description": "GET /resolve?type=ip&id=<address>: ip-api.com geolocation, ISP, org, ASN and proxy/hosting/mobile flags (HOSTED_BY, ASN, LOCATED_IN, GEOLOCATED links); RIPE Stat WHOIS netname, abuse contacts (returned as person nodes) and network-info prefix/ASNs; ISP and country screened against OFAC SDN. Returns {nodes[{id,label,type,properties}], links[{source,target,label}], entity, source, sanctions_index_size, timestamp}; cached 24 h in an LRU of 10,000 keys; Cache-Control s-maxage=3600. Rate-limited 30/min per client IP; id sanitized, 2-200 chars.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=ip",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.resolve.country",
+      "label": "Resolve a country",
+      "description": "GET /resolve?type=country&id=<name>: Wikidata head of state, capital, population, GDP, TLD, calling code, memberships (UN, NATO, EU...) and neighbours as typed nodes and links, plus OFAC SDN programme matches on the country name. Returns {nodes[{id,label,type,properties}], links[{source,target,label}], entity, source, sanctions_index_size, timestamp}; cached 24 h in an LRU of 10,000 keys; Cache-Control s-maxage=3600. Rate-limited 30/min per client IP; id sanitized, 2-200 chars.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve?type=country",
+      "evidence": "intel/server.js"
+    },
+    {
+      "capabilityId": "intel.graph.contract",
+      "label": "Ontology graph wire contract",
+      "description": "Every resolve response is a small typed graph: node types aircraft, vessel, company, person, ip, country, event, sanction; link labels such as OPERATED BY, OWNED BY, FLAG STATE, HEADQUARTERED, PARENT ORG, CEO, HOSTED_BY, ASN, SANCTIONS MATCH. Sanction nodes carry schema, countries, programs, aliases and sanctioned=true. The terminal renders it with react-force-graph-2d.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "contract",
+      "evidence": "intel/server.js; src/app/api/entity/expand/route.ts"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Payload-Terminal-V0",
+    "domain": "intelligence",
+    "maturity": "prototype",
+    "language": "JavaScript",
+    "framework": "Express 5 (Node 22)",
+    "exposure": "docker",
+    "upstream": "simplifaisoul/osiris (MIT fork)",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-01T06:28:31Z",
+    "default_port": 4000,
+    "subdirectory": "intel/",
+    "compose_service": "payload-intel",
+    "capability_count": 8
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "osiris-intel--supplies_context_to--payload-terminal",
+      "targetNodeId": "payload-terminal",
+      "kind": "supplies_context_to",
+      "description": "Confirmed by code: the terminal's /api/entity/expand forwards type/id (and aircraft registration, model, icao24) to this service's GET /resolve at INTEL_URL and returns the ontology graph to the map's entity panel; docker-compose.yml runs both on the same network.",
+      "evidence": "intel/server.js; src/app/api/entity/expand/route.ts; docker-compose.yml"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "intel/server.js"
+      ],
+      "run": [
+        "cd intel && npm ci --omit=dev",
+        "INTEL_PORT=4000 node server.js",
+        "docker compose up -d payload-intel"
+      ],
+      "ports": [
+        4000
+      ],
+      "container": true
+    },
+    "contracts": [
+      {
+        "name": "Resolve request",
+        "path": "intel/server.js",
+        "summary": "GET /resolve?type=aircraft|vessel|company|person|ip|country&id=<2-200 chars>[&registration&model&icao24]; 400 on bad type/id, 429 on rate limit, 500 {error, nodes:[], links:[]} on failure."
+      },
+      {
+        "name": "Graph response",
+        "path": "intel/server.js",
+        "summary": "{nodes, links, entity:{type,id}, source:\"OSIRIS Intelligence Layer\", sanctions_index_size, wikidata_cache_hits, timestamp}."
+      }
+    ],
+    "resources": [
+      {
+        "name": "OFAC SDN in-memory index",
+        "classification": "public",
+        "path": "(runtime memory; source data.opensanctions.org/datasets/latest/us_ofac_sdn/targets.simple.csv)",
+        "description": "Entries, aliases, countries, programs; refreshed every 24 h; stale copy kept on refresh failure."
+      },
+      {
+        "name": "Wikidata LRU cache",
+        "classification": "internal",
+        "path": "(runtime memory)",
+        "description": "Up to 10,000 resolved graphs, 24 h TTL, per process."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "OpenSanctions",
+        "domain": "data.opensanctions.org",
+        "purpose": "OFAC SDN bulk CSV",
+        "auth": "none"
+      },
+      {
+        "name": "Wikidata SPARQL and wbsearchentities",
+        "domain": "query.wikidata.org; www.wikidata.org",
+        "purpose": "Entity ontology (operators, owners, flags, CEOs, countries)",
+        "auth": "none (User-Agent OSIRIS-Intel/1.0)"
+      },
+      {
+        "name": "ip-api.com",
+        "domain": "ip-api.com",
+        "purpose": "IP geolocation, ISP, ASN, proxy/hosting flags (plain HTTP)",
+        "auth": "none"
+      },
+      {
+        "name": "RIPE Stat",
+        "domain": "stat.ripe.net",
+        "purpose": "WHOIS, abuse contacts, network info",
+        "auth": "none"
+      }
+    ],
+    "secrets_env": [],
+    "health": {
+      "method": "http",
+      "endpoint": "/health"
+    },
+    "spatial": "Carries coordinates only incidentally (ip-api city lat/lon on GEOLOCATED nodes; country nodes by name); no location of its own.",
+    "temporal": "sanctions_loaded_at and per-response timestamp; SDN first_seen per entry; no historical or as-of querying.",
+    "open_questions": [
+      "Should the person resolver and the abuse-contact person nodes be removed to match the terminal's collection policy, or is the intel layer intentionally exempt?",
+      "ip-api.com is called over plain HTTP; is that acceptable for the deployment posture?",
+      "The service has no tests, no authentication and no outbound rate limiting toward Wikidata beyond caching; is it meant to stay a separate container or fold into the terminal?",
+      "The Wikidata User-Agent still names osirisai.live; should it carry the PayloadTerminal identity?"
+    ]
+  }
+}

@@ -1,0 +1,836 @@
+{
+  "nodeId": "osiris-dashboard",
+  "name": "OSIRIS Palantir Dashboard",
+  "kind": "operator_surface",
+  "description": "Fork of simplifaisoul/osiris (Open Source Intelligence & Reconnaissance Integrated System): a Next.js 16 + MapLibre GL situational-awareness dashboard that aggregates live flights, AIS maritime, 17k public CCTV cameras, USGS/FIRMS/EONET hazards, GDELT/GDACS events, conflict zones, markets, cyber threats and a RECON toolkit behind roughly 70 /api routes, with Gemini-backed briefings and a Polybolos SDK ingest/SSE surface. It is the structural ancestor of Payload Terminal (same intel/, engine/, src/ layout, same intel/server.js ontology service and bytecode-only engine/ forecaster): Payload Terminal removed the person-targeting and scanning routes and added its physical-economy state; this fork keeps the full upstream surface. In the Notations Universe it is a reference operator surface and a source of OSINT layer designs, not a state holder: it persists nothing durable (in-memory caches and SDK store only) and must not become the canonical intelligence record or a person-profiling service.",
+  "capabilities": [
+    {
+      "capabilityId": "ops.health",
+      "label": "Liveness probe",
+      "description": "GET /api/health returns status, platform, version, uptime and a static list of principal endpoints; never touches an upstream feed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/health",
+      "evidence": "src/app/api/health/route.ts",
+      "cost": "free",
+      "latency": "~5 ms"
+    },
+    {
+      "capabilityId": "ops.stats",
+      "label": "Platform statistics",
+      "description": "GET /api/stats aggregates entity counts across the live layers for the HUD status bar.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/stats",
+      "evidence": "src/app/api/stats/route.ts; src/app/docs/apiCatalog.ts",
+      "cost": "free"
+    },
+    {
+      "capabilityId": "ops.tiles.proxy",
+      "label": "Basemap tile proxy",
+      "description": "GET /api/proxy-tiles is a same-origin raster tile proxy for basemaps that block cross-origin reads; an nginx cache container (osiris-cache, :8080) fronts it in docker-compose.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/proxy-tiles",
+      "evidence": "src/app/api/proxy-tiles/route.ts; nginx/nginx.conf; docker-compose.yml"
+    },
+    {
+      "capabilityId": "ops.docs",
+      "label": "Interactive API docs",
+      "description": "The /docs page renders src/app/docs/apiCatalog.ts, a hand-maintained machine-readable catalog of every public /api route with params, returns, env and auth flags, plus a command palette.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/docs",
+      "evidence": "src/app/docs/page.tsx; src/app/docs/apiCatalog.ts"
+    },
+    {
+      "capabilityId": "ui.dashboard",
+      "label": "OSIRIS map dashboard",
+      "description": "The principal operator view: a MapLibre GL globe with 16 toggleable intelligence layers (flights, maritime, CCTV, seismic, fires, news, weather, space, cyber, conflict), HUD panels, a RECON toolkit and an AI briefing panel. Progressive per-layer loading.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/",
+      "evidence": "src/app/page.tsx; src/components; README.md"
+    },
+    {
+      "capabilityId": "feeds.flights",
+      "label": "Live ADS-B aircraft",
+      "description": "GET /api/flights returns live aircraft bucketed by class (commercial, private, jets, military) from adsb.lol / OpenSky; optional OpenSky OAuth2 raises rate limits.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/flights",
+      "evidence": "src/app/api/flights/route.ts",
+      "data_domain": "aviation",
+      "provenance": "adsb.lol / OpenSky Network live",
+      "cost": "rate-limited upstream"
+    },
+    {
+      "capabilityId": "feeds.aircraft.detail",
+      "label": "Aircraft identity and flown track",
+      "description": "GET /api/aircraft resolves an icao24 to registration, type code, model and operator (adsb.lol readsb traces + adsbdb) and returns the actual flown trace rather than a straight line.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/aircraft",
+      "evidence": "src/app/api/aircraft/route.ts",
+      "data_domain": "aviation"
+    },
+    {
+      "capabilityId": "feeds.flight_route",
+      "label": "Flight route resolution",
+      "description": "GET /api/flight-route races ADSBDB, HexDB and airplanes.live to map a callsign/ICAO24 to origin and destination airports; 30-min hit cache, per-source cooldown on 429.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/flight-route",
+      "evidence": "src/app/api/flight-route/route.ts",
+      "data_domain": "aviation"
+    },
+    {
+      "capabilityId": "feeds.satellites",
+      "label": "Tracked satellites and orbit propagation",
+      "description": "GET /api/satellites returns TLE-derived positions for tracked orbital objects (satellite.js SGP4); GET /api/satellites/orbit returns a propagated ground track for one object.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/satellites",
+      "evidence": "src/app/api/satellites/route.ts; src/app/api/satellites/orbit/route.ts; src/lib/orbit.ts",
+      "data_domain": "space"
+    },
+    {
+      "capabilityId": "feeds.space_weather",
+      "label": "Space weather",
+      "description": "GET /api/space-weather returns geomagnetic conditions and solar flare activity from NOAA SWPC.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/space-weather",
+      "evidence": "src/app/api/space-weather/route.ts",
+      "data_domain": "space",
+      "provenance": "NOAA SWPC"
+    },
+    {
+      "capabilityId": "feeds.earthquakes",
+      "label": "USGS earthquakes",
+      "description": "GET /api/earthquakes returns recent M2.5+ seismic events from the USGS GeoJSON feed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/earthquakes",
+      "evidence": "src/app/api/earthquakes/route.ts",
+      "data_domain": "seismic",
+      "provenance": "USGS"
+    },
+    {
+      "capabilityId": "feeds.fires",
+      "label": "NASA FIRMS active fires",
+      "description": "GET /api/fires returns active wildfire hotspots from the keyless NASA FIRMS CSV (FIRMS_API_KEY optional for the per-area API).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/fires",
+      "evidence": "src/app/api/fires/route.ts",
+      "data_domain": "environment",
+      "provenance": "NASA FIRMS"
+    },
+    {
+      "capabilityId": "feeds.weather",
+      "label": "NASA EONET natural events",
+      "description": "GET /api/weather returns severe weather and natural events from NASA EONET; GET /api/air-quality returns ground-station air quality readings.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/weather",
+      "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts",
+      "data_domain": "environment"
+    },
+    {
+      "capabilityId": "feeds.radar",
+      "label": "Internet outages (IODA)",
+      "description": "GET /api/radar returns country-level internet outage events from Georgia Tech IODA; GET /api/cloudflare-radar adds Cloudflare Radar outages and attack origins when CLOUDFLARE_API_TOKEN is set (503 otherwise).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar",
+      "evidence": "src/app/api/radar/route.ts; src/app/api/cloudflare-radar/route.ts",
+      "data_domain": "network-health"
+    },
+    {
+      "capabilityId": "feeds.sentinel",
+      "label": "Sentinel SAR scenes",
+      "description": "GET /api/sentinel lists Sentinel-1 SAR scenes covering a point via the Element84 Earth Search STAC catalog with Copernicus fallback.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/sentinel",
+      "evidence": "src/app/api/sentinel/route.ts",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "feeds.conflicts",
+      "label": "Conflict zones and frontlines",
+      "description": "GET /api/conflicts returns 13 static conflict zones joined with live incident reporting; GET /api/frontlines returns frontline geometry for active theatres.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/conflicts",
+      "evidence": "src/app/api/conflicts/route.ts; src/app/api/frontlines/route.ts",
+      "data_domain": "conflict"
+    },
+    {
+      "capabilityId": "feeds.gdelt",
+      "label": "GDACS alerts and GDELT events",
+      "description": "GET /api/gdelt (despite the name) returns GDACS disaster alerts; GET /api/gdelt-events returns geocoded GDELT 2.0 event records (ActionGeo, quad-class filter, limit up to 2000).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/gdelt-events",
+      "evidence": "src/app/api/gdelt/route.ts; src/app/api/gdelt-events/route.ts; src/lib/gdeltEvents.ts",
+      "data_domain": "events"
+    },
+    {
+      "capabilityId": "feeds.country_risk",
+      "label": "Country risk scoring",
+      "description": "GET /api/country-risk returns per-country risk scores alongside market session state.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/country-risk",
+      "evidence": "src/app/api/country-risk/route.ts",
+      "data_domain": "risk"
+    },
+    {
+      "capabilityId": "feeds.region_dossier",
+      "label": "Region dossier",
+      "description": "GET /api/region-dossier composes a country/region intelligence summary for a map coordinate (the panel behind a map right-click).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/region-dossier",
+      "evidence": "src/app/api/region-dossier/route.ts",
+      "data_domain": "risk"
+    },
+    {
+      "capabilityId": "feeds.news",
+      "label": "OSINT news and Telegram feed",
+      "description": "GET /api/news returns aggregated OSINT items scraped from public Telegram channel previews (OSIRIS_TELEGRAM_CHANNELS) with RSS fallback; GET /api/live-news lists 24/7 broadcast streams grouped by category.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/news",
+      "evidence": "src/app/api/news/route.ts; src/app/api/live-news/route.ts",
+      "data_domain": "news"
+    },
+    {
+      "capabilityId": "feeds.markets",
+      "label": "Markets, price history and crypto ticker",
+      "description": "GET /api/markets returns defence-sector equities and commodities; GET /api/markets/history returns OHLC candles for one symbol per range; GET /api/crypto returns ticker spot prices.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/markets",
+      "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts; src/app/api/crypto/route.ts",
+      "data_domain": "markets"
+    },
+    {
+      "capabilityId": "feeds.scm_suppliers",
+      "label": "Supply-chain supplier risk overlay",
+      "description": "GET /api/scm-suppliers intersects live threats (earthquakes, fires, conflicts) with static Tier 1/2 supplier coordinates and flags criticality.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/scm-suppliers",
+      "evidence": "src/app/api/scm-suppliers/route.ts",
+      "data_domain": "supply-chain"
+    },
+    {
+      "capabilityId": "feeds.cctv",
+      "label": "Public CCTV networks",
+      "description": "GET /api/cctv lists 17,000+ public cameras filtered by region or radius; /api/cctv/stream-status probes reachability, /api/cctv/proxy is a same-origin stream proxy (SSRF-guarded), /api/cctv/resolve turns SkylineWebcams and YouTube /live links into embeddable streams.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/cctv",
+      "evidence": "src/app/api/cctv/route.ts; src/app/api/cctv/stream-status/route.ts; src/app/api/cctv/proxy/route.ts; src/app/api/cctv/resolve/route.ts; src/lib/camera-feed.ts",
+      "data_domain": "cctv"
+    },
+    {
+      "capabilityId": "feeds.infrastructure",
+      "label": "Strategic infrastructure",
+      "description": "GET /api/infrastructure returns fixed strategic infrastructure such as nuclear power plants and facilities worldwide.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/infrastructure",
+      "evidence": "src/app/api/infrastructure/route.ts",
+      "data_domain": "infrastructure"
+    },
+    {
+      "capabilityId": "feeds.maritime",
+      "label": "Ports, chokepoints and AIS vessels",
+      "description": "GET /api/maritime returns 39 ports, 10 chokepoints and vessel positions (aisstream.io when AIS_API_KEY is set).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/maritime",
+      "evidence": "src/app/api/maritime/route.ts",
+      "data_domain": "maritime"
+    },
+    {
+      "capabilityId": "feeds.arcgis",
+      "label": "ArcGIS public feature services",
+      "description": "GET /api/arcgis searches ArcGIS Online for public Feature Services (?q&bbox) or runs a spatial query against one (?service&bbox) and returns GeoJSON.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/arcgis",
+      "evidence": "src/app/api/arcgis/route.ts",
+      "data_domain": "gis"
+    },
+    {
+      "capabilityId": "feeds.cyber",
+      "label": "Cyber threats, attacks and malware",
+      "description": "GET /api/cyber-threats returns recent CVE disclosures with rollups; /api/cyber-attacks returns observed attack events for the threat map; /api/malware returns indicators from public trackers.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/cyber-threats",
+      "evidence": "src/app/api/cyber-threats/route.ts; src/app/api/cyber-attacks/route.ts; src/app/api/malware/route.ts",
+      "data_domain": "cyber"
+    },
+    {
+      "capabilityId": "geo.locate",
+      "label": "Client IP geolocation",
+      "description": "GET /api/geo geolocates the calling client by IP to centre the map.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/geo",
+      "evidence": "src/app/api/geo/route.ts"
+    },
+    {
+      "capabilityId": "geo.search",
+      "label": "Location search",
+      "description": "GET /api/geosearch merges Photon autocomplete with Nominatim for the route planner.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/geosearch",
+      "evidence": "src/app/api/geosearch/route.ts"
+    },
+    {
+      "capabilityId": "geo.directions",
+      "label": "Turn-by-turn directions",
+      "description": "GET /api/directions routes via Valhalla with OSRM fallback (auto/bicycle/pedestrian) and normalises both to one shape.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/directions",
+      "evidence": "src/app/api/directions/route.ts"
+    },
+    {
+      "capabilityId": "osint.infrastructure_recon",
+      "label": "Domain and network reconnaissance",
+      "description": "GET /api/osint/{dns,whois,certs,ip,bgp,mac,shodan,threats,cve}: DNS records, WHOIS, certificate-transparency subdomains, IP geolocation/ASN, BGP prefixes, MAC vendor, Shodan exposure, indicator reputation and full NVD CVE records. Keyless, rate-limited per client IP.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/dns",
+      "evidence": "src/app/api/osint/dns/route.ts; src/app/api/osint/whois/route.ts; src/app/api/osint/certs/route.ts; src/app/api/osint/ip/route.ts; src/app/api/osint/bgp/route.ts; src/app/api/osint/mac/route.ts; src/app/api/osint/shodan/route.ts; src/app/api/osint/threats/route.ts; src/app/api/osint/cve/route.ts",
+      "data_domain": "network-recon"
+    },
+    {
+      "capabilityId": "osint.person_recon",
+      "label": "Person-targeting OSINT (username, phone, leaks, GitHub, infostealer)",
+      "description": "GET /api/osint/{username,phone,leaks,github,hudsonrock}: Sherlock-style username enumeration, E.164 phone classification, breach-corpus checks, GitHub profile metadata and Hudson Rock infostealer lookups. These are the capabilities Payload Terminal deleted; they remain here because this fork tracks upstream OSIRIS.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/username",
+      "evidence": "src/app/api/osint/username/route.ts; src/app/api/osint/phone/route.ts; src/app/api/osint/leaks/route.ts; src/app/api/osint/github/route.ts; src/app/api/osint/hudsonrock/route.ts; src/lib/sherlock.ts",
+      "data_domain": "person-intelligence"
+    },
+    {
+      "capabilityId": "osint.sanctions",
+      "label": "OFAC SDN sanctions search",
+      "description": "GET /api/osint/sanctions searches the OpenSanctions mirror of the US OFAC SDN list for persons, organisations and vessels.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/sanctions",
+      "evidence": "src/app/api/osint/sanctions/route.ts; src/lib/sanctions.ts",
+      "data_domain": "sanctions",
+      "provenance": "OpenSanctions us_ofac_sdn"
+    },
+    {
+      "capabilityId": "osint.crypto",
+      "label": "On-chain wallet intelligence",
+      "description": "GET /api/osint/crypto traces BTC/ETH/SOL wallets (balance, history, counterparties) via mempool.space, Blockscout and Solana RPC, screens against OFAC SDN and risk-scores; ?probe=1 reports which optional keys (ETHERSCAN_API_KEY, HELIUS_API_KEY) are active.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/crypto",
+      "evidence": "src/app/api/osint/crypto/route.ts",
+      "data_domain": "crypto"
+    },
+    {
+      "capabilityId": "osint.chain_daily",
+      "label": "Daily chain-threat brief",
+      "description": "GET /api/chain/daily?days= aggregates DefiLlama on-chain exploits, blockchain CVEs from NVD and newly designated OFAC wallets into a dated digest with per-section degradation flags.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/chain/daily",
+      "evidence": "src/app/api/chain/daily/route.ts; src/lib/chainFeeds.ts; src/lib/chainIntel.ts",
+      "data_domain": "crypto"
+    },
+    {
+      "capabilityId": "osint.sweep",
+      "label": "Host sweep",
+      "description": "GET /api/osint/sweep probes a single address or CIDR range for reachable hosts. Active network contact with third-party targets, so it is marked execute even though it writes no state.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/osint/sweep",
+      "evidence": "src/app/api/osint/sweep/route.ts",
+      "side_effects": "outbound probes to arbitrary hosts",
+      "data_domain": "network-recon"
+    },
+    {
+      "capabilityId": "osint.scanner",
+      "label": "RECON scanner backend proxy",
+      "description": "GET /api/scanner forwards quick/ssl/headers/rdns/subdomains/tech/whois/geoloc/vuln scans to the separate OSIRIS scanner backend at SCANNER_URL with SCANNER_KEY; returns 503 when unconfigured. Active scanning of a target is an external side effect.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/scanner",
+      "evidence": "src/app/api/scanner/route.ts; .env.example",
+      "side_effects": "active scans against the target host",
+      "data_domain": "network-recon"
+    },
+    {
+      "capabilityId": "entity.expand",
+      "label": "Ontology graph expansion",
+      "description": "GET /api/entity/expand?type&id forwards to the osiris-intel service (INTEL_URL, http://osiris-intel:4000/resolve in Docker) and returns a {nodes, links} graph with sanctions-match edges for the entity graph panel.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/entity/expand",
+      "evidence": "src/app/api/entity/expand/route.ts; intel/server.js; docker-compose.yml",
+      "data_domain": "ontology"
+    },
+    {
+      "capabilityId": "intel.resolve",
+      "label": "Bundled osiris-intel /resolve service",
+      "description": "intel/server.js (Express 5, port 4000) ships in this repo and resolves aircraft, vessel, company, person, IP and country entities against an in-memory OpenSanctions index plus Wikidata; GET /health exposes index counts. Same code the osiris-intel node catalogs from Payload-Terminal-V0.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/resolve",
+      "evidence": "intel/server.js; intel/Dockerfile; docker-compose.yml",
+      "data_domain": "ontology"
+    },
+    {
+      "capabilityId": "ai.analyze",
+      "label": "AI cross-feed analysis",
+      "description": "POST /api/ai/analyze correlates an intelligence context across feeds and returns a threat assessment via the Gemini engine.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/ai/analyze",
+      "evidence": "src/app/api/ai/analyze/route.ts; src/lib/ai-engine.ts",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "ai.briefing",
+      "label": "AI threat briefing",
+      "description": "POST /api/ai/briefing produces a structured daily-intelligence-style threat briefing from the supplied feed context.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/ai/briefing",
+      "evidence": "src/app/api/ai/briefing/route.ts; src/lib/ai-engine.ts",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "ai.overview",
+      "label": "AI overview highlights",
+      "description": "POST /api/ai/overview returns a terse 2-4 sentence situational read-out for the Alerts or Markets panel.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/ai/overview",
+      "evidence": "src/app/api/ai/overview/route.ts",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "ai.astra_geolocate",
+      "label": "ASTRA image geolocation proxy",
+      "description": "POST /api/astra forwards an uploaded image to a GPU geolocation server at ASTRA_GPU_URL (/geolocate) and returns its estimate. Triggers external compute.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/astra",
+      "evidence": "src/app/api/astra/route.ts; scratch/astra",
+      "cost": "GPU minutes",
+      "side_effects": "remote GPU inference"
+    },
+    {
+      "capabilityId": "sdk.ingest",
+      "label": "Polybolos SDK entity ingest",
+      "description": "POST /api/sdk/ingest accepts {source, apiKey, entities[]} in Polybolos format (e.g. translated Anduril Lattice tracks) and merges them into the in-memory common operating picture; fail-closed unless SDK_INGEST_KEY is set.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/sdk/ingest",
+      "evidence": "src/app/api/sdk/ingest/route.ts; src/lib/sdk/types.ts; src/lib/sdk/LatticeAdapter.ts",
+      "side_effects": "mutates in-memory SDK entity store"
+    },
+    {
+      "capabilityId": "sdk.ingest.status",
+      "label": "SDK ingest status",
+      "description": "GET /api/sdk/ingest reports how many external entities are held plus recent ingest history.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/sdk/ingest",
+      "evidence": "src/app/api/sdk/ingest/route.ts"
+    },
+    {
+      "capabilityId": "sdk.stream",
+      "label": "SDK entity SSE stream",
+      "description": "GET /api/sdk/stream opens a Server-Sent Events connection pushing normalised Polybolos entities as they arrive.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "sse",
+      "method": "GET",
+      "path": "/api/sdk/stream",
+      "evidence": "src/app/api/sdk/stream/route.ts"
+    },
+    {
+      "capabilityId": "ops.github_webhook",
+      "label": "GitHub webhook relay",
+      "description": "POST /api/github-webhook verifies X-Hub-Signature-256 with GITHUB_WEBHOOK_SECRET and forwards the event to GITHUB_WEBHOOK_FORWARD_URL; 503 when unconfigured.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "webhook",
+      "method": "POST",
+      "path": "/api/github-webhook",
+      "evidence": "src/app/api/github-webhook/route.ts",
+      "side_effects": "forwards payload to an external URL"
+    },
+    {
+      "capabilityId": "contract.polybolos_entity",
+      "label": "Polybolos entity wire contract",
+      "description": "The PolybolosEntity type (domain, entity type, threat level, classification, position) that /api/sdk/ingest accepts and /api/sdk/stream emits; LatticeAdapter shows the translation from Lattice tracks.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "evidence": "src/lib/sdk/types.ts; src/lib/sdk/PolybolosClient.ts; src/lib/sdk/LatticeAdapter.ts"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/osiris-palantir-dashboard",
+    "domain": "intelligence",
+    "maturity": "upstream-mirror",
+    "language": "TypeScript",
+    "framework": "Next.js 16 (App Router) + MapLibre GL + React 19",
+    "exposure": "docker",
+    "upstream": "simplifaisoul/osiris (MIT)",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-25T23:05:33Z",
+    "default_port": 3000,
+    "intel_port": 4000,
+    "license": "MIT",
+    "api_route_count": 70,
+    "capability_count": 48
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "osiris-dashboard--depends_on--osiris-intel",
+      "targetNodeId": "osiris-intel",
+      "kind": "depends_on",
+      "description": "Confirmed by code: /api/entity/expand is a thin proxy that forwards resolve requests to the intel service at INTEL_URL (http://osiris-intel:4000 in Docker, localhost:4000 in dev), and docker-compose.yml builds the osiris-intel container from ./intel. The intel/server.js in this repo is the same Express service the osiris-intel node catalogs from Payload-Terminal-V0/intel.",
+      "evidence": "src/app/api/entity/expand/route.ts; intel/server.js; intel/Dockerfile; docker-compose.yml"
+    },
+    {
+      "relationId": "osiris-dashboard--supplies_context_to--pythia-oracle-engine",
+      "targetNodeId": "pythia-oracle-engine",
+      "kind": "supplies_context_to",
+      "description": "Inferred from bytecode and the ledger: engine/__pycache__/osiris_intake.cpython-314.pyc and runs/ledger.jsonl (brief + forecast records) are present in this repo, matching the Pythia forecaster that reads OSIRIS /api/* feeds at OSIRIS_URL to build its world brief. No Python source is committed here, so the direction is inferred from module naming and the ledger contents rather than confirmed from readable code.",
+      "evidence": "engine/__pycache__/osiris_intake.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc; runs/ledger.jsonl"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "src/app/page.tsx",
+        "src/app/api/*/route.ts",
+        "intel/server.js"
+      ],
+      "run": [
+        "npm install && npm run dev",
+        "docker compose up -d",
+        "npm test"
+      ],
+      "ports": [
+        3000,
+        4000,
+        8080
+      ],
+      "container": true
+    },
+    "contracts": [
+      {
+        "name": "API catalog",
+        "path": "src/app/docs/apiCatalog.ts",
+        "summary": "Hand-maintained machine-readable description of every public /api route (params, returns, env, auth)."
+      },
+      {
+        "name": "Polybolos entity",
+        "path": "src/lib/sdk/types.ts",
+        "summary": "Entity schema accepted by /api/sdk/ingest and emitted by /api/sdk/stream."
+      },
+      {
+        "name": "Intel resolve graph",
+        "path": "intel/server.js",
+        "summary": "GET /resolve?type&id returns {nodes, links} with SANCTIONS MATCH edges."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Forecast ledger",
+        "classification": "internal",
+        "path": "runs/ledger.jsonl",
+        "description": "Append-only brief/forecast records written by the bytecode-only engine/ forecaster."
+      },
+      {
+        "name": "Engine bytecode",
+        "classification": "internal",
+        "path": "engine/__pycache__",
+        "description": "Python 3.14 .pyc files (osiris_intake, oracle, swarm, ledger, webhooks, server); no .py source committed."
+      },
+      {
+        "name": "Scratch experiments",
+        "classification": "internal",
+        "path": "scratch/",
+        "description": "astra and mast3r experiments, country scrapers, an injection tutorial page; not part of the served app."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "adsb.lol / OpenSky Network",
+        "domain": "adsb.lol, opensky-network.org",
+        "purpose": "live aircraft state vectors and traces",
+        "auth": "none (optional OpenSky OAuth2)"
+      },
+      {
+        "name": "ADSBDB / HexDB / airplanes.live",
+        "domain": "api.adsbdb.com, hexdb.io, airplanes.live",
+        "purpose": "callsign to route and aircraft identity",
+        "auth": "none"
+      },
+      {
+        "name": "USGS Earthquakes",
+        "domain": "earthquake.usgs.gov",
+        "purpose": "seismic events",
+        "auth": "none"
+      },
+      {
+        "name": "NASA FIRMS / EONET",
+        "domain": "firms.modaps.eosdis.nasa.gov, eonet.gsfc.nasa.gov",
+        "purpose": "active fires and natural events",
+        "auth": "none (FIRMS_API_KEY optional)"
+      },
+      {
+        "name": "NOAA SWPC",
+        "domain": "services.swpc.noaa.gov",
+        "purpose": "space weather",
+        "auth": "none"
+      },
+      {
+        "name": "CelesTrak / N2YO",
+        "domain": "celestrak.org, n2yo.com",
+        "purpose": "satellite TLEs",
+        "auth": "none (N2YO_API_KEY optional)"
+      },
+      {
+        "name": "GDELT / GDACS",
+        "domain": "data.gdeltproject.org, gdacs.org",
+        "purpose": "geocoded events and disaster alerts",
+        "auth": "none"
+      },
+      {
+        "name": "NVD",
+        "domain": "services.nvd.nist.gov",
+        "purpose": "CVE records",
+        "auth": "none"
+      },
+      {
+        "name": "OpenSanctions",
+        "domain": "data.opensanctions.org",
+        "purpose": "OFAC SDN mirror",
+        "auth": "none"
+      },
+      {
+        "name": "Wikidata",
+        "domain": "query.wikidata.org, www.wikidata.org",
+        "purpose": "entity ontology (intel service)",
+        "auth": "none"
+      },
+      {
+        "name": "ip-api.com / RIPE Stat",
+        "domain": "ip-api.com, stat.ripe.net",
+        "purpose": "IP geolocation and BGP",
+        "auth": "none"
+      },
+      {
+        "name": "mempool.space / Blockscout / Solana RPC / DefiLlama",
+        "domain": "mempool.space, eth.blockscout.com, api.mainnet-beta.solana.com, api.llama.fi",
+        "purpose": "wallet forensics and chain exploits",
+        "auth": "none (ETHERSCAN_API_KEY, HELIUS_API_KEY optional)"
+      },
+      {
+        "name": "Telegram public previews",
+        "domain": "t.me",
+        "purpose": "OSINT channel posts",
+        "auth": "none"
+      },
+      {
+        "name": "Cloudflare Radar",
+        "domain": "api.cloudflare.com",
+        "purpose": "internet outages and attack origins",
+        "auth": "CLOUDFLARE_API_TOKEN"
+      },
+      {
+        "name": "IODA",
+        "domain": "api.ioda.inetintel.cc.gatech.edu",
+        "purpose": "internet outage events",
+        "auth": "none"
+      },
+      {
+        "name": "Element84 Earth Search / Copernicus",
+        "domain": "earth-search.aws.element84.com",
+        "purpose": "Sentinel-1 STAC scenes",
+        "auth": "none"
+      },
+      {
+        "name": "aisstream.io",
+        "domain": "stream.aisstream.io",
+        "purpose": "AIS vessel positions",
+        "auth": "AIS_API_KEY"
+      },
+      {
+        "name": "Google Gemini",
+        "domain": "generativelanguage.googleapis.com",
+        "purpose": "AI analysis, briefing, overview",
+        "auth": "API key via @google/generative-ai"
+      },
+      {
+        "name": "Valhalla / OSRM / Photon / Nominatim",
+        "domain": "valhalla1.openstreetmap.de, router.project-osrm.org, photon.komoot.io, nominatim.openstreetmap.org",
+        "purpose": "directions and geosearch",
+        "auth": "none"
+      },
+      {
+        "name": "Camera networks",
+        "domain": "api.tfl.gov.uk, wsdot.wa.gov, cwwp2.dot.ca.gov and others",
+        "purpose": "public CCTV catalogs and streams",
+        "auth": "none"
+      },
+      {
+        "name": "OSIRIS scanner backend",
+        "domain": "SCANNER_URL (self-hosted)",
+        "purpose": "RECON active scans",
+        "auth": "SCANNER_KEY shared secret"
+      },
+      {
+        "name": "ASTRA GPU server",
+        "domain": "ASTRA_GPU_URL (self-hosted)",
+        "purpose": "image geolocation inference",
+        "auth": "none"
+      }
+    ],
+    "secrets_env": [
+      "SCANNER_URL",
+      "SCANNER_KEY",
+      "CLOUDFLARE_API_TOKEN",
+      "ETHERSCAN_API_KEY",
+      "HELIUS_API_KEY",
+      "FIRMS_API_KEY",
+      "OPENSKY_CLIENT_ID",
+      "OPENSKY_CLIENT_SECRET",
+      "N2YO_API_KEY",
+      "AIS_API_KEY",
+      "SDK_INGEST_KEY",
+      "GITHUB_WEBHOOK_SECRET",
+      "GITHUB_WEBHOOK_FORWARD_URL",
+      "ASTRA_GPU_URL",
+      "INTEL_URL",
+      "OSIRIS_TELEGRAM_CHANNELS",
+      "UMAMI_WEBSITE_ID"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/api/health"
+    },
+    "spatial": "Global: every layer is geocoded (aircraft, vessels, cameras, hazards, events, infrastructure) on a MapLibre globe; no single home location.",
+    "temporal": "Live polling at 15-30 minute relaxations for stable feeds and near-real-time for aircraft; markets history back to one year; chain brief up to 120 days; nothing is archived.",
+    "open_questions": [
+      "engine/ is bytecode-only here as in Payload Terminal; which repository is the canonical home of the Pythia forecaster source?",
+      "Person-targeting routes (username, phone, leaks, hudsonrock) are still served; should this fork adopt Payload Terminal's collection policy or stay a pure upstream mirror?",
+      "No Gemini API key env name is referenced in the .env.example although @google/generative-ai is a dependency; confirm how ai-engine.ts is configured.",
+      "docker-compose references an external umami_default network; is analytics part of the intended deployment?"
+    ]
+  }
+}
