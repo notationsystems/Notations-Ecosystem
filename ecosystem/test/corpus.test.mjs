@@ -139,3 +139,51 @@ test('COR-EVIDENCE the estate reports how much of its grade is declared rather t
   assert.ok(paths.length >= 4);
   for (const { weight } of paths) assert.ok(EVIDENCE_WEIGHTS.includes(weight));
 });
+
+test('UNIVERSE.md states the estate as it is, not as it was', async () => {
+  // Prose drifts the way `capability_count` did: it was right when written and nothing
+  // checks it afterwards. UNIVERSE.md said 632 capabilities and warnings=0 while the
+  // catalog carried 634 and twelve, and listed the Data Acquisition Channel as `sound`
+  // three commits after its exemption was corrected to `developing`. Every figure the
+  // document states about the catalog is asserted here against the grader that produces
+  // it, so the next drift is a failing test rather than a confident sentence.
+  const { readFile } = await import('node:fs/promises');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const prose = await readFile(path.join(here, '..', 'UNIVERSE.md'), 'utf8');
+
+  const entries = await loadCatalog();
+  const estate = gradeEcosystem(entries);
+  const capabilities = entries.reduce((n, { entry }) => n + entry.capabilities.length, 0);
+  const relations = entries.reduce((n, { entry }) => n + (entry.relations ?? []).length, 0);
+
+  const header = prose.match(/\((\d+) nodes, (\d+) capabilities, (\d+) relations/);
+  assert.ok(header, 'UNIVERSE.md no longer opens by stating the size of the catalog');
+  assert.deepEqual(header.slice(1, 4).map(Number), [entries.length, capabilities, relations]);
+
+  // The grade tables, node by node. A node that changes grade has to change the table.
+  const row = (label) => {
+    const found = prose.match(new RegExp('^\\| ' + label + '[^|]*\\|([^|]*)\\|', 'm'));
+    assert.ok(found, `UNIVERSE.md has no "${label}" row`);
+    return [...found[1].matchAll(/`([a-z0-9-]+)`/g)].map((m) => m[1]).sort();
+  };
+  const graded = (grade) => estate.nodes.filter((n) => n.grade === grade).map((n) => n.nodeId).sort();
+  assert.deepEqual(row('sound'), graded('sound'));
+  assert.deepEqual(row('developing'), graded('developing'));
+  assert.deepEqual(row('bare'), graded('bare'));
+  assert.deepEqual(row('unbuilt'), graded('unbuilt'));
+
+  const mean = prose.match(/Mean coverage across graded nodes is ([\d.]+)/);
+  assert.ok(mean);
+  assert.equal(Number(mean[1]), estate.meanCoverage);
+
+  const fails = estate.nodes.reduce((n, node) => n + node.fails.length, 0);
+  assert.match(prose, new RegExp(`${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'][fails] ?? fails} invariants are declared failed`));
+
+  // Eight hold a corpus, three own a domain's canonical state, five domains have none.
+  assert.match(prose, new RegExp(`${['zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'][estate.byRole.hold]} nodes hold a corpus`, 'i'));
+  assert.equal(Object.keys(estate.owners).length, 3);
+  for (const [domain, ids] of Object.entries(estate.owners)) assert.match(prose, new RegExp(`\`${ids[0]}\` → ${domain}`));
+  for (const domain of estate.unowned) assert.ok(prose.includes(domain), `UNIVERSE.md does not name the unowned domain ${domain}`);
+});

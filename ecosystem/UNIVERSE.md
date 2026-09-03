@@ -1,6 +1,6 @@
 # The Notations Universe
 
-Synthesised from `ecosystem/catalog/*.json` (30 nodes, 632 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=0), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
+Synthesised from `ecosystem/catalog/*.json` (30 nodes, 634 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=12, every warning an ungraded invariant counted against its node), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
 
 ## 1. How the ecosystem fits together
 
@@ -19,8 +19,8 @@ applicable, where a role structurally exempts the invariants it cannot be about.
 
 | Grade | Nodes |
 |---|---|
-| sound (coverage 1.0) | `control-plane`, `data-acquisition-channel`, `gods-eye-view`, `notations-dock`, `payload-ocr-agent`, `payload-render-engine`, `payload-terminal` |
-| developing (0.5–0.9) | `bim-state-transformer-engine`, `information-systems-archive`, `lichtfeld-studio`, `matrix-3d`, `notations-corpus-graph`, `osiris-dashboard`, `pythia-oracle-engine`, `scientific-compute-layer`, `scientific-transformer-engine`, `trustgraph` |
+| sound (coverage 1.0) | `control-plane`, `gods-eye-view`, `notations-dock`, `payload-ocr-agent`, `payload-render-engine`, `payload-terminal` |
+| developing (0.5–0.9) | `bim-state-transformer-engine`, `data-acquisition-channel`, `information-systems-archive`, `lichtfeld-studio`, `matrix-3d`, `notations-corpus-graph`, `osiris-dashboard`, `pythia-oracle-engine`, `scientific-compute-layer`, `scientific-transformer-engine`, `trustgraph` |
 | bare (< 0.5) | `atlas-mcp`, `geoagent`, `geometry-grounded-gaussian-splatting`, `lingbot-depth`, `notation-systems-web`, `osint-war-room`, `osiris-intel` |
 | unbuilt (an empty repository) | `building-information-corpus`, `building-information-graph`, `network-scout-signal-miner`, `notations-archival-swarm`, `notations-energy-modulator`, `payload-corpus-graph` |
 | unsound | none |
