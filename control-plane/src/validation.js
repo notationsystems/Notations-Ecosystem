@@ -1,5 +1,5 @@
 import { invalid } from './errors.js';
-import { parseSignals } from './security/evidence.js';
+import { assertNoWeaponisedText, parseSignals } from './security/evidence.js';
 import { assertBoundedStructure, assertNoPollutedKeys, safeText } from './security/text.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
@@ -53,6 +53,7 @@ function string(value, path, maximum = 1_200) {
   const safe = safeText(value, path);
   const trimmed = safe.trim();
   if (!trimmed || trimmed.length > maximum) throw invalid(`${path} must be a non-empty string no longer than ${maximum} characters.`);
+  assertNoWeaponisedText(trimmed, path);
   return trimmed;
 }
 
@@ -95,7 +96,7 @@ function metadata(value) {
     }
     if (typeof entry === 'string' && entry.length > 500) throw invalid(`node.metadata.${key} exceeds 500 characters.`);
     // Key-name filtering alone does not stop a credential pasted into a value.
-    out[key] = typeof entry === 'string' ? safeText(entry, `node.metadata.${key}`).trim() : entry;
+    out[key] = typeof entry === 'string' ? assertNoWeaponisedText(safeText(entry, `node.metadata.${key}`).trim(), `node.metadata.${key}`) : entry;
   }
   return out;
 }

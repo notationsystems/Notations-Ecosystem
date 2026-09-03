@@ -26,9 +26,10 @@
 
 import { invalid } from '../errors.js';
 import { detectSecretShape, safeText } from './text.js';
+import { isKnown, lookup, sealedKeys, sealedTable } from './table.js';
 
 /** The dimensions of the constellation. Unknown dimensions are refused. */
-export const POSTURE_DIMENSIONS = Object.freeze({
+export const POSTURE_DIMENSIONS = sealedTable({
   identity: 'Authentication strength and credential hygiene',
   authorization: 'Coverage of authorization checks over privileged surfaces',
   encryption_in_transit: 'Transport protection across trust boundaries',
@@ -51,6 +52,7 @@ export const MAX_SUMMARY_CHARACTERS = 280;
 export const MAX_FINDING_COUNT = 1_000_000;
 
 const EVIDENCE_REF = /^(?:sha256:[a-f0-9]{64}|[A-Za-z0-9][A-Za-z0-9:_.-]{0,79})$/;
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 /**
  * Material the constellation must never hold. Each rule names the class it defends
@@ -86,6 +88,10 @@ const REFUSED_CLASSES = [
   {
     class: 'offensive-capability',
     why: 'The control plane records posture; it never carries the means to act on a weakness.',
+    // Universal: unlike an address or a package version, none of these has a reading
+    // in which it belongs in a coordination ledger, so they are refused in every
+    // free-text field rather than only in a posture summary.
+    universal: true,
     patterns: [
       { id: 'offensive-tooling', pattern: /\b(?:metasploit|msfvenom|sqlmap|mimikatz|cobalt\s*strike|beef|hashcat|responder\.py|impacket)\b/i },
       { id: 'scanner-invocation', pattern: /\bnmap\s+-|\bnikto\s+-|\bhydra\s+-/i },
@@ -105,22 +111,34 @@ const REFUSED_CLASSES = [
       // not: an attestor may reasonably say which module implements a control.
       { id: 'report-artifact-path', pattern: /\b[a-z0-9_.-]+(?:\/[a-z0-9_.-]+)+\.(?:json|csv|sarif|xml|txt|log|html|htm|zip)\b/i },
       { id: 'absolute-path', pattern: /(?:^|\s)(?:\/(?:etc|root|home|var|srv|opt|proc|Users)\/|[A-Za-z]:\\)\S*/ },
+    ],
+  },
+  {
+    class: 'key-material-location',
+    why: 'A path to key material is the first half of stealing it, and the ledger is read by agents and rendered in a browser. Name the control, not the file that holds the key.',
+    universal: true,
+    patterns: [
       { id: 'key-file-path', pattern: /\b\S*(?:id_rsa|id_ed25519|\.pem|\.pfx|\.p12|\.jks|\.kdbx|\.env)\b/i },
     ],
   },
 ];
 
+/** The classes that are refused everywhere, not only inside a posture attestation. */
+const UNIVERSAL_CLASSES = REFUSED_CLASSES.filter(group => group.universal);
+
 /**
  * Inspect one text field for refused material.
  * @returns {{class: string, id: string, why: string} | null}
  */
-export function detectRefusedMaterial(text) {
+export function detectRefusedMaterial(text, groups = REFUSED_CLASSES) {
   if (typeof text !== 'string' || !text) return null;
-  const secret = detectSecretShape(text);
-  if (secret) {
-    return { class: 'credential-material', id: secret.id, why: 'The control plane never holds credentials or key material, in any field.' };
+  if (groups === REFUSED_CLASSES) {
+    const secret = detectSecretShape(text);
+    if (secret) {
+      return { class: 'credential-material', id: secret.id, why: 'The control plane never holds credentials or key material, in any field.' };
+    }
   }
-  for (const group of REFUSED_CLASSES) {
+  for (const group of groups) {
     for (const rule of group.patterns) {
       if (rule.pattern.test(text)) return { class: group.class, id: rule.id, why: group.why };
     }
@@ -140,6 +158,23 @@ export function assertEvidenceOnly(value, path) {
     `${path} contains ${found.class} (${found.id}) and is refused.`,
     `${found.why} Re-attest with a state, a coverage fraction, and counts by severity, and keep the detail in the system that produced it.`,
   );
+}
+
+/**
+ * The part of the evidence boundary that is not about evidence.
+ *
+ * Most of what a posture summary may not carry has a legitimate reading somewhere
+ * else in the ledger: a node's metadata names a repository, a capability description
+ * mentions a version. Two classes have no such reading anywhere — the means to attack
+ * a system, and the location of the key material that protects one — so they are
+ * refused in every free-text field the plane records, not only inside an attestation.
+ * Without this the boundary would be a property of one command rather than of the
+ * ledger, and a node description would be the way around it.
+ */
+export function assertNoWeaponisedText(value, path) {
+  const found = detectRefusedMaterial(value, UNIVERSAL_CLASSES);
+  if (!found) return value;
+  throw invalid(`${path} contains ${found.class} (${found.id}) and is refused.`, found.why);
 }
 
 function number(value, path, { min, max, integer = false }) {
@@ -162,12 +197,12 @@ export function parseSignal(value, index) {
   const path = `signals[${index}]`;
   const parsed = exactKeys(value, path, ['dimension', 'state'], ['coverage', 'findings', 'summary', 'evidenceRef', 'expiresAt']);
 
-  const dimension = String(parsed.dimension);
-  if (!(dimension in POSTURE_DIMENSIONS)) {
-    throw invalid(`${path}.dimension ${dimension} is not a constellation dimension.`, `Use one of: ${Object.keys(POSTURE_DIMENSIONS).join(', ')}.`);
+  const dimension = parsed.dimension;
+  if (!isKnown(POSTURE_DIMENSIONS, dimension)) {
+    throw invalid(`${path}.dimension is not a constellation dimension.`, `Use one of: ${Object.keys(POSTURE_DIMENSIONS).join(', ')}.`);
   }
-  const state = String(parsed.state);
-  if (!POSTURE_STATES.includes(state)) throw invalid(`${path}.state must be one of ${POSTURE_STATES.join(', ')}.`);
+  const state = parsed.state;
+  if (typeof state !== 'string' || !POSTURE_STATES.includes(state)) throw invalid(`${path}.state must be one of ${POSTURE_STATES.join(', ')}.`);
 
   const signal = { dimension, state };
 
@@ -202,8 +237,10 @@ export function parseSignal(value, index) {
   }
 
   if (parsed.expiresAt !== undefined) {
-    const expiresAt = String(parsed.expiresAt);
-    if (!Number.isFinite(Date.parse(expiresAt))) throw invalid(`${path}.expiresAt must be an ISO date-time.`);
+    const expiresAt = safeText(parsed.expiresAt, `${path}.expiresAt`).trim();
+    if (!ISO_INSTANT.test(expiresAt) || !Number.isFinite(Date.parse(expiresAt))) {
+      throw invalid(`${path}.expiresAt must be an ISO date-time.`, 'Use an ISO-8601 instant with an explicit offset, for example 2026-09-03T12:00:00.000Z.');
+    }
     signal.expiresAt = expiresAt;
   }
 
@@ -228,12 +265,12 @@ export function parseSignals(value) {
 }
 
 /** A weakest-link rollup: the constellation reports the worst state, not the average. */
-const STATE_RANK = Object.freeze({ failing: 4, weak: 3, unknown: 2, adequate: 1, strong: 0 });
+const STATE_RANK = sealedTable({ failing: 4, weak: 3, unknown: 2, adequate: 1, strong: 0 });
 
 export function worstState(states) {
   let worst = 'strong';
   for (const state of states) {
-    if ((STATE_RANK[state] ?? 2) > (STATE_RANK[worst] ?? 0)) worst = state;
+    if ((lookup(STATE_RANK, state) ?? 2) > (lookup(STATE_RANK, worst) ?? 0)) worst = state;
   }
   return states.length ? worst : 'unknown';
 }
@@ -244,37 +281,64 @@ export function worstState(states) {
  * Staleness is first-class: an attestation that has expired, or that predates
  * `staleAfterMs`, is reported as stale rather than quietly counted as current. An
  * out-of-date assurance is the failure mode this view exists to make visible.
+ *
+ * This function reads an append-only history, so it is written to be total over
+ * anything that history can contain. A projection that throws on one stored record is
+ * not a bug that returns an error — the record cannot be withdrawn, so every later
+ * read of the whole snapshot fails for as long as the journal exists. A signal whose
+ * dimension is not one of ours is therefore counted as unrecognised and skipped,
+ * rather than trusted to index a table.
  */
 export function buildConstellation(postureByNode, { now = Date.now(), staleAfterMs = 7 * 24 * 60 * 60 * 1000 } = {}) {
-  const dimensions = Object.fromEntries(Object.keys(POSTURE_DIMENSIONS).map(dimension => [dimension, { dimension, description: POSTURE_DIMENSIONS[dimension], states: {}, nodes: 0, stale: 0, coverage: null, findings: { critical: 0, high: 0, medium: 0, low: 0 }, worst: 'unknown' }]));
+  const names = Object.keys(POSTURE_DIMENSIONS);
+  const dimensions = sealedKeys(names, dimension => ({
+    dimension,
+    description: POSTURE_DIMENSIONS[dimension],
+    states: Object.create(null),
+    nodes: 0,
+    stale: 0,
+    coverage: null,
+    findings: { critical: 0, high: 0, medium: 0, low: 0 },
+    worst: 'unknown',
+  }));
+  const coverageAccumulator = sealedKeys(names, () => []);
   let attested = 0;
   let staleNodes = 0;
-  const coverageAccumulator = Object.fromEntries(Object.keys(POSTURE_DIMENSIONS).map(dimension => [dimension, []]));
+  let unrecognisedSignals = 0;
 
-  for (const posture of Object.values(postureByNode)) {
+  for (const posture of Object.values(postureByNode ?? {})) {
     if (!posture) continue;
     attested += 1;
     const attestedAtMs = Date.parse(posture.attestedAt);
     const nodeStale = Number.isFinite(attestedAtMs) ? now - attestedAtMs > staleAfterMs : true;
     if (nodeStale) staleNodes += 1;
-    for (const signal of posture.signals) {
-      const bucket = dimensions[signal.dimension];
-      if (!bucket) continue;
+    for (const signal of Array.isArray(posture.signals) ? posture.signals : []) {
+      const bucket = signal ? lookup(dimensions, signal.dimension) : undefined;
+      if (!bucket) {
+        unrecognisedSignals += 1;
+        continue;
+      }
       const expired = signal.expiresAt ? Date.parse(signal.expiresAt) <= now : false;
       const stale = nodeStale || expired;
       const state = stale ? 'unknown' : signal.state;
-      bucket.states[state] = (bucket.states[state] ?? 0) + 1;
+      const key = isKnown(STATE_RANK, state) ? state : 'unknown';
+      bucket.states[key] = (bucket.states[key] ?? 0) + 1;
       bucket.nodes += 1;
       if (stale) bucket.stale += 1;
-      if (typeof signal.coverage === 'number' && !stale) coverageAccumulator[signal.dimension].push(signal.coverage);
-      for (const severity of FINDING_SEVERITIES) bucket.findings[severity] += signal.findings?.[severity] ?? 0;
+      if (Number.isFinite(signal.coverage) && !stale) coverageAccumulator[signal.dimension].push(signal.coverage);
+      for (const severity of FINDING_SEVERITIES) {
+        const count = signal.findings?.[severity];
+        if (Number.isFinite(count)) bucket.findings[severity] += count;
+      }
     }
   }
 
-  for (const [dimension, bucket] of Object.entries(dimensions)) {
+  for (const dimension of names) {
+    const bucket = dimensions[dimension];
     const samples = coverageAccumulator[dimension];
     bucket.coverage = samples.length ? Math.round((samples.reduce((sum, value) => sum + value, 0) / samples.length) * 100) / 100 : null;
     bucket.worst = worstState(Object.entries(bucket.states).flatMap(([state, count]) => Array.from({ length: count }, () => state)));
+    bucket.states = { ...bucket.states };
   }
 
   return {
@@ -282,7 +346,8 @@ export function buildConstellation(postureByNode, { now = Date.now(), staleAfter
     generatedAt: new Date(now).toISOString(),
     attestedNodes: attested,
     staleNodes,
-    dimensions: Object.values(dimensions),
+    unrecognisedSignals,
+    dimensions: names.map(dimension => dimensions[dimension]),
     boundary: 'Posture is evidence only: states, coverage and counts. Credentials, key material, vulnerability detail, network topology, offensive capability and pointers to raw findings are refused at the command boundary.',
   };
 }

@@ -12,9 +12,12 @@
  * Lifecycle
  *   - one *active* key signs; every key ever active stays in the registry as a
  *     *verification* key, so history signed by a retired key still verifies;
- *   - rotation adds a new active key and marks the previous one retired, with the
- *     journal length at which the rotation happened, so a verifier knows which key
- *     was expected when;
+ *   - rotation adds a new active key and retires the previous one at a recorded
+ *     journal position. Retirement is enforced, not annotated: a retired key verifies
+ *     the records it signed while it was active and nothing after them, and its
+ *     private half is dropped from the store. Without both, rotation would move the
+ *     signing key without reducing what a stolen copy of the old one is worth — it
+ *     could still mint records that verify at the head of the chain;
  *   - the private half is stored wrapped by envelope encryption when a key
  *     encryption key is configured, so a stolen key file is not a signing capability;
  *   - the signature covers the record hash, which already commits to the event and to
@@ -110,16 +113,32 @@ export class KeyStore {
 
   /**
    * Verify a record's signature block against the registry.
+   *
+   * `index` is the record's zero-based position in the journal. When it is given, a
+   * key that has been retired is held to the position at which it was retired: it
+   * verifies the history it actually signed and refuses anything appended after.
+   * A key retired before that position was recorded — a store written by an older
+   * rotation — cannot be bounded, and `retirementBounds()` reports that rather than
+   * pretending the bound exists.
+   *
    * @returns {{ok: true} | {ok: false, reason: string}}
    */
-  verify(recordHash, signature) {
+  verify(recordHash, signature, { index = null } = {}) {
     if (!signature || typeof signature !== 'object') return { ok: false, reason: 'record has no signature' };
     if (signature.alg !== SIGNATURE_ALGORITHM) return { ok: false, reason: `unsupported signature algorithm ${signature.alg}` };
     const key = this.keys.find(candidate => candidate.keyId === signature.keyId);
     if (!key) return { ok: false, reason: `signature names unknown key ${signature.keyId}` };
     if (typeof signature.sig !== 'string') return { ok: false, reason: 'signature is malformed' };
+    if (index !== null && Number.isInteger(key.retiredAtRecord) && index >= key.retiredAtRecord) {
+      return { ok: false, reason: `is signed by key ${signature.keyId}, which was retired at record ${key.retiredAtRecord}` };
+    }
     if (!verifySignature(recordHash, signature.sig, key.publicKey, signature.keyId)) return { ok: false, reason: `signature does not verify under key ${signature.keyId}` };
     return { ok: true };
+  }
+
+  /** Keys retired without a recorded position, whose authority cannot be bounded. */
+  retirementBounds() {
+    return this.keys.filter(key => key.retiredAt && !Number.isInteger(key.retiredAtRecord)).map(key => key.keyId);
   }
 
   toJSON() {
@@ -132,6 +151,7 @@ export class KeyStore {
         publicKey: key.publicKey,
         createdAt: key.createdAt,
         retiredAt: key.retiredAt ?? null,
+        retiredAtRecord: Number.isInteger(key.retiredAtRecord) ? key.retiredAtRecord : null,
         activeFromRecord: key.activeFromRecord ?? 0,
         privateKey: key.privateKey ?? null,
       })),
@@ -151,7 +171,8 @@ export class KeyStore {
       activeKeyId: this.activeKeyId,
       canSign: this.canSign(),
       privateKeyProtection: this.kek ? 'envelope-encrypted' : this.signingKey ? 'plaintext-on-disk' : 'absent',
-      keys: this.keys.map(key => ({ keyId: key.keyId, createdAt: key.createdAt, retiredAt: key.retiredAt ?? null, activeFromRecord: key.activeFromRecord ?? 0, publicKey: key.publicKey })),
+      keys: this.keys.map(key => ({ keyId: key.keyId, createdAt: key.createdAt, retiredAt: key.retiredAt ?? null, retiredAtRecord: Number.isInteger(key.retiredAtRecord) ? key.retiredAtRecord : null, activeFromRecord: key.activeFromRecord ?? 0, publicKey: key.publicKey })),
+      unboundedRetiredKeys: this.retirementBounds(),
     };
   }
 
@@ -200,14 +221,22 @@ export class KeyStore {
   }
 
   /**
-   * Rotate: generate a new active key, retire the current one, and record the journal
-   * length from which the new key is expected. Records signed by the retired key keep
-   * verifying.
+   * Rotate: generate a new active key and retire the current one at `atRecord`, the
+   * journal length at the moment of rotation. Records the retired key signed before
+   * that point keep verifying; anything it signs afterwards does not, and its private
+   * half no longer exists in the store.
    */
   async rotate({ atRecord = 0, now = () => new Date().toISOString() } = {}) {
+    if (!Number.isInteger(atRecord) || atRecord < 0) throw new CryptoError('Rotation needs the journal length it happens at, so the retired key can be held to it.');
     const generated = SigningKey.generate(`k-${Date.now().toString(36)}`);
     const previous = this.active;
-    if (previous) previous.retiredAt = now();
+    if (previous) {
+      previous.retiredAt = now();
+      previous.retiredAtRecord = atRecord;
+      // Retirement removes the capability, not only the label. What stays behind is
+      // the public half, which is all a verifier of past records needs.
+      previous.privateKey = null;
+    }
     this.keys.push({
       keyId: generated.keyId,
       alg: SIGNATURE_ALGORITHM,

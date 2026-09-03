@@ -102,6 +102,13 @@ authority from being recorded in it.
 | Exfiltrate a dock credential to an attacker origin | Refused by the base-URL allowlist, at call time |
 | Frame the dock and clickjack an approval | `frame-ancestors`/`X-Frame-Options` served as headers |
 | Use posture attestation as a data-exfiltration channel | Refused: no URLs, paths, addresses, advisories or key material |
+| Name an inherited property (`toString`, `constructor`) where an allowlist is consulted | 422 — every lookup table is prototype-less and asked with `Object.hasOwn` |
+| Commit a record the projection cannot fold, to brick every later read | Refused at the boundary; and the projection counts what it does not recognise rather than throwing |
+| Submit one field long enough to make pattern matching quadratic | 422 before the first pattern runs; the listener keeps answering |
+| Append an unsigned annotation to a signed record on disk | 503 `JOURNAL_CORRUPT` — the record shape is closed, so nothing rides outside the hash and the signature |
+| Sign new history with a key that was rotated out | 503 — a retired key is held to the record it was retired at, and its private half is gone |
+| Configure a control that cannot run, and rely on the status surface reporting it | Refused at boot: requiring signatures without a key store does not start |
+| Put an attack tool or a key path into a node description instead of a posture summary | 422 — those two classes are refused in every field |
 
 ## Known limits
 
@@ -122,6 +129,12 @@ Stated plainly, because a threat model that claims completeness is not one.
 - **The legacy single token** grants every role and may claim any actor. It exists for
   local development, warns at boot, and is reported as weak identity posture.
 
+- **A key retired before retirement was enforced cannot be bounded.** A store written
+  by an older rotation records `retiredAt` but no journal position, and there is no way
+  to reconstruct one after the fact. Such keys keep full verification authority;
+  `keys show` lists them under `unboundedRetiredKeys` and the plane records a boot
+  warning. Rotating again records a position and closes it.
+
 - **The evidence boundary is pattern-based, and patterns have edges.** It refuses the
   shapes attackers and tools actually produce — literal addresses, host:port, internal
   hostnames, port claims, advisory identifiers with any separator, package@version,
@@ -138,3 +151,11 @@ Stated plainly, because a threat model that claims completeness is not one.
 - **Report-artifact paths are refused; source and documentation paths are not.** An
   attestor may say which module implements a control. `ops/scan.json` is a pointer to
   findings; `security/evidence.js` is a reference to code.
+
+- **Two of the refused classes apply everywhere; the rest are scoped to posture.** An
+  address, a package version or a repository link has a legitimate reading in node
+  metadata, so refusing those outside an attestation would refuse the catalog itself.
+  Offensive capability and the location of key material have no such reading anywhere
+  in a coordination ledger, so they are refused in every free-text field the plane
+  records (SEC-037). Without that split the boundary would be a property of one
+  command, and a node description would be the way around it.

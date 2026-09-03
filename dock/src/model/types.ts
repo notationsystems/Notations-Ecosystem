@@ -81,6 +81,13 @@ export interface Constellation {
   generatedAt: string;
   attestedNodes: number;
   staleNodes: number;
+  /**
+   * Signals in the journal that name a dimension this plane does not have. The
+   * projection counts them instead of failing on them, because a record cannot be
+   * withdrawn from an append-only history; a non-zero count means recorded posture is
+   * not being folded into any dimension, and the operator should know that.
+   */
+  unrecognisedSignals?: number;
   dimensions: ConstellationDimension[];
   boundary: string;
 }

@@ -65,8 +65,12 @@ cd control-plane && npm start
 
 ### Operating rules
 
-- **Rotate the signing key on a schedule.** `node control-plane/src/security/cli.js keys rotate`.
-  Records signed by the retired key keep verifying.
+- **Rotate the signing key on a schedule.** Stop the plane, run `node
+  control-plane/src/security/cli.js keys rotate`, then start it again. Rotation reads
+  the journal length and records it as the retired key's boundary: records it signed
+  before that point keep verifying, anything it signs afterwards does not, and its
+  private half is dropped from the store. Rotating while the plane is running would
+  leave the in-memory store disagreeing with the file.
 - **Replicate the journal off-host.** The rollback anchor makes tampering loud; only a
   replica makes it recoverable.
 - **Never reuse one credential across roles.** Separation of duties is enforced on

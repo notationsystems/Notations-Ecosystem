@@ -175,9 +175,30 @@ async function keyLifecyclePosture(environment) {
   }
 }
 
+/**
+ * Where this deployment's journal is, by the same rule every other tool uses.
+ *
+ * The producer runs beside the plane it describes, so it must read the plane's own
+ * configuration rather than a path that was true for the repository layout.
+ */
+function resolveJournalPath(environment = process.env) {
+  return environment.CONTROL_PLANE_JOURNAL_PATH
+    ? path.resolve(environment.CONTROL_PLANE_JOURNAL_PATH)
+    : path.join(ROOT, 'control-plane/data/control-plane.jsonl');
+}
+
 /** Audit integrity: verify the chain itself, and report only the verdict. */
 async function auditIntegrityPosture(journalPath) {
   try {
+    // "No journal here" and "a journal with nothing in it" are different answers, and
+    // the dimension that reports on the ledger's own integrity is the last one that
+    // should confuse them: a deployment whose journal this producer cannot find would
+    // otherwise attest `unknown` and look merely un-instrumented.
+    try {
+      await stat(journalPath);
+    } catch {
+      return { dimension: 'audit_integrity', state: 'unknown', coverage: 0, summary: 'No journal was found at the configured path, so chain integrity could not be evaluated here.' };
+    }
     const { HashJournal } = await import('../control-plane/src/journal.js');
     const { KeyStore } = await import('../control-plane/src/security/crypto/signing.js');
     const keystorePath = process.env.CONTROL_PLANE_KEYSTORE || path.join(ROOT, 'control-plane/data/keystore.json');
@@ -292,7 +313,7 @@ export async function collectPosture({ environment = process.env, journalPath, p
     ...(await keyLifecyclePosture(environment)),
     await dependencyRisk(packageDirectory),
     await exposurePosture(),
-    await auditIntegrityPosture(journalPath ?? path.join(ROOT, 'control-plane/data/control-plane.jsonl')),
+    await auditIntegrityPosture(journalPath ?? resolveJournalPath(environment)),
     await backupPosture(environment),
     ...(skipTests ? [] : [await controlPlaneIntegrityPosture()]),
   ];

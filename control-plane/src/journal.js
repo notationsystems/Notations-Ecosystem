@@ -51,11 +51,30 @@ function freeze(value) {
  * @param {boolean} [options.requireSignatures] refuse records that carry no signature
  * @returns {string|null} a defect description, or null when the chain verifies
  */
+/**
+ * The complete set of fields a journal record may carry.
+ *
+ * The record hash commits to the event and to the preceding hash; the signature
+ * commits to the record hash. Neither commits to *the rest of the line*. So a field
+ * nobody declared — a note, a second actor, an annotation — could be appended to an
+ * otherwise perfectly verifying signed record by anyone able to write the file, and
+ * would then be served verbatim from `/v1/events` to operators and to the dock, with
+ * the chain reporting the history as intact. The shape is therefore closed: a record
+ * that carries anything else is a defect, exactly like a broken hash.
+ */
+const RECORD_FIELDS = new Set(['event', 'previousHash', 'recordHash', 'signature']);
+
 export function verifyRecords(records, { keyStore = null, requireSignatures = false } = {}) {
+  if (requireSignatures && !keyStore) {
+    return 'this control plane requires signatures but has no key store to verify them with';
+  }
   let previousHash = null;
   const eventIds = new Set();
   for (const [index, record] of records.entries()) {
     if (!record || typeof record !== 'object' || !record.event || typeof record.event !== 'object') return `record ${index + 1} is not a control-plane record`;
+    for (const field of Object.keys(record)) {
+      if (!RECORD_FIELDS.has(field)) return `record ${index + 1} carries the field ${field}, which is covered by neither the record hash nor its signature`;
+    }
     const { event } = record;
     if (typeof event.eventId !== 'string' || !event.eventId || eventIds.has(event.eventId)) return `record ${index + 1} has an empty or duplicate event id`;
     if (typeof event.commandHash !== 'string' || !HASH.test(event.commandHash)) return `event ${event.eventId} has an invalid command hash`;
@@ -64,7 +83,7 @@ export function verifyRecords(records, { keyStore = null, requireSignatures = fa
     if (typeof record.recordHash !== 'string' || record.recordHash !== recordHash(event, previousHash)) return `event ${event.eventId} has an invalid record hash`;
     if (keyStore) {
       if (record.signature) {
-        const verdict = keyStore.verify(record.recordHash, record.signature);
+        const verdict = keyStore.verify(record.recordHash, record.signature, { index });
         if (!verdict.ok) return `event ${event.eventId} ${verdict.reason}`;
       } else if (requireSignatures) {
         return `event ${event.eventId} is unsigned and this control plane requires signatures`;
@@ -85,6 +104,13 @@ export class HashJournal {
    * @param {boolean} [options.anchor] maintain a rollback anchor beside the journal
    */
   constructor(filePath, { keyStore = null, requireSignatures = false, anchor = true } = {}) {
+    if (requireSignatures && !keyStore) {
+      // A requirement that cannot be checked is worse than no requirement: the status
+      // surface would report signatures as mandatory while every unsigned record was
+      // accepted. Refuse the combination at construction rather than report a control
+      // that is not running.
+      throw new Error('Signature enforcement was requested without a key store. Enable signing (CONTROL_PLANE_SIGNING=1) or stop requiring signatures.');
+    }
     this.filePath = resolve(filePath);
     this.queue = Promise.resolve();
     this.keyStore = keyStore;

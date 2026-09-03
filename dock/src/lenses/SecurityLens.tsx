@@ -102,6 +102,12 @@ export function SecurityLens({ snapshot, filtered, onSelect, dock }: LensProps) 
           <span>stale attestations</span>
           <b>{constellation?.staleNodes ?? 0}</b>
         </div>
+        {(constellation?.unrecognisedSignals ?? 0) > 0 ? (
+          <div className="kpi">
+            <span>unrecognised signals</span>
+            <b style={{ color: 'var(--warn, #d98b2b)' }}>{constellation?.unrecognisedSignals}</b>
+          </div>
+        ) : null}
         <div className="kpi">
           <span>dimensions failing</span>
           <b>{dimensions.filter((entry) => entry.worst === 'failing').length}</b>

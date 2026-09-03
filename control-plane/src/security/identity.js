@@ -23,6 +23,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { ControlPlaneError } from '../errors.js';
+import { isKnown } from './table.js';
 import { ROLES, rolesOf } from './policy.js';
 
 export const TOKEN_PREFIX = 'ncp';
@@ -251,7 +252,7 @@ export function validatePrincipalRecord(record) {
   if (typeof record.keyId !== 'string' || !KEY_ID.test(record.keyId)) problems.push('keyId is invalid');
   if (typeof record.secretHash !== 'string' || !/^[a-f0-9]{64}$/.test(record.secretHash)) problems.push('secretHash must be a sha-256 hex digest');
   if (!Array.isArray(record.roles) || !record.roles.length) problems.push('roles must be a non-empty array');
-  else for (const role of record.roles) if (!(role in ROLES)) problems.push(`unknown role ${role}`);
+  else for (const role of record.roles) if (!isKnown(ROLES, role)) problems.push(`unknown role ${role}`);
   const actors = record.actors ?? [];
   if (!Array.isArray(actors) || !actors.length) problems.push('actors must be a non-empty array');
   else for (const actor of actors) if (typeof actor !== 'string' || !ACTOR.test(actor)) problems.push(`invalid actor pattern ${actor}`);

@@ -19,6 +19,7 @@ import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { issueCredential, validatePrincipalRecord } from './identity.js';
 import { ROLES } from './policy.js';
+import { isKnown } from './table.js';
 import { KeyStore } from './crypto/signing.js';
 import { KeyEncryptionKey } from './crypto/envelope.js';
 import { HashJournal, verifyRecords } from '../journal.js';
@@ -33,6 +34,21 @@ function option(args, name, fallback = undefined) {
 
 function list(value) {
   return value ? value.split(',').map(entry => entry.trim()).filter(Boolean) : [];
+}
+
+function defaultJournalPath() {
+  return resolve(process.env.CONTROL_PLANE_JOURNAL_PATH ?? 'data/control-plane.jsonl');
+}
+
+/** How many records the journal holds, without verifying it: a rotation boundary. */
+async function journalLength() {
+  try {
+    const body = await readFile(defaultJournalPath(), 'utf8');
+    return body.split('\n').filter(line => line.trim().length > 0).length;
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return 0;
+    throw error;
+  }
 }
 
 async function loadRegistry(path) {
@@ -60,7 +76,7 @@ async function cmdIssue(args) {
   const principalId = option(args, 'principal');
   if (!principalId) throw new Error('--principal is required, for example --principal operator:alice');
   const roles = list(option(args, 'roles', 'reader'));
-  for (const role of roles) if (!(role in ROLES)) throw new Error(`Unknown role ${role}. Known roles: ${Object.keys(ROLES).join(', ')}`);
+  for (const role of roles) if (!isKnown(ROLES, role)) throw new Error(`Unknown role ${role}. Known roles: ${Object.keys(ROLES).join(', ')}`);
   const actors = list(option(args, 'actors')) ;
   const nodes = option(args, 'nodes') ? list(option(args, 'nodes')) : null;
   const expiresAt = option(args, 'expires', null);
@@ -123,8 +139,14 @@ async function cmdKeys(args) {
     return;
   }
   if (sub === 'rotate') {
-    const result = await store.rotate({ atRecord: Number.parseInt(option(args, 'at-record', '0'), 10) });
-    process.stdout.write(`Rotated signing key: retired ${result.retired ?? 'none'}, active ${result.active}.\nRecords signed by the retired key continue to verify.\n`);
+    // The rotation point bounds the retired key's authority, so it must be the real
+    // journal length, not a default. Getting it wrong either strands verified history
+    // or leaves the old key able to sign the head of the chain.
+    const declared = option(args, 'at-record', null);
+    const atRecord = declared === null ? await journalLength() : Number.parseInt(declared, 10);
+    if (!Number.isInteger(atRecord) || atRecord < 0) throw new Error('--at-record must be the journal length at which the rotation happens.');
+    const result = await store.rotate({ atRecord });
+    process.stdout.write(`Rotated signing key at record ${atRecord}: retired ${result.retired ?? 'none'}, active ${result.active}.\nRecords the retired key signed before that point continue to verify; its private half has been dropped.\n`);
     return;
   }
   throw new Error(`Unknown keys subcommand ${sub}. Use "show" or "rotate".`);
@@ -150,7 +172,7 @@ function cmdKek(args) {
  * may be wrong. This reads, verifies and reports, and writes nothing.
  */
 async function cmdVerify(args) {
-  const journalPath = resolve(args[0] ?? process.env.CONTROL_PLANE_JOURNAL_PATH ?? 'data/control-plane.jsonl');
+  const journalPath = args[0] ? resolve(args[0]) : defaultJournalPath();
   let keyStore = null;
   try {
     keyStore = await KeyStore.load({ filePath: keystorePath(), kek: kek(), create: false });

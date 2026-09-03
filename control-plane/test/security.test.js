@@ -760,3 +760,258 @@ test('SEC-030 the evidence boundary refuses encoded pointers, spaced advisories 
     assert.equal(detectRefusedMaterial(text), null, `must allow: ${text}`);
   }
 });
+
+test('SEC-031 an inherited property name is never a member of an allowlist', async () => {
+  const h = await harness();
+  try {
+    await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', ...h.node('payload-terminal', OBSERVE) });
+
+    // `'toString' in {}` is true and `{}['toString']` is a function. Every allowlist
+    // in the plane is consulted with a name the caller chose, so a table that
+    // inherits from Object.prototype admits names nobody granted. The posture
+    // dimension is the worst case: the record would be signed into an append-only
+    // journal, and every later projection of the whole snapshot would fail.
+    for (const inherited of ['toString', 'constructor', 'valueOf', 'hasOwnProperty']) {
+      const refused = await h.command(h.tokens['attestor:ci'], {
+        actorId: 'attestor:ci',
+        action: 'record_security_posture',
+        nodeId: 'payload-terminal',
+        attestedAt: new Date().toISOString(),
+        method: 'automated_scan',
+        signals: [{ dimension: inherited, state: 'strong' }],
+      });
+      assert.equal(refused.status, 422, `${inherited} must not name a constellation dimension`);
+      assert.match(refused.body.detail, /not a constellation dimension/);
+
+      const action = await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', action: inherited });
+      assert.equal(action.status, 422, `${inherited} must not name an action`);
+    }
+
+    // The snapshot is still readable, which is the property the refusal protects.
+    const snapshot = await h.call('GET', '/v1/snapshot', { token: h.tokens['operator:alice'] });
+    assert.equal(snapshot.status, 200);
+    assert.equal(snapshot.body.constellation.unrecognisedSignals, 0);
+
+    // A dimension is not a member merely because String() can produce its name.
+    const coerced = await h.command(h.tokens['attestor:ci'], {
+      actorId: 'attestor:ci',
+      action: 'record_security_posture',
+      nodeId: 'payload-terminal',
+      attestedAt: new Date().toISOString(),
+      method: 'automated_scan',
+      signals: [{ dimension: ['identity'], state: 'strong' }],
+    });
+    assert.equal(coerced.status, 422);
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-031 a role name outside the table is refused, not resolved through the prototype', async () => {
+  const { validatePrincipalRecord } = await import('../src/security/identity.js');
+  const { rolesOf } = await import('../src/security/policy.js');
+  const { record } = issueCredential({ principalId: 'p:x', roles: ['reader'], actors: ['p:x'] });
+
+  for (const inherited of ['toString', 'constructor', '__proto__', 'valueOf']) {
+    const problems = validatePrincipalRecord({ ...record, roles: [inherited] });
+    assert.ok(problems.some(problem => problem.includes('unknown role')), `${inherited} must not validate as a role`);
+    // And even if such a record reached the registry, expanding it grants nothing
+    // rather than throwing an unhandled error out of the authentication path.
+    assert.equal(rolesOf([inherited]).size, 0);
+  }
+  assert.ok(rolesOf(['reader']).size > 0);
+});
+
+test('SEC-032 the projection is total over anything the journal can hold', async () => {
+  const { buildConstellation } = await import('../src/security/evidence.js');
+  // A record cannot be withdrawn from an append-only history, so a projection that
+  // throws on one stored signal takes every future read of the snapshot with it.
+  const hostile = {
+    'node-a': { attestedAt: new Date().toISOString(), signals: [
+      { dimension: 'toString', state: 'strong', coverage: 0.5 },
+      { dimension: '__proto__', state: 'failing' },
+      { dimension: 'identity', state: 'weak', coverage: 0.4, findings: { high: 'many' } },
+    ] },
+    'node-b': { attestedAt: 'not a date', signals: null },
+    'node-c': null,
+  };
+  const constellation = buildConstellation(hostile);
+  assert.equal(constellation.unrecognisedSignals, 2);
+  const identity = constellation.dimensions.find(entry => entry.dimension === 'identity');
+  assert.equal(identity.worst, 'weak');
+  assert.equal(identity.findings.high, 0, 'a non-numeric count contributes nothing rather than NaN');
+  assert.equal(constellation.attestedNodes, 2);
+});
+
+test('SEC-033 no single field can make the plane stop answering', async () => {
+  const { safeText, MAX_SAFE_TEXT_LENGTH, detectSecretShape } = await import('../src/security/text.js');
+  // Detector cost is quadratic in the length of the subject, and the process has one
+  // thread: an oversized field is not a slow request, it is an unavailable service.
+  // The bound is applied ahead of the first pattern rather than by the caller.
+  const pathological = 'a.'.repeat(125_000);
+  const started = process.hrtime.bigint();
+  assert.throws(() => safeText(pathological, 'description'), /exceeds 4096 characters/);
+  const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+  assert.ok(elapsedMs < 250, `boundary spent ${elapsedMs.toFixed(0)}ms on one field`);
+
+  // The bound does not blunt the detector inside it.
+  const atLimit = 'a.'.repeat(MAX_SAFE_TEXT_LENGTH / 2 - 1);
+  const inner = process.hrtime.bigint();
+  safeText(atLimit, 'description');
+  assert.ok(Number(process.hrtime.bigint() - inner) / 1e6 < 250, 'a legal field is checked promptly');
+  // secret-scan:allow a credential-shaped fixture the detector must still catch
+  assert.equal(detectSecretShape('https://admin:hunter2hunter2@example.com/x').id, 'basic-auth-url');
+});
+
+test('SEC-033 an oversized field is refused over HTTP without stalling the listener', async () => {
+  const h = await harness();
+  try {
+    const started = Date.now();
+    const refused = await h.command(h.tokens['operator:alice'], {
+      actorId: 'operator:alice',
+      ...h.node('payload-terminal', OBSERVE),
+      node: { nodeId: 'payload-terminal', name: 'payload-terminal', kind: 'api', description: 'a.'.repeat(100_000), capabilities: OBSERVE, metadata: {}, location: null },
+    });
+    assert.equal(refused.status, 422);
+    // The listener is still answering, which is the whole point.
+    const live = await h.call('GET', '/health');
+    assert.equal(live.status, 200);
+    assert.ok(Date.now() - started < 10_000, 'the refusal did not block the event loop');
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-034 a record field outside the contract is covered by nothing and is refused', async () => {
+  const h = await harness();
+  try {
+    await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', ...h.node('payload-terminal', OBSERVE) });
+    const lines = (await readFile(h.config.journalPath, 'utf8')).trim().split('\n');
+    const record = JSON.parse(lines[lines.length - 1]);
+
+    // The record hash covers the event and the preceding hash; the signature covers
+    // the record hash. Neither covers the rest of the line, so an annotation added by
+    // anyone who can write the file would be served verbatim from /v1/events with the
+    // chain still reporting the history as intact.
+    record.note = 'approved out of band by the platform team';
+    lines[lines.length - 1] = JSON.stringify(record);
+    await writeFile(h.config.journalPath, `${lines.join('\n')}\n`);
+
+    const events = await h.call('GET', '/v1/events', { token: h.tokens['operator:alice'] });
+    assert.equal(events.status, 503);
+    assert.equal(events.body.error, 'JOURNAL_CORRUPT');
+    assert.match(events.body.detail, /carries the field note/);
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-035 a retired signing key cannot sign new history, and loses its private half', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'ncp-rotate-'));
+  try {
+    const kek = KeyEncryptionKey.generate('kek-primary');
+    const keystorePath = join(directory, 'keystore.json');
+    const journalPath = join(directory, 'journal.jsonl');
+    const store = await KeyStore.load({ filePath: keystorePath, kek, create: true });
+    const plane = ControlPlane.fromPath(journalPath, undefined, { keyStore: store, anchor: false });
+
+    const submit = async (nodeId, revisionOverride) => {
+      const snapshot = await plane.snapshot();
+      return plane.command({
+        requestId: `rotate:${nodeId}`,
+        submittedAt: new Date().toISOString(),
+        expectedRevision: revisionOverride === undefined ? snapshot.revision : revisionOverride,
+        actorId: 'operator:alice',
+        action: 'register_node',
+        node: { nodeId, name: nodeId, kind: 'api', description: `${nodeId} is a registered ecosystem node.`, capabilities: OBSERVE, metadata: {}, location: null },
+      });
+    };
+    await submit('node-before');
+
+    const retiredKeyId = store.activeKeyId;
+    const rotation = await store.rotate({ atRecord: 1 });
+    assert.equal(rotation.retired, retiredKeyId);
+
+    // Rotation is a reduction in what a stolen copy of the old key is worth.
+    const persisted = JSON.parse(await readFile(keystorePath, 'utf8'));
+    const retired = persisted.keys.find(key => key.keyId === retiredKeyId);
+    assert.equal(retired.privateKey, null, 'the retired private half is gone from the store');
+    assert.equal(retired.retiredAtRecord, 1);
+    assert.equal(store.retirementBounds().length, 0);
+
+    // History the retired key signed still verifies; anything it signs afterwards
+    // does not, however well-formed the signature is.
+    await submit('node-after');
+    const records = (await readFile(journalPath, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
+    assert.equal(records[0].signature.keyId, retiredKeyId);
+    assert.equal(records[1].signature.keyId, store.activeKeyId);
+
+    const forged = { ...records[1], signature: { ...records[1].signature, keyId: retiredKeyId } };
+    assert.equal(store.verify(forged.recordHash, forged.signature, { index: 1 }).ok, false);
+    assert.match(store.verify(forged.recordHash, forged.signature, { index: 1 }).reason, /retired at record 1/);
+    assert.equal(store.verify(records[0].recordHash, records[0].signature, { index: 0 }).ok, true);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('SEC-036 a control that cannot run is refused, never reported as running', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'ncp-signing-'));
+  try {
+    const config = {
+      ...readConfig({}),
+      journalPath: join(directory, 'journal.jsonl'),
+      keystorePath: join(directory, 'keystore.json'),
+      principalsFile: null,
+      legacyToken: 'local-development-token',
+      signing: false,
+      requireSignatures: true,
+    };
+    // Requiring signatures with signing off checks nothing, and the security status
+    // surface would have reported the requirement as in force at every read.
+    await assert.rejects(
+      createRuntime(config, { securityLog: new SecurityLog({ sink: () => {} }) }),
+      /REQUIRE_SIGNATURES is set but signing is disabled/,
+    );
+
+    const runtime = await createRuntime({ ...config, signing: true }, { securityLog: new SecurityLog({ sink: () => {} }) });
+    assert.equal(runtime.journal.integrity().requireSignatures, true);
+    assert.equal(runtime.journal.integrity().signing, 'active');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('SEC-037 material with no legitimate reading is refused in every field, not only in posture', async () => {
+  const h = await harness();
+  try {
+    const register = (nodeId, description, metadata = { domain: 'platform' }) => h.command(h.tokens['operator:alice'], {
+      actorId: 'operator:alice',
+      action: 'register_node',
+      node: { nodeId, name: nodeId, kind: 'api', description, capabilities: OBSERVE, metadata, location: null },
+    });
+
+    // The evidence boundary belongs to the posture command, but two of its classes —
+    // the means to attack a system, and where the key material lives — have no
+    // reading anywhere in a coordination ledger. Without this, a node description is
+    // the way around the boundary.
+    const weaponised = await register('hostile-a', 'Hardening validated by running sqlmap against the search endpoint.');
+    assert.equal(weaponised.status, 422);
+    assert.match(weaponised.body.detail, /offensive-capability/);
+
+    const keyPath = await register('hostile-b', 'TLS terminates here; the certificate lives beside id_rsa on the host.');
+    assert.equal(keyPath.status, 422);
+    assert.match(keyPath.body.detail, /key-material-location/);
+
+    const inMetadata = await register('hostile-c', 'A node with hostile metadata.', { domain: 'platform', runbook: 'restore from backup.pem' });
+    assert.equal(inMetadata.status, 422);
+    assert.match(inMetadata.body.detail, /key-material-location/);
+
+    // Classes that do have a legitimate reading elsewhere stay scoped to posture: a
+    // repository reference is exactly what node metadata is for.
+    const ordinary = await register('payload-terminal', 'Payload terminal serves the published world projection.', { domain: 'platform', repo: 'notationsystems/payload-terminal' });
+    assert.equal(ordinary.status, 201);
+  } finally {
+    await h.close();
+  }
+});

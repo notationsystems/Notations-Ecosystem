@@ -25,8 +25,10 @@
  *   projection must not yield the material it points at.
  */
 
+import { isKnown, sealedTable } from '../security/table.js';
+
 /** The classes of the identity space. Unknown classes are refused, never coerced. */
-export const URI_CLASSES = Object.freeze({
+export const URI_CLASSES = sealedTable({
   source: 'An upstream origin of information (a publisher, feed, instrument, registry)',
   artifact: 'Immutable original material in the evidence lake (a scan, capture, dataset file)',
   observation: 'A measured or perceived fact about an entity at a time',
@@ -91,7 +93,7 @@ export function parseUri(value) {
   if (withoutVersion.endsWith('/')) throw new UriError('A Notation URI may not end with a separator.');
   if (segments.length < 3) throw new UriError('A Notation URI needs a class, a namespace and a local id.');
   const [className, namespace, ...localSegments] = segments;
-  if (!(className in URI_CLASSES)) throw new UriError(`"${className}" is not a Notation identity class. Known classes: ${Object.keys(URI_CLASSES).join(', ')}.`);
+  if (!isKnown(URI_CLASSES, className)) throw new UriError(`"${className}" is not a Notation identity class. Known classes: ${Object.keys(URI_CLASSES).join(', ')}.`);
   for (const segment of segments) {
     if (segment === '.' || segment === '..') throw new UriError('A Notation URI may not contain relative segments.');
     if (!SEGMENT.test(segment)) throw new UriError(`"${segment}" is not a valid identity segment.`);

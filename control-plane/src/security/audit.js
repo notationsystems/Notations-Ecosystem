@@ -17,8 +17,9 @@
 
 import { createHash } from 'node:crypto';
 import { logSafe } from './text.js';
+import { lookup, sealedTable } from './table.js';
 
-export const SECURITY_EVENTS = Object.freeze({
+export const SECURITY_EVENTS = sealedTable({
   BOOT: 'boot',
   AUTH_OK: 'auth.ok',
   AUTH_FAILED: 'auth.failed',
@@ -35,7 +36,7 @@ export const SECURITY_EVENTS = Object.freeze({
 });
 
 /** Severity is the operator's triage order, not a CVSS claim. */
-const SEVERITY = Object.freeze({
+const SEVERITY = sealedTable({
   [SECURITY_EVENTS.BOOT]: 'info',
   [SECURITY_EVENTS.AUTH_OK]: 'debug',
   [SECURITY_EVENTS.AUTH_FAILED]: 'warn',
@@ -81,7 +82,7 @@ export class SecurityLog {
    * @param {Record<string, unknown>} fields non-sensitive context
    */
   record(kind, fields = {}) {
-    const severity = SEVERITY[kind] ?? 'info';
+    const severity = lookup(SEVERITY, kind) ?? 'info';
     this.counts.set(kind, (this.counts.get(kind) ?? 0) + 1);
     const event = { at: this.clock(), kind, severity };
     for (const [key, value] of Object.entries(fields)) {

@@ -19,9 +19,10 @@
  */
 
 import { ControlPlaneError } from '../errors.js';
+import { lookup, sealedTable } from './table.js';
 
 /** Every permission the control plane recognises. Unknown permissions fail closed. */
-export const PERMISSIONS = Object.freeze({
+export const PERMISSIONS = sealedTable({
   SNAPSHOT_READ: 'snapshot.read',
   EVENTS_READ: 'events.read',
   NODE_REGISTER: 'node.register',
@@ -40,7 +41,7 @@ const P = PERMISSIONS;
  * describe a real deployment and fine enough that no role implies approval unless
  * it is the operator role.
  */
-export const ROLES = Object.freeze({
+export const ROLES = sealedTable({
   reader: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ]),
   registrar: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ, P.NODE_REGISTER, P.RELATION_DECLARE]),
   monitor: Object.freeze([P.SNAPSHOT_READ, P.OBSERVATION_RECORD]),
@@ -51,7 +52,7 @@ export const ROLES = Object.freeze({
 });
 
 /** The permission each command action requires. An action absent here is refused. */
-export const ACTION_PERMISSIONS = Object.freeze({
+export const ACTION_PERMISSIONS = sealedTable({
   register_node: P.NODE_REGISTER,
   declare_relation: P.RELATION_DECLARE,
   record_observation: P.OBSERVATION_RECORD,
@@ -64,7 +65,7 @@ export const ACTION_PERMISSIONS = Object.freeze({
 export function rolesOf(roles) {
   const permissions = new Set();
   for (const role of roles) {
-    const granted = ROLES[role];
+    const granted = lookup(ROLES, role);
     if (!granted) continue;
     for (const permission of granted) permissions.add(permission);
   }
@@ -122,7 +123,7 @@ export function requireSeparationOfDuties(resolvingActorId, requestingActorId) {
  * Unknown actions never acquire privileged semantics by default (SEC-016).
  */
 export function permissionForAction(action) {
-  const permission = ACTION_PERMISSIONS[action];
+  const permission = lookup(ACTION_PERMISSIONS, action);
   if (!permission) {
     throw new ControlPlaneError(422, 'CONTROL_PLANE_COMMAND_INVALID', `Action ${action} is not a recognised control-plane action.`, 'Use the published control-plane API contract.');
   }

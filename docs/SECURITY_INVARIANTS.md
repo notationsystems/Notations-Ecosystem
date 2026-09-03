@@ -11,7 +11,7 @@ Run them with `cd control-plane && npm test`.
 | SEC-001 | No unauthenticated actor may read state or invoke a state transition. | `server.js` authenticates before any route but `/health`. | `SEC-001 no unauthenticated actor…` |
 | SEC-002 | Authorization is checked server-side at every privileged boundary, and fails closed. | `policy.js` `requirePermission`, called from `ControlPlane.command`. | `SEC-002 authorization is checked per action…` |
 | SEC-003 | Frontend state is never authorization evidence; the recorded actor is bound to the credential, exactly. | `policy.js` `requireActorBinding`; actor patterns are exact or the single legacy `*`, never prefixes. | `SEC-003 and SEC-006 the recorded actor…`, `SEC-003 actor binding is exact…` |
-| SEC-004 | No secret may be committed to source control. | `security/scan-secrets.mjs`, run in CI. | CI job `security`, exemptions written in place. |
+| SEC-004 | No secret may be committed to source control. | `security/scan-secrets.mjs`, run in CI; `.gitignore` excludes the runtime state directory the key store and registry live in. | CI job `security`, exemptions written in place. |
 | SEC-005 | No long-lived secret is stored in browser storage. | `dock/src/api/controlPlane.ts` holds the token in memory only. | `the credential never reaches browser storage` (dock) |
 | SEC-006 | Every canonical-state mutation carries an authenticated execution identity. | Actor binding plus the journal's `actorId`. | `SEC-003 and SEC-006 …` |
 | SEC-007 | Every privileged mutation and every denial produces an auditable event. | `audit.js` `SecurityLog`, written from the request path. | `SEC-AUDIT privileged outcomes are recorded…` |
@@ -38,6 +38,13 @@ Run them with `cd control-plane && npm test`.
 | SEC-028 | Snapshot content never becomes markup, an attribute, or a link destination. | `esc`/`safeColor`/`own` in the graph tooltip; `githubRepoUrl` for links. | `a hostile snapshot cannot inject into the graph tooltip`, `untrusted metadata never becomes a link destination` (dock) |
 | SEC-029 | A bulk writer meeting a rate limit backs off rather than defeating it. | `HttpControlPlane` honours `Retry-After`; authorization failures are never retried. | `SEC-ABUSE a legitimate bulk writer backs off…` |
 | SEC-030 | The constellation holds evidence, never material. | `security/evidence.js` refusal boundary. | `SEC-030 the constellation accepts posture evidence and refuses material` |
+| SEC-031 | An inherited property name is never a member of an allowlist. | `security/table.js`: every lookup table is prototype-less and asked with `Object.hasOwn`. | `SEC-031 an inherited property name…`, `SEC-031 a role name outside the table…` |
+| SEC-032 | The projection is total over anything the journal can hold. | `buildConstellation` counts what it does not recognise instead of failing on it. | `SEC-032 the projection is total over anything the journal can hold` |
+| SEC-033 | No single field can make the plane stop answering. | `MAX_SAFE_TEXT_LENGTH`, applied ahead of the first pattern; bounded quantifiers. | `SEC-033 no single field…`, `SEC-033 an oversized field is refused over HTTP…` |
+| SEC-034 | Everything a record carries is covered by the hash chain and the signature. | `verifyRecords` closes the record shape. | `SEC-034 a record field outside the contract…` |
+| SEC-035 | Retirement removes a key's authority, not only its label. | `KeyStore.verify` holds a retired key to `retiredAtRecord`; rotation drops its private half. | `SEC-035 a retired signing key cannot sign new history…` |
+| SEC-036 | A control that cannot run is refused at boot, never reported as running. | `createRuntime` refuses `requireSignatures` without a key store. | `SEC-036 a control that cannot run is refused…` |
+| SEC-037 | Material with no legitimate reading is refused in every field, not only in posture. | `assertNoWeaponisedText`, called from `validation.js` `string()` and metadata. | `SEC-037 material with no legitimate reading…` |
 
 ## Recovery
 
@@ -65,3 +72,9 @@ recorded here so that a change which breaks one is visible in review.
 - **Posture is asymmetric by construction.** The producer (`security/attest.mjs`) sees
   package versions, advisory ids and paths; the plane receives counts and states. This
   is what makes compromising the visualiser unprofitable.
+- **A projection may not be able to fail.** Everything downstream of the journal reads
+  an append-only history, so a read path that throws on one stored record takes every
+  future read with it and the record cannot be withdrawn. Validation fails closed at
+  the write boundary; projection is total (SEC-032). The two rules point in opposite
+  directions on purpose, and which side of the journal the code is on decides which
+  one applies.

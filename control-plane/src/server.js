@@ -91,6 +91,16 @@ export async function createRuntime(config = readConfig(), { securityLog = new S
     const kek = config.kek ? KeyEncryptionKey.fromBase64('kek-primary', config.kek) : null;
     keyStore = await KeyStore.load({ filePath: config.keystorePath, kek, create: true });
     for (const warning of keyStore.warnings) securityLog.record(SECURITY_EVENTS.CONFIG_WARNING, { detail: warning });
+    for (const keyId of keyStore.retirementBounds()) {
+      securityLog.record(SECURITY_EVENTS.CONFIG_WARNING, { detail: `signing key ${keyId} was retired without a recorded journal position, so its authority cannot be bounded; rotate again to record one` });
+    }
+  }
+
+  // A control that is configured but cannot run is reported as running, which is the
+  // worse of the two failures. Requiring signatures without a key store to check them
+  // with is refused here rather than announced at boot and ignored at every read.
+  if (config.requireSignatures && !keyStore) {
+    throw new Error('CONTROL_PLANE_REQUIRE_SIGNATURES is set but signing is disabled, so no signature could ever be checked. Set CONTROL_PLANE_SIGNING=1, or unset the requirement.');
   }
 
   const journal = new HashJournal(config.journalPath, { keyStore, requireSignatures: config.requireSignatures, anchor: config.anchor });
