@@ -1,5 +1,5 @@
 import type { Snapshot, SnapshotNode } from '../model/types';
-import { CORPUS_GRADE_COLOR, CORPUS_ROLE_LABEL, KIND_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL, corpusStanding } from '../model/types';
+import { CORPUS_GRADE_COLOR, CORPUS_ROLE_LABEL, KIND_LABEL, PERSON_DATA_COLOR, PERSON_DATA_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL, collectionStanding, corpusStanding } from '../model/types';
 import { githubRepoUrl } from '../model/links';
 
 export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
@@ -15,6 +15,7 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
   const coordination = snapshot.coordination.filter((c) => c.targetNodeId === node.nodeId || c.requesterNodeId === node.nodeId);
   const md = node.metadata ?? {};
   const corpus = corpusStanding(node);
+  const collection = collectionStanding(node);
   // Per-capability annotations stay in the catalog; the set a node touches crosses, so
   // "which systems touch trade-flows?" is answerable from a snapshot alone.
   const subjects = typeof md.data_domains === 'string' && md.data_domains.trim() ? md.data_domains.trim().split(/\s+/) : [];
@@ -53,6 +54,21 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
             <>
               <span title="Invariants this node declares it does not hold. Naming a failure is the point.">declared failures</span>
               <b>{corpus.fails.join(' ')}</b>
+            </>
+          )}
+        </div>
+      )}
+      {collection && (
+        <div className="kv" style={{ marginBottom: 10 }}>
+          <span title="Where this node sits under the estate's collection policy — docs/COLLECTION_POLICY.md.">person data</span>
+          <b>
+            <span className="badge" style={{ borderColor: PERSON_DATA_COLOR[collection.standing], color: PERSON_DATA_COLOR[collection.standing] }}>{collection.standing}</span>
+            {` ${PERSON_DATA_LABEL[collection.standing].toLowerCase()}`}
+          </b>
+          {collection.exception && (
+            <>
+              <span title="A node that answers questions about people must say what it serves and what would end it. This sentence is that declaration.">exception</span>
+              <b style={{ fontWeight: 400 }}>{collection.exception}</b>
             </>
           )}
         </div>

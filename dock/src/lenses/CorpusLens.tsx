@@ -4,8 +4,13 @@ import {
   CORPUS_GRADE_COLOR,
   CORPUS_ROLE_LABEL,
   CORPUS_ROLE_ORDER,
+  PERSON_DATA_COLOR,
+  PERSON_DATA_LABEL,
+  PERSON_DATA_ORDER,
+  collectionStanding,
   corpusStanding,
   type CorpusRole,
+  type PersonDataStanding,
   type SnapshotNode,
 } from '../model/types';
 
@@ -22,6 +27,12 @@ import {
  * the evidence paths that justify them, stay in the catalog and never cross into the
  * journal — so this lens can show an operator where the programme is weak without the
  * browser holding a map of where to look.
+ *
+ * The estate's collection policy rides alongside, because it is the same kind of claim:
+ * a declaration a node makes about itself, checkable against what it holds. A node that
+ * answers questions about people is visible here rather than discoverable only by
+ * reading thirty catalog files — which is the difference between a policy and a
+ * paragraph.
  */
 
 const GRADE_ORDER = ['unsound', 'bare', 'developing', 'sound', 'unbuilt', 'n/a', 'undeclared'];
@@ -47,12 +58,19 @@ function Coverage({ value, applicable }: { value: number | null; applicable: num
 
 export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
   const [role, setRole] = useState<CorpusRole | null>(null);
+  const [collection, setCollection] = useState<PersonDataStanding | null>(null);
 
   const graded = useMemo(
     () =>
       filtered.nodes
-        .map((node) => ({ node, standing: corpusStanding(node) }))
-        .filter((entry): entry is { node: SnapshotNode; standing: NonNullable<ReturnType<typeof corpusStanding>> } => entry.standing !== null),
+        .map((node) => ({ node, standing: corpusStanding(node), collection: collectionStanding(node) }))
+        .filter(
+          (entry): entry is {
+            node: SnapshotNode;
+            standing: NonNullable<ReturnType<typeof corpusStanding>>;
+            collection: ReturnType<typeof collectionStanding>;
+          } => entry.standing !== null,
+        ),
     [filtered.nodes],
   );
 
@@ -77,7 +95,14 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
   // Holding a corpus and owning a domain's canonical state are different claims, and
   // COR-002 is about the second: exactly one owner per domain.
   const owners = graded.filter((entry) => entry.standing.ownerOf.length);
-  const shown = role ? [...(byRole.get(role) ?? [])] : graded.slice().sort((a, b) => gradeRank(a.standing.grade) - gradeRank(b.standing.grade) || a.node.nodeId.localeCompare(b.node.nodeId));
+  // A node that serves person data and cannot say what would end that is the one case
+  // the policy calls a defect rather than a choice; the estate's two are both declared.
+  const serving = graded.filter((entry) => entry.collection?.standing === 'serves');
+  const undeclaredCollection = graded.filter((entry) => entry.collection === null);
+  const byCollection = (value: PersonDataStanding) => graded.filter((entry) => entry.collection?.standing === value);
+
+  const inRole = role ? [...(byRole.get(role) ?? [])] : graded.slice().sort((a, b) => gradeRank(a.standing.grade) - gradeRank(b.standing.grade) || a.node.nodeId.localeCompare(b.node.nodeId));
+  const shown = collection ? inRole.filter((entry) => entry.collection?.standing === collection) : inRole;
 
   if (!graded.length) {
     return (
@@ -124,6 +149,19 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
           <span>unsound</span>
           <b style={{ color: unsound.length ? CORPUS_GRADE_COLOR.unsound : undefined }}>{unsound.length}</b>
         </div>
+        <div className="kpi">
+          <span>serves person data</span>
+          <b
+            style={{ color: serving.length ? PERSON_DATA_COLOR.serves : undefined }}
+            title={
+              serving.length
+                ? serving.map((entry) => `${entry.node.nodeId}: ${entry.collection?.exception ?? 'no exception declared'}`).join('\n\n')
+                : 'No node in this snapshot answers questions about identifiable people.'
+            }
+          >
+            {serving.length}
+          </b>
+        </div>
         <div style={{ marginLeft: 'auto', maxWidth: 470, textAlign: 'right', color: 'var(--muted)', fontSize: 11 }}>
           A node that owns canonical state but cannot show provenance, typed refusal or an admission
           boundary is <b>unsound</b> whatever its coverage — a different category, not a low score.
@@ -143,10 +181,32 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
             </button>
           );
         })}
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--line)', margin: '0 4px' }} />
+        {PERSON_DATA_ORDER.map((value) => {
+          const count = byCollection(value).length;
+          if (!count) return null;
+          return (
+            <button
+              key={value}
+              type="button"
+              className={`tab ${collection === value ? 'active' : ''}`}
+              onClick={() => setCollection(collection === value ? null : value)}
+              title={PERSON_DATA_LABEL[value]}
+              style={{ borderColor: collection === value ? PERSON_DATA_COLOR[value] : undefined }}
+            >
+              {value} ({count})
+            </button>
+          );
+        })}
+        {undeclaredCollection.length > 0 && (
+          <span className="tab" title="Seeded before the collection policy existed. Read as a gap, never as a refusal.">
+            collection undeclared ({undeclaredCollection.length})
+          </span>
+        )}
       </div>
 
       <div className="sec-grid" style={{ marginTop: 12 }}>
-        {shown.map(({ node, standing }) => (
+        {shown.map(({ node, standing, collection: person }) => (
           <button
             key={node.nodeId}
             type="button"
@@ -166,6 +226,15 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
             </span>
             <span className="sec-meta">
               <Coverage value={standing.coverage} applicable={standing.applicable} />
+              {person && person.standing !== 'refused' && (
+                <span
+                  className="badge"
+                  style={{ borderColor: PERSON_DATA_COLOR[person.standing], color: PERSON_DATA_COLOR[person.standing] }}
+                  title={person.exception ?? PERSON_DATA_LABEL[person.standing]}
+                >
+                  {person.standing === 'serves' ? 'serves people' : 'people incidental'}
+                </span>
+              )}
             </span>
             {standing.fails.length || standing.unknown.length ? (
               <span className="sec-findings">
@@ -192,6 +261,13 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
         invariants apply: a projection holds nothing to be provenant about and is exempt from seven of
         them, but is bound absolutely by the one that says it must never write back. Exemption is
         structural and is not the same as failure; “not built yet” is a failure.
+      </p>
+      <p className="empty-note" style={{ marginTop: 6 }}>
+        The collection standing beside each grade is the estate's policy —
+        <code> docs/COLLECTION_POLICY.md</code> — not one repository's CI rule. Refusing person data is
+        a property of what a system is for; a node that answers questions about people must name the
+        exception and what would end it, and the same fact is recorded as its <code>COR-010</code>
+        failure rather than left to two places to disagree about.
       </p>
     </div>
   );

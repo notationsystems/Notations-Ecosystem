@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CORPUS_ROLE_ORDER, corpusStanding, type Snapshot, type SnapshotNode } from '../src/model/types';
+import { CORPUS_ROLE_ORDER, collectionStanding, corpusStanding, type Snapshot, type SnapshotNode } from '../src/model/types';
 
 const sample = JSON.parse(readFileSync(path.resolve(__dirname, '../public/sample-snapshot.json'), 'utf8')) as Snapshot;
 
@@ -87,5 +87,54 @@ describe('the sample snapshot carries the whole estate', () => {
       expect(n.uri).toBe(`notation://node/notationsystems/${n.nodeId}`);
       expect(n.uri).not.toMatch(/^https?:/);
     }
+  });
+});
+
+describe('collection standing', () => {
+  it('reads the declaration a node makes about person data', () => {
+    expect(collectionStanding(node({ person_data: 'refused' }))).toEqual({ standing: 'refused', exception: null });
+    expect(collectionStanding(node({ person_data: 'incidental' }))?.standing).toBe('incidental');
+  });
+
+  it('carries the written exception on a node that serves', () => {
+    const standing = collectionStanding(node({ person_data: 'serves', person_data_exception: 'Serves analyst profiles; ends when the upstream contract does.' }));
+    expect(standing?.standing).toBe('serves');
+    expect(standing?.exception).toBe('Serves analyst profiles; ends when the upstream contract does.');
+  });
+
+  it('reports a missing declaration rather than reading it as a refusal', () => {
+    // A node seeded before the policy existed has said nothing. Silence is a gap; the
+    // one thing it must never be rendered as is the strongest of the three answers.
+    expect(collectionStanding(node({ domain: 'platform' }))).toBeNull();
+    expect(collectionStanding(node({ person_data: 'none' }))).toBeNull();
+  });
+
+  it('does not admit an exception it cannot read as a sentence', () => {
+    expect(collectionStanding(node({ person_data: 'serves', person_data_exception: '   ' }))?.exception).toBeNull();
+  });
+});
+
+describe('the sample snapshot states where every node sits under the collection policy', () => {
+  it('declares one of the three standings for all thirty', () => {
+    const declared = sample.nodes.map((n) => collectionStanding(n));
+    expect(declared.filter(Boolean)).toHaveLength(sample.nodes.length);
+  });
+
+  it('gives every first-party node that serves people an exception, and the same COR-010 failure', () => {
+    const serving = sample.nodes.filter((n) => n.metadata.person_data === 'serves');
+    expect(serving.length).toBeGreaterThan(0);
+    for (const n of serving) {
+      if (n.metadata.maturity === 'upstream-mirror') continue;
+      expect(collectionStanding(n)?.exception).toBeTruthy();
+      // The two records must not be able to disagree: serving people is the declared
+      // refusal that is not held.
+      expect(String(n.metadata.corpus_fails ?? '')).toContain('COR-010');
+    }
+  });
+
+  it('keeps refusal the estate\'s default rather than its exception', () => {
+    const refused = sample.nodes.filter((n) => n.metadata.person_data === 'refused');
+    const serving = sample.nodes.filter((n) => n.metadata.person_data === 'serves');
+    expect(refused.length).toBeGreaterThan(serving.length * 5);
   });
 });

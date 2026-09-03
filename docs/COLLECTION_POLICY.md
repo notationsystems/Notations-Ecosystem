@@ -50,6 +50,15 @@ Two nodes are in that position today, both descended from the same upstream:
 Both are recorded as COR-010 failures in the catalog, which is the corpus doctrine and
 this policy agreeing about the same fact from two directions.
 
+## Where it is visible
+
+The standing crosses into the snapshot as node metadata, so an operator sees it without
+reading thirty catalog files: the dock's **Corpus** lens filters the estate by standing
+and counts the nodes that serve, and the inspector shows a serving node's exception in
+full. That is deliberate — an exception nobody can see is indistinguishable from one
+nobody wrote. What does not cross is anything the standing is *about*: the plane records
+that a node answers questions about people, never an answer.
+
 ## What this does not cover
 
 Contact details of *counterparties* — a carrier's dispatcher, a supplier's account

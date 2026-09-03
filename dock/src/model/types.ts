@@ -169,6 +169,57 @@ export function corpusStanding(node: SnapshotNode): CorpusStanding | null {
   };
 }
 
+/**
+ * Where a node sits under the estate's collection policy (docs/COLLECTION_POLICY.md).
+ *
+ * `refused` — the node holds no data about identifiable people, and that is a property
+ * of what it is for, not of what happens to be in it today.
+ * `incidental` — people appear in what it holds (an author, an operator, a signatory)
+ * but no capability answers a question about a person.
+ * `serves` — a capability answers questions about people. On a first-party node that
+ * requires a written exception saying what it serves and what would end it, and it is
+ * the same fact the corpus grade records as a `COR-010` failure.
+ */
+export type PersonDataStanding = 'refused' | 'incidental' | 'serves';
+
+export const PERSON_DATA_ORDER: PersonDataStanding[] = ['refused', 'incidental', 'serves'];
+
+export const PERSON_DATA_LABEL: Record<PersonDataStanding, string> = {
+  refused: 'Refuses person data',
+  incidental: 'People appear incidentally',
+  serves: 'Answers questions about people',
+};
+
+export const PERSON_DATA_COLOR: Record<PersonDataStanding, string> = {
+  refused: '#3fb950',
+  incidental: '#d29922',
+  serves: '#f85149',
+};
+
+export interface CollectionStanding {
+  standing: PersonDataStanding;
+  /**
+   * The written exception, on a node that serves. Absent on an upstream mirror, whose
+   * collection posture is the upstream's to declare and this estate's only to record.
+   */
+  exception: string | null;
+}
+
+/**
+ * A node's collection standing. Every catalog node declares one and the validator
+ * refuses a node that does not, so a node without one here is a node seeded before the
+ * policy existed — reported as such rather than silently read as `refused`.
+ */
+export function collectionStanding(node: SnapshotNode): CollectionStanding | null {
+  const value = node.metadata.person_data;
+  if (typeof value !== 'string' || !(PERSON_DATA_ORDER as string[]).includes(value)) return null;
+  const exception = node.metadata.person_data_exception;
+  return {
+    standing: value as PersonDataStanding,
+    exception: typeof exception === 'string' && exception.trim() ? exception.trim() : null,
+  };
+}
+
 export interface Relation {
   relationId: string;
   sourceNodeId: string;
