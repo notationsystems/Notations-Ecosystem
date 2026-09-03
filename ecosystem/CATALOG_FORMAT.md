@@ -62,7 +62,17 @@ runs the real validator over every file.
     "health": { "method": "http|cli|manifest-only|none", "endpoint": "/api/health" },
     "spatial": "one sentence on what geography the system natively carries",
     "temporal": "one sentence on what time dimension it carries",
-    "open_questions": []
+    "open_questions": [],
+    "corpus": {
+      "role": "hold|feed|transform|project|coordinate",
+      "holding": "One sentence naming the body of material and its extent, or what it holds instead of one.",
+      "owner_of": ["physical-economy"],
+      "standing": {
+        "COR-003": { "standing": "holds",  "evidence": "src/lib/economy/basis.ts", "note": "every figure carries source, basis and known_at" },
+        "COR-007": { "standing": "fails",  "note": "captures are parsed on the wire; no manifest yet" },
+        "COR-009": { "standing": "exempt", "note": "holds no state to write back to" }
+      }
+    }
   }
 }
 ```
@@ -77,7 +87,14 @@ runs the real validator over every file.
 - `location`: `null` or `{ longitude, latitude }` (a `label` is allowed in the catalog and stripped before seeding).
 - `relations[].kind` ∈ `supplies_context_to` · `coordinates` · `visualizes` · `governs` · `depends_on`; `targetNodeId` should be another catalog node.
 - `surface`, `method`, `path`, `evidence`, `side_effects`, `cost`, `latency`, `provenance`, `data_domain` and `workflow` on capabilities, and the whole `reference` block, are catalog-only: they never enter the control plane. `cost` is a short hint ("free", "rate-limited 60/min", "GPU minutes"); `latency` a typical figure ("~200 ms", "minutes"); `provenance` where the capability's answers come from ("UN Comtrade capture 2026-08-27", "synthetic:demo", "OpenSanctions bulk CSV"); `data_domain` the data domain it touches (e.g. `trade-flows`, `carrier-identity`, `sanctions`); `workflow` the operator workflow it belongs to (e.g. `daily-chain`, `deploy`).
-- `reference` may also carry `data_sources` (`[{ name, domain, purpose, auth, coverage, freshness }]`), `workflows` (`[{ id, name, steps: [string], doc_path }]`) and `layers` (`[{ id, name, geometry, source, provenance }]`) for systems that are modelled deeply (Payload first).
+- `reference` may also carry `workflows` (`[{ id, name, steps: [string], doc_path }]`) and `layers` (`[{ id, name, geometry, source, provenance }]`) for systems that are modelled deeply. External data sources go in `external_services` (`[{ name, domain, purpose, auth }]`), which 21 nodes use for 112 services; there is no separate `data_sources` field, because one system's sources described two ways is the incoherence this catalog exists to remove.
+- `reference.corpus` is **required**: every node is graded against [docs/CORPUS.md](../docs/CORPUS.md), including one that holds nothing. `role` is one of `hold`, `feed`, `transform`, `project`, `coordinate`; `holding` names the body of material and its extent; `owner_of` lists the domains whose canonical state this node owns and may only be non-empty for a `hold`. `standing` is keyed by invariant id (`COR-001`…`COR-010`) with one of four values:
+  - `holds` — requires an `evidence` path, exactly as a capability does;
+  - `fails` — legal, expected, and never a validation error. A catalog that could not record a failure would record only flattery;
+  - `exempt` — requires a `note` giving a *structural* reason. "Not implemented yet" is refused and must be declared `fails`;
+  - `unknown` — the default for anything undeclared, and it counts against the node.
+
+  The grade is derived by `ecosystem/corpus.mjs` and never written down. `role`, `grade` and `coverage` cross into the journal as `metadata.corpus_*`; the declaration and its evidence paths do not.
 
 ### Meaning of the enums
 
@@ -86,3 +103,5 @@ runs the real validator over every file.
 - **relation kind** (source → target) — `supplies_context_to`: evidence/data/context flows from source into target. `coordinates`: source orchestrates or calls target. `visualizes`: source renders target's state. `governs`: source defines policy or contract that target follows. `depends_on`: source needs target to function.
 - **metadata.domain** ∈ `physical-economy` · `intelligence` · `scientific` · `built-environment` · `perception-3d` · `geospatial` · `archive` · `platform`.
 - **metadata.maturity** ∈ `empty` · `prototype` · `v0` · `active` · `archived` · `upstream-mirror` · `external`.
+- **corpus role** (function in the program, as against `kind`, which is shape) — `hold`: owns a corpus or a canonical state. `feed`: supplies evidence into someone else's corpus. `transform`: computes over a corpus and returns proposals, never measurements. `project`: renders a corpus it does not own. `coordinate`: records what exists and what was agreed between corpora. The two are orthogonal, and where they disagree the disagreement is the point: `payload-render-engine` is a `world_model` that must only `project`.
+- **`cost` and `latency` are measurements.** A system that refuses to turn an unknown figure into a zero cannot annotate its own capabilities with invented ones. State the basis where one exists (`~3.7 ms native at N=2000`, `measured in docs/incremental-propagation-v1.md`); leave the field absent where it does not.

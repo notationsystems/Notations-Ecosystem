@@ -10,7 +10,45 @@ Every vertical repeats the same philosophy. **Canonical state has exactly one ow
 
 The control plane coordinates all of this and must inherit the discipline rather than dilute it. It records intent and approval in an append-only, hash-linked journal, never holds provider credentials, never dispatches an external call, and every write carries `expectedRevision`. When reasoning engines coordinate across nodes through it, the plane must respect that **mode is the contract**: `observe` is free, `propose` is review material, and `execute` always waits for an operator, and even an approved intent stays `not_dispatched` until a separate least-privilege adapter exists. It must keep the direction of every relation honest (evidence flows *into* a canonical owner; docks visualise and never own), refuse to register a mirror, projection or forecaster as a state holder, and treat upstream mirrors as capabilities to be called, not truths to be copied. It must carry the knowledge bound through coordination: a request that spans nodes must state `asOf` and knowledge mode, must accept typed refusals as successful answers, must never coerce a null into a zero or a synthetic row (`provenance.source: synthetic:demo`) into a real one, and must expect that a computation returned from SCL or a scene from Matrix-3D is a proposal until admitted. And it must keep the journal free of what the nodes themselves refuse to hold: person data, credentials, raw request bodies and hand-edited archives.
 
-## 2. Domains
+## 2. Corpus standing
+
+Every node is graded against the ten invariants of [docs/CORPUS.md](../docs/CORPUS.md).
+Standing is declared per node in `reference.corpus` with an evidence path; the grade is
+derived by `node ecosystem/corpus.mjs` and never written down. Coverage is `holds` over
+applicable, where a role structurally exempts the invariants it cannot be about.
+
+| Grade | Nodes |
+|---|---|
+| sound (coverage 1.0) | `control-plane`, `data-acquisition-channel`, `gods-eye-view`, `notations-dock`, `payload-ocr-agent`, `payload-render-engine`, `payload-terminal` |
+| developing (0.5–0.9) | `bim-state-transformer-engine`, `information-systems-archive`, `lichtfeld-studio`, `matrix-3d`, `notations-corpus-graph`, `osiris-dashboard`, `pythia-oracle-engine`, `scientific-compute-layer`, `scientific-transformer-engine`, `trustgraph` |
+| bare (< 0.5) | `atlas-mcp`, `geoagent`, `geometry-grounded-gaussian-splatting`, `lingbot-depth`, `notation-systems-web`, `osint-war-room`, `osiris-intel` |
+| unbuilt (an empty repository) | `building-information-corpus`, `building-information-graph`, `network-scout-signal-miner`, `notations-archival-swarm`, `notations-energy-modulator`, `payload-corpus-graph` |
+| unsound | none |
+
+Mean coverage across graded nodes is 0.56. Eight nodes hold a corpus; three own a domain's
+canonical state (`payload-terminal` → physical-economy, `scientific-transformer-engine` →
+scientific, `bim-state-transformer-engine` → built-environment), which is COR-002 holding.
+
+What the grading makes visible that prose did not:
+
+- **Knowledge time is a physical-economy property, not an estate property.** `payload-terminal`
+  answers `asOf` with `knowledge=best_known|as_known_then`; both other canonical-state
+  owners declare COR-004 failed. STE orders versions by hash lineage and excludes
+  timestamps from identity; GAT treats evidence age as causal order. In those two
+  verticals "what did we know last Tuesday" has no answer, and that is a design decision
+  neither repository states as a limitation.
+- **The archive of unreconstructable data is not integrity-bound.** `information-systems-archive`
+  holds the only copy of Comtrade vintages that cannot be refetched, indexes every file
+  by sha256 — and declares COR-008 failed, because the manifest itself is neither
+  hash-linked nor signed. A consistent rewrite of files and manifest together would not
+  be detectable.
+- **The person-data problem is now a grade, not a paragraph.** `osiris-intel` (0.29) and
+  `osiris-dashboard` both declare COR-010 failed by name: they state a refusal to become
+  person-profiling services and still serve the routes.
+- **Six planned repositories are graded `unbuilt` rather than omitted**, so the distance
+  between the intended estate and the built one is a number.
+
+## 3. Domains
 
 | Domain | Member node ids |
 |---|---|
@@ -25,7 +63,7 @@ The control plane coordinates all of this and must inherit the discipline rather
 
 Canonical-state owners: `payload-terminal` (physical economy), `scientific-transformer-engine` (scientific), `bim-state-transformer-engine` (built environment), `control-plane` (the coordination journal itself). Every other node observes, proposes, supplies evidence or renders.
 
-## 3. Relations
+## 4. Relations
 
 Confidence: **confirmed** = an import, call, contract file, docker-compose entry or restore path names the other side; **inferred** = documented intent, naming, shared formats or bytecode strings, no call path; **planned** = at least one end is an empty repository. Relation ids are `<source>--<kind>--<target>`.
 
@@ -82,7 +120,7 @@ Relations added or changed in this pass (4): `control-plane--governs--notations-
 
 Lineages deliberately **not** modelled as relations (they are code ancestry or design studies, not data, control or contract flows): `osiris-dashboard` is the structural ancestor of `payload-terminal` (same `intel/`, `engine/`, `src/` layout); the Payload ledger records OSINT-War-Room as a curated study whose coalescing and degradation-ladder patterns were adapted into the terminal's route layer.
 
-## 4. Located nodes
+## 5. Located nodes
 
 | Node id | Longitude, latitude | Label |
 |---|---|---|
@@ -96,7 +134,7 @@ Lineages deliberately **not** modelled as relations (they are code ancestry or d
 
 The other 23 nodes are unlocated: they are either services without a native geography (control plane, STE, SCL, BIM, corpus graphs, intel), upstream mirrors, or empty repositories. Location labels are catalog-only and stripped before seeding.
 
-## 5. Flows worth a map layer
+## 6. Flows worth a map layer
 
 Spatial and temporal datasets inside the world models and feed nodes, with where the data lives. `real` follows the per-row provenance discipline of `ecosystem/payload/layers.json`: a layer is only real when every row names a capture or a verified manifest entry.
 
@@ -123,7 +161,7 @@ Spatial and temporal datasets inside the world models and feed nodes, with where
 | ATLAS shipments and tracking events | ISO country / city on origin, destination and lanes; lat/lon on tracking events; ETD/ETA windows | `ATLASUniversal-MCP-server-for-logistics./seed/` (synthetic) and `./atlas.db` (operator data, never leaves the perimeter) | Seed synthetic |
 | Earth-observation searches | STAC / NASA Earthdata bounding boxes and date ranges | `GeoAgent-MultiModal-AI/geoagent/tools/*` (on demand; nothing stored) | Live, on request |
 
-## 6. Open questions and gaps
+## 7. Open questions and gaps
 
 Graph shape
 - `gods-eye-view` and `osint-war-room` have no relations; they render only external feeds. They stay isolated on the map until a first-party node consumes their feed catalogues or layer designs.

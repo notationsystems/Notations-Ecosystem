@@ -101,6 +101,66 @@ export interface SnapshotNode extends NodeInput {
   lastObservedAt: string | null;
   lastObservation: { source: ObservationSource; detail: string } | null;
   security: NodeSecurity | null;
+  /**
+   * The node's name in the canonical identity space, derived by the control plane from
+   * its id. Present on reads only, and a name rather than an address: nothing in this
+   * estate dereferences one, least of all a browser.
+   */
+  uri?: string;
+}
+
+/** What part a node plays in the program of building corpora (docs/CORPUS.md). */
+export type CorpusRole = 'hold' | 'feed' | 'transform' | 'project' | 'coordinate';
+export type CorpusGrade = 'sound' | 'developing' | 'bare' | 'unsound' | 'unbuilt' | 'n/a' | 'undeclared';
+
+export const CORPUS_ROLE_ORDER: CorpusRole[] = ['hold', 'feed', 'transform', 'project', 'coordinate'];
+
+export const CORPUS_ROLE_LABEL: Record<CorpusRole, string> = {
+  hold: 'Holds a corpus',
+  feed: 'Feeds one',
+  transform: 'Transforms over one',
+  project: 'Projects one',
+  coordinate: 'Coordinates between them',
+};
+
+export const CORPUS_GRADE_COLOR: Record<CorpusGrade, string> = {
+  sound: '#3fb950',
+  developing: '#d29922',
+  bare: '#db6d28',
+  unsound: '#f85149',
+  unbuilt: '#6e7681',
+  'n/a': '#6e7681',
+  undeclared: '#6e7681',
+};
+
+/**
+ * A node's corpus standing, read from the derived metadata the seed writes. The
+ * declaration and its evidence paths stay in the catalog; only the result crosses.
+ */
+export interface CorpusStanding {
+  role: CorpusRole | null;
+  grade: CorpusGrade;
+  coverage: number | null;
+  fails: string[];
+  /** Domains whose canonical state this node owns. Holding a corpus is not owning one. */
+  ownerOf: string[];
+}
+
+export function corpusStanding(node: SnapshotNode): CorpusStanding | null {
+  const role = node.metadata.corpus_role;
+  const grade = node.metadata.corpus_grade;
+  if (typeof role !== 'string' || typeof grade !== 'string') return null;
+  const coverage = node.metadata.corpus_coverage;
+  const fails = node.metadata.corpus_fails;
+  const ownerOf = node.metadata.corpus_owner_of;
+  const words = (value: unknown): string[] => (typeof value === 'string' && value.trim() ? value.trim().split(/\s+/) : []);
+  return {
+    role: (CORPUS_ROLE_ORDER as string[]).includes(role) ? (role as CorpusRole) : null,
+    grade: grade as CorpusGrade,
+    coverage: typeof coverage === 'number' ? coverage : null,
+    fails: words(fails),
+    ownerOf: words(ownerOf),
+  };
 }
 
 export interface Relation {

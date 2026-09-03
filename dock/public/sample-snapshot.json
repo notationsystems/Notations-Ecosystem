@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "f5e272c543c7778decb5ef70bf351a93e44f322cce8cd3193b1b8e88363ae115",
+  "revision": "4d9bbac21f469a7f0f178d5df444671c6e3726925a35cee1bc935b8a7d5b8b8d",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -546,7 +546,8 @@
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.9,
-        "corpus_fails": "COR-004"
+        "corpus_fails": "COR-004",
+        "corpus_owner_of": "built-environment"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -4451,7 +4452,8 @@
         "capability_count": 59,
         "corpus_role": "hold",
         "corpus_grade": "sound",
-        "corpus_coverage": 1
+        "corpus_coverage": 1,
+        "corpus_owner_of": "physical-economy"
       },
       "location": {
         "longitude": 103.85,
@@ -5284,7 +5286,8 @@
         "corpus_role": "hold",
         "corpus_grade": "developing",
         "corpus_coverage": 0.9,
-        "corpus_fails": "COR-004"
+        "corpus_fails": "COR-004",
+        "corpus_owner_of": "scientific"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",

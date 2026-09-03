@@ -17,7 +17,7 @@ page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); });
 await page.goto(base, { waitUntil: 'networkidle' });
 await page.waitForSelector('.tab', { timeout: 30000 });
-for (const tab of ['Operator', 'Map', 'Graph', 'Ledger', 'Timeline', 'Console']) {
+for (const tab of ['Operator', 'Security', 'Corpus', 'Map', 'Graph', 'Ledger', 'Timeline', 'Console']) {
   await page.getByRole('button', { name: tab, exact: true }).click();
   await page.waitForTimeout(tab === 'Map' ? 6000 : 2500);
   const file = path.join(out, `${tab.toLowerCase()}.png`);

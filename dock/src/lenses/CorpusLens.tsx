@@ -1,0 +1,183 @@
+import { useMemo, useState } from 'react';
+import type { LensProps } from './types';
+import {
+  CORPUS_GRADE_COLOR,
+  CORPUS_ROLE_LABEL,
+  CORPUS_ROLE_ORDER,
+  corpusStanding,
+  type CorpusRole,
+  type SnapshotNode,
+} from '../model/types';
+
+/**
+ * Corpus standing across the estate.
+ *
+ * The security constellation answers "can this be trusted to hold what it holds?".
+ * This answers the other half: "is what it holds worth anything?" — the ten invariants
+ * of docs/CORPUS.md, graded per node and grouped by the part each node plays in the
+ * programme rather than by its deployment shape.
+ *
+ * Everything here comes from derived metadata the seed writes (`corpus_role`,
+ * `corpus_grade`, `corpus_coverage`, `corpus_fails`). The declarations themselves, and
+ * the evidence paths that justify them, stay in the catalog and never cross into the
+ * journal — so this lens can show an operator where the programme is weak without the
+ * browser holding a map of where to look.
+ */
+
+const GRADE_ORDER = ['unsound', 'bare', 'developing', 'sound', 'unbuilt', 'n/a', 'undeclared'];
+
+function gradeRank(grade: string): number {
+  const at = GRADE_ORDER.indexOf(grade);
+  return at < 0 ? GRADE_ORDER.length : at;
+}
+
+function Coverage({ value }: { value: number | null }) {
+  if (value === null) return <span className="sec-coverage empty">not graded</span>;
+  return (
+    <span className="sec-coverage" title={`${Math.round(value * 100)}% of the invariants that apply to this node are held`}>
+      <span className="bar">
+        <span className="fill" style={{ width: `${Math.round(value * 100)}%` }} />
+      </span>
+      {Math.round(value * 100)}%
+    </span>
+  );
+}
+
+export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
+  const [role, setRole] = useState<CorpusRole | null>(null);
+
+  const graded = useMemo(
+    () =>
+      filtered.nodes
+        .map((node) => ({ node, standing: corpusStanding(node) }))
+        .filter((entry): entry is { node: SnapshotNode; standing: NonNullable<ReturnType<typeof corpusStanding>> } => entry.standing !== null),
+    [filtered.nodes],
+  );
+
+  const byRole = useMemo(() => {
+    const groups = new Map<CorpusRole | 'unassigned', typeof graded>();
+    for (const entry of graded) {
+      const key = entry.standing.role ?? 'unassigned';
+      groups.set(key, [...(groups.get(key) ?? []), entry]);
+    }
+    for (const list of groups.values()) {
+      list.sort((a, b) => gradeRank(a.standing.grade) - gradeRank(b.standing.grade) || a.node.nodeId.localeCompare(b.node.nodeId));
+    }
+    return groups;
+  }, [graded]);
+
+  const withCoverage = graded.filter((entry) => entry.standing.coverage !== null);
+  const mean = withCoverage.length
+    ? Math.round((withCoverage.reduce((sum, entry) => sum + (entry.standing.coverage ?? 0), 0) / withCoverage.length) * 100)
+    : null;
+  const unsound = graded.filter((entry) => entry.standing.grade === 'unsound');
+  const holders = graded.filter((entry) => entry.standing.role === 'hold');
+  // Holding a corpus and owning a domain's canonical state are different claims, and
+  // COR-002 is about the second: exactly one owner per domain.
+  const owners = graded.filter((entry) => entry.standing.ownerOf.length);
+  const shown = role ? [...(byRole.get(role) ?? [])] : graded.slice().sort((a, b) => gradeRank(a.standing.grade) - gradeRank(b.standing.grade) || a.node.nodeId.localeCompare(b.node.nodeId));
+
+  if (!graded.length) {
+    return (
+      <div className="lens scroll">
+        <p className="empty-note">
+          No node in this snapshot declares a corpus standing. Standing is derived from the catalog by
+          <code> ecosystem/corpus.mjs</code> and seeded as node metadata; a journal written before that
+          existed carries none.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="lens scroll">
+      <div className="strip">
+        <div className="kpi">
+          <span>graded nodes</span>
+          <b>
+            {graded.length} / {filtered.nodes.length}
+          </b>
+        </div>
+        <div className="kpi">
+          <span>corpus holders</span>
+          <b>{holders.length}</b>
+        </div>
+        <div className="kpi">
+          <span>canonical-state owners</span>
+          <b title={owners.map((entry) => `${entry.node.nodeId}: ${entry.standing.ownerOf.join(', ')}`).join('\n')}>{owners.length}</b>
+        </div>
+        <div className="kpi">
+          <span>mean coverage</span>
+          <b>{mean === null ? '—' : `${mean}%`}</b>
+        </div>
+        <div className="kpi">
+          <span>unsound</span>
+          <b style={{ color: unsound.length ? CORPUS_GRADE_COLOR.unsound : undefined }}>{unsound.length}</b>
+        </div>
+        <div style={{ marginLeft: 'auto', maxWidth: 470, textAlign: 'right', color: 'var(--muted)', fontSize: 11 }}>
+          A node that owns canonical state but cannot show provenance, typed refusal or an admission
+          boundary is <b>unsound</b> whatever its coverage — a different category, not a low score.
+        </div>
+      </div>
+
+      <div className="corpus-roles">
+        <button type="button" className={`tab ${role === null ? 'active' : ''}`} onClick={() => setRole(null)}>
+          all roles ({graded.length})
+        </button>
+        {CORPUS_ROLE_ORDER.map((id) => {
+          const count = (byRole.get(id) ?? []).length;
+          if (!count) return null;
+          return (
+            <button key={id} type="button" className={`tab ${role === id ? 'active' : ''}`} onClick={() => setRole(role === id ? null : id)} title={CORPUS_ROLE_LABEL[id]}>
+              {id} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="sec-grid" style={{ marginTop: 12 }}>
+        {shown.map(({ node, standing }) => (
+          <button
+            key={node.nodeId}
+            type="button"
+            className={`sec-card ${selected === node.nodeId ? 'active' : ''} ${standing.grade === 'unbuilt' ? 'empty' : ''}`}
+            style={{ borderLeftColor: CORPUS_GRADE_COLOR[standing.grade] ?? 'var(--line)' }}
+            onClick={() => onSelect(selected === node.nodeId ? null : node.nodeId)}
+          >
+            <span className="sec-head">
+              <span className="sec-dot" style={{ background: CORPUS_GRADE_COLOR[standing.grade] ?? 'var(--line)' }} />
+              {node.name}
+            </span>
+            <span className="sec-meta">
+              <span className="sec-state">{standing.grade}</span>
+              <span title={standing.ownerOf.length ? `Owns the canonical state of: ${standing.ownerOf.join(', ')}` : undefined}>
+                {standing.ownerOf.length ? `Owns ${standing.ownerOf.join(', ')}` : standing.role ? CORPUS_ROLE_LABEL[standing.role] : 'role undeclared'}
+              </span>
+            </span>
+            <span className="sec-meta">
+              <Coverage value={standing.coverage} />
+            </span>
+            {standing.fails.length ? (
+              <span className="sec-findings" title="Invariants this node declares it does not hold. Declaring a failure by name is the point; silence would be worse.">
+                {standing.fails.map((id) => (
+                  <span key={id} className="sec-count high">
+                    {id}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="sec-findings none">no declared failures</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <p className="empty-note" style={{ marginTop: 14 }}>
+        Ten invariants, five roles, four standings — <code>docs/CORPUS.md</code>. A role decides which
+        invariants apply: a projection holds nothing to be provenant about and is exempt from seven of
+        them, but is bound absolutely by the one that says it must never write back. Exemption is
+        structural and is not the same as failure; “not built yet” is a failure.
+      </p>
+    </div>
+  );
+}

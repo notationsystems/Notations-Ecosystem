@@ -42,6 +42,10 @@ export function withCorpusMetadata(entry) {
   metadata.corpus_grade = graded.grade;
   if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
   if (graded.fails.length) metadata.corpus_fails = graded.fails.join(' ');
+  // Holding a corpus and owning a domain's canonical state are different things, and
+  // the difference is COR-002: eight nodes hold, three own. Collapsing them would make
+  // the single-owner invariant unreadable from the snapshot.
+  if (graded.ownerOf.length) metadata.corpus_owner_of = graded.ownerOf.join(' ');
   return metadata;
 }
 

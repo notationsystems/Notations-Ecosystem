@@ -146,3 +146,7 @@ table.grid th { color: var(--muted); font-weight: 500; font-size: 11px; text-tra
 .sec-count.high { color: var(--amber); border-color: rgba(245, 185, 66, 0.5); }
 .sec-count.medium { color: var(--cyan); }
 .sec-count.low { color: var(--muted); }
+
+/* Corpus lens: role filters above the standing grid. */
+.corpus-roles { display: flex; gap: 6px; flex-wrap: wrap; }
+.corpus-roles .tab { text-transform: none; letter-spacing: 0; }

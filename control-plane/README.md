@@ -5,8 +5,10 @@ Universe. It connects ecosystem nodes—APIs, world models, information
 libraries, reasoning engines, visual docks, and operator surfaces—without
 making a map itself into an execution authority.
 
-`Payload Terminal` is one future node in this graph, not this repository's
-codebase. The frontend may live elsewhere in the repository and consume this
+`Payload Terminal` is a node in this graph, not this repository's codebase: it
+is catalogued with 59 capabilities and is the canonical owner of the physical
+economy ([CORPUS.md](../docs/CORPUS.md)). The plane records what it can do; it
+holds none of what it holds. The dock lives in `dock/` and consumes this
 service through its OpenAPI contract.
 
 ## Guarantees

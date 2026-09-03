@@ -1,9 +1,11 @@
 # Notations Ecosystem
 
-The coordination layer of the Notations Universe: a private **control plane** that records what
-each ecosystem node can do and what has been proposed and approved, a **catalog** of the real
-nodes (Payload first, modelled deeply), and a **visual dock** that renders the universe as a
-Kepler.gl map, a capability graph, an operator view, a coordination ledger and an event timeline.
+Notation Systems builds and operates **provenance-bearing computational corpora**. This is
+the coordination layer above them: a private **control plane** that records what each
+system can do and what has been proposed and approved, a **catalog** of the thirty real
+systems graded against [what a corpus is](docs/CORPUS.md), and a **visual dock** that
+renders the estate as a Kepler.gl map, a capability graph, an operator view, a corpus
+standing view, a security constellation, a coordination ledger and an event timeline.
 
 ```
 control-plane/   append-only, hash-linked, signed coordination backend (OpenAPI contract)
@@ -13,7 +15,7 @@ security/        repository secret scan and the posture evidence producer
 docs/            threat model, invariants, substrate, design notes
 ```
 
-## Two rules
+## Three rules
 
 **Approval is not execution.** The control plane stops at `approved / not_dispatched`; the dock
 makes the four states unmistakable and never lights the last one:
@@ -22,6 +24,14 @@ makes the four states unmistakable and never lights the last one:
 observed → proposed → approved → dispatched
    ●          ●          ●        ○ (never, until a separate execution adapter exists)
 ```
+
+**Provenance travels with the value, and refusal beats fabrication.** A corpus is
+provenance-bearing when every answer walks back to the material it came from, and when it
+refuses at the point where that walk would break. Ten named invariants
+([CORPUS.md](docs/CORPUS.md)) say what that means precisely enough to check; every node
+declares its standing against them with an evidence path, `ecosystem/corpus.mjs` derives
+the grade, and CI runs it. A node that owns canonical state but cannot show provenance,
+typed refusal or an admission boundary is `unsound` whatever its coverage.
 
 **It knows what every system can do, and holds nothing that would let you do it.** The
 plane records identities, capabilities, health and security posture. Credentials, key
@@ -70,6 +80,8 @@ add_header Referrer-Policy no-referrer always;
 
 | Question | Answer |
 | --- | --- |
+| Which systems are provenance-bearing corpora, and which fail which invariant? | dock → **Corpus** lens; `node ecosystem/corpus.mjs` |
+| What does this company build, and what makes something one of them? | [docs/CORPUS.md](docs/CORPUS.md) — ten invariants, five roles, four standings |
 | How healthy is each security control across the estate? | dock → **Security** lens (11 posture dimensions, weakest-link) |
 | What can node X do, in which mode, with whose approval? | `ecosystem/catalog/<nodeId>.json` → seeded → `GET /v1/snapshot` |
 | What is healthy / stale / waiting for approval / blocked? | dock → **Operator** lens |

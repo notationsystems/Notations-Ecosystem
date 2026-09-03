@@ -9,24 +9,38 @@ next ecosystem plugs into the same model instead of forcing a redesign.
 
 Payload is not one node. It is a cluster of nodes with evidenced relations:
 
-| Node | Kind | What it is |
-| --- | --- | --- |
-| `payload-terminal` | api | The Next.js terminal: freight, economy, OSINT, SDK ingest/stream, GitHub webhook |
-| `payload-mcp` | api | The 12 MCP tools, a thin contract layer over the terminal's HTTP routes (stdio) |
-| `osiris-intel` | api | The intel ontology engine (`/resolve`), OpenSanctions + Wikidata |
-| `payload-data-archive` | information_library | Vintage archive of unreconstructable captures (UN Comtrade), sha256 manifest |
-| `payload-operations` | operator_surface | Runbook workflows: deploy, smoke, sweep, daily chain, archive manifest |
-| `payload-render-engine` | world_model | Payload Earth: the spatial projection (facilities, routes, flows, events) |
-| `payload-ocr-agent` | reasoning_engine | Document perception → observations (never canonical state) |
-| `source-*` | information_library | Every external data source the terminal pulls from, with coverage and freshness |
+| Node | Kind | Role | What it is |
+| --- | --- | --- | --- |
+| `payload-terminal` | api | hold | The Next.js terminal and the canonical owner of the physical economy: freight, economy, OSINT, SDK ingest/stream. Its 12 MCP tools and its operations and CLI surfaces are capabilities on this node, not nodes of their own |
+| `osiris-intel` | api | feed | The intel ontology engine (`/resolve`), OpenSanctions + Wikidata |
+| `information-systems-archive` | information_library | hold | Vintage archive of unreconstructable captures (UN Comtrade), sha256 manifest |
+| `payload-render-engine` | world_model | project | Payload Earth: the spatial projection (facilities, routes, flows, events) |
+| `payload-ocr-agent` | reasoning_engine | feed | Document perception → observations (never canonical state) |
+| `payload-corpus-graph` | information_library | hold | Planned: documents and freight evidence linked with provenance |
+| `atlas-mcp` | api | feed | Candidate logistics-context index, operator-gated, inside the operator's perimeter |
 
 Relations carry evidence paths and say whether they are confirmed by code or inferred.
+
+An earlier draft of this document proposed separate `payload-mcp`, `payload-data-archive`,
+`payload-operations` and `source-*` nodes. The catalog went a different way, and the
+different way is better: a surface is not a system. The MCP server is a thin contract
+layer over the terminal's own routes, so it is twelve capabilities with `surface: "mcp"`
+on `payload-terminal`; operations are `ui.operations` and `cli.*` on the same node; the
+archive is a real separate repository and is catalogued as `information-systems-archive`;
+and an external data source is not a node with capabilities but a thing a node names, so
+it lives in that node's `reference.external_services` — 112 of them across 21 nodes. A
+node is something that can hold, feed, transform, project or coordinate
+([CORPUS.md](CORPUS.md)); nothing else earns one.
 
 ## 2. Capability-level controls
 
 Each capability declares `mode` and `approval` (the control plane enforces `execute ⇒ operator`).
-The catalog adds, per capability, `cost`, `latency`, `provenance`, `data_domain` and `workflow`;
-these are reference facts the dock shows in the inspector, never journal state. Health is a
+The catalog may add, per capability, `cost`, `latency`, `provenance`, `data_domain` and
+`workflow`; these are catalog-only reference facts, never journal state. Coverage is
+uneven and deliberately not filled in by guessing: `cost` and `latency` are measurements,
+and a system that refuses to turn an unknown figure into a zero cannot annotate its own
+capabilities with invented ones. Where a figure is stated it should carry its basis
+("~3.7 ms native at N=2000"), and where it is not known the field is absent. Health is a
 node-level observation (`healthy | degraded | offline | unknown`) recorded by the probe adapter
 or an operator.
 
