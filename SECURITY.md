@@ -86,7 +86,7 @@ cd control-plane && npm start
 ## Checks
 
 ```sh
-cd control-plane && npm test        # 26 tests covering 30 named invariants
+cd control-plane && npm test        # 39 tests covering 37 named invariants
 node security/scan-secrets.mjs      # repository credential scan
 node security/attest.mjs --print    # what this deployment would attest, sent nowhere
 cd dock && npm test                 # includes credential-handling invariants

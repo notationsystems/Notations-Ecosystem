@@ -138,6 +138,27 @@
     "temporal": "Event timeline and observation timestamps.",
     "open_questions": [
       "Where is the dock hosted for the team, and which origin goes into CONTROL_PLANE_ALLOWED_ORIGINS?"
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Nothing. It renders the control plane snapshot and holds no store of its own.",
+      "standing": {
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Holds no history: it reads /v1/snapshot and /v1/events and keeps nothing."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "dock/src/api/controlPlane.ts",
+          "note": "The only write path is POST /v1/commands with the current revision; the dock has no store to write back to."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "dock/README.md",
+          "note": "Renders approved intents as approved, not dispatched, and holds its credential in memory only, never in browser storage."
+        }
+      }
+    }
   }
 }

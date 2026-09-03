@@ -50,6 +50,12 @@
     "temporal": "Not yet defined.",
     "open_questions": [
       "What is the first contract this repository will expose?"
-    ]
+    ],
+    "corpus": {
+      "role": "coordinate",
+      "owner_of": [],
+      "holding": "Nothing yet: a planned energy and compute modulation layer for long-running archival and scientific workloads.",
+      "standing": {}
+    }
   }
 }

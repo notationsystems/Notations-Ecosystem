@@ -1,6 +1,6 @@
 {
   "schema": "notations.payload.layers.v1",
-  "description": "Spatial and temporal layers of the Payload node cluster, rendered by the dock's Kepler.gl lens. Each row keeps its own provenance so 'is this real?' is a per-row query. Layers never enter the control-plane journal.",
+  "description": "Spatial and temporal layers of the Payload node cluster, rendered by the dock's Kepler.gl lens. Each row keeps its own provenance so 'is this real?' is a per-row query, and 'when was it knowable?' is a second one: provenance_fields declares which of the row provenance fields (ecosystem/payload/provenance.mjs) that layer's rows actually carry. Four layers declare only provenance because an earlier extractor flattened the upstream block; re-running extract-earth.mjs recovers known_at and must update the declaration. Layers never enter the control-plane journal.",
   "groups": {
     "facilities": "Facilities and infrastructure",
     "logistics": "Routes, corridors and chokepoints",
@@ -9,23 +9,396 @@
     "coverage": "Source coverage and archive vintages"
   },
   "layers": [
-    { "id": "earth-facilities", "name": "Payload Earth facilities", "group": "facilities", "source_system": "payload-render-engine", "geometry": "point", "file": "earth-facilities.json", "provenance": "synthetic:demo — Payload Earth canonical demo corpus (every row labelled)", "real": false, "default_visible": true,
-      "kepler": { "type": "point", "columns": { "lat": "latitude", "lng": "longitude" }, "colorField": { "name": "kind", "type": "string" }, "sizeField": { "name": "importance", "type": "real" }, "label": "name", "radiusRange": [4, 18], "tooltip": ["name", "kind", "country", "status", "capacity", "provenance"] } },
-    { "id": "earth-chokepoints", "name": "Chokepoints and standing constraints", "group": "logistics", "source_system": "payload-render-engine", "geometry": "point", "file": "earth-chokepoints.json", "provenance": "synthetic:demo — Payload Earth", "real": false, "default_visible": true,
-      "kepler": { "type": "point", "columns": { "lat": "latitude", "lng": "longitude" }, "colorField": { "name": "max_severity", "type": "real" }, "sizeField": { "name": "importance", "type": "real" }, "label": "name", "radiusRange": [10, 26], "tooltip": ["name", "status", "constraint_count", "max_severity", "constraints"] } },
-    { "id": "earth-routes", "name": "Transport routes (road · rail · maritime · air)", "group": "logistics", "source_system": "payload-render-engine", "geometry": "path", "file": "earth-routes.json", "provenance": "synthetic:demo — Payload Earth (geometry_basis per row)", "real": false, "default_visible": true,
-      "kepler": { "type": "geojson", "columns": { "geojson": "_geojson" }, "colorField": { "name": "mode", "type": "string" }, "sizeField": { "name": "utilization", "type": "real" }, "tooltip": ["name", "mode", "origin", "destination", "distance_km", "utilization", "status"] } },
-    { "id": "earth-flows", "name": "Multimodal commodity flows", "group": "flows", "source_system": "payload-render-engine", "geometry": "arc", "file": "earth-flows.json", "provenance": "synthetic:demo — Payload Earth", "real": false, "default_visible": false,
-      "kepler": { "type": "arc", "columns": { "lat0": "source_lat", "lng0": "source_lng", "lat1": "target_lat", "lng1": "target_lng" }, "colorField": { "name": "status", "type": "string" }, "sizeField": { "name": "intensity", "type": "real" }, "tooltip": ["name", "commodity", "status", "modes", "origin", "destination"] } },
-    { "id": "earth-events", "name": "Disruption events", "group": "disruptions", "source_system": "payload-render-engine", "geometry": "point", "file": "earth-events.json", "provenance": "synthetic:demo — Payload Earth", "real": false, "default_visible": true, "time_field": "start",
-      "kepler": { "type": "point", "columns": { "lat": "latitude", "lng": "longitude" }, "colorField": { "name": "category", "type": "string" }, "sizeField": { "name": "severity", "type": "real" }, "label": "name", "radiusRange": [12, 30], "tooltip": ["name", "category", "severity", "start", "end", "affected", "description"] } },
-    { "id": "comtrade-flows", "name": "UN Comtrade copper flows (captured vintages)", "group": "flows", "source_system": "payload-terminal", "geometry": "arc", "file": "comtrade-flows.json", "provenance": "UN Comtrade capture 2026-08-27 via Payload Terminal (real, unreconstructable vintage)", "real": true, "default_visible": true,
-      "kepler": { "type": "arc", "columns": { "lat0": "source_lat", "lng0": "source_lng", "lat1": "target_lat", "lng1": "target_lng" }, "colorField": { "name": "commodity_hs", "type": "string" }, "sizeField": { "name": "value_musd", "type": "real" }, "tooltip": ["reporter", "partner", "commodity_hs", "flow", "year", "value_musd", "captured_at", "provenance"] } },
-    { "id": "archive-coverage", "name": "Archive coverage by reporter", "group": "coverage", "source_system": "payload-data-archive", "geometry": "point", "file": "archive-coverage.json", "provenance": "Payload Terminal data-archive/MANIFEST.json (sha256-verified)", "real": true, "default_visible": true,
-      "kepler": { "type": "point", "columns": { "lat": "latitude", "lng": "longitude" }, "colorField": { "name": "unreconstructable", "type": "integer" }, "sizeField": { "name": "captures", "type": "integer" }, "label": "reporter", "radiusRange": [14, 34], "tooltip": ["reporter", "captures", "unreconstructable", "commodities", "flows", "years", "first_capture", "last_capture"] } },
-    { "id": "submarine-cables", "name": "Submarine cables (long-haul subset)", "group": "facilities", "source_system": "payload-terminal", "geometry": "path", "file": "submarine-cables.json", "provenance": "Payload Terminal public/data/submarine-cables-filtered.json", "real": true, "default_visible": false,
-      "kepler": { "type": "geojson", "columns": { "geojson": "_geojson" }, "colorField": { "name": "length_km", "type": "integer" }, "tooltip": ["name", "length_km", "provenance"] } },
-    { "id": "nuclear-facilities", "name": "Nuclear power facilities", "group": "facilities", "source_system": "payload-terminal", "geometry": "point", "file": "nuclear-facilities.json", "provenance": "Payload Terminal /api/infrastructure curated list", "real": true, "default_visible": false,
-      "kepler": { "type": "point", "columns": { "lat": "latitude", "lng": "longitude" }, "colorField": { "name": "status", "type": "string" }, "sizeField": { "name": "capacity_mw", "type": "real" }, "label": "name", "radiusRange": [4, 14], "tooltip": ["name", "country", "status", "reactors", "capacity_mw"] } }
-  ]
+    {
+      "id": "earth-facilities",
+      "name": "Payload Earth facilities",
+      "group": "facilities",
+      "source_system": "payload-render-engine",
+      "geometry": "point",
+      "file": "earth-facilities.json",
+      "provenance": "synthetic:demo — Payload Earth canonical demo corpus (every row labelled)",
+      "real": false,
+      "default_visible": true,
+      "kepler": {
+        "type": "point",
+        "columns": {
+          "lat": "latitude",
+          "lng": "longitude"
+        },
+        "colorField": {
+          "name": "kind",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "importance",
+          "type": "real"
+        },
+        "label": "name",
+        "radiusRange": [
+          4,
+          18
+        ],
+        "tooltip": [
+          "name",
+          "kind",
+          "country",
+          "status",
+          "capacity",
+          "provenance",
+          "known_at"
+        ]
+      },
+      "provenance_fields": [
+        "provenance",
+        "known_at",
+        "confidence"
+      ]
+    },
+    {
+      "id": "earth-chokepoints",
+      "name": "Chokepoints and standing constraints",
+      "group": "logistics",
+      "source_system": "payload-render-engine",
+      "geometry": "point",
+      "file": "earth-chokepoints.json",
+      "provenance": "synthetic:demo — Payload Earth",
+      "real": false,
+      "default_visible": true,
+      "kepler": {
+        "type": "point",
+        "columns": {
+          "lat": "latitude",
+          "lng": "longitude"
+        },
+        "colorField": {
+          "name": "max_severity",
+          "type": "real"
+        },
+        "sizeField": {
+          "name": "importance",
+          "type": "real"
+        },
+        "label": "name",
+        "radiusRange": [
+          10,
+          26
+        ],
+        "tooltip": [
+          "name",
+          "status",
+          "constraint_count",
+          "max_severity",
+          "constraints",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    },
+    {
+      "id": "earth-routes",
+      "name": "Transport routes (road · rail · maritime · air)",
+      "group": "logistics",
+      "source_system": "payload-render-engine",
+      "geometry": "path",
+      "file": "earth-routes.json",
+      "provenance": "synthetic:demo — Payload Earth (geometry_basis per row)",
+      "real": false,
+      "default_visible": true,
+      "kepler": {
+        "type": "geojson",
+        "columns": {
+          "geojson": "_geojson"
+        },
+        "colorField": {
+          "name": "mode",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "utilization",
+          "type": "real"
+        },
+        "tooltip": [
+          "name",
+          "mode",
+          "origin",
+          "destination",
+          "distance_km",
+          "utilization",
+          "status",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    },
+    {
+      "id": "earth-flows",
+      "name": "Multimodal commodity flows",
+      "group": "flows",
+      "source_system": "payload-render-engine",
+      "geometry": "arc",
+      "file": "earth-flows.json",
+      "provenance": "synthetic:demo — Payload Earth",
+      "real": false,
+      "default_visible": false,
+      "kepler": {
+        "type": "arc",
+        "columns": {
+          "lat0": "source_lat",
+          "lng0": "source_lng",
+          "lat1": "target_lat",
+          "lng1": "target_lng"
+        },
+        "colorField": {
+          "name": "status",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "intensity",
+          "type": "real"
+        },
+        "tooltip": [
+          "name",
+          "commodity",
+          "status",
+          "modes",
+          "origin",
+          "destination",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    },
+    {
+      "id": "earth-events",
+      "name": "Disruption events",
+      "group": "disruptions",
+      "source_system": "payload-render-engine",
+      "geometry": "point",
+      "file": "earth-events.json",
+      "provenance": "synthetic:demo — Payload Earth",
+      "real": false,
+      "default_visible": true,
+      "time_field": "start",
+      "kepler": {
+        "type": "point",
+        "columns": {
+          "lat": "latitude",
+          "lng": "longitude"
+        },
+        "colorField": {
+          "name": "category",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "severity",
+          "type": "real"
+        },
+        "label": "name",
+        "radiusRange": [
+          12,
+          30
+        ],
+        "tooltip": [
+          "name",
+          "category",
+          "severity",
+          "start",
+          "end",
+          "affected",
+          "description",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    },
+    {
+      "id": "comtrade-flows",
+      "name": "UN Comtrade copper flows (captured vintages)",
+      "group": "flows",
+      "source_system": "payload-terminal",
+      "geometry": "arc",
+      "file": "comtrade-flows.json",
+      "provenance": "UN Comtrade capture 2026-08-27 via Payload Terminal (real, unreconstructable vintage)",
+      "real": true,
+      "default_visible": true,
+      "kepler": {
+        "type": "arc",
+        "columns": {
+          "lat0": "source_lat",
+          "lng0": "source_lng",
+          "lat1": "target_lat",
+          "lng1": "target_lng"
+        },
+        "colorField": {
+          "name": "commodity_hs",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "value_musd",
+          "type": "real"
+        },
+        "tooltip": [
+          "reporter",
+          "partner",
+          "commodity_hs",
+          "flow",
+          "year",
+          "value_musd",
+          "provenance",
+          "known_at",
+          "valid_from",
+          "valid_to"
+        ]
+      },
+      "provenance_fields": [
+        "provenance",
+        "known_at",
+        "valid_from",
+        "valid_to"
+      ]
+    },
+    {
+      "id": "archive-coverage",
+      "name": "Archive coverage by reporter",
+      "group": "coverage",
+      "source_system": "payload-data-archive",
+      "geometry": "point",
+      "file": "archive-coverage.json",
+      "provenance": "Payload Terminal data-archive/MANIFEST.json (sha256-verified)",
+      "real": true,
+      "default_visible": true,
+      "kepler": {
+        "type": "point",
+        "columns": {
+          "lat": "latitude",
+          "lng": "longitude"
+        },
+        "colorField": {
+          "name": "unreconstructable",
+          "type": "integer"
+        },
+        "sizeField": {
+          "name": "captures",
+          "type": "integer"
+        },
+        "label": "reporter",
+        "radiusRange": [
+          14,
+          34
+        ],
+        "tooltip": [
+          "reporter",
+          "captures",
+          "unreconstructable",
+          "commodities",
+          "flows",
+          "years",
+          "known_at",
+          "valid_from",
+          "valid_to",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance",
+        "known_at",
+        "valid_from",
+        "valid_to"
+      ]
+    },
+    {
+      "id": "submarine-cables",
+      "name": "Submarine cables (long-haul subset)",
+      "group": "facilities",
+      "source_system": "payload-terminal",
+      "geometry": "path",
+      "file": "submarine-cables.json",
+      "provenance": "Payload Terminal public/data/submarine-cables-filtered.json",
+      "real": true,
+      "default_visible": false,
+      "kepler": {
+        "type": "geojson",
+        "columns": {
+          "geojson": "_geojson"
+        },
+        "colorField": {
+          "name": "length_km",
+          "type": "integer"
+        },
+        "tooltip": [
+          "name",
+          "length_km",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    },
+    {
+      "id": "nuclear-facilities",
+      "name": "Nuclear power facilities",
+      "group": "facilities",
+      "source_system": "payload-terminal",
+      "geometry": "point",
+      "file": "nuclear-facilities.json",
+      "provenance": "Payload Terminal /api/infrastructure curated list",
+      "real": true,
+      "default_visible": false,
+      "kepler": {
+        "type": "point",
+        "columns": {
+          "lat": "latitude",
+          "lng": "longitude"
+        },
+        "colorField": {
+          "name": "status",
+          "type": "string"
+        },
+        "sizeField": {
+          "name": "capacity_mw",
+          "type": "real"
+        },
+        "label": "name",
+        "radiusRange": [
+          4,
+          14
+        ],
+        "tooltip": [
+          "name",
+          "country",
+          "status",
+          "reactors",
+          "capacity_mw",
+          "provenance"
+        ]
+      },
+      "provenance_fields": [
+        "provenance"
+      ]
+    }
+  ],
+  "row_provenance": {
+    "fields": [
+      "provenance",
+      "known_at",
+      "valid_from",
+      "valid_to",
+      "confidence",
+      "evidence"
+    ],
+    "required": [
+      "provenance"
+    ],
+    "defined_in": "ecosystem/payload/provenance.mjs",
+    "note": "One spelling for the estate’s central discipline. A value with no origin is a rumour; a value whose knowability is not recorded cannot be replayed as known-then."
+  }
 }

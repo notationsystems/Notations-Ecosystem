@@ -318,32 +318,103 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["LichtFeld-Studio", "scripts/lichtfeld_mcp_bridge.py", ".mcp.json"],
-      "run": ["cmake presets per docs/building_and_distribution.md", "docker/run_docker.sh", "LichtFeld-Studio -d <colmap> -o <out> --headless"],
-      "ports": [45677],
+      "entrypoints": [
+        "LichtFeld-Studio",
+        "scripts/lichtfeld_mcp_bridge.py",
+        ".mcp.json"
+      ],
+      "run": [
+        "cmake presets per docs/building_and_distribution.md",
+        "docker/run_docker.sh",
+        "LichtFeld-Studio -d <colmap> -o <out> --headless"
+      ],
+      "ports": [
+        45677
+      ],
       "container": true
     },
     "contracts": [
-      { "name": "MCP endpoint", "path": "src/mcp/mcp_http_server.hpp", "summary": "Streamable HTTP MCP on 127.0.0.1:45677/mcp with resources + tools" },
-      { "name": "Plugin manifest", "path": "docs/plugin-system.md", "summary": "[tool.lichtfeld] plugin_api / lichtfeld_version / required_features" },
-      { "name": "Export formats", "path": "src/core/argument_parser.cpp", "summary": "ply, sog, spz, html, usd/usda/usdc, usdz_nurec, rad, colmap" }
+      {
+        "name": "MCP endpoint",
+        "path": "src/mcp/mcp_http_server.hpp",
+        "summary": "Streamable HTTP MCP on 127.0.0.1:45677/mcp with resources + tools"
+      },
+      {
+        "name": "Plugin manifest",
+        "path": "docs/plugin-system.md",
+        "summary": "[tool.lichtfeld] plugin_api / lichtfeld_version / required_features"
+      },
+      {
+        "name": "Export formats",
+        "path": "src/core/argument_parser.cpp",
+        "summary": "ply, sog, spz, html, usd/usda/usdc, usdz_nurec, rad, colmap"
+      }
     ],
     "resources": [
-      { "name": "docs site", "classification": "public", "path": "docs/", "description": "Docusaurus docs: plugin system, API reference, MCP guide and recipes" },
-      { "name": "eval", "classification": "public", "path": "eval/", "description": "evaluation scripts and benchmark configs" }
+      {
+        "name": "docs site",
+        "classification": "public",
+        "path": "docs/",
+        "description": "Docusaurus docs: plugin system, API reference, MCP guide and recipes"
+      },
+      {
+        "name": "eval",
+        "classification": "public",
+        "path": "eval/",
+        "description": "evaluation scripts and benchmark configs"
+      }
     ],
     "external_services": [
-      { "name": "LichtFeld Portal", "domain": "portal.lichtfeld.io", "purpose": "Windows binary downloads / daily builds", "auth": "account + donation" },
-      { "name": "GitHub", "domain": "github.com", "purpose": "lf.plugins.install('owner/repo') fetches plugin sources", "auth": "none for public repos" }
+      {
+        "name": "LichtFeld Portal",
+        "domain": "portal.lichtfeld.io",
+        "purpose": "Windows binary downloads / daily builds",
+        "auth": "account + donation"
+      },
+      {
+        "name": "GitHub",
+        "domain": "github.com",
+        "purpose": "lf.plugins.install('owner/repo') fetches plugin sources",
+        "auth": "none for public repos"
+      }
     ],
-    "secrets_env": ["LICHTFELD_MCP_ENDPOINT", "LICHTFELD_MCP_START_TIMEOUT_S", "LICHTFELD_MCP_BRIDGE_LOG", "LICHTFELD_MCP_BRIDGE_LOCK"],
-    "health": { "method": "http", "endpoint": "http://127.0.0.1:45677/mcp (MCP initialize)" },
+    "secrets_env": [
+      "LICHTFELD_MCP_ENDPOINT",
+      "LICHTFELD_MCP_START_TIMEOUT_S",
+      "LICHTFELD_MCP_BRIDGE_LOG",
+      "LICHTFELD_MCP_BRIDGE_LOCK"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "http://127.0.0.1:45677/mcp (MCP initialize)"
+    },
     "spatial": "Scene-local coordinates of loaded splats/COLMAP cameras; no GIS georeferencing.",
     "temporal": "Training iterations, undo history stack and sequencer timeline; no calendar time.",
     "open_questions": [
       "MCP server binds localhost only; how does the control plane reach it from another host (bridge script per workstation, or an SSH tunnel)?",
       "The MCP surface has no authentication and editor.run is arbitrary code execution; the universe should gate all lichtfeld tools behind operator approval as declared here.",
       "Which ecosystem exports (USD to bim-state-transformer-engine? HTML viewer to notations-dock?) are intended is not evidenced in any repository yet."
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Nothing canonical. It loads COLMAP datasets and checkpoints from disk, edits them in a session and exports.",
+      "standing": {
+        "COR-008": {
+          "standing": "fails",
+          "note": "Undo history and the sequencer timeline live only in the session; there is no durable record of what a human changed."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "src/app/application.cpp",
+          "note": "It consumes datasets and checkpoints from disk and hands exports back; it writes into no other system's state."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/lichtfeld-studio.json",
+          "note": "Must never be the canonical store of scene state."
+        }
+      }
+    }
   }
 }

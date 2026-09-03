@@ -198,29 +198,97 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["train.py", "render.py", "mesh_extract.py", "mesh_extract_tetrahedra.py", "metric.py", "evaluate_dtu_mesh.py", "eval_tnt/run.py", "ply2gs.py"],
-      "run": ["conda create -n gggs python=3.12", "pip install -r requirements.txt", "pip install submodules/{diff-gaussian-rasterization,warp-patch-ncc,simple-knn,tetra_triangulation} --no-build-isolation", "python train.py -s <data> -m <out> -r 2 --use_decoupled_appearance 3"],
-      "ports": [6009],
+      "entrypoints": [
+        "train.py",
+        "render.py",
+        "mesh_extract.py",
+        "mesh_extract_tetrahedra.py",
+        "metric.py",
+        "evaluate_dtu_mesh.py",
+        "eval_tnt/run.py",
+        "ply2gs.py"
+      ],
+      "run": [
+        "conda create -n gggs python=3.12",
+        "pip install -r requirements.txt",
+        "pip install submodules/{diff-gaussian-rasterization,warp-patch-ncc,simple-knn,tetra_triangulation} --no-build-isolation",
+        "python train.py -s <data> -m <out> -r 2 --use_decoupled_appearance 3"
+      ],
+      "ports": [
+        6009
+      ],
       "container": false
     },
     "contracts": [
-      { "name": "COLMAP input", "path": "scene/dataset_readers.py", "summary": "images/ + sparse/0/*.bin|txt" },
-      { "name": "recon_post.ply", "path": "mesh_extract_tetrahedra.py", "summary": "cleaned triangle mesh, optional vertex colors; consumed by BIM registration" },
-      { "name": "standard 3DGS PLY", "path": "ply2gs.py", "summary": "SH-degree-3 Gaussian PLY without SG terms for generic viewers" }
+      {
+        "name": "COLMAP input",
+        "path": "scene/dataset_readers.py",
+        "summary": "images/ + sparse/0/*.bin|txt"
+      },
+      {
+        "name": "recon_post.ply",
+        "path": "mesh_extract_tetrahedra.py",
+        "summary": "cleaned triangle mesh, optional vertex colors; consumed by BIM registration"
+      },
+      {
+        "name": "standard 3DGS PLY",
+        "path": "ply2gs.py",
+        "summary": "SH-degree-3 Gaussian PLY without SG terms for generic viewers"
+      }
     ],
     "resources": [
-      { "name": "dtu_eval", "classification": "public", "path": "dtu_eval/", "description": "DTU evaluation toolkit; official GT point clouds must be downloaded separately" },
-      { "name": "eval_tnt", "classification": "public", "path": "eval_tnt/", "description": "Tanks and Temples evaluation toolbox" },
-      { "name": "SIBR_viewers", "classification": "public", "path": "SIBR_viewers/", "description": "patched real-time viewer source" }
+      {
+        "name": "dtu_eval",
+        "classification": "public",
+        "path": "dtu_eval/",
+        "description": "DTU evaluation toolkit; official GT point clouds must be downloaded separately"
+      },
+      {
+        "name": "eval_tnt",
+        "classification": "public",
+        "path": "eval_tnt/",
+        "description": "Tanks and Temples evaluation toolbox"
+      },
+      {
+        "name": "SIBR_viewers",
+        "classification": "public",
+        "path": "SIBR_viewers/",
+        "description": "patched real-time viewer source"
+      }
     ],
     "external_services": [],
     "secrets_env": [],
-    "health": { "method": "cli", "endpoint": "python train.py --help" },
+    "health": {
+      "method": "cli",
+      "endpoint": "python train.py --help"
+    },
     "spatial": "Scene-local metric coordinates from COLMAP SfM (arbitrary scale/orientation unless the dataset is georeferenced); no GIS.",
     "temporal": "Static scenes; optimisation iteration is the only time axis.",
     "open_questions": [
       "Which node runs COLMAP to produce the sparse/0 input in the ecosystem (payload-render-engine? data-acquisition-channel)?",
       "Should recon_post.ply provenance (input image hashes, iteration) be recorded so the BIM engine's scan sha256 evidence is traceable to a capture?"
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "No durable corpus. It optimises a Gaussian scene from a COLMAP-registered image set and extracts a watertight mesh.",
+      "standing": {
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "mesh_extract.py",
+          "note": "A mesh names the image set and optimisation that produced it."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/geometry-grounded-gaussian-splatting.json",
+          "note": "Its meshes are reconstructions and must not be treated as a measured survey."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/geometry-grounded-gaussian-splatting.json",
+          "note": "Holds no canonical state of its own and must not be treated as a measured survey."
+        }
+      }
+    }
   }
 }

@@ -1015,3 +1015,42 @@ test('SEC-037 material with no legitimate reading is refused in every field, not
     await h.close();
   }
 });
+
+test('SEC-010 the identity space is reachable from the contract, and is still not a resolver', async () => {
+  const h = await harness();
+  try {
+    await h.command(h.tokens['operator:alice'], { actorId: 'operator:alice', ...h.node('payload-terminal', OBSERVE) });
+
+    // Every node carries its canonical name on read. Derived, never stored: a name that
+    // had to be written down could disagree with the id it names.
+    const snapshot = await h.call('GET', '/v1/snapshot', { token: h.tokens['operator:alice'] });
+    const node = snapshot.body.nodes.find(entry => entry.nodeId === 'payload-terminal');
+    assert.equal(node.uri, 'notation://node/notationsystems/payload-terminal');
+    assert.equal(parseUri(node.uri).class, 'node');
+    assert.throws(() => resolveUri(node.uri), /does not dereference/i, 'a name is not an address');
+
+    // The published contract has always said an evidence reference may be a notation://
+    // identity. It is now true, and it admits a name from a closed space rather than an
+    // arbitrary string that happens to contain slashes.
+    const attest = evidenceRef => h.command(h.tokens['attestor:ci'], {
+      actorId: 'attestor:ci', action: 'record_security_posture', nodeId: 'payload-terminal',
+      attestedAt: new Date().toISOString(), method: 'automated_scan',
+      signals: [{ dimension: 'audit_integrity', state: 'strong', evidenceRef }],
+    });
+    assert.equal((await attest(uri.artifact('notationsystems', 'comtrade-2026-08-27', 'v2'))).status, 201);
+    assert.equal((await attest(`sha256:${'b'.repeat(64)}`)).status, 201);
+
+    for (const rejected of [
+      'https://scanner.example/report/17',
+      'notation://evil.example/a/b',          // not a class in the space
+      '../../etc/passwd',
+      `notation://artifact/notationsystems/${'a'.repeat(300)}`, // a name, not a payload
+    ]) {
+      const refused = await attest(rejected);
+      assert.equal(refused.status, 422, `${rejected} must be refused`);
+      assert.match(refused.body.detail, /evidenceRef/);
+    }
+  } finally {
+    await h.close();
+  }
+});

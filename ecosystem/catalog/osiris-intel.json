@@ -195,6 +195,39 @@
       "ip-api.com is called over plain HTTP; is that acceptable for the deployment posture?",
       "The service has no tests, no authentication and no outbound rate limiting toward Wikidata beyond caching; is it meant to stay a separate container or fold into the terminal?",
       "The Wikidata User-Agent still names osirisai.live; should it carry the PayloadTerminal identity?"
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "An in-memory alias-normalised index of the OpenSanctions OFAC SDN list, refreshed every 24 hours, plus on-demand Wikidata and network enrichment behind an LRU cache.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "intel/server.js",
+          "note": "The index is one named list — the OFAC SDN CSV — plus on-demand lookups, and nothing durable."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "intel/server.js",
+          "note": "Answers are typed {nodes, links} graphs with SANCTIONS MATCH edges naming the list the match came from."
+        },
+        "COR-004": {
+          "standing": "fails",
+          "note": "sanctions_loaded_at and per-response timestamps exist, but there is no historical or as-of querying: what the index said last week cannot be recovered."
+        },
+        "COR-005": {
+          "standing": "fails",
+          "note": "A failed refresh silently keeps the stale copy rather than declaring staleness to the caller."
+        },
+        "COR-007": {
+          "standing": "fails",
+          "note": "The SDN CSV is parsed into memory on fetch; no capture is kept, so a revision upstream is unrecoverable."
+        },
+        "COR-010": {
+          "standing": "fails",
+          "note": "It must never become a person-profiling service, but the person and abuse-contact paths it still serves sit in tension with the terminal collection policy and remain unremoved."
+        }
+      }
+    }
   }
 }

@@ -185,30 +185,109 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["generate.sh", "code/panoramic_image_generation.py", "code/panoramic_image_to_video.py", "code/panoramic_video_to_3DScene.py", "code/panoramic_video_480p_to_3DScene_lrm.py", "code/app_matrix3d.py"],
-      "run": ["conda create -n matrix3d python=3.10", "pip install torch==2.7.0 torchvision==0.22.0", "./install.sh", "python code/download_checkpoints.py", "./generate.sh"],
-      "ports": [7860],
+      "entrypoints": [
+        "generate.sh",
+        "code/panoramic_image_generation.py",
+        "code/panoramic_image_to_video.py",
+        "code/panoramic_video_to_3DScene.py",
+        "code/panoramic_video_480p_to_3DScene_lrm.py",
+        "code/app_matrix3d.py"
+      ],
+      "run": [
+        "conda create -n matrix3d python=3.10",
+        "pip install torch==2.7.0 torchvision==0.22.0",
+        "./install.sh",
+        "python code/download_checkpoints.py",
+        "./generate.sh"
+      ],
+      "ports": [
+        7860
+      ],
       "container": false
     },
     "contracts": [
-      { "name": "inout_dir layout", "path": "code/panoramic_image_to_video.py", "summary": "pano_img.jpg + prompt.txt -> pano_video.mp4 -> generated_3dgs_opt.ply" },
-      { "name": "camera JSON", "path": "code/generate_example_camera.py", "summary": "list of 81 4x4 OpenCV world-to-camera matrices" }
+      {
+        "name": "inout_dir layout",
+        "path": "code/panoramic_image_to_video.py",
+        "summary": "pano_img.jpg + prompt.txt -> pano_video.mp4 -> generated_3dgs_opt.ply"
+      },
+      {
+        "name": "camera JSON",
+        "path": "code/generate_example_camera.py",
+        "summary": "list of 81 4x4 OpenCV world-to-camera matrices"
+      }
     ],
     "resources": [
-      { "name": "sample data", "classification": "public", "path": "data/", "description": "example images, case1 sample video + poses, test camera rails" },
-      { "name": "vendored components", "classification": "public", "path": "code/{DiffSynth-Studio,MoGe,Pano_GS_Opt,Pano_LRM,StableSR,VideoSR}", "description": "in-tree copies of upstream projects used by the stages" }
+      {
+        "name": "sample data",
+        "classification": "public",
+        "path": "data/",
+        "description": "example images, case1 sample video + poses, test camera rails"
+      },
+      {
+        "name": "vendored components",
+        "classification": "public",
+        "path": "code/{DiffSynth-Studio,MoGe,Pano_GS_Opt,Pano_LRM,StableSR,VideoSR}",
+        "description": "in-tree copies of upstream projects used by the stages"
+      }
     ],
     "external_services": [
-      { "name": "Hugging Face Hub", "domain": "huggingface.co", "purpose": "checkpoint downloads (Skywork/Matrix-3D, Ruicheng/moge-vitl, Iceclear/StableSR)", "auth": "none for public repos" },
-      { "name": "Gradio share", "domain": "gradio.live", "purpose": "public tunnel created by demo.launch(share=True)", "auth": "none (public URL)" }
+      {
+        "name": "Hugging Face Hub",
+        "domain": "huggingface.co",
+        "purpose": "checkpoint downloads (Skywork/Matrix-3D, Ruicheng/moge-vitl, Iceclear/StableSR)",
+        "auth": "none for public repos"
+      },
+      {
+        "name": "Gradio share",
+        "domain": "gradio.live",
+        "purpose": "public tunnel created by demo.launch(share=True)",
+        "auth": "none (public URL)"
+      }
     ],
-    "secrets_env": ["HF_TOKEN", "VISIBLE_GPU_NUM"],
-    "health": { "method": "cli", "endpoint": "python code/panoramic_image_generation.py --help" },
+    "secrets_env": [
+      "HF_TOKEN",
+      "VISIBLE_GPU_NUM"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "python code/panoramic_image_generation.py --help"
+    },
     "spatial": "Scene-local, non-metric coordinates scaled by monocular depth; panoramas are equirectangular; no GIS.",
     "temporal": "81-frame camera tour (video time); no calendar time.",
     "open_questions": [
       "Is Matrix-3D meant to be a synthetic-scene source for training/testing other nodes (bim-state-transformer-engine, payload-render-engine) or an operator content tool? No caller is evidenced.",
       "The Gradio demo publishes a public share link by default; the universe should disable share=True before any deployment."
-    ]
+    ],
+    "corpus": {
+      "role": "transform",
+      "owner_of": [],
+      "holding": "No corpus. It fabricates panoramic scenes and Gaussian worlds from a prompt or a single image.",
+      "standing": {
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "code/panoramic_video_to_3DScene.py",
+          "note": "Every output names the stage and checkpoint that produced it, which is the only provenance a fabrication can carry."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/matrix-3d.json",
+          "note": "Its outputs are declared synthetic rather than offered as observation, which is the refusal a generative model owes."
+        },
+        "COR-006": {
+          "standing": "exempt",
+          "note": "Generates scenes and admits nothing; downstream systems decide whether to register them."
+        },
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Holds no history: each run is a GPU pipeline from prompt to scene."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/matrix-3d.json",
+          "note": "It fabricates plausible scenes, so its outputs must never be registered as observed geometry."
+        }
+      }
+    }
   }
 }

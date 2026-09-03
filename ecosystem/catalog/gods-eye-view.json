@@ -512,6 +512,27 @@
       "The /api/* surface exists only inside Vite dev/preview middlewares; is there an intended production server for the Notations deployment?",
       "OpenSky's non-commercial licence and the TeleGeography CC BY-NC-SA cables constrain any commercial use inside the Universe.",
       "No Notations-specific changes are visible on the fork; treat as a pure upstream mirror until a diverging commit appears."
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Nothing. Thirteen live layers rendered on a globe, cached in memory and never archived.",
+      "standing": {
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Explicitly holds nothing: there is no database and nothing is stored beyond caches."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "src/mapStackController.js",
+          "note": "A rendering dock over broker middlewares; it writes to nothing."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/gods-eye-view.json",
+          "note": "Must never become a state holder or an intelligence record. It is also the estate reference for honest freshness labelling: live, delayed, simulated, unavailable."
+        }
+      }
+    }
   }
 }

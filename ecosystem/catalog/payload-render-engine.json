@@ -513,6 +513,37 @@
       "No Payload Spatial API client exists yet: which system (payload-terminal? payload-corpus-graph?) will implement SpatialDataProvider.load/stateAt/query/subscribe, and at what URL?",
       "The window.payloadEarth tool registry is in-page only; an MCP or control-plane binding that forwards invokeTool calls is described as future work.",
       "Facility names are real places but every figure is synthetic; capacity units (TEU/yr, Mt/yr, Mbbl/day, lifts/day) will need reconciliation with real corpus units."
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Nothing canonical. Payload Earth renders the physical economy owned by Payload Terminal; today every record is synthetic and labelled as such.",
+      "standing": {
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "src/data/synthetic/world.ts",
+          "note": "Every row carries provenance.source, and today that value is synthetic:demo rather than a real basis dressed as one."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "src/data/synthetic/world.ts",
+          "note": "Synthetic data is labelled synthetic rather than presented as observed, which is the refusal a projection owes."
+        },
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Holds no history: state is loaded through the SpatialDataProvider seam and never persisted."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "src/app/app.ts",
+          "note": "A strict projection: it never owns or mutates canonical state, and the SpatialDataProvider seam is read-only (load/stateAt/query/subscribe)."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/payload-render-engine.json",
+          "note": "Must never become a simulator or a second representation of state next to the Payload Terminal."
+        }
+      }
+    }
   }
 }

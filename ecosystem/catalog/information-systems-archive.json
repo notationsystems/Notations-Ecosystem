@@ -131,7 +131,11 @@
     "comtrade_commodities": "HS 2603 copper ores and concentrates; HS 7403 refined copper",
     "provider_independent_backup": false
   },
-  "location": { "longitude": -70.40, "latitude": -23.65, "label": "Antofagasta, Chile (representative: Comtrade reporter 152 copper captures)" },
+  "location": {
+    "longitude": -70.4,
+    "latitude": -23.65,
+    "label": "Antofagasta, Chile (representative: Comtrade reporter 152 copper captures)"
+  },
   "relations": [
     {
       "relationId": "information-systems-archive--supplies_context_to--payload-terminal",
@@ -150,28 +154,78 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["node sea-dog-terminal/verify.mjs"],
-      "run": ["git clone <this repo>", "node sea-dog-terminal/verify.mjs"],
+      "entrypoints": [
+        "node sea-dog-terminal/verify.mjs"
+      ],
+      "run": [
+        "git clone <this repo>",
+        "node sea-dog-terminal/verify.mjs"
+      ],
       "ports": [],
       "container": false
     },
     "contracts": [
-      { "name": "MANIFEST.json", "path": "sea-dog-terminal/data-archive/MANIFEST.json", "summary": "{note, counts{class: n}, files[{path, sha256, bytes, class}]}; paths relative to sea-dog-terminal/; classes unreconstructable | refetchable_at_risk | refetchable | documentation." },
-      { "name": "Comtrade capture key", "path": "sea-dog-terminal/data-archive/comtrade/<YYYY-MM-DD>/<reporter>-<hs>-<flow>-<year>.json", "summary": "Verbatim Comtrade API body per successful retrieval, keyed by retrieval date and request key." },
-      { "name": "Data-availability vintage", "path": "sea-dog-terminal/src/data/economy/snapshots/comtrade-da.json", "summary": "Per reporter/period firstReleased, lastReleased, totalRecords, datasetChecksum for as_known_then labelling." }
+      {
+        "name": "MANIFEST.json",
+        "path": "sea-dog-terminal/data-archive/MANIFEST.json",
+        "summary": "{note, counts{class: n}, files[{path, sha256, bytes, class}]}; paths relative to sea-dog-terminal/; classes unreconstructable | refetchable_at_risk | refetchable | documentation."
+      },
+      {
+        "name": "Comtrade capture key",
+        "path": "sea-dog-terminal/data-archive/comtrade/<YYYY-MM-DD>/<reporter>-<hs>-<flow>-<year>.json",
+        "summary": "Verbatim Comtrade API body per successful retrieval, keyed by retrieval date and request key."
+      },
+      {
+        "name": "Data-availability vintage",
+        "path": "sea-dog-terminal/src/data/economy/snapshots/comtrade-da.json",
+        "summary": "Per reporter/period firstReleased, lastReleased, totalRecords, datasetChecksum for as_known_then labelling."
+      }
     ],
     "resources": [
-      { "name": "Comtrade raw captures", "classification": "unreconstructable", "path": "sea-dog-terminal/data-archive/comtrade/", "description": "Eleven 2026-08-27 retrievals; never prune." },
-      { "name": "Comtrade served snapshots", "classification": "unreconstructable", "path": "sea-dog-terminal/src/data/economy/snapshots/comtrade-*.json", "description": "comtrade-copper, comtrade-flow-vintages, comtrade-da." },
-      { "name": "Open Ownership captures", "classification": "internal", "path": "sea-dog-terminal/data-archive/openownership/", "description": "refetchable_at_risk: frozen 2023 S3 export of a retired product; BODS samples reference named corporate entities." },
-      { "name": "Market snapshots", "classification": "public", "path": "sea-dog-terminal/src/data/economy/snapshots/", "description": "USGS MCS, CFTC, Yahoo, Westmetall (at risk), EDGAR recon." }
+      {
+        "name": "Comtrade raw captures",
+        "classification": "unreconstructable",
+        "path": "sea-dog-terminal/data-archive/comtrade/",
+        "description": "Eleven 2026-08-27 retrievals; never prune."
+      },
+      {
+        "name": "Comtrade served snapshots",
+        "classification": "unreconstructable",
+        "path": "sea-dog-terminal/src/data/economy/snapshots/comtrade-*.json",
+        "description": "comtrade-copper, comtrade-flow-vintages, comtrade-da."
+      },
+      {
+        "name": "Open Ownership captures",
+        "classification": "internal",
+        "path": "sea-dog-terminal/data-archive/openownership/",
+        "description": "refetchable_at_risk: frozen 2023 S3 export of a retired product; BODS samples reference named corporate entities."
+      },
+      {
+        "name": "Market snapshots",
+        "classification": "public",
+        "path": "sea-dog-terminal/src/data/economy/snapshots/",
+        "description": "USGS MCS, CFTC, Yahoo, Westmetall (at risk), EDGAR recon."
+      }
     ],
     "external_services": [
-      { "name": "UN Comtrade API", "domain": "comtradeapi.un.org", "purpose": "origin of the captures (fetched by the terminal, not by this repo)", "auth": "none here" },
-      { "name": "Open Ownership S3 exports", "domain": "s3 public exports", "purpose": "origin of BODS captures", "auth": "none" }
+      {
+        "name": "UN Comtrade API",
+        "domain": "comtradeapi.un.org",
+        "purpose": "origin of the captures (fetched by the terminal, not by this repo)",
+        "auth": "none here"
+      },
+      {
+        "name": "Open Ownership S3 exports",
+        "domain": "s3 public exports",
+        "purpose": "origin of BODS captures",
+        "auth": "none"
+      }
     ],
     "secrets_env": [],
-    "health": { "method": "cli", "endpoint": "node sea-dog-terminal/verify.mjs" },
+    "health": {
+      "method": "cli",
+      "endpoint": "node sea-dog-terminal/verify.mjs"
+    },
     "spatial": "Carries trade geography as Comtrade reporter and partner country codes (Chile, Peru, China, DRC, Indonesia and their partners) for copper ore and refined copper flows; no coordinates.",
     "temporal": "Vintage archive: captures keyed by retrieval date (2026-08-27) over reporting years 2017-2024, with firstReleased/lastReleased per dataset so as_known_then can be labelled; the mirror is only as current as its last manual refresh.",
     "open_questions": [
@@ -179,6 +233,58 @@
       "Only one capture day (2026-08-27) is mirrored; has any archival since then been mirrored, and who owns the refresh cadence?",
       "Five Comtrade captures are 11-byte empty-result bodies; are these genuine empty datasets or failed retrievals archived as vintages?",
       "No provider-independent copy exists; the mirror protects only against repo-level accidents on the same GitHub account."
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [],
+      "holding": "The 2026-08-27 UN Comtrade retrievals for copper ore (HS 2603) and refined copper (HS 7403) from reporters Chile, Peru, China, DRC and Indonesia, plus served snapshots, data-availability vintages and refetchable-at-risk captures, every file indexed in MANIFEST.json with a sha256 and a durability class.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "sea-dog-terminal/data-archive/MANIFEST.json",
+          "note": "The holding is enumerated file by file with a durability class per entry."
+        },
+        "COR-002": {
+          "standing": "exempt",
+          "note": "A mirror of another system's captures. It holds a corpus but owns no domain's canonical state, and says so: byte identity is coverage for divergence, not currency."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "sea-dog-terminal/data-archive/MANIFEST.json",
+          "note": "Every file carries its sha256 and the capture it came from."
+        },
+        "COR-004": {
+          "standing": "holds",
+          "evidence": "sea-dog-terminal/src/data/economy/snapshots/comtrade-da.json",
+          "note": "Captures are keyed by retrieval date over reporting years 2017-2024, with firstReleased/lastReleased per dataset so as_known_then can be labelled."
+        },
+        "COR-005": {
+          "standing": "fails",
+          "note": "The mirror answers from files; there is no query surface to refuse from, and staleness is signalled only in prose."
+        },
+        "COR-006": {
+          "standing": "exempt",
+          "note": "An archive admits nothing: it receives captures produced by the terminal's tooling and must never be edited by hand."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "sea-dog-terminal/verify.mjs",
+          "note": "The whole point of the node: Comtrade revises in place, so captures are archived and sha256-verified before anything parses them."
+        },
+        "COR-008": {
+          "standing": "fails",
+          "note": "Files are sha256-indexed in a manifest, but the manifest itself is not hash-linked or signed, so a consistent rewrite of both would not be detectable."
+        },
+        "COR-009": {
+          "standing": "exempt",
+          "note": "The archive renders nothing and has no downstream state to write to."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/information-systems-archive.json",
+          "note": "Must never be treated as current data, and never edited by hand."
+        }
+      }
+    }
   }
 }

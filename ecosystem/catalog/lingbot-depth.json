@@ -142,29 +142,86 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["example.py", "mdm.model.v2.MDMModel"],
-      "run": ["conda create -n lingbot-depth python=3.9", "python -m pip install -e .", "python example.py --example 0"],
+      "entrypoints": [
+        "example.py",
+        "mdm.model.v2.MDMModel"
+      ],
+      "run": [
+        "conda create -n lingbot-depth python=3.9",
+        "python -m pip install -e .",
+        "python example.py --example 0"
+      ],
       "ports": [],
       "container": false
     },
     "contracts": [
-      { "name": "infer output dict", "path": "mdm/model/v2.py", "summary": "{depth: [B,H,W] m, mask: [B,H,W] bool, points: [B,H,W,3] camera XYZ (inf where masked)}" },
-      { "name": "example result dir", "path": "example.py", "summary": "depth_input.npy, depth_refined.npy, depth_*.png, rgb.png, point_cloud.ply (colored, 2x downsampled)" }
+      {
+        "name": "infer output dict",
+        "path": "mdm/model/v2.py",
+        "summary": "{depth: [B,H,W] m, mask: [B,H,W] bool, points: [B,H,W,3] camera XYZ (inf where masked)}"
+      },
+      {
+        "name": "example result dir",
+        "path": "example.py",
+        "summary": "depth_input.npy, depth_refined.npy, depth_*.png, rgb.png, point_cloud.ply (colored, 2x downsampled)"
+      }
     ],
     "resources": [
-      { "name": "examples/", "classification": "public", "path": "examples/", "description": "8 indoor RGB-D example scenes with intrinsics" },
-      { "name": "tech-report.pdf", "classification": "public", "path": "tech-report.pdf", "description": "Masked Depth Modeling technical report (arXiv 2601.17895)" }
+      {
+        "name": "examples/",
+        "classification": "public",
+        "path": "examples/",
+        "description": "8 indoor RGB-D example scenes with intrinsics"
+      },
+      {
+        "name": "tech-report.pdf",
+        "classification": "public",
+        "path": "tech-report.pdf",
+        "description": "Masked Depth Modeling technical report (arXiv 2601.17895)"
+      }
     ],
     "external_services": [
-      { "name": "Hugging Face Hub", "domain": "huggingface.co", "purpose": "model checkpoint download (hf_hub_download model.pt) and dataset hosting", "auth": "none for public repos (HF_TOKEN optional)" }
+      {
+        "name": "Hugging Face Hub",
+        "domain": "huggingface.co",
+        "purpose": "model checkpoint download (hf_hub_download model.pt) and dataset hosting",
+        "auth": "none for public repos (HF_TOKEN optional)"
+      }
     ],
-    "secrets_env": ["HF_TOKEN"],
-    "health": { "method": "cli", "endpoint": "python example.py --example 0" },
+    "secrets_env": [
+      "HF_TOKEN"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "python example.py --example 0"
+    },
     "spatial": "Camera-space metric geometry only (depth in metres, points relative to the sensor); no world coordinates or GIS.",
     "temporal": "Single-frame inference; no time dimension beyond per-frame calls (4D tracking is a downstream use).",
     "open_questions": [
       "Which ecosystem node will actually call LingBot-Depth (payload-render-engine, bim-state-transformer-engine, lichtfeld-studio)? No caller exists in code today.",
       "Should the mirror pin a checkpoint hash so registered evidence is reproducible?"
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "No corpus. Single-frame refinement of noisy RGB-D depth into metric depth maps and point clouds.",
+      "standing": {
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "mdm/model/v2.py",
+          "note": "An output names the model version and the intrinsics it was computed under."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/lingbot-depth.json",
+          "note": "Outputs are declared model predictions to be registered as evidence, not as measured state."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/lingbot-depth.json",
+          "note": "Must never be treated as canonical geometry."
+        }
+      }
+    }
   }
 }

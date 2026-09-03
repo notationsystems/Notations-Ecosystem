@@ -533,6 +533,64 @@
       "Whether building-information-corpus / building-information-graph will feed IFC or evidence into GAT is inferred from naming only.",
       "pyproject project.urls points at notationsystems/BIM-State-Transformer while the remote is BIM-State-Transformer-Engine.",
       "The OpenUSD carrier is the declared bridge to Blender, Omniverse and other USD hosts; no ecosystem node (lichtfeld-studio, matrix-3d) is referenced by this repository."
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [
+        "built-environment"
+      ],
+      "holding": "One joint Gaussian belief state (mu, Sigma) over a building compiled from IFC design intent, with IFC, JSON-snapshot and optionally signed OpenUSD carriers.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "gat/state_snapshot.py; gat/session.py",
+          "note": "One addressable computational state with explicit carriers."
+        },
+        "COR-002": {
+          "standing": "holds",
+          "evidence": "gat/session.py",
+          "note": "The built-environment world model; splats, scans and USD views are evidence or exports, never the state."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "gat/engine/decision.py",
+          "note": "Evidence is absorbed by Bayesian conditioning with the calibration it arrived with."
+        },
+        "COR-004": {
+          "standing": "fails",
+          "note": "Evidence age is causal order in the ledger, not wall-clock; there is no knowledge time, so as-known-then cannot be reconstructed."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "gat/cli.py (_run_verify); gat/engine/verify.py",
+          "note": "Invariant verification refuses a transition and rolls back rather than accepting it."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "gat/engine/verify.py",
+          "note": "Every accepted or rejected transition passes the typed measurement boundary."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "gat/proof_manifest.py",
+          "note": "Proof-carrying state: a manifest attests the bounded calculation the state rests on."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "gat/ledger.py; gat/demo/ledger_replay.py",
+          "note": "A hash-chained execution ledger of every accepted or rejected transition, replayable."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "gat/adapters/openusd.py",
+          "note": "USD and JSON carriers are exports; the headless JSON boundary is read-only for hosts."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/bim-state-transformer-engine.json",
+          "note": "Must never authorize a physical intervention, and never let a probabilistic assessment become an approval."
+        }
+      }
+    }
   }
 }

@@ -211,6 +211,58 @@
     "temporal": "Every record has recordedAt; observations carry observedAt; snapshot carries generatedAt and a revision.",
     "open_questions": [
       "Which execution adapters will sit behind approved intents, and where will they run?"
-    ]
+    ],
+    "corpus": {
+      "role": "coordinate",
+      "owner_of": [],
+      "holding": "The coordination journal of the universe: node registrations, relations, health observations, security posture and capability requests, as an append-only hash-linked and signed chain.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "control-plane/src/journal.js",
+          "note": "The journal is the holding, and its extent is the five record kinds the contract admits."
+        },
+        "COR-002": {
+          "standing": "exempt",
+          "note": "Coordinates between canonical states without owning any domain's. The journal is its own record, not a domain's state."
+        },
+        "COR-003": {
+          "standing": "exempt",
+          "note": "Records that a system exists and what it may do; it holds no domain values to carry a basis."
+        },
+        "COR-004": {
+          "standing": "exempt",
+          "note": "Records recordedAt and observedAt for its own events; it holds no domain values whose knowability could differ from their occurrence."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "control-plane/src/validation.js",
+          "note": "Every refusal is typed with a code, a detail and a remedy, and an unknown action acquires no default semantics."
+        },
+        "COR-006": {
+          "standing": "exempt",
+          "note": "Admits no evidence into a canonical state; it records intent and approval, and dispatches nothing."
+        },
+        "COR-007": {
+          "standing": "exempt",
+          "note": "Holds no raw material: source artifacts, documents and datasets are refused at the boundary by construction."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "control-plane/src/journal.js",
+          "note": "SHA-256 hash-linked, Ed25519-signed, with a rollback anchor that makes truncation loud."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "control-plane/src/control-plane.js",
+          "note": "Approval is not execution: every coordination record stays not_dispatched and the plane never calls outward."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "docs/DATA_CLASSIFICATION.md",
+          "note": "Names what it must never hold — credentials, key material, vulnerability detail, network topology, offensive capability, pointers to raw findings — and refuses each at the command boundary."
+        }
+      }
+    }
   }
 }

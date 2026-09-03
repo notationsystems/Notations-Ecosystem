@@ -388,30 +388,96 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["native/build/scl_cli", "python/scl/client.py (run_scl_request)", "python/scl/ste_adapter.py (run_scl_specification)", "scripts/run_benchmark.py", "native/build/tests/kalman_validate"],
-      "run": ["cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release && cmake --build native/build", "ctest --test-dir native/build --output-on-failure", "pip install pytest && python3 -m pytest tests/ -v", "cmake -S native -B native/build_cuda -DCMAKE_BUILD_TYPE=Release -DSCL_WITH_CUDA=ON"],
+      "entrypoints": [
+        "native/build/scl_cli",
+        "python/scl/client.py (run_scl_request)",
+        "python/scl/ste_adapter.py (run_scl_specification)",
+        "scripts/run_benchmark.py",
+        "native/build/tests/kalman_validate"
+      ],
+      "run": [
+        "cmake -S native -B native/build -DCMAKE_BUILD_TYPE=Release && cmake --build native/build",
+        "ctest --test-dir native/build --output-on-failure",
+        "pip install pytest && python3 -m pytest tests/ -v",
+        "cmake -S native -B native/build_cuda -DCMAKE_BUILD_TYPE=Release -DSCL_WITH_CUDA=ON"
+      ],
       "ports": [],
       "container": false
     },
     "contracts": [
-      { "name": "SCL wire contract", "path": "docs/SCL_CONTRACT.md", "summary": "scl_cli JSON request/response, per-operation byte layouts, fault vocabulary, STE dimension mapping, identity rules (participating/annotating/provenance), scoped reproducibility claims." },
-      { "name": "Operation contract", "path": "native/include/scl/operation.hpp", "summary": "What every registered scl::Operation must satisfy (clauses enforced registry-wide by tests/test_operation_registry_contract.py)." },
-      { "name": "Fault vocabulary", "path": "native/include/scl/protocol.hpp", "summary": "exit_code 0/10/11/12/13/14 and process exit 0/1." },
-      { "name": "Standalone boundary", "path": "docs/SCL_STANDALONE_BOUNDARY.md", "summary": "SCL Core Independence invariant: only ste_adapter.py imports STE; proven in a fresh interpreter." },
-      { "name": "Exchange canonicalization", "path": "architecture/exchange/canonical_yaml.py", "summary": "Canonical YAML + sha256 sidecar shared with the acquisition layer." }
+      {
+        "name": "SCL wire contract",
+        "path": "docs/SCL_CONTRACT.md",
+        "summary": "scl_cli JSON request/response, per-operation byte layouts, fault vocabulary, STE dimension mapping, identity rules (participating/annotating/provenance), scoped reproducibility claims."
+      },
+      {
+        "name": "Operation contract",
+        "path": "native/include/scl/operation.hpp",
+        "summary": "What every registered scl::Operation must satisfy (clauses enforced registry-wide by tests/test_operation_registry_contract.py)."
+      },
+      {
+        "name": "Fault vocabulary",
+        "path": "native/include/scl/protocol.hpp",
+        "summary": "exit_code 0/10/11/12/13/14 and process exit 0/1."
+      },
+      {
+        "name": "Standalone boundary",
+        "path": "docs/SCL_STANDALONE_BOUNDARY.md",
+        "summary": "SCL Core Independence invariant: only ste_adapter.py imports STE; proven in a fresh interpreter."
+      },
+      {
+        "name": "Exchange canonicalization",
+        "path": "architecture/exchange/canonical_yaml.py",
+        "summary": "Canonical YAML + sha256 sidecar shared with the acquisition layer."
+      }
     ],
     "resources": [
-      { "name": "Exchange artifacts", "classification": "public", "path": "architecture/exchange/", "description": "scl_requirements, scl_contract_clauses, invariant_register, daq_requirement_response mirror, ste_invariants reconstruction, canonicalization fixture, each with sha256 sidecar." },
-      { "name": "Joint workload decision", "classification": "public", "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml", "description": "Hash-bound decision to build least_squares first." },
-      { "name": "Kalman pre-registration", "classification": "public", "path": "architecture/kalman_validation_preregistration.yaml", "description": "Validation thresholds fixed before the implementation existed." },
-      { "name": "Audit reports", "classification": "public", "path": "docs/PHASE1_AUDIT.md", "description": "Phase 1-4 audits: numerical validation, failure paths, CPU performance, STE evidence conformance, CUDA build status." }
+      {
+        "name": "Exchange artifacts",
+        "classification": "public",
+        "path": "architecture/exchange/",
+        "description": "scl_requirements, scl_contract_clauses, invariant_register, daq_requirement_response mirror, ste_invariants reconstruction, canonicalization fixture, each with sha256 sidecar."
+      },
+      {
+        "name": "Joint workload decision",
+        "classification": "public",
+        "path": "architecture/decisions/2026-08-26-joint-workload-decision.yaml",
+        "description": "Hash-bound decision to build least_squares first."
+      },
+      {
+        "name": "Kalman pre-registration",
+        "classification": "public",
+        "path": "architecture/kalman_validation_preregistration.yaml",
+        "description": "Validation thresholds fixed before the implementation existed."
+      },
+      {
+        "name": "Audit reports",
+        "classification": "public",
+        "path": "docs/PHASE1_AUDIT.md",
+        "description": "Phase 1-4 audits: numerical validation, failure paths, CPU performance, STE evidence conformance, CUDA build status."
+      }
     ],
     "external_services": [
-      { "name": "CUDA toolkit / cuFFT / cuBLAS / cuSOLVER", "domain": "local libraries", "purpose": "Optional CUDA backend build; presence is a build fact only, no device visible in any session so far.", "auth": "none" },
-      { "name": "Scientific Transformer Engine checkout", "domain": "local path via STE_REPO", "purpose": "Integrated configuration and the no-mock integration tests; skipped cleanly when absent.", "auth": "none" }
+      {
+        "name": "CUDA toolkit / cuFFT / cuBLAS / cuSOLVER",
+        "domain": "local libraries",
+        "purpose": "Optional CUDA backend build; presence is a build fact only, no device visible in any session so far.",
+        "auth": "none"
+      },
+      {
+        "name": "Scientific Transformer Engine checkout",
+        "domain": "local path via STE_REPO",
+        "purpose": "Integrated configuration and the no-mock integration tests; skipped cleanly when absent.",
+        "auth": "none"
+      }
     ],
-    "secrets_env": ["STE_REPO"],
-    "health": { "method": "cli", "endpoint": "native/build/scl_cli --version" },
+    "secrets_env": [
+      "STE_REPO"
+    ],
+    "health": {
+      "method": "cli",
+      "endpoint": "native/build/scl_cli --version"
+    },
     "spatial": "No geography: particle positions and lattice coordinates are dimensionless model coordinates, never places.",
     "temporal": "Measurement streams for the Kalman operation are ordered sequences and Fourier sample spacing is an optional annotating parameter; SCL keeps no clocks, timestamps or history of its own.",
     "open_questions": [
@@ -419,6 +485,37 @@
       "The acquisition layer is called data-acquisition-channel-daq in SCL docs and notations-acquisition-channel in STE; confirm the catalog id data-acquisition-channel refers to that repository.",
       "SCL owns no comparison layer: results with equal computation_identity but different annotating parameters (e.g. sample spacing) are not spectrally comparable, and nothing yet prevents a consumer from comparing them.",
       "STE_REPO is a path, not a secret; it is listed under secrets_env only because it is the one environment variable the test suite reads."
-    ]
+    ],
+    "corpus": {
+      "role": "transform",
+      "owner_of": [],
+      "holding": "No corpus. It computes over requests handed to it and returns results that are explicitly not measurements.",
+      "standing": {
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "python/scl/errors.py; docs/SCL_CONTRACT.md",
+          "note": "Requests and results are content-addressed, so every result can be walked back to the request that produced it."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "python/scl/errors.py",
+          "note": "A staged fault vocabulary that is never collapsed into a generic failure."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "native/src/main.cpp",
+          "note": "Dispatch is a fixed registry behind a process boundary; nothing enters a canonical state from here."
+        },
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Keeps no clocks, timestamps or history of its own; the record of what was computed lives with the caller."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/scientific-compute-layer.json",
+          "note": "Never admits evidence, never touches STE's workspace, and never claims that a computation is a measurement."
+        }
+      }
+    }
   }
 }

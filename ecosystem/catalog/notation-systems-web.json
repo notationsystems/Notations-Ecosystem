@@ -152,6 +152,26 @@
     "open_questions": [
       "Which custom domain will the site use?",
       "Should the control plane publish a public catalogue into a CMS collection?"
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "The public web presence: pages, CMS collections, assets and forms held by Webflow.",
+      "standing": {
+        "COR-008": {
+          "standing": "fails",
+          "note": "Publish timestamps and CMS item history are Webflow's; the estate holds no independent record of what was published when."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "Webflow Data API v2 (data_sites_tool)",
+          "note": "A public surface: it renders the company, and writes into no ecosystem state."
+        },
+        "COR-010": {
+          "standing": "fails",
+          "note": "Nothing states what the public site must never publish, though it is the one node with an unauthenticated audience."
+        }
+      }
+    }
   }
 }

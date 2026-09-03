@@ -4,33 +4,297 @@
   "kind": "reasoning_engine",
   "description": "Mirror of opengeos/GeoAgent (v1.8.0): a Strands-Agents-based geospatial agent layer that binds LLMs (OpenAI, Codex OAuth, Anthropic, Gemini, Bedrock, LiteLLM, Ollama) to live maps (leafmap, anymap, browser MapLibre), QGIS sessions and Earth-observation catalogs (STAC, NASA Earthdata/OPERA, GEE data catalogs, Vantor, HyperCoast, WhiteboxTools, geoai). It ships a Python API, a CLI, a Solara UI, a FastAPI WebSocket backend for browser maps, a Node/TypeScript example backend and the OpenGeoAgent QGIS plugin, with confirmation hooks before destructive or expensive tool calls. In the Notations Universe it is the geospatial perception-and-planning engine that can drive map views and catalog searches; it is an upstream mirror and must never hold canonical world state.",
   "capabilities": [
-    { "capabilityId": "sdk.agent.chat", "label": "GeoAgent.chat / stream_chat / chat_in_background", "description": "Python API: run one user turn (text, or multimodal content blocks with images) through the bound Strands agent and return a GeoAgentResponse (answer_text, tool_calls, images); stream_chat yields events; chat_in_background runs on a worker thread. QGIS calls are marshalled to the GUI thread.", "mode": "propose", "approval": "automatic", "surface": "python", "path": "geoagent.GeoAgent.chat", "evidence": "geoagent/core/agent.py; README.md", "cost": "LLM tokens" },
-    { "capabilityId": "sdk.config", "label": "GeoAgentConfig and provider resolution", "description": "Python API: GeoAgentConfig(provider, model, temperature, max_tokens, client settings); resolve_model/get_llm/get_default_model pick a provider from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, LITELLM_*, OLLAMA_HOST) or explicit arguments.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.GeoAgentConfig", "evidence": "geoagent/core/config.py; geoagent/core/model.py; README.md" },
-    { "capabilityId": "sdk.tool_registry", "label": "@geo_tool decorator and GeoToolRegistry", "description": "Python API for downstream packages: @geo_tool turns a function into a Strands tool with category, safety flags (needs_confirmation) and fast-mode metadata; GeoToolRegistry lists and filters tools.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.geo_tool", "evidence": "geoagent/core/decorators.py; geoagent/core/registry.py; docs/decorators.md" },
-    { "capabilityId": "sdk.safety", "label": "Confirmation hooks", "description": "Python API: ConfirmCallback/ConfirmRequest, auto_approve_all, auto_approve_safe_only and build_interrupt_on pause the agent before deleting layers, saving files or running expensive jobs; the default policy denies confirmation-required tools.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.ConfirmRequest", "evidence": "geoagent/core/safety.py; geoagent/core/confirmation_hook.py; docs/safety.md" },
-    { "capabilityId": "sdk.create_agent", "label": "create_agent with custom tools", "description": "Factory for package-specific integrations: build a GeoAgent from an explicit tool list, context objects and model.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.create_agent", "evidence": "geoagent/core/factory.py" },
-    { "capabilityId": "sdk.for_leafmap", "label": "for_leafmap / for_anymap map control", "description": "Binds the agent to a live leafmap or anymap map with tools to inspect state and layers, navigate (set_center, fly_to, zoom_*), manage layers, add vector/GeoJSON/raster/COG/STAC/XYZ/PMTiles data and markers, change basemap and save_map. Layer removal and save are confirmation-gated.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_leafmap", "evidence": "geoagent/core/factory.py; geoagent/tools/leafmap.py; geoagent/tools/anymap.py", "side_effects": "mutates map widget; may write files" },
-    { "capabilityId": "sdk.for_qgis", "label": "for_qgis QGIS session control", "description": "Binds the agent to qgis.utils.iface and a QgsProject with tools: list_project_layers, get_project_state, inspect_layer_fields, get_selected_features, zoom/scale/center navigation, add_vector_layer/add_raster_layer/add_xyz_tile_layer, remove_layer, visibility/opacity, select_features_by_expression, run_processing_algorithm, open_attribute_table, save_project and the confirmation-gated run_pyqgis_script fallback.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_qgis", "evidence": "geoagent/core/factory.py; geoagent/tools/qgis.py; README.md", "side_effects": "mutates QGIS project; executes PyQGIS" },
-    { "capabilityId": "sdk.for_stac", "label": "for_stac STAC catalog search", "description": "Tools: get_current_stac_search_extent, list_stac_collections, search_stac_items, get_stac_item_assets, add_stac_asset_to_qgis against pystac-client catalogs (Planetary Computer and others).", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_stac", "evidence": "geoagent/core/factory.py; geoagent/tools/stac.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_nasa_earthdata", "label": "for_nasa_earthdata Earthdata search and load", "description": "Tools: search_earthdata_catalog, get_earthdata_dataset_info, search_earthdata_data, display_earthdata_footprints, load_earthdata_raster, create_earthdata_rgb_composite via earthaccess; opens NASA Earthdata panels in QGIS.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_nasa_earthdata", "evidence": "geoagent/core/factory.py; geoagent/tools/nasa_earthdata.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_nasa_opera", "label": "for_nasa_opera OPERA products", "description": "Tools: get_available_datasets, get_dataset_info, search_opera_data, display_footprints, display_raster, create_mosaic; submit_nasa_opera_search_task runs a search as a QGIS task without an LLM.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_nasa_opera", "evidence": "geoagent/core/factory.py; geoagent/tools/nasa_opera.py; examples/nasa_opera_qgis.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_gee_data_catalogs", "label": "for_gee_data_catalogs Earth Engine catalogs", "description": "Binds Google Earth Engine data catalog search and geemap display tools (requires earthengine-api credentials).", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_gee_data_catalogs", "evidence": "geoagent/core/factory.py; geoagent/tools/gee_data_catalogs.py; geoagent/tools/earthengine.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_vantor", "label": "for_vantor Vantor open data", "description": "Tool search_vantor_items over the Vantor open-data STAC catalog.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_vantor", "evidence": "geoagent/core/factory.py; geoagent/tools/vantor.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_hypercoast", "label": "for_hypercoast hyperspectral data", "description": "Tools: list_hypercoast_data_types, search_hypercoast_data, get_selected_hypercoast_footprints, preview_hypercoast_dataset, open_hypercoast_panel.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.for_hypercoast", "evidence": "geoagent/core/factory.py; geoagent/tools/hypercoast.py", "data_domain": "earth-observation" },
-    { "capabilityId": "sdk.for_whitebox", "label": "for_whitebox terrain and hydrology processing", "description": "Binds WhiteboxTools geoprocessing (terrain analysis, hydrology) as agent tools; runs local compute jobs.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_whitebox", "evidence": "geoagent/core/factory.py; geoagent/tools/whitebox.py", "side_effects": "local compute; writes rasters" },
-    { "capabilityId": "sdk.for_geoai", "label": "for_geoai deep-learning geospatial tools", "description": "Binds the geoai package (segmentation, detection, download helpers) as agent tools.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_geoai", "evidence": "geoagent/core/factory.py; geoagent/tools/geoai.py", "side_effects": "model inference; writes files", "cost": "GPU minutes" },
-    { "capabilityId": "sdk.for_timelapse", "label": "for_timelapse animated timelapses", "description": "Binds timelapse generation tools (satellite time series to animation) built on geemap/leafmap.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_timelapse", "evidence": "geoagent/core/factory.py; geoagent/tools/timelapse.py", "side_effects": "writes media files" },
-    { "capabilityId": "sdk.hsae", "label": "HydroSovereign (hsae) tools", "description": "Optional extra binding hydrosovereign hydrology tools (examples/hsae_demo.py).", "mode": "observe", "approval": "automatic", "surface": "python", "path": "geoagent.tools.hsae", "evidence": "geoagent/tools/hsae.py; examples/hsae_demo.py; pyproject.toml" },
-    { "capabilityId": "sdk.images", "label": "Image tools and generate_image", "description": "Multimodal helpers: image content blocks in chat, screenshot artifacts, and generate_image via OpenAI when OPENAI_API_KEY is configured.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.tools.images", "evidence": "geoagent/tools/images.py; README.md", "cost": "image-generation tokens" },
-    { "capabilityId": "sdk.codex_oauth", "label": "ChatGPT/Codex OAuth login", "description": "login_openai_codex, ensure_openai_codex_environment, is_openai_codex_logged_in, clear_openai_codex_token store a refresh token in the user config dir and export OPENAI_CODEX_ACCESS_TOKEN.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.login_openai_codex", "evidence": "geoagent/core/openai_codex.py; README.md", "side_effects": "browser login; writes token file" },
-    { "capabilityId": "cli.geoagent", "label": "geoagent CLI", "description": "geoagent ui (Solara workspace), geoagent browser --host --port --provider --model [--allow-browser-code] [--auto-approve-browser-tools] (FastAPI backend), geoagent codex login|status|logout.", "mode": "execute", "approval": "operator", "surface": "cli", "path": "geoagent <ui|browser|codex>", "evidence": "geoagent/cli.py; pyproject.toml" },
-    { "capabilityId": "http.browser.health", "label": "Browser backend health", "description": "GET /geoagent/health returns {ok: true} from the FastAPI browser backend (default 127.0.0.1:8765).", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/geoagent/health", "evidence": "geoagent/browser/server.py" },
-    { "capabilityId": "ws.browser.chat", "label": "Browser MapLibre WebSocket protocol", "description": "WS /geoagent/ws: server sends {type:session, sessionId, mapId}; client sends {type:chat, message, mapId, history}; server streams {type:map_command,...} instructions that the browser executes on a live MapLibre map and answers with map_command_result; turn ends with chat_result. One chat turn per session at a time; run_maplibre_script only with --allow-browser-code.", "mode": "execute", "approval": "operator", "surface": "websocket", "path": "/geoagent/ws", "evidence": "geoagent/browser/server.py; geoagent/browser/session.py; geoagent/tools/browser_maplibre.py; examples/browser_maplibre/", "side_effects": "mutates browser map; LLM cost" },
-    { "capabilityId": "sdk.for_browser_maplibre", "label": "for_browser_maplibre tool surface", "description": "Tools executed through the browser session: list_layers, get_map_state, set_center, fly_to, set_zoom, zoom_to_bounds, change_basemap, add_marker, add_geojson_data, add_vector_data, add_xyz_tile_layer, set_layer_visibility, set_layer_opacity, query_rendered_features, screenshot_map, remove_layer, clear_layers.", "mode": "execute", "approval": "operator", "surface": "python", "path": "geoagent.for_browser_maplibre", "evidence": "geoagent/tools/browser_maplibre.py; geoagent/core/factory.py", "side_effects": "mutates browser map" },
-    { "capabilityId": "http.node_backend", "label": "Node/TypeScript MapLibre backend example", "description": "examples/node_maplibre_strands_typescript: Express + ws server on 127.0.0.1:8765 serving the static MapLibre page, GET /geoagent/health and a WebSocket with the same session/chat/map_command protocol, using @strands-agents/sdk with server-side provider auth (Codex OAuth, OpenAI, Anthropic, Gemini, Bedrock, LiteLLM, Ollama).", "mode": "execute", "approval": "operator", "surface": "http", "method": "GET", "path": "/geoagent/health", "evidence": "examples/node_maplibre_strands_typescript/src/server/main.ts; examples/node_maplibre_strands_typescript/README.md", "side_effects": "mutates browser map; LLM cost" },
-    { "capabilityId": "ui.solara", "label": "Solara map-chat workspace", "description": "geoagent ui opens a Solara app (home and chat pages) bound to an anymap or leafmap map with provider/model controls, fast mode, chat history, compact tool results and a conservative confirmation policy.", "mode": "execute", "approval": "operator", "surface": "ui", "path": "geoagent ui", "evidence": "geoagent/ui/app.py; geoagent/ui/pages/; docs/ui.md" },
-    { "capabilityId": "ui.qgis_plugin", "label": "OpenGeoAgent QGIS plugin", "description": "Dockable QGIS chat panel (QGIS 3.28 to 4.x) with agent modes (General QGIS, WhiteboxTools, NASA Earthdata, NASA OPERA, GEE catalogs, STAC), tool permission profiles, voice prompts, image paste and screenshot attachments, Markdown history import/export, a jobs panel, provider settings and a dependency installer into ~/.open_geoagent/.", "mode": "execute", "approval": "operator", "surface": "ui", "path": "qgis_geoagent/open_geoagent", "evidence": "qgis_geoagent/open_geoagent/metadata.txt; qgis_geoagent/README.md; docs/qgis-plugin.md", "side_effects": "mutates QGIS project" },
-    { "capabilityId": "docs.notebooks", "label": "Example notebooks", "description": "docs/examples notebooks: intro, live_mapping, openai_codex, qgis_agent, stac_workflow, stream_chat_openai_codex; site published at geoagent.gishub.org.", "mode": "observe", "approval": "automatic", "surface": "docs", "path": "docs/examples/", "evidence": "docs/examples/; mkdocs.yml" }
+    {
+      "capabilityId": "sdk.agent.chat",
+      "label": "GeoAgent.chat / stream_chat / chat_in_background",
+      "description": "Python API: run one user turn (text, or multimodal content blocks with images) through the bound Strands agent and return a GeoAgentResponse (answer_text, tool_calls, images); stream_chat yields events; chat_in_background runs on a worker thread. QGIS calls are marshalled to the GUI thread.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.GeoAgent.chat",
+      "evidence": "geoagent/core/agent.py; README.md",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "sdk.config",
+      "label": "GeoAgentConfig and provider resolution",
+      "description": "Python API: GeoAgentConfig(provider, model, temperature, max_tokens, client settings); resolve_model/get_llm/get_default_model pick a provider from environment variables (OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, LITELLM_*, OLLAMA_HOST) or explicit arguments.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.GeoAgentConfig",
+      "evidence": "geoagent/core/config.py; geoagent/core/model.py; README.md"
+    },
+    {
+      "capabilityId": "sdk.tool_registry",
+      "label": "@geo_tool decorator and GeoToolRegistry",
+      "description": "Python API for downstream packages: @geo_tool turns a function into a Strands tool with category, safety flags (needs_confirmation) and fast-mode metadata; GeoToolRegistry lists and filters tools.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.geo_tool",
+      "evidence": "geoagent/core/decorators.py; geoagent/core/registry.py; docs/decorators.md"
+    },
+    {
+      "capabilityId": "sdk.safety",
+      "label": "Confirmation hooks",
+      "description": "Python API: ConfirmCallback/ConfirmRequest, auto_approve_all, auto_approve_safe_only and build_interrupt_on pause the agent before deleting layers, saving files or running expensive jobs; the default policy denies confirmation-required tools.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.ConfirmRequest",
+      "evidence": "geoagent/core/safety.py; geoagent/core/confirmation_hook.py; docs/safety.md"
+    },
+    {
+      "capabilityId": "sdk.create_agent",
+      "label": "create_agent with custom tools",
+      "description": "Factory for package-specific integrations: build a GeoAgent from an explicit tool list, context objects and model.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.create_agent",
+      "evidence": "geoagent/core/factory.py"
+    },
+    {
+      "capabilityId": "sdk.for_leafmap",
+      "label": "for_leafmap / for_anymap map control",
+      "description": "Binds the agent to a live leafmap or anymap map with tools to inspect state and layers, navigate (set_center, fly_to, zoom_*), manage layers, add vector/GeoJSON/raster/COG/STAC/XYZ/PMTiles data and markers, change basemap and save_map. Layer removal and save are confirmation-gated.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_leafmap",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/leafmap.py; geoagent/tools/anymap.py",
+      "side_effects": "mutates map widget; may write files"
+    },
+    {
+      "capabilityId": "sdk.for_qgis",
+      "label": "for_qgis QGIS session control",
+      "description": "Binds the agent to qgis.utils.iface and a QgsProject with tools: list_project_layers, get_project_state, inspect_layer_fields, get_selected_features, zoom/scale/center navigation, add_vector_layer/add_raster_layer/add_xyz_tile_layer, remove_layer, visibility/opacity, select_features_by_expression, run_processing_algorithm, open_attribute_table, save_project and the confirmation-gated run_pyqgis_script fallback.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_qgis",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/qgis.py; README.md",
+      "side_effects": "mutates QGIS project; executes PyQGIS"
+    },
+    {
+      "capabilityId": "sdk.for_stac",
+      "label": "for_stac STAC catalog search",
+      "description": "Tools: get_current_stac_search_extent, list_stac_collections, search_stac_items, get_stac_item_assets, add_stac_asset_to_qgis against pystac-client catalogs (Planetary Computer and others).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_stac",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/stac.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_nasa_earthdata",
+      "label": "for_nasa_earthdata Earthdata search and load",
+      "description": "Tools: search_earthdata_catalog, get_earthdata_dataset_info, search_earthdata_data, display_earthdata_footprints, load_earthdata_raster, create_earthdata_rgb_composite via earthaccess; opens NASA Earthdata panels in QGIS.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_nasa_earthdata",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/nasa_earthdata.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_nasa_opera",
+      "label": "for_nasa_opera OPERA products",
+      "description": "Tools: get_available_datasets, get_dataset_info, search_opera_data, display_footprints, display_raster, create_mosaic; submit_nasa_opera_search_task runs a search as a QGIS task without an LLM.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_nasa_opera",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/nasa_opera.py; examples/nasa_opera_qgis.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_gee_data_catalogs",
+      "label": "for_gee_data_catalogs Earth Engine catalogs",
+      "description": "Binds Google Earth Engine data catalog search and geemap display tools (requires earthengine-api credentials).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_gee_data_catalogs",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/gee_data_catalogs.py; geoagent/tools/earthengine.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_vantor",
+      "label": "for_vantor Vantor open data",
+      "description": "Tool search_vantor_items over the Vantor open-data STAC catalog.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_vantor",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/vantor.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_hypercoast",
+      "label": "for_hypercoast hyperspectral data",
+      "description": "Tools: list_hypercoast_data_types, search_hypercoast_data, get_selected_hypercoast_footprints, preview_hypercoast_dataset, open_hypercoast_panel.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.for_hypercoast",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/hypercoast.py",
+      "data_domain": "earth-observation"
+    },
+    {
+      "capabilityId": "sdk.for_whitebox",
+      "label": "for_whitebox terrain and hydrology processing",
+      "description": "Binds WhiteboxTools geoprocessing (terrain analysis, hydrology) as agent tools; runs local compute jobs.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_whitebox",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/whitebox.py",
+      "side_effects": "local compute; writes rasters"
+    },
+    {
+      "capabilityId": "sdk.for_geoai",
+      "label": "for_geoai deep-learning geospatial tools",
+      "description": "Binds the geoai package (segmentation, detection, download helpers) as agent tools.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_geoai",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/geoai.py",
+      "side_effects": "model inference; writes files",
+      "cost": "GPU minutes"
+    },
+    {
+      "capabilityId": "sdk.for_timelapse",
+      "label": "for_timelapse animated timelapses",
+      "description": "Binds timelapse generation tools (satellite time series to animation) built on geemap/leafmap.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_timelapse",
+      "evidence": "geoagent/core/factory.py; geoagent/tools/timelapse.py",
+      "side_effects": "writes media files"
+    },
+    {
+      "capabilityId": "sdk.hsae",
+      "label": "HydroSovereign (hsae) tools",
+      "description": "Optional extra binding hydrosovereign hydrology tools (examples/hsae_demo.py).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "geoagent.tools.hsae",
+      "evidence": "geoagent/tools/hsae.py; examples/hsae_demo.py; pyproject.toml"
+    },
+    {
+      "capabilityId": "sdk.images",
+      "label": "Image tools and generate_image",
+      "description": "Multimodal helpers: image content blocks in chat, screenshot artifacts, and generate_image via OpenAI when OPENAI_API_KEY is configured.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.tools.images",
+      "evidence": "geoagent/tools/images.py; README.md",
+      "cost": "image-generation tokens"
+    },
+    {
+      "capabilityId": "sdk.codex_oauth",
+      "label": "ChatGPT/Codex OAuth login",
+      "description": "login_openai_codex, ensure_openai_codex_environment, is_openai_codex_logged_in, clear_openai_codex_token store a refresh token in the user config dir and export OPENAI_CODEX_ACCESS_TOKEN.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.login_openai_codex",
+      "evidence": "geoagent/core/openai_codex.py; README.md",
+      "side_effects": "browser login; writes token file"
+    },
+    {
+      "capabilityId": "cli.geoagent",
+      "label": "geoagent CLI",
+      "description": "geoagent ui (Solara workspace), geoagent browser --host --port --provider --model [--allow-browser-code] [--auto-approve-browser-tools] (FastAPI backend), geoagent codex login|status|logout.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "geoagent <ui|browser|codex>",
+      "evidence": "geoagent/cli.py; pyproject.toml"
+    },
+    {
+      "capabilityId": "http.browser.health",
+      "label": "Browser backend health",
+      "description": "GET /geoagent/health returns {ok: true} from the FastAPI browser backend (default 127.0.0.1:8765).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/geoagent/health",
+      "evidence": "geoagent/browser/server.py"
+    },
+    {
+      "capabilityId": "ws.browser.chat",
+      "label": "Browser MapLibre WebSocket protocol",
+      "description": "WS /geoagent/ws: server sends {type:session, sessionId, mapId}; client sends {type:chat, message, mapId, history}; server streams {type:map_command,...} instructions that the browser executes on a live MapLibre map and answers with map_command_result; turn ends with chat_result. One chat turn per session at a time; run_maplibre_script only with --allow-browser-code.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "websocket",
+      "path": "/geoagent/ws",
+      "evidence": "geoagent/browser/server.py; geoagent/browser/session.py; geoagent/tools/browser_maplibre.py; examples/browser_maplibre/",
+      "side_effects": "mutates browser map; LLM cost"
+    },
+    {
+      "capabilityId": "sdk.for_browser_maplibre",
+      "label": "for_browser_maplibre tool surface",
+      "description": "Tools executed through the browser session: list_layers, get_map_state, set_center, fly_to, set_zoom, zoom_to_bounds, change_basemap, add_marker, add_geojson_data, add_vector_data, add_xyz_tile_layer, set_layer_visibility, set_layer_opacity, query_rendered_features, screenshot_map, remove_layer, clear_layers.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "geoagent.for_browser_maplibre",
+      "evidence": "geoagent/tools/browser_maplibre.py; geoagent/core/factory.py",
+      "side_effects": "mutates browser map"
+    },
+    {
+      "capabilityId": "http.node_backend",
+      "label": "Node/TypeScript MapLibre backend example",
+      "description": "examples/node_maplibre_strands_typescript: Express + ws server on 127.0.0.1:8765 serving the static MapLibre page, GET /geoagent/health and a WebSocket with the same session/chat/map_command protocol, using @strands-agents/sdk with server-side provider auth (Codex OAuth, OpenAI, Anthropic, Gemini, Bedrock, LiteLLM, Ollama).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "GET",
+      "path": "/geoagent/health",
+      "evidence": "examples/node_maplibre_strands_typescript/src/server/main.ts; examples/node_maplibre_strands_typescript/README.md",
+      "side_effects": "mutates browser map; LLM cost"
+    },
+    {
+      "capabilityId": "ui.solara",
+      "label": "Solara map-chat workspace",
+      "description": "geoagent ui opens a Solara app (home and chat pages) bound to an anymap or leafmap map with provider/model controls, fast mode, chat history, compact tool results and a conservative confirmation policy.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "ui",
+      "path": "geoagent ui",
+      "evidence": "geoagent/ui/app.py; geoagent/ui/pages/; docs/ui.md"
+    },
+    {
+      "capabilityId": "ui.qgis_plugin",
+      "label": "OpenGeoAgent QGIS plugin",
+      "description": "Dockable QGIS chat panel (QGIS 3.28 to 4.x) with agent modes (General QGIS, WhiteboxTools, NASA Earthdata, NASA OPERA, GEE catalogs, STAC), tool permission profiles, voice prompts, image paste and screenshot attachments, Markdown history import/export, a jobs panel, provider settings and a dependency installer into ~/.open_geoagent/.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "ui",
+      "path": "qgis_geoagent/open_geoagent",
+      "evidence": "qgis_geoagent/open_geoagent/metadata.txt; qgis_geoagent/README.md; docs/qgis-plugin.md",
+      "side_effects": "mutates QGIS project"
+    },
+    {
+      "capabilityId": "docs.notebooks",
+      "label": "Example notebooks",
+      "description": "docs/examples notebooks: intro, live_mapping, openai_codex, qgis_agent, stac_workflow, stream_chat_openai_codex; site published at geoagent.gishub.org.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "docs",
+      "path": "docs/examples/",
+      "evidence": "docs/examples/; mkdocs.yml"
+    }
   ],
   "metadata": {
     "repo": "notationsystems/GeoAgent-MultiModal-AI",
@@ -60,34 +324,132 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["geoagent (CLI)", "geoagent.browser.server:create_browser_app", "geoagent.ui.app (Solara)", "qgis_geoagent/open_geoagent (QGIS plugin)", "examples/node_maplibre_strands_typescript/src/server/main.ts"],
-      "run": ["pip install GeoAgent[all]", "geoagent browser --host 127.0.0.1 --port 8765", "geoagent ui", "npm run dev (examples/node_maplibre_strands_typescript)"],
-      "ports": [8765],
+      "entrypoints": [
+        "geoagent (CLI)",
+        "geoagent.browser.server:create_browser_app",
+        "geoagent.ui.app (Solara)",
+        "qgis_geoagent/open_geoagent (QGIS plugin)",
+        "examples/node_maplibre_strands_typescript/src/server/main.ts"
+      ],
+      "run": [
+        "pip install GeoAgent[all]",
+        "geoagent browser --host 127.0.0.1 --port 8765",
+        "geoagent ui",
+        "npm run dev (examples/node_maplibre_strands_typescript)"
+      ],
+      "ports": [
+        8765
+      ],
       "container": false
     },
     "contracts": [
-      { "name": "Browser WebSocket protocol", "path": "geoagent/browser/server.py", "summary": "session / chat / map_command / map_command_result / chat_result / error messages" },
-      { "name": "Tool metadata", "path": "geoagent/core/registry.py", "summary": "GeoToolMeta: category, needs_confirmation, fast-mode flags" },
-      { "name": "QGIS plugin manifest", "path": "qgis_geoagent/open_geoagent/metadata.txt", "summary": "OpenGeoAgent 1.8.0, QGIS 3.28-4.99" }
+      {
+        "name": "Browser WebSocket protocol",
+        "path": "geoagent/browser/server.py",
+        "summary": "session / chat / map_command / map_command_result / chat_result / error messages"
+      },
+      {
+        "name": "Tool metadata",
+        "path": "geoagent/core/registry.py",
+        "summary": "GeoToolMeta: category, needs_confirmation, fast-mode flags"
+      },
+      {
+        "name": "QGIS plugin manifest",
+        "path": "qgis_geoagent/open_geoagent/metadata.txt",
+        "summary": "OpenGeoAgent 1.8.0, QGIS 3.28-4.99"
+      }
     ],
     "resources": [
-      { "name": "Codex OAuth token", "classification": "sensitive", "path": "user config dir", "description": "Stored refresh token for ChatGPT/Codex provider" },
-      { "name": "QGIS plugin dependencies", "classification": "internal", "path": "~/.open_geoagent/", "description": "uv-managed venv installed by the plugin" }
+      {
+        "name": "Codex OAuth token",
+        "classification": "sensitive",
+        "path": "user config dir",
+        "description": "Stored refresh token for ChatGPT/Codex provider"
+      },
+      {
+        "name": "QGIS plugin dependencies",
+        "classification": "internal",
+        "path": "~/.open_geoagent/",
+        "description": "uv-managed venv installed by the plugin"
+      }
     ],
     "external_services": [
-      { "name": "LLM providers", "domain": "openai, anthropic, google, bedrock, litellm, ollama", "purpose": "agent reasoning", "auth": "API keys / OAuth / AWS chain" },
-      { "name": "STAC catalogs", "domain": "planetarycomputer.microsoft.com and others", "purpose": "EO item search", "auth": "none / planetary-computer signing" },
-      { "name": "NASA Earthdata CMR", "domain": "cmr.earthdata.nasa.gov", "purpose": "Earthdata and OPERA granule search", "auth": "Earthdata login via earthaccess" },
-      { "name": "Google Earth Engine", "domain": "earthengine.googleapis.com", "purpose": "GEE catalogs and geemap display", "auth": "EE credentials" }
+      {
+        "name": "LLM providers",
+        "domain": "openai, anthropic, google, bedrock, litellm, ollama",
+        "purpose": "agent reasoning",
+        "auth": "API keys / OAuth / AWS chain"
+      },
+      {
+        "name": "STAC catalogs",
+        "domain": "planetarycomputer.microsoft.com and others",
+        "purpose": "EO item search",
+        "auth": "none / planetary-computer signing"
+      },
+      {
+        "name": "NASA Earthdata CMR",
+        "domain": "cmr.earthdata.nasa.gov",
+        "purpose": "Earthdata and OPERA granule search",
+        "auth": "Earthdata login via earthaccess"
+      },
+      {
+        "name": "Google Earth Engine",
+        "domain": "earthengine.googleapis.com",
+        "purpose": "GEE catalogs and geemap display",
+        "auth": "EE credentials"
+      }
     ],
-    "secrets_env": ["OPENAI_API_KEY", "OPENAI_CODEX_ACCESS_TOKEN", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "LITELLM_API_KEY", "LITELLM_BASE_URL", "OLLAMA_HOST", "BEDROCK_MODEL", "AWS_PROFILE", "AWS_REGION", "EARTHDATA_USERNAME", "EARTHDATA_PASSWORD"],
-    "health": { "method": "http", "endpoint": "/geoagent/health" },
+    "secrets_env": [
+      "OPENAI_API_KEY",
+      "OPENAI_CODEX_ACCESS_TOKEN",
+      "ANTHROPIC_API_KEY",
+      "GEMINI_API_KEY",
+      "GOOGLE_API_KEY",
+      "LITELLM_API_KEY",
+      "LITELLM_BASE_URL",
+      "OLLAMA_HOST",
+      "BEDROCK_MODEL",
+      "AWS_PROFILE",
+      "AWS_REGION",
+      "EARTHDATA_USERNAME",
+      "EARTHDATA_PASSWORD"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/geoagent/health"
+    },
     "spatial": "Operates on whatever map extent, layers and bounding boxes the bound map, QGIS project or catalog search carries; no fixed site of its own.",
     "temporal": "Catalog searches take start/end date ranges; timelapse tools build satellite time series; otherwise per-session chat history only.",
     "open_questions": [
       "No MCP client or server surface was found in the repo (grep for 'mcp' returns nothing); the 'MCP usage' expected by the brief does not exist at this commit.",
       "Which map surface will the universe drive: the Python browser backend, the Node example backend, or the QGIS plugin?",
       "The fork tracks upstream at a8aaa82 (2026-05-13); no first-party changes were found."
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "No corpus. It searches Earth-observation catalogs on demand and drives map views; nothing is stored.",
+      "standing": {
+        "COR-004": {
+          "standing": "holds",
+          "evidence": "geoagent/core/agent.py",
+          "note": "Catalog searches take explicit start and end date ranges, so what was asked for is recoverable from the request."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "geoagent/core/safety.py; geoagent/core/confirmation_hook.py",
+          "note": "Confirmation hooks gate destructive or expensive tool calls."
+        },
+        "COR-007": {
+          "standing": "fails",
+          "note": "Search results are used and discarded; nothing is captured, so a scene that changes upstream cannot be re-examined."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/geoagent.json",
+          "note": "An upstream mirror that must never hold canonical world state."
+        }
+      }
+    }
   }
 }

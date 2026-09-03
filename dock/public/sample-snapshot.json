@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "1f28b1be56edb6c379347883a403e464c1abfb3c770c1507321aa58449244cda",
+  "revision": "f5e272c543c7778decb5ef70bf351a93e44f322cce8cd3193b1b8e88363ae115",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -300,11 +300,15 @@
         "mcp_tools_http": 12,
         "version": "1.0.0",
         "license": "Apache-2.0",
-        "storage": "SQLite default, PostgreSQL optional"
+        "storage": "SQLite default, PostgreSQL optional",
+        "corpus_role": "feed",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.43
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/atlas-mcp",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -538,11 +542,16 @@
         "test_runner": "python -m unittest discover (41 test modules)",
         "ci_lanes": "test, test-openusd, test-public-ifc, test-extras, test-sp1-beam",
         "state_formats": "IFC STEP, GatStateSnapshot v1 JSON, gat-execution-ledger v1, OpenUSD carrier v3 (usda/usdc, optional Ed25519), USDA subset fallback, 3DGS PLY",
-        "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)"
+        "engineering_profile": "ansi-aisc-360-22-f2-1-lrfd-v1 (AISC V16.0 Example F.1-1B oracle)",
+        "corpus_role": "hold",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.9,
+        "corpus_fails": "COR-004"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/bim-state-transformer-engine",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -572,11 +581,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-09-01T06:27:12Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "hold",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/building-information-corpus",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -606,11 +619,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-09-01T06:24:19Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "hold",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/building-information-graph",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -722,11 +739,15 @@
         "capability_count": 12,
         "signing": "ed25519",
         "at_rest": "envelope-encrypted signing key",
-        "auth": "per-principal bearer credentials"
+        "auth": "per-principal bearer credentials",
+        "corpus_role": "coordinate",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/control-plane",
       "health": "healthy",
       "lastObservedAt": "2026-09-03T00:00:00.000Z",
       "lastObservation": {
@@ -1217,7 +1238,10 @@
         "external_sources": "export.arxiv.org, www.sec.gov/data.sec.gov, earthquake.usgs.gov, api.tidesandcurrents.noaa.gov, canadabuys.canada.ca (parsed from captured bytes)",
         "joint_decision": "2026-08-26-joint-workload-decision: least_squares elected with SCL; DAQ obligation = aligned observation table + explicit missing-value semantics",
         "http_server": false,
-        "mcp_server": false
+        "mcp_server": false,
+        "corpus_role": "feed",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": {
         "longitude": -79.3832,
@@ -1225,6 +1249,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/data-acquisition-channel",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -1440,11 +1465,16 @@
         "version": "1.8.0",
         "license": "MIT",
         "python": ">=3.11",
-        "mcp_surface": "none found in repo"
+        "mcp_surface": "none found in repo",
+        "corpus_role": "feed",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.43,
+        "corpus_fails": "COR-007"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/geoagent",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -1559,11 +1589,15 @@
         "visibility": "public",
         "last_pushed_at": "2026-03-16T08:08:08Z",
         "capability_count": 13,
-        "gpu_required": true
+        "gpu_required": true,
+        "corpus_role": "feed",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.43
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/geometry-grounded-gaussian-splatting",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -1758,7 +1792,10 @@
         "license": "MIT (code only; data carve-outs in DATA_SOURCES.md)",
         "live_layer_count": 13,
         "node_engines": ">=24.14 <25 || >=26 <27",
-        "capability_count": 24
+        "capability_count": 24,
+        "corpus_role": "project",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": {
         "longitude": -97.7431,
@@ -1766,6 +1803,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/gods-eye-view",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -1854,7 +1892,11 @@
         "latest_capture_date": "2026-08-27",
         "comtrade_reporters": "CHL 152, PER 604, CHN 156, COD 180, IDN 360",
         "comtrade_commodities": "HS 2603 copper ores and concentrates; HS 7403 refined copper",
-        "provider_independent_backup": false
+        "provider_independent_backup": false,
+        "corpus_role": "hold",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.71,
+        "corpus_fails": "COR-005 COR-008"
       },
       "location": {
         "longitude": -70.4,
@@ -1862,6 +1904,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/information-systems-archive",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2055,11 +2098,16 @@
         "capability_count": 24,
         "license": "GPL-3.0",
         "mcp_port": 45677,
-        "gpu_required": true
+        "gpu_required": true,
+        "corpus_role": "project",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.67,
+        "corpus_fails": "COR-008"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/lichtfeld-studio",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2147,11 +2195,15 @@
         "last_pushed_at": "2026-04-21T09:42:26Z",
         "capability_count": 9,
         "license": "Apache-2.0",
-        "gpu_required": true
+        "gpu_required": true,
+        "corpus_role": "feed",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.43
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/lingbot-depth",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2260,11 +2312,15 @@
         "last_pushed_at": "2025-11-25T10:42:48Z",
         "capability_count": 12,
         "version": "v0.1.0",
-        "gpu_required": true
+        "gpu_required": true,
+        "corpus_role": "transform",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.75
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/matrix-3d",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2294,11 +2350,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-08-22T02:32:57Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "feed",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/network-scout-signal-miner",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2365,7 +2425,11 @@
         "last_pushed_at": "2026-08-31T02:47:31Z",
         "webflow_site_id": "6a98a59e681119615d9c67c0",
         "timezone": "Asia/Saigon",
-        "capability_count": 6
+        "capability_count": 6,
+        "corpus_role": "project",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.33,
+        "corpus_fails": "COR-008 COR-010"
       },
       "location": {
         "longitude": 106.7009,
@@ -2373,6 +2437,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notation-systems-web",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2402,11 +2467,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-08-25T23:15:57Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "feed",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notations-archival-swarm",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2606,11 +2675,16 @@
         "techniques": "nmr_1h, nmr_13c, nmr_dosy, sec, dsc, tga, ftir, raman, maldi",
         "corpus_format": "JSONL(.gz) format_version 1",
         "ci": "ruff + pytest on Python 3.10-3.13; ncg formats/terms smoke",
-        "committed_corpus": false
+        "committed_corpus": false,
+        "corpus_role": "hold",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.75,
+        "corpus_fails": "COR-004 COR-008"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notations-corpus-graph",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2676,11 +2750,15 @@
         "visibility": "public",
         "last_pushed_at": "2026-09-03T01:40:38Z",
         "default_port": 5173,
-        "capability_count": 6
+        "capability_count": 6,
+        "corpus_role": "project",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notations-dock",
       "health": "healthy",
       "lastObservedAt": "2026-09-03T00:00:00.000Z",
       "lastObservation": {
@@ -2713,11 +2791,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-08-25T23:14:51Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "coordinate",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notations-energy-modulator",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -2876,7 +2958,11 @@
         "default_port": 8000,
         "license": "MIT",
         "state_store": "backend/database.json (flat file)",
-        "capability_count": 19
+        "capability_count": 19,
+        "corpus_role": "project",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.33,
+        "corpus_fails": "COR-008 COR-010"
       },
       "location": {
         "longitude": 30.5234,
@@ -2884,6 +2970,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/osint-war-room",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3246,11 +3333,16 @@
         "intel_port": 4000,
         "license": "MIT",
         "api_route_count": 70,
-        "capability_count": 48
+        "capability_count": 48,
+        "corpus_role": "project",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.5,
+        "corpus_fails": "COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/osiris-dashboard",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3332,11 +3424,16 @@
         "default_port": 4000,
         "subdirectory": "intel/",
         "compose_service": "payload-intel",
-        "capability_count": 8
+        "capability_count": 8,
+        "corpus_role": "feed",
+        "corpus_grade": "bare",
+        "corpus_coverage": 0.29,
+        "corpus_fails": "COR-004 COR-005 COR-007 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/osiris-intel",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3366,11 +3463,15 @@
         "upstream": "",
         "visibility": "public",
         "last_pushed_at": "2026-08-31T07:20:03Z",
-        "capability_count": 1
+        "capability_count": 1,
+        "corpus_role": "hold",
+        "corpus_grade": "unbuilt",
+        "corpus_coverage": 0
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/payload-corpus-graph",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3604,11 +3705,15 @@
         "tool_count": 8,
         "prompt_count": 5,
         "writes_canonical_state": false,
-        "has_http_surface": false
+        "has_http_surface": false,
+        "corpus_role": "feed",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/payload-ocr-agent",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3889,7 +3994,10 @@
         "layer_count": 22,
         "tool_count": 11,
         "agent_binding": "window.payloadEarth.tools / invokeTool (in-page, no MCP yet)",
-        "fetches_from_payload_terminal": false
+        "fetches_from_payload_terminal": false,
+        "corpus_role": "project",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": {
         "longitude": 121.65,
@@ -3897,6 +4005,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/payload-render-engine",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -4339,7 +4448,10 @@
         "mcp_transport": "stdio",
         "mcp_tool_count": 12,
         "access_posture": "internal, operator-controlled; no public exposure decided",
-        "capability_count": 59
+        "capability_count": 59,
+        "corpus_role": "hold",
+        "corpus_grade": "sound",
+        "corpus_coverage": 1
       },
       "location": {
         "longitude": 103.85,
@@ -4347,6 +4459,7 @@
       },
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/payload-terminal",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -4567,11 +4680,16 @@
         "subdirectory": "engine/",
         "source_state": "bytecode-only (engine/__pycache__/*.cpython-314.pyc); no .py committed",
         "ledger_records": 9,
-        "capability_count": 15
+        "capability_count": 15,
+        "corpus_role": "transform",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.5,
+        "corpus_fails": "COR-003 COR-005"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/pythia-oracle-engine",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -4810,11 +4928,15 @@
         "operations": "lj_pairwise_energy_forces, fourier_transform_1d, least_squares, kalman_filter_linear",
         "backends": "cpu (validated), cuda (compiled and linked, never GPU-executed)",
         "core_binding": "extends core@1.0.0 (extends_only)",
-        "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far"
+        "gpu_target": "NVIDIA GeForce RTX 2080 Super Max-Q on the development machine; not visible in any session so far",
+        "corpus_role": "transform",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.8
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/scientific-compute-layer",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -5158,11 +5280,16 @@
         "core_version": "core@1.0.0",
         "native_kernels": 5,
         "zkvm_backends": "SP1, Nexus, RISC Zero",
-        "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)"
+        "bound_sibling_repos": "DAQ (notations-acquisition-channel), SCL (scientific-compute-layer)",
+        "corpus_role": "hold",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.9,
+        "corpus_fails": "COR-004"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/scientific-transformer-engine",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -5560,11 +5687,15 @@
         "api_version": "2.4",
         "mcp_tools": 31,
         "license": "Apache-2.0",
-        "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs"
+        "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs",
+        "corpus_role": "feed",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.57
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/trustgraph",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -5947,6 +6078,7 @@
     "generatedAt": "2026-09-03T00:00:00.000Z",
     "attestedNodes": 2,
     "staleNodes": 0,
+    "unrecognisedSignals": 0,
     "dimensions": [
       {
         "dimension": "identity",

@@ -5,6 +5,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCommand } from '../control-plane/src/validation.js';
+import { checkCorpus, gradeNode } from './corpus.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const CATALOG_DIR = path.join(here, 'catalog');
@@ -14,13 +15,34 @@ const MATURITIES = new Set(['empty', 'prototype', 'v0', 'active', 'archived', 'u
 const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow']);
 const NOW = '2026-01-01T00:00:00.000Z';
 
-/** Strip catalog-only fields and produce the control plane's node object. */
+/**
+ * Strip catalog-only fields and produce the control plane's node object.
+ *
+ * The corpus declaration itself stays in the catalog: it carries evidence paths, and a
+ * path into a repository is exactly the kind of pointer the journal refuses. What
+ * crosses is the derived result — a role, a grade and a coverage fraction — so an
+ * operator sees a node's standing in the live snapshot without the dock ever reading
+ * this directory, and without an evidence path leaving it. Derived here rather than
+ * declared, so a grade can never be written down more flatteringly than it is earned.
+ */
 export function toNode(entry) {
   const capabilities = (entry.capabilities ?? []).map((c) => ({
     capabilityId: c.capabilityId, label: c.label, description: c.description, mode: c.mode, approval: c.approval,
   }));
   const location = entry.location ? { longitude: entry.location.longitude, latitude: entry.location.latitude } : null;
-  return { nodeId: entry.nodeId, name: entry.name, kind: entry.kind, description: entry.description, capabilities, metadata: entry.metadata ?? {}, location };
+  return { nodeId: entry.nodeId, name: entry.name, kind: entry.kind, description: entry.description, capabilities, metadata: withCorpusMetadata(entry), location };
+}
+
+/** The derived corpus fields, added to a node's metadata for the journal. */
+export function withCorpusMetadata(entry) {
+  const metadata = { ...(entry.metadata ?? {}) };
+  if (!entry.reference?.corpus) return metadata;
+  const graded = gradeNode(entry);
+  metadata.corpus_role = graded.role;
+  metadata.corpus_grade = graded.grade;
+  if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
+  if (graded.fails.length) metadata.corpus_fails = graded.fails.join(' ');
+  return metadata;
 }
 
 export function toRegisterCommand(entry, expectedRevision = null, actorId = 'seed:ecosystem-catalog', submittedAt = NOW) {
@@ -59,6 +81,11 @@ export function checkEntry(entry, file, known = new Set()) {
   if (!md.repo) warnings.push('metadata.repo is missing');
   if (entry.location && typeof entry.location.label !== 'string') warnings.push('location has no label');
   for (const k of Object.keys(entry)) if (!['nodeId', 'name', 'kind', 'description', 'capabilities', 'metadata', 'location', 'relations', 'reference'].includes(k)) warnings.push(`unknown top-level field "${k}"`);
+  // Corpus conformance (docs/CORPUS.md): what the node claims to hold, and against which
+  // of the ten invariants it stands, fails or is structurally exempt.
+  const corpus = checkCorpus(entry);
+  errors.push(...corpus.errors);
+  warnings.push(...corpus.warnings);
   return { errors, warnings };
 }
 

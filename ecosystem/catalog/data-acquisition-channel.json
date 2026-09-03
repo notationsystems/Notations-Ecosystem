@@ -775,6 +775,61 @@
       "STE has not declared its own invariant set; ste_invariants.yaml is a reconstruction and bent:zero is entailed only by the vendored bytes being unmodified at the pin.",
       "Should the vendored submodule be replaced by a pip-installable, namespaced package from upstream (docs/SCOUT_VERTICAL_SLICE.md known limitation)?",
       "The Valhalla endpoint used for the 2026-08-31 routing measurement is not recorded in code."
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "Per-run evidence pools of content-addressed acquisitions from permitted external sources (arXiv, SEC EDGAR, USGS, NOAA, local and GPC datasets), plus execution records, quarantine and the Notation Physical Commerce freight ledger.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "daf/catalog/source_catalog.py; daf/catalog/plan_catalog.py",
+          "note": "A source catalog and repeatable plans name what may be acquired and what was."
+        },
+        "COR-002": {
+          "standing": "exempt",
+          "note": "The acquisition entry, not a state holder: STE promotes, and DAQ must never write canonical state directly."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "daf/orchestration/result.py",
+          "note": "Every evidence object carries the source and plan that produced it."
+        },
+        "COR-004": {
+          "standing": "holds",
+          "evidence": "daf/scheduling/runner.py",
+          "note": "Every evidence object separates retrieved_at / known_at from the period it describes; the commerce ledger is queried as-known-at."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "daf/execution/metrics.py",
+          "note": "Ingest rejections are counted and named rather than silently dropped, and quarantine is a first-class outcome."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "architecture/exchange/verify_pair_landed.py",
+          "note": "Acquisitions reach STE through the SCOUT admission contract; an interpretation may never become its own evidence."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "daf/orchestration/orchestrator.py",
+          "note": "Content-addressed evidence is persisted into a durable pool before anything interprets it."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "commerce/ledger.py",
+          "note": "The commerce ledger is append-only, and pre-registrations must predate the runs they judge, verified against git history."
+        },
+        "COR-009": {
+          "standing": "exempt",
+          "note": "Supplies evidence into someone else's corpus and renders nothing."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/data-acquisition-channel.json",
+          "note": "Must never write canonical state directly, never let an interpretation become its own evidence, and never let an agent bind the firm."
+        }
+      }
+    }
   }
 }

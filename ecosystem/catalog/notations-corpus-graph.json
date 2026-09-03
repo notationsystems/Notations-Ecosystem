@@ -314,30 +314,119 @@
   "relations": [],
   "reference": {
     "runtime": {
-      "entrypoints": ["ncg (ncg.cli:main)", "python -m ncg.cli"],
-      "run": ["pip install -e .[dev]", "ncg ingest /mnt/instruments --out corpus.jsonl.gz", "ncg validate corpus.jsonl.gz", "python -m pytest"],
+      "entrypoints": [
+        "ncg (ncg.cli:main)",
+        "python -m ncg.cli"
+      ],
+      "run": [
+        "pip install -e .[dev]",
+        "ncg ingest /mnt/instruments --out corpus.jsonl.gz",
+        "ncg validate corpus.jsonl.gz",
+        "python -m pytest"
+      ],
       "ports": [],
       "container": false
     },
     "contracts": [
-      { "name": "Corpus JSONL format v1", "path": "ncg/graph.py", "summary": "Header + node + edge JSON lines, gzip optional, atomic save." },
-      { "name": "Parser protocol", "path": "ncg/ingest/base.py", "summary": "name/format/version/extensions, sniff(path, head)->confidence, parse(path)->RawDataset; register() adds a format with no schema change." },
-      { "name": "Neutral intermediate representation", "path": "ncg/ingest/base.py; ncg/ingest/mapping.py", "summary": "RawDataset/RawRun/RawSignal/RawPeak decoded by parsers; map_dataset/map_run alone know the schema." },
-      { "name": "Sample alias manifest", "path": "ncg/ingest/sample_keys.py", "summary": "{aliases, patterns} JSON mapping instrument strings to lab ids." },
-      { "name": "Property vocabulary", "path": "ncg/schema/vocab.py", "summary": "PropertyTerm with dimension, techniques and plausible range enforced at ingest." }
+      {
+        "name": "Corpus JSONL format v1",
+        "path": "ncg/graph.py",
+        "summary": "Header + node + edge JSON lines, gzip optional, atomic save."
+      },
+      {
+        "name": "Parser protocol",
+        "path": "ncg/ingest/base.py",
+        "summary": "name/format/version/extensions, sniff(path, head)->confidence, parse(path)->RawDataset; register() adds a format with no schema change."
+      },
+      {
+        "name": "Neutral intermediate representation",
+        "path": "ncg/ingest/base.py; ncg/ingest/mapping.py",
+        "summary": "RawDataset/RawRun/RawSignal/RawPeak decoded by parsers; map_dataset/map_run alone know the schema."
+      },
+      {
+        "name": "Sample alias manifest",
+        "path": "ncg/ingest/sample_keys.py",
+        "summary": "{aliases, patterns} JSON mapping instrument strings to lab ids."
+      },
+      {
+        "name": "Property vocabulary",
+        "path": "ncg/schema/vocab.py",
+        "summary": "PropertyTerm with dimension, techniques and plausible range enforced at ingest."
+      }
     ],
     "resources": [
-      { "name": "Synthetic lab test fixtures", "classification": "public", "path": "tests/support/lab.py", "description": "Three polymers across all five formats with known Tg, Tm, Mn, dispersity, repeat unit and decomposition; no real corpus is committed." }
+      {
+        "name": "Synthetic lab test fixtures",
+        "classification": "public",
+        "path": "tests/support/lab.py",
+        "description": "Three polymers across all five formats with known Tg, Tm, Mn, dispersity, repeat unit and decomposition; no real corpus is committed."
+      }
     ],
     "external_services": [],
     "secrets_env": [],
-    "health": { "method": "cli", "endpoint": "ncg formats" },
+    "health": {
+      "method": "cli",
+      "endpoint": "ncg formats"
+    },
     "spatial": "None; the corpus carries instrument and lab identity but no geography.",
     "temporal": "Measurement started_at timestamps per run; ingest is idempotent over a growing share so the corpus accumulates over time, but no as-of or vintage semantics exist.",
     "open_questions": [
       "No other ecosystem node is referenced by this repository (no import, URL or doc link to data-acquisition-channel, scientific-transformer-engine or scientific-compute-layer); does anything consume the JSONL corpus, and does DAQ's evidence pool ever feed ncg ingest?",
       "No corpus is committed; where does the lab's canonical corpus.jsonl.gz live and who runs ingest?",
       "The license is Proprietary while the repository is public; is that intended?"
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [],
+      "holding": "A provenance-tracked graph of bespoke-polymer structure and formulation linked to the instrument measurements made on them and the properties derived from those measurements, held as a JSONL(.gz) corpus file.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "ncg/graph.py (FORMAT_VERSION, to_jsonl); ncg/schema/nodes.py (NODE_TYPES)",
+          "note": "A named corpus file with a declared node and edge schema across four layers."
+        },
+        "COR-002": {
+          "standing": "exempt",
+          "note": "Holds a corpus of measurements, not the scientific canonical state, which the Scientific Transformer Engine owns."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "ncg/graph.py (measurements_of, signals_of, properties_of)",
+          "note": "Every derived number keeps its trace and method; a PropertyValue always points at its Signal."
+        },
+        "COR-004": {
+          "standing": "fails",
+          "note": "Measurement started_at is recorded per run, but there are no as-of or vintage semantics: the corpus accumulates without recording when a value became knowable."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "ncg/cli.py (_validate); ncg/graph.py (validate)",
+          "note": "Property terms declare dimension and plausible range, so bad units fail at the ingest boundary rather than entering."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "ncg/ingest/pipeline.py",
+          "note": "Ingest decodes into a neutral intermediate representation and validates before the graph accepts it."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "ncg/ingest/parsers/jcampdx.py; ncg/ingest/base.py (Parser, ParserRegistry)",
+          "note": "Instrument files are parsed from their native formats with content-addressed node identity, so re-ingest is idempotent."
+        },
+        "COR-008": {
+          "standing": "fails",
+          "note": "Content-addressed identity makes re-ingest idempotent, but the corpus file is not hash-linked or signed: a rewrite would not be detectable."
+        },
+        "COR-009": {
+          "standing": "exempt",
+          "note": "A corpus and a CLI; it renders nothing and writes to no other system's state."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/notations-corpus-graph.json",
+          "note": "Must never silently merge two materials, and never let an instrument's self-reported answer replace the traced one."
+        }
+      }
+    }
   }
 }

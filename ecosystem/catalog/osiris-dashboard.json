@@ -831,6 +831,26 @@
       "Person-targeting routes (username, phone, leaks, hudsonrock) are still served; should this fork adopt Payload Terminal's collection policy or stay a pure upstream mirror?",
       "No Gemini API key env name is referenced in the .env.example although @google/generative-ai is a dependency; confirm how ai-engine.ts is configured.",
       "docker-compose references an external umami_default network; is analytics part of the intended deployment?"
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Nothing durable: in-memory caches and an SDK store, across roughly seventy live feed routes.",
+      "standing": {
+        "COR-008": {
+          "standing": "exempt",
+          "note": "Persists nothing durable, so there is no history to bind."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "src/app/api/health/route.ts",
+          "note": "An aggregating dashboard: every route reads upstream and writes nowhere."
+        },
+        "COR-010": {
+          "standing": "fails",
+          "note": "It must not become the canonical intelligence record or a person-profiling service, but this fork keeps the full upstream person-targeting and scanning surface that Payload Terminal removed."
+        }
+      }
+    }
   }
 }

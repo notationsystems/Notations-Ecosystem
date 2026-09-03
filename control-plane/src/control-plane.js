@@ -2,6 +2,7 @@ import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
 import { parseCommand } from './validation.js';
 import { buildConstellation } from './security/evidence.js';
+import { nodeUri } from './identity/uri.js';
 import { LOCAL_PRINCIPAL } from './security/identity.js';
 import { permissionForAction, requireActorBinding, requireNodeBinding, requirePermission, requireSeparationOfDuties } from './security/policy.js';
 
@@ -75,6 +76,12 @@ function makeSnapshot(records, durability, generatedAt) {
       const posture = state.posture.get(node.nodeId);
       return frozen({
         ...node,
+        // The node's name in the one canonical identity space (docs/SUBSTRATE.md).
+        // Derived here rather than stored: a name that had to be written down could
+        // disagree with the id it names, and two spellings of one identity is exactly
+        // what the typed space exists to prevent. `resolve()` still throws, so this is
+        // a name and not an address.
+        uri: nodeUri(node.nodeId),
         health: observed?.health ?? 'unknown',
         lastObservedAt: observed?.observedAt ?? null,
         lastObservation: observed ? { source: observed.source, detail: observed.detail } : null,

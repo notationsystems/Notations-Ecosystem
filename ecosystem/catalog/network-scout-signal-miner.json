@@ -50,6 +50,12 @@
     "temporal": "Not yet defined.",
     "open_questions": [
       "What is the first contract this repository will expose?"
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "Nothing yet: a planned signal-mining scout over network and open-source feeds, a candidate upstream for the OSIRIS intel layer.",
+      "standing": {}
+    }
   }
 }

@@ -4,59 +4,568 @@
   "kind": "information_library",
   "description": "Mirror of trustgraph-ai/trustgraph, an open-source context interoperability layer: a Pulsar-backed processing platform that ingests documents, extracts entities and relationships with LLMs into an RDF/OWL hypergraph (N-Quads, named graphs), stores graph and document embeddings, and serves GraphRAG, DocumentRAG, SPARQL, GraphQL-over-rows, agent and prompt services through an API gateway (REST, WebSocket) and an MCP server. In the Notations Universe it is a candidate knowledge-graph substrate for corpus and archive nodes: workspaces, collections and portable knowledge cores are the units of context. It is an upstream mirror, not first-party code, and must not become the canonical state of the universe; the control plane journal remains authoritative.",
   "capabilities": [
-    { "capabilityId": "api.iam", "label": "IAM service (global)", "description": "POST /api/v1/iam: whoami, list my workspaces, create/list/get/update/disable users, create/list workspaces, create/list/revoke API keys, admin password reset. Bearer tokens obtained here scope every other call to a workspace.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/iam", "evidence": "specs/api/paths/iam.yaml" },
-    { "capabilityId": "api.config", "label": "Config service (workspace-scoped)", "description": "POST /api/v1/config: get complete configuration, list/get/put/delete stored flow definitions, list prompts, set system prompt, set token costs per model.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/config", "evidence": "specs/api/paths/config.yaml" },
-    { "capabilityId": "api.flow", "label": "Flow lifecycle and blueprints", "description": "POST /api/v1/flow: start/stop flow instances, list running flows, get flow details, list/get/put/delete blueprints (flow classes). Flows host every AI and query service.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/flow", "evidence": "specs/api/paths/flow.yaml" },
-    { "capabilityId": "api.librarian", "label": "Document library", "description": "POST /api/v1/librarian: add document by URL or inline content, remove document, list documents (with criteria), start/stop/list processing of library documents. GET /api/v1/document-stream streams document content.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/librarian", "evidence": "specs/api/paths/librarian.yaml; specs/api/paths/document-stream.yaml" },
-    { "capabilityId": "api.knowledge", "label": "Knowledge cores", "description": "POST /api/v1/knowledge: list/get knowledge cores (streamed triples and embeddings), store triples and/or embeddings, delete core, load core into a flow, unload core. Cores are the portable context units.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/knowledge", "evidence": "specs/api/paths/knowledge.yaml" },
-    { "capabilityId": "api.collection_management", "label": "Collection metadata", "description": "POST /api/v1/collection-management: list collections (optionally by tag), create/update collection, delete collection.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/collection-management", "evidence": "specs/api/paths/collection-management.yaml" },
-    { "capabilityId": "api.flow.rag", "label": "Graph RAG and Document RAG", "description": "POST /api/v1/flow/{flow}/service/graph-rag and /document-rag: retrieval-augmented answers over the knowledge graph (entity/triple limits, hops) or over document chunks, with optional streaming.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/graph-rag", "evidence": "specs/api/paths/flow/graph-rag.yaml; specs/api/paths/flow/document-rag.yaml", "cost": "LLM tokens" },
-    { "capabilityId": "api.flow.agent", "label": "Agent service", "description": "POST /api/v1/flow/{flow}/service/agent: conversational agent with reasoning and tool use, multi-turn and streaming; can invoke configured MCP tools.", "mode": "propose", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/agent", "evidence": "specs/api/paths/flow/agent.yaml", "cost": "LLM tokens" },
-    { "capabilityId": "api.flow.generation", "label": "Text completion, prompt templates, image-to-text", "description": "POST /api/v1/flow/{flow}/service/text-completion, /prompt (template expansion with terms/variables) and /image-to-text (vision model description).", "mode": "propose", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/text-completion", "evidence": "specs/api/paths/flow/text-completion.yaml; specs/api/paths/flow/prompt.yaml; specs/api/paths/flow/image-to-text.yaml", "cost": "LLM tokens" },
-    { "capabilityId": "api.flow.embeddings", "label": "Embeddings and similarity queries", "description": "POST /api/v1/flow/{flow}/service/embeddings (text to vector), /graph-embeddings (similar entities), /document-embeddings (similar chunks), /row-embeddings (similar structured rows).", "mode": "observe", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/embeddings", "evidence": "specs/api/paths/flow/embeddings.yaml; specs/api/paths/flow/graph-embeddings.yaml; specs/api/paths/flow/document-embeddings.yaml; specs/api/paths/flow/row-embeddings.yaml" },
-    { "capabilityId": "api.flow.graph_query", "label": "Triples and SPARQL queries", "description": "POST /api/v1/flow/{flow}/service/triples (subject/predicate/object pattern queries) and /sparql-query (SPARQL 1.1 SELECT, ASK, CONSTRUCT, DESCRIBE) against the knowledge graph.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/sparql-query", "evidence": "specs/api/paths/flow/triples.yaml; specs/api/paths/flow/sparql-query.yaml" },
-    { "capabilityId": "api.flow.structured_query", "label": "Structured data queries", "description": "POST /api/v1/flow/{flow}/service/rows (GraphQL over structured data), /nlp-query (natural language to structured query), /structured-query (question to results), /structured-diag (detect format and generate schema descriptor).", "mode": "observe", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/rows", "evidence": "specs/api/paths/flow/rows.yaml; specs/api/paths/flow/nlp-query.yaml; specs/api/paths/flow/structured-query.yaml; specs/api/paths/flow/structured-diag.yaml" },
-    { "capabilityId": "api.flow.load", "label": "Text and document load into a flow", "description": "POST /api/v1/flow/{flow}/service/text-load and /document-load: push text or binary (PDF) documents with RDF metadata into a running flow's extraction pipeline.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/document-load", "evidence": "specs/api/paths/flow/text-load.yaml; specs/api/paths/flow/document-load.yaml", "side_effects": "triggers extraction pipeline; writes graph" },
-    { "capabilityId": "api.flow.mcp_tool", "label": "Invoke MCP tool through a flow", "description": "POST /api/v1/flow/{flow}/service/mcp-tool executes a configured Model Context Protocol tool by name with parameters.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/v1/flow/{flow}/service/mcp-tool", "evidence": "specs/api/paths/flow/mcp-tool.yaml", "side_effects": "depends on the external tool" },
-    { "capabilityId": "api.import_export_core", "label": "Bulk import/export of cores", "description": "WebSocket /api/v1/import-core and /api/v1/export-core stream triples and embeddings in bulk for backup, migration and sharing of knowledge cores.", "mode": "execute", "approval": "operator", "surface": "websocket", "path": "/api/v1/import-core", "evidence": "specs/api/paths/import-core.yaml; specs/api/paths/export-core.yaml" },
-    { "capabilityId": "api.socket", "label": "Multiplexed WebSocket", "description": "WebSocket /api/v1/socket carries every service ({service, flow, request} envelopes) over one persistent connection; the MCP server and Python client use it.", "mode": "observe", "approval": "automatic", "surface": "websocket", "path": "/api/v1/socket", "evidence": "specs/api/paths/websocket.yaml; trustgraph-mcp/trustgraph/mcp_server/tg_socket.py" },
-    { "capabilityId": "api.metrics", "label": "Prometheus metrics", "description": "GET /api/metrics and /api/metrics/{path} expose Prometheus metrics for the gateway and processors.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/api/metrics", "evidence": "specs/api/paths/metrics.yaml; specs/api/paths/metrics-path.yaml" },
-    { "capabilityId": "mcp.embeddings", "label": "MCP: embeddings", "description": "Generate vector embeddings for texts using the flow's embedding model.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "embeddings", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.text_completion", "label": "MCP: text completion", "description": "Generate text with the flow's language model given system and user prompts.", "mode": "propose", "approval": "automatic", "surface": "mcp", "path": "text_completion", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "cost": "LLM tokens" },
-    { "capabilityId": "mcp.graph_rag", "label": "MCP: GraphRAG query", "description": "GraphRAG answer combining knowledge-graph traversal (entity, triple and path limits) with LLM generation, scoped to a collection.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "graph_rag", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "cost": "LLM tokens" },
-    { "capabilityId": "mcp.agent", "label": "MCP: agent query", "description": "Run an intelligent agent turn with reasoning and tool usage inside a flow.", "mode": "propose", "approval": "automatic", "surface": "mcp", "path": "agent", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "cost": "LLM tokens" },
-    { "capabilityId": "mcp.triples_query", "label": "MCP: triples query", "description": "Query knowledge-graph triples by subject/predicate/object pattern with typed RDF terms (uri, literal).", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "triples_query", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.sparql_query", "label": "MCP: SPARQL query", "description": "Execute SPARQL SELECT, ASK, CONSTRUCT or DESCRIBE against the knowledge graph.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "sparql_query", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.graphql_query", "label": "MCP: GraphQL rows query", "description": "Execute a GraphQL query against structured-data schemas (rows) loaded into TrustGraph.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "graphql_query", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.graph_embeddings_query", "label": "MCP: graph embeddings query", "description": "Find graph entities by vector similarity to a text.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "graph_embeddings_query", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_config_all", "label": "MCP: get full configuration", "description": "Retrieve the complete system configuration as a nested dictionary.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_config_all", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_config", "label": "MCP: get config values", "description": "Retrieve specific configuration values by type/key.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_config", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.put_config", "label": "MCP: put config values", "description": "Update system configuration values.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "put_config", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "changes platform config" },
-    { "capabilityId": "mcp.delete_config", "label": "MCP: delete config entries", "description": "Delete configuration entries from the system.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "delete_config", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "changes platform config" },
-    { "capabilityId": "mcp.get_prompts", "label": "MCP: list prompt templates", "description": "List all prompt template IDs.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_prompts", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_prompt", "label": "MCP: get prompt template", "description": "Retrieve one prompt template by ID.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_prompt", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_system_prompt", "label": "MCP: get system prompt", "description": "Retrieve the current system prompt text.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_system_prompt", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_token_costs", "label": "MCP: token costs", "description": "Retrieve token pricing for all configured AI models.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_token_costs", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_knowledge_cores", "label": "MCP: list knowledge cores", "description": "List knowledge-graph core IDs in the current workspace.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_knowledge_cores", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_kg_core", "label": "MCP: download knowledge core", "description": "Download the complete triples and embeddings of a knowledge core.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_kg_core", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.load_kg_core", "label": "MCP: load knowledge core into flow", "description": "Load a knowledge core into the active system/flow for querying.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "load_kg_core", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "writes graph and vector stores" },
-    { "capabilityId": "mcp.delete_kg_core", "label": "MCP: delete knowledge core", "description": "Permanently delete a knowledge core.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "delete_kg_core", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "irreversible delete" },
-    { "capabilityId": "mcp.get_flows", "label": "MCP: list flows", "description": "List running/available processing flow identifiers.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_flows", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_flow", "label": "MCP: get flow definition", "description": "Retrieve the complete definition of one processing flow.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_flow", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_flow_classes", "label": "MCP: list flow classes", "description": "List available flow class (blueprint) names.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_flow_classes", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_flow_class", "label": "MCP: get flow class", "description": "Retrieve one flow class (blueprint) definition.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_flow_class", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.start_flow", "label": "MCP: start flow", "description": "Create and start a new processing flow instance from a flow class.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "start_flow", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "launches processors" },
-    { "capabilityId": "mcp.stop_flow", "label": "MCP: stop flow", "description": "Stop a running flow instance.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "stop_flow", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "stops processors" },
-    { "capabilityId": "mcp.get_documents", "label": "MCP: list library documents", "description": "List all documents stored in the document library with metadata.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_documents", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.get_processing", "label": "MCP: list processing queue", "description": "List documents currently in the processing queue.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_processing", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py" },
-    { "capabilityId": "mcp.load_document", "label": "MCP: upload document", "description": "Upload a document (base64 content with metadata) to the library.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "load_document", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "writes library" },
-    { "capabilityId": "mcp.remove_document", "label": "MCP: remove document", "description": "Permanently remove a document from the library.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "remove_document", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "irreversible delete" },
-    { "capabilityId": "mcp.add_processing", "label": "MCP: queue document processing", "description": "Queue a library document for processing through a flow into a collection with tags.", "mode": "execute", "approval": "operator", "surface": "mcp", "path": "add_processing", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py", "side_effects": "triggers extraction; LLM cost" },
-    { "capabilityId": "mcp.transport.streamable_http", "label": "MCP streamable-HTTP transport", "description": "`mcp-server` (trustgraph-mcp) serves the 31 tools over streamable-http on port 8000, forwarding the caller's bearer token to the gateway WebSocket (ws://api-gateway:8888/api/v1/socket); token validation happens at the gateway.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "http://host:8000", "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py; trustgraph-mcp/pyproject.toml; containers/Containerfile.mcp" },
-    { "capabilityId": "cli.tg", "label": "tg-* command-line tools", "description": "trustgraph-cli ships ~97 tg-* commands mirroring the API: tg-login, tg-create-api-key, tg-start-flow, tg-load-turtle, tg-load-knowledge, tg-invoke-graph-rag, tg-invoke-sparql-query, tg-show-graph, tg-graph-to-turtle, tg-export-workspace, tg-verify-system-status and more. Loading and flow commands are execute; show/invoke commands are read.", "mode": "execute", "approval": "operator", "surface": "cli", "path": "tg-*", "evidence": "trustgraph-cli/pyproject.toml" },
-    { "capabilityId": "sdk.python_api", "label": "Python client API", "description": "Documented Python API (trustgraph.api) for flows, librarian, knowledge, config and flow services over REST/WebSocket, used by the CLI and by downstream integrations.", "mode": "observe", "approval": "automatic", "surface": "python", "path": "trustgraph.api", "evidence": "docs/python-api.md; trustgraph-base/" },
-    { "capabilityId": "contract.openapi", "label": "OpenAPI 3.1 gateway contract", "description": "Modular OpenAPI 3.1 spec for the API gateway (v2.4): global, workspace-scoped and flow-scoped services, kebab-case JSON fields, bearer auth.", "mode": "observe", "approval": "automatic", "surface": "file", "path": "specs/api/openapi.yaml", "evidence": "specs/api/openapi.yaml; specs/api/README.md" },
-    { "capabilityId": "contract.ontology", "label": "Bring-your-own ontology (OWL/Turtle)", "description": "Ontologies in OWL/Turtle constrain extraction and retrieval; schema.ttl and ontology-prompt.md document the wire format for ontology-compliant hypergraphs.", "mode": "observe", "approval": "automatic", "surface": "file", "path": "schema.ttl", "evidence": "schema.ttl; ontology-prompt.md; README.md" }
+    {
+      "capabilityId": "api.iam",
+      "label": "IAM service (global)",
+      "description": "POST /api/v1/iam: whoami, list my workspaces, create/list/get/update/disable users, create/list workspaces, create/list/revoke API keys, admin password reset. Bearer tokens obtained here scope every other call to a workspace.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/iam",
+      "evidence": "specs/api/paths/iam.yaml"
+    },
+    {
+      "capabilityId": "api.config",
+      "label": "Config service (workspace-scoped)",
+      "description": "POST /api/v1/config: get complete configuration, list/get/put/delete stored flow definitions, list prompts, set system prompt, set token costs per model.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/config",
+      "evidence": "specs/api/paths/config.yaml"
+    },
+    {
+      "capabilityId": "api.flow",
+      "label": "Flow lifecycle and blueprints",
+      "description": "POST /api/v1/flow: start/stop flow instances, list running flows, get flow details, list/get/put/delete blueprints (flow classes). Flows host every AI and query service.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow",
+      "evidence": "specs/api/paths/flow.yaml"
+    },
+    {
+      "capabilityId": "api.librarian",
+      "label": "Document library",
+      "description": "POST /api/v1/librarian: add document by URL or inline content, remove document, list documents (with criteria), start/stop/list processing of library documents. GET /api/v1/document-stream streams document content.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/librarian",
+      "evidence": "specs/api/paths/librarian.yaml; specs/api/paths/document-stream.yaml"
+    },
+    {
+      "capabilityId": "api.knowledge",
+      "label": "Knowledge cores",
+      "description": "POST /api/v1/knowledge: list/get knowledge cores (streamed triples and embeddings), store triples and/or embeddings, delete core, load core into a flow, unload core. Cores are the portable context units.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/knowledge",
+      "evidence": "specs/api/paths/knowledge.yaml"
+    },
+    {
+      "capabilityId": "api.collection_management",
+      "label": "Collection metadata",
+      "description": "POST /api/v1/collection-management: list collections (optionally by tag), create/update collection, delete collection.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/collection-management",
+      "evidence": "specs/api/paths/collection-management.yaml"
+    },
+    {
+      "capabilityId": "api.flow.rag",
+      "label": "Graph RAG and Document RAG",
+      "description": "POST /api/v1/flow/{flow}/service/graph-rag and /document-rag: retrieval-augmented answers over the knowledge graph (entity/triple limits, hops) or over document chunks, with optional streaming.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/graph-rag",
+      "evidence": "specs/api/paths/flow/graph-rag.yaml; specs/api/paths/flow/document-rag.yaml",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "api.flow.agent",
+      "label": "Agent service",
+      "description": "POST /api/v1/flow/{flow}/service/agent: conversational agent with reasoning and tool use, multi-turn and streaming; can invoke configured MCP tools.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/agent",
+      "evidence": "specs/api/paths/flow/agent.yaml",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "api.flow.generation",
+      "label": "Text completion, prompt templates, image-to-text",
+      "description": "POST /api/v1/flow/{flow}/service/text-completion, /prompt (template expansion with terms/variables) and /image-to-text (vision model description).",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/text-completion",
+      "evidence": "specs/api/paths/flow/text-completion.yaml; specs/api/paths/flow/prompt.yaml; specs/api/paths/flow/image-to-text.yaml",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "api.flow.embeddings",
+      "label": "Embeddings and similarity queries",
+      "description": "POST /api/v1/flow/{flow}/service/embeddings (text to vector), /graph-embeddings (similar entities), /document-embeddings (similar chunks), /row-embeddings (similar structured rows).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/embeddings",
+      "evidence": "specs/api/paths/flow/embeddings.yaml; specs/api/paths/flow/graph-embeddings.yaml; specs/api/paths/flow/document-embeddings.yaml; specs/api/paths/flow/row-embeddings.yaml"
+    },
+    {
+      "capabilityId": "api.flow.graph_query",
+      "label": "Triples and SPARQL queries",
+      "description": "POST /api/v1/flow/{flow}/service/triples (subject/predicate/object pattern queries) and /sparql-query (SPARQL 1.1 SELECT, ASK, CONSTRUCT, DESCRIBE) against the knowledge graph.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/sparql-query",
+      "evidence": "specs/api/paths/flow/triples.yaml; specs/api/paths/flow/sparql-query.yaml"
+    },
+    {
+      "capabilityId": "api.flow.structured_query",
+      "label": "Structured data queries",
+      "description": "POST /api/v1/flow/{flow}/service/rows (GraphQL over structured data), /nlp-query (natural language to structured query), /structured-query (question to results), /structured-diag (detect format and generate schema descriptor).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/rows",
+      "evidence": "specs/api/paths/flow/rows.yaml; specs/api/paths/flow/nlp-query.yaml; specs/api/paths/flow/structured-query.yaml; specs/api/paths/flow/structured-diag.yaml"
+    },
+    {
+      "capabilityId": "api.flow.load",
+      "label": "Text and document load into a flow",
+      "description": "POST /api/v1/flow/{flow}/service/text-load and /document-load: push text or binary (PDF) documents with RDF metadata into a running flow's extraction pipeline.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/document-load",
+      "evidence": "specs/api/paths/flow/text-load.yaml; specs/api/paths/flow/document-load.yaml",
+      "side_effects": "triggers extraction pipeline; writes graph"
+    },
+    {
+      "capabilityId": "api.flow.mcp_tool",
+      "label": "Invoke MCP tool through a flow",
+      "description": "POST /api/v1/flow/{flow}/service/mcp-tool executes a configured Model Context Protocol tool by name with parameters.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/v1/flow/{flow}/service/mcp-tool",
+      "evidence": "specs/api/paths/flow/mcp-tool.yaml",
+      "side_effects": "depends on the external tool"
+    },
+    {
+      "capabilityId": "api.import_export_core",
+      "label": "Bulk import/export of cores",
+      "description": "WebSocket /api/v1/import-core and /api/v1/export-core stream triples and embeddings in bulk for backup, migration and sharing of knowledge cores.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "websocket",
+      "path": "/api/v1/import-core",
+      "evidence": "specs/api/paths/import-core.yaml; specs/api/paths/export-core.yaml"
+    },
+    {
+      "capabilityId": "api.socket",
+      "label": "Multiplexed WebSocket",
+      "description": "WebSocket /api/v1/socket carries every service ({service, flow, request} envelopes) over one persistent connection; the MCP server and Python client use it.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "websocket",
+      "path": "/api/v1/socket",
+      "evidence": "specs/api/paths/websocket.yaml; trustgraph-mcp/trustgraph/mcp_server/tg_socket.py"
+    },
+    {
+      "capabilityId": "api.metrics",
+      "label": "Prometheus metrics",
+      "description": "GET /api/metrics and /api/metrics/{path} expose Prometheus metrics for the gateway and processors.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/metrics",
+      "evidence": "specs/api/paths/metrics.yaml; specs/api/paths/metrics-path.yaml"
+    },
+    {
+      "capabilityId": "mcp.embeddings",
+      "label": "MCP: embeddings",
+      "description": "Generate vector embeddings for texts using the flow's embedding model.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "embeddings",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.text_completion",
+      "label": "MCP: text completion",
+      "description": "Generate text with the flow's language model given system and user prompts.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "text_completion",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "mcp.graph_rag",
+      "label": "MCP: GraphRAG query",
+      "description": "GraphRAG answer combining knowledge-graph traversal (entity, triple and path limits) with LLM generation, scoped to a collection.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "graph_rag",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "mcp.agent",
+      "label": "MCP: agent query",
+      "description": "Run an intelligent agent turn with reasoning and tool usage inside a flow.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "agent",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "mcp.triples_query",
+      "label": "MCP: triples query",
+      "description": "Query knowledge-graph triples by subject/predicate/object pattern with typed RDF terms (uri, literal).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "triples_query",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.sparql_query",
+      "label": "MCP: SPARQL query",
+      "description": "Execute SPARQL SELECT, ASK, CONSTRUCT or DESCRIBE against the knowledge graph.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "sparql_query",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.graphql_query",
+      "label": "MCP: GraphQL rows query",
+      "description": "Execute a GraphQL query against structured-data schemas (rows) loaded into TrustGraph.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "graphql_query",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.graph_embeddings_query",
+      "label": "MCP: graph embeddings query",
+      "description": "Find graph entities by vector similarity to a text.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "graph_embeddings_query",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_config_all",
+      "label": "MCP: get full configuration",
+      "description": "Retrieve the complete system configuration as a nested dictionary.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_config_all",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_config",
+      "label": "MCP: get config values",
+      "description": "Retrieve specific configuration values by type/key.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_config",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.put_config",
+      "label": "MCP: put config values",
+      "description": "Update system configuration values.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "put_config",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "changes platform config"
+    },
+    {
+      "capabilityId": "mcp.delete_config",
+      "label": "MCP: delete config entries",
+      "description": "Delete configuration entries from the system.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "delete_config",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "changes platform config"
+    },
+    {
+      "capabilityId": "mcp.get_prompts",
+      "label": "MCP: list prompt templates",
+      "description": "List all prompt template IDs.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_prompts",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_prompt",
+      "label": "MCP: get prompt template",
+      "description": "Retrieve one prompt template by ID.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_prompt",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_system_prompt",
+      "label": "MCP: get system prompt",
+      "description": "Retrieve the current system prompt text.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_system_prompt",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_token_costs",
+      "label": "MCP: token costs",
+      "description": "Retrieve token pricing for all configured AI models.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_token_costs",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_knowledge_cores",
+      "label": "MCP: list knowledge cores",
+      "description": "List knowledge-graph core IDs in the current workspace.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_knowledge_cores",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_kg_core",
+      "label": "MCP: download knowledge core",
+      "description": "Download the complete triples and embeddings of a knowledge core.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_kg_core",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.load_kg_core",
+      "label": "MCP: load knowledge core into flow",
+      "description": "Load a knowledge core into the active system/flow for querying.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "load_kg_core",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "writes graph and vector stores"
+    },
+    {
+      "capabilityId": "mcp.delete_kg_core",
+      "label": "MCP: delete knowledge core",
+      "description": "Permanently delete a knowledge core.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "delete_kg_core",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "irreversible delete"
+    },
+    {
+      "capabilityId": "mcp.get_flows",
+      "label": "MCP: list flows",
+      "description": "List running/available processing flow identifiers.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_flows",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_flow",
+      "label": "MCP: get flow definition",
+      "description": "Retrieve the complete definition of one processing flow.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_flow",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_flow_classes",
+      "label": "MCP: list flow classes",
+      "description": "List available flow class (blueprint) names.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_flow_classes",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_flow_class",
+      "label": "MCP: get flow class",
+      "description": "Retrieve one flow class (blueprint) definition.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_flow_class",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.start_flow",
+      "label": "MCP: start flow",
+      "description": "Create and start a new processing flow instance from a flow class.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "start_flow",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "launches processors"
+    },
+    {
+      "capabilityId": "mcp.stop_flow",
+      "label": "MCP: stop flow",
+      "description": "Stop a running flow instance.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "stop_flow",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "stops processors"
+    },
+    {
+      "capabilityId": "mcp.get_documents",
+      "label": "MCP: list library documents",
+      "description": "List all documents stored in the document library with metadata.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_documents",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.get_processing",
+      "label": "MCP: list processing queue",
+      "description": "List documents currently in the processing queue.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_processing",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py"
+    },
+    {
+      "capabilityId": "mcp.load_document",
+      "label": "MCP: upload document",
+      "description": "Upload a document (base64 content with metadata) to the library.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "load_document",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "writes library"
+    },
+    {
+      "capabilityId": "mcp.remove_document",
+      "label": "MCP: remove document",
+      "description": "Permanently remove a document from the library.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "remove_document",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "irreversible delete"
+    },
+    {
+      "capabilityId": "mcp.add_processing",
+      "label": "MCP: queue document processing",
+      "description": "Queue a library document for processing through a flow into a collection with tags.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "add_processing",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py",
+      "side_effects": "triggers extraction; LLM cost"
+    },
+    {
+      "capabilityId": "mcp.transport.streamable_http",
+      "label": "MCP streamable-HTTP transport",
+      "description": "`mcp-server` (trustgraph-mcp) serves the 31 tools over streamable-http on port 8000, forwarding the caller's bearer token to the gateway WebSocket (ws://api-gateway:8888/api/v1/socket); token validation happens at the gateway.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "http://host:8000",
+      "evidence": "trustgraph-mcp/trustgraph/mcp_server/mcp.py; trustgraph-mcp/pyproject.toml; containers/Containerfile.mcp"
+    },
+    {
+      "capabilityId": "cli.tg",
+      "label": "tg-* command-line tools",
+      "description": "trustgraph-cli ships ~97 tg-* commands mirroring the API: tg-login, tg-create-api-key, tg-start-flow, tg-load-turtle, tg-load-knowledge, tg-invoke-graph-rag, tg-invoke-sparql-query, tg-show-graph, tg-graph-to-turtle, tg-export-workspace, tg-verify-system-status and more. Loading and flow commands are execute; show/invoke commands are read.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "tg-*",
+      "evidence": "trustgraph-cli/pyproject.toml"
+    },
+    {
+      "capabilityId": "sdk.python_api",
+      "label": "Python client API",
+      "description": "Documented Python API (trustgraph.api) for flows, librarian, knowledge, config and flow services over REST/WebSocket, used by the CLI and by downstream integrations.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "python",
+      "path": "trustgraph.api",
+      "evidence": "docs/python-api.md; trustgraph-base/"
+    },
+    {
+      "capabilityId": "contract.openapi",
+      "label": "OpenAPI 3.1 gateway contract",
+      "description": "Modular OpenAPI 3.1 spec for the API gateway (v2.4): global, workspace-scoped and flow-scoped services, kebab-case JSON fields, bearer auth.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "specs/api/openapi.yaml",
+      "evidence": "specs/api/openapi.yaml; specs/api/README.md"
+    },
+    {
+      "capabilityId": "contract.ontology",
+      "label": "Bring-your-own ontology (OWL/Turtle)",
+      "description": "Ontologies in OWL/Turtle constrain extraction and retrieval; schema.ttl and ontology-prompt.md document the wire format for ontology-compliant hypergraphs.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "schema.ttl",
+      "evidence": "schema.ttl; ontology-prompt.md; README.md"
+    }
   ],
   "metadata": {
     "repo": "notationsystems/trustgraph",
@@ -86,33 +595,120 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["api-gateway (port 8888)", "mcp-server (trustgraph-mcp, port 8000)", "tg-* CLI", "Pulsar processors per trustgraph-flow package"],
-      "run": ["docker compose from generated deployment", "python -m trustgraph.mcp_server --websocket-url ws://api-gateway:8888/api/v1/socket", "pip install trustgraph-cli"],
-      "ports": [8888, 8000],
+      "entrypoints": [
+        "api-gateway (port 8888)",
+        "mcp-server (trustgraph-mcp, port 8000)",
+        "tg-* CLI",
+        "Pulsar processors per trustgraph-flow package"
+      ],
+      "run": [
+        "docker compose from generated deployment",
+        "python -m trustgraph.mcp_server --websocket-url ws://api-gateway:8888/api/v1/socket",
+        "pip install trustgraph-cli"
+      ],
+      "ports": [
+        8888,
+        8000
+      ],
       "container": true
     },
     "contracts": [
-      { "name": "OpenAPI gateway spec", "path": "specs/api/openapi.yaml", "summary": "REST + WebSocket contract, bearer auth, kebab-case fields" },
-      { "name": "WebSocket envelope", "path": "specs/api/paths/websocket.yaml", "summary": "{id, service, flow, request} multiplexed over /api/v1/socket" },
-      { "name": "Ontology schema", "path": "schema.ttl", "summary": "OWL/Turtle ontology template for BYOO" }
+      {
+        "name": "OpenAPI gateway spec",
+        "path": "specs/api/openapi.yaml",
+        "summary": "REST + WebSocket contract, bearer auth, kebab-case fields"
+      },
+      {
+        "name": "WebSocket envelope",
+        "path": "specs/api/paths/websocket.yaml",
+        "summary": "{id, service, flow, request} multiplexed over /api/v1/socket"
+      },
+      {
+        "name": "Ontology schema",
+        "path": "schema.ttl",
+        "summary": "OWL/Turtle ontology template for BYOO"
+      }
     ],
     "resources": [
-      { "name": "Knowledge cores", "classification": "internal", "path": "/api/v1/knowledge", "description": "Portable triples + embeddings bundles per workspace" },
-      { "name": "Document library", "classification": "internal", "path": "/api/v1/librarian", "description": "Uploaded documents and processing queue" }
+      {
+        "name": "Knowledge cores",
+        "classification": "internal",
+        "path": "/api/v1/knowledge",
+        "description": "Portable triples + embeddings bundles per workspace"
+      },
+      {
+        "name": "Document library",
+        "classification": "internal",
+        "path": "/api/v1/librarian",
+        "description": "Uploaded documents and processing queue"
+      }
     ],
     "external_services": [
-      { "name": "LLM providers", "domain": "anthropic, openai, cohere, google, mistral, bedrock, vertexai, ollama", "purpose": "extraction, RAG, agent", "auth": "API keys (only where used)" },
-      { "name": "Mistral OCR", "domain": "api.mistral.ai", "purpose": "optional OCR", "auth": "API key" },
-      { "name": "Apache Pulsar, Cassandra, Qdrant/Milvus, Prometheus", "domain": "in-cluster", "purpose": "queues, triple store, vector store, metrics", "auth": "in-cluster" }
+      {
+        "name": "LLM providers",
+        "domain": "anthropic, openai, cohere, google, mistral, bedrock, vertexai, ollama",
+        "purpose": "extraction, RAG, agent",
+        "auth": "API keys (only where used)"
+      },
+      {
+        "name": "Mistral OCR",
+        "domain": "api.mistral.ai",
+        "purpose": "optional OCR",
+        "auth": "API key"
+      },
+      {
+        "name": "Apache Pulsar, Cassandra, Qdrant/Milvus, Prometheus",
+        "domain": "in-cluster",
+        "purpose": "queues, triple store, vector store, metrics",
+        "auth": "in-cluster"
+      }
     ],
-    "secrets_env": ["AUTH_ISSUER", "AUTH_RESOURCE_URL", "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "COHERE_API_KEY", "GOOGLE_API_KEY", "MISTRAL_API_KEY"],
-    "health": { "method": "http", "endpoint": "/api/metrics" },
+    "secrets_env": [
+      "AUTH_ISSUER",
+      "AUTH_RESOURCE_URL",
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY",
+      "COHERE_API_KEY",
+      "GOOGLE_API_KEY",
+      "MISTRAL_API_KEY"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/api/metrics"
+    },
     "spatial": "Carries no native geography; entities may hold location metadata as graph triples.",
     "temporal": "Flow run lifetimes, document processing timestamps and provenance/explain traces per extraction; no domain time model of its own.",
     "open_questions": [
       "Which TrustGraph components (gateway, MCP server, CLI) does the universe intend to run, and against which corpus node?",
       "scientific-transformer-engine has a build_trust_graph capability; is that TrustGraph-the-platform or an unrelated internal trust graph? Naming collision to resolve before declaring a relation.",
       "The fork tracks upstream at 9a5ffc9 (2026-08-24); no first-party changes were found."
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "An RDF/OWL hypergraph extracted from ingested documents, with graph and document embeddings, organised as workspaces, collections and portable knowledge cores.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "specs/api/paths/knowledge.yaml; specs/api/paths/collection-management.yaml",
+          "note": "Workspaces, collections and knowledge cores are the declared units of context."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "specs/api/paths/flow/graph-rag.yaml",
+          "note": "Extractions carry provenance and explain traces."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "specs/api/paths/librarian.yaml",
+          "note": "Documents enter through the librarian and flow services rather than being written into the graph directly."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/trustgraph.json",
+          "note": "An upstream mirror, not first-party code; it must not become the canonical state of the universe."
+        }
+      }
+    }
   }
 }

@@ -551,31 +551,100 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["python -m workbench", "crates/execution-cli/src/main.rs", "python3 -m execution.build", "python3 -m architecture.doctrine_generator", "python3 architecture/exchange/build_invariant_register.py", "renderer/index.html"],
-      "run": ["pip install pytest && python3 -m pytest", "cargo build --release --manifest-path crates/Cargo.toml", "python3 scripts/generate_sample_scene.py", "python -m workbench --scenario examples/polymer_tensile_strength.json"],
+      "entrypoints": [
+        "python -m workbench",
+        "crates/execution-cli/src/main.rs",
+        "python3 -m execution.build",
+        "python3 -m architecture.doctrine_generator",
+        "python3 architecture/exchange/build_invariant_register.py",
+        "renderer/index.html"
+      ],
+      "run": [
+        "pip install pytest && python3 -m pytest",
+        "cargo build --release --manifest-path crates/Cargo.toml",
+        "python3 scripts/generate_sample_scene.py",
+        "python -m workbench --scenario examples/polymer_tensile_strength.json"
+      ],
       "ports": [],
       "container": false
     },
     "contracts": [
-      { "name": "Deterministic State Architecture Frozen Specification v1.0.0", "path": "docs/ARCHITECTURE_SPEC.md", "summary": "CanonicalState -> validation -> projection -> Morpho IR -> backends; the frozen contract everything implements, with docs/CONTRADICTIONS.md recording three grammar fixes." },
-      { "name": "execution-cli wire protocol", "path": "crates/execution-cli/src/main.rs", "summary": "Length-prefixed [program][configuration][input] requests on stdin; 'ste-execution-result v1' line blocks on stdout; statuses completed|halted|unrunnable; process exit 0 or 2." },
-      { "name": "ste-host-result v1", "path": "zk/sp1-adapter/src/bin/sp1_host.rs", "summary": "Line protocol shared by SP1, Nexus and RISC Zero host binaries for prove/verify." },
-      { "name": "Build recipe (scout.execution.build-recipe.v1)", "path": "zk/recipes/sp1-heat.recipe", "summary": "Reproducible guest build: backend, guest crate, target, toolchain identity, rustflags, fork commit, source digests." },
-      { "name": "Transformer contract", "path": "architecture/transformer_contract.yaml", "summary": "ste.transformer.representation.v1 and ste.transformer.model.v1 identities and the attention path." },
-      { "name": "Core and invariants", "path": "architecture/core.yaml", "summary": "core@1.0.0 declaration; invariants.yaml (26 entries) with enforcement status; exchange/invariant_register.yaml derived across STE/DAQ/SCL." }
+      {
+        "name": "Deterministic State Architecture Frozen Specification v1.0.0",
+        "path": "docs/ARCHITECTURE_SPEC.md",
+        "summary": "CanonicalState -> validation -> projection -> Morpho IR -> backends; the frozen contract everything implements, with docs/CONTRADICTIONS.md recording three grammar fixes."
+      },
+      {
+        "name": "execution-cli wire protocol",
+        "path": "crates/execution-cli/src/main.rs",
+        "summary": "Length-prefixed [program][configuration][input] requests on stdin; 'ste-execution-result v1' line blocks on stdout; statuses completed|halted|unrunnable; process exit 0 or 2."
+      },
+      {
+        "name": "ste-host-result v1",
+        "path": "zk/sp1-adapter/src/bin/sp1_host.rs",
+        "summary": "Line protocol shared by SP1, Nexus and RISC Zero host binaries for prove/verify."
+      },
+      {
+        "name": "Build recipe (scout.execution.build-recipe.v1)",
+        "path": "zk/recipes/sp1-heat.recipe",
+        "summary": "Reproducible guest build: backend, guest crate, target, toolchain identity, rustflags, fork commit, source digests."
+      },
+      {
+        "name": "Transformer contract",
+        "path": "architecture/transformer_contract.yaml",
+        "summary": "ste.transformer.representation.v1 and ste.transformer.model.v1 identities and the attention path."
+      },
+      {
+        "name": "Core and invariants",
+        "path": "architecture/core.yaml",
+        "summary": "core@1.0.0 declaration; invariants.yaml (26 entries) with enforcement status; exchange/invariant_register.yaml derived across STE/DAQ/SCL."
+      }
     ],
     "resources": [
-      { "name": "Evidence pool (in-memory)", "classification": "internal", "path": "evidence/pool.py", "description": "Append-only content-addressed pool of Documents, Records, Observations, Referents and ClaimedRelationships; no persistence layer exists." },
-      { "name": "Guest registry", "classification": "public", "path": "execution/guest_registry.py", "description": "Generated index from program identity to zkVM guest recipes and ELF digests; not a root of trust." },
-      { "name": "Example scenarios", "classification": "public", "path": "examples/", "description": "polymer_tensile_strength.json and polymer_multi_property.json workbench scenarios." },
-      { "name": "Vendored three.js", "classification": "public", "path": "renderer/vendor/three.module.js", "description": "MIT-licensed renderer dependency vendored so the page has no CDN dependency." }
+      {
+        "name": "Evidence pool (in-memory)",
+        "classification": "internal",
+        "path": "evidence/pool.py",
+        "description": "Append-only content-addressed pool of Documents, Records, Observations, Referents and ClaimedRelationships; no persistence layer exists."
+      },
+      {
+        "name": "Guest registry",
+        "classification": "public",
+        "path": "execution/guest_registry.py",
+        "description": "Generated index from program identity to zkVM guest recipes and ELF digests; not a root of trust."
+      },
+      {
+        "name": "Example scenarios",
+        "classification": "public",
+        "path": "examples/",
+        "description": "polymer_tensile_strength.json and polymer_multi_property.json workbench scenarios."
+      },
+      {
+        "name": "Vendored three.js",
+        "classification": "public",
+        "path": "renderer/vendor/three.module.js",
+        "description": "MIT-licensed renderer dependency vendored so the page has no CDN dependency."
+      }
     ],
     "external_services": [
-      { "name": "GROMACS (gmx)", "domain": "local binary", "purpose": "Single-point, trajectory and minimization energies via grompp/mdrun/energy; built from the notationsystems fork in-session.", "auth": "none" },
-      { "name": "SP1 / Nexus / RISC Zero zkVM toolchains", "domain": "local forks under zk/", "purpose": "Proof generation and verification of native kernel executions.", "auth": "none" }
+      {
+        "name": "GROMACS (gmx)",
+        "domain": "local binary",
+        "purpose": "Single-point, trajectory and minimization energies via grompp/mdrun/energy; built from the notationsystems fork in-session.",
+        "auth": "none"
+      },
+      {
+        "name": "SP1 / Nexus / RISC Zero zkVM toolchains",
+        "domain": "local forks under zk/",
+        "purpose": "Proof generation and verification of native kernel executions.",
+        "auth": "none"
+      }
     ],
     "secrets_env": [],
-    "health": { "method": "cli", "endpoint": "python3 -m pytest" },
+    "health": {
+      "method": "cli",
+      "endpoint": "python3 -m pytest"
+    },
     "spatial": "No geography: coordinates are molecular/lattice positions in picometres and abstract projection frames, not places.",
     "temporal": "Versions form a hash-linked lineage and operation occurrences are ordered per process; there are no wall-clock reads in any compiler stage and timestamps are excluded from identity.",
     "open_questions": [
@@ -583,6 +652,64 @@
       "STE never imports SCL; the compute path is plugged in from SCL's ste_adapter. Decide whether the ecosystem wants the runtime edge modelled from the SCL side only.",
       "GROMACS and the zkVM forks are built in-session from notationsystems forks; no container or pinned binary distribution exists for them.",
       "No persistence: EvidencePool, VersionStore and OperationTrace are in-memory only."
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [
+        "scientific"
+      ],
+      "holding": "One versioned, immutable CanonicalState for the scientific vertical, with a hash-linked Version lineage, the SCOUT evidence pool and the derived cross-repository invariant register.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "core/canonical/state.py",
+          "note": "A single addressable CanonicalState, versioned and immutable."
+        },
+        "COR-002": {
+          "standing": "holds",
+          "evidence": "core/canonical/state.py",
+          "note": "The sole source of truth for the scientific vertical; every downstream artefact is a projection."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "evidence/admission.py; evidence/pool.py",
+          "note": "Admitted evidence keeps its author, transaction and source; derived values keep their trace."
+        },
+        "COR-004": {
+          "standing": "fails",
+          "note": "Versions are ordered by hash-linked lineage and timestamps are excluded from identity, so there is no wall-clock knowledge time: as-known-then cannot be reconstructed."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "evidence/quarantine.py",
+          "note": "Candidates that cannot be admitted are quarantined by name rather than dropped or coerced."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "core/canonical/validation.py",
+          "note": "validate_candidate is the only door to a new Version; simulation, neural and execution candidates all pass through it."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "execution/proving.py; execution/guest_registry.py",
+          "note": "Execution transcripts are checked rather than trusted, optionally proved on SP1, Nexus or RISC Zero before admission."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "core/canonical/version.py",
+          "note": "Versions form a hash-linked lineage with author, transaction and source."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "core/projection/project.py",
+          "note": "Morpho IR, Three.js, SVG and graph projections are pure and deterministic and can never write state back."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/scientific-transformer-engine.json",
+          "note": "Never a place where an inferred relation, a simulation candidate or an execution transcript silently becomes canonical evidence; never claims a computation is a measurement."
+        }
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rowProvenance } from './provenance.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, 'layers');
@@ -51,7 +52,15 @@ async function comtradeFlows(centroids) {
         request_key: key, reporter: r.reporterDesc ?? M49_NAME[r.reporterCode] ?? s.name, partner: r.partnerDesc ?? M49_NAME[r.partnerCode] ?? t.name,
         reporter_code: r.reporterCode, partner_code: r.partnerCode, commodity_hs: String(r.cmdCode ?? cmd), flow: r.flowCode ?? flow, year: Number(r.refYear ?? year),
         value_usd: value, net_weight_kg: weight, value_musd: Math.round(value / 1e4) / 100,
-        captured_at: vintages.capturedAt, provenance: `UN Comtrade capture ${vintages.capturedAt} (Payload Terminal snapshot comtrade-flow-vintages.json)`,
+        // Comtrade revises in place, so the capture date IS the knowledge time: this row
+        // is what the reporter said on that day about that reporting year, and no later
+        // retrieval can reconstruct it.
+        ...rowProvenance({
+          source: `UN Comtrade capture ${vintages.capturedAt} (Payload Terminal snapshot comtrade-flow-vintages.json)`,
+          knownAt: vintages.capturedAt,
+          validFrom: `${Number(r.refYear ?? year)}-01-01`,
+          validTo: `${Number(r.refYear ?? year)}-12-31`,
+        }),
         source_lat: s.lat, source_lng: s.lon, target_lat: t.lat, target_lng: t.lon,
       });
     }
@@ -77,7 +86,20 @@ async function archiveCoverage(centroids) {
     if (captured > cur.last_capture) cur.last_capture = captured;
     byReporter.set(reporter, cur);
   }
-  return [...byReporter.values()].map((r) => ({ ...r, commodities: [...r.commodities].sort().join(' '), flows: [...r.flows].sort().join(' '), years: [...r.years].sort().join(' '), provenance: 'Payload Terminal data-archive/MANIFEST.json (sha256-verified vintages)' }));
+  // first_capture/last_capture were a private spelling of knowledge time; keep them as
+  // the human-readable span and state the same fact in the shape every layer uses.
+  return [...byReporter.values()].map((r) => ({
+    ...r,
+    commodities: [...r.commodities].sort().join(' '),
+    flows: [...r.flows].sort().join(' '),
+    years: [...r.years].sort().join(' '),
+    ...rowProvenance({
+      source: 'Payload Terminal data-archive/MANIFEST.json (sha256-verified vintages)',
+      knownAt: r.last_capture,
+      validFrom: [...r.years].sort()[0] ? `${[...r.years].sort()[0]}-01-01` : undefined,
+      validTo: [...r.years].sort().at(-1) ? `${[...r.years].sort().at(-1)}-12-31` : undefined,
+    }),
+  }));
 }
 
 function simplify(coords, max = 10) {
@@ -94,7 +116,7 @@ async function submarineCables() {
     const lines = f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates];
     const round = (c) => [Math.round(c[0] * 100) / 100, Math.round(c[1] * 100) / 100];
     const geometry = { type: 'MultiLineString', coordinates: lines.map((l) => simplify(l).map(round)) };
-    return { cable_id: f.properties.id, name: f.properties.name, length_km: Math.round(f.properties.length_km ?? 0), provenance: 'Payload Terminal public/data/submarine-cables-filtered.json (long-haul subset, simplified)', _geojson: JSON.stringify({ type: 'Feature', properties: { name: f.properties.name }, geometry }) };
+    return { cable_id: f.properties.id, name: f.properties.name, length_km: Math.round(f.properties.length_km ?? 0), ...rowProvenance({ source: 'Payload Terminal public/data/submarine-cables-filtered.json (long-haul subset, simplified)' }), _geojson: JSON.stringify({ type: 'Feature', properties: { name: f.properties.name }, geometry }) };
   });
 }
 
@@ -103,7 +125,7 @@ async function nuclearFacilities() {
   const rows = [];
   const re = /\{\s*id:\s*'([^']+)',\s*name:\s*'([^']+)',\s*city:\s*'([^']*)',\s*country:\s*'([^']+)',\s*lat:\s*(-?[\d.]+),\s*lng:\s*(-?[\d.]+),\s*status:\s*'([^']+)'(?:,\s*reactors:\s*(\d+))?(?:,\s*capacity(?:MW)?:\s*([\d.]+))?/g;
   let m;
-  while ((m = re.exec(src))) rows.push({ facility_id: m[1], name: m[2], city: m[3], country: m[4], latitude: Number(m[5]), longitude: Number(m[6]), status: m[7], reactors: m[8] ? Number(m[8]) : null, capacity_mw: m[9] ? Number(m[9]) : null, provenance: 'Payload Terminal src/app/api/infrastructure/route.ts (curated list)' });
+  while ((m = re.exec(src))) rows.push({ facility_id: m[1], name: m[2], city: m[3], country: m[4], latitude: Number(m[5]), longitude: Number(m[6]), status: m[7], reactors: m[8] ? Number(m[8]) : null, capacity_mw: m[9] ? Number(m[9]) : null, ...rowProvenance({ source: 'Payload Terminal src/app/api/infrastructure/route.ts (curated list)' }) });
   return rows;
 }
 

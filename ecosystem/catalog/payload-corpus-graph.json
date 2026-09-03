@@ -50,6 +50,12 @@
     "temporal": "Not yet defined.",
     "open_questions": [
       "What is the first contract this repository will expose?"
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [],
+      "holding": "Nothing yet: a planned corpus graph linking documents perceived by the OCR agent to freight evidence with provenance.",
+      "standing": {}
+    }
   }
 }

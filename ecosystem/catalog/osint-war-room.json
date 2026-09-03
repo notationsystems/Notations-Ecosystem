@@ -378,6 +378,26 @@
       "No environment variables are read: the AIS key is hardcoded client-side and ACLED credentials are placeholders in radar.py; secrets handling must be introduced before any shared deployment.",
       "requirements.txt pins scraping and captcha-solving libraries (2captcha, apify, tweety, cloudscraper) that no served route uses; confirm intended scope.",
       "Last upstream push is June 2026 and no Notations-specific commits are visible; treat as a pure upstream mirror."
-    ]
+    ],
+    "corpus": {
+      "role": "project",
+      "owner_of": [],
+      "holding": "Almost nothing: a flat backend/database.json holding the last 200 scraped alerts and a channel list; everything else is in-memory cache.",
+      "standing": {
+        "COR-008": {
+          "standing": "fails",
+          "note": "backend/database.json is a mutable flat file holding the last 200 alerts, so what it showed yesterday is gone without trace."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "backend/main.py",
+          "note": "Routers proxy upstream feeds into a view; nothing is written back to any source."
+        },
+        "COR-010": {
+          "standing": "fails",
+          "note": "It must not become a canonical record and its person-facing scraping should stay confined to public channel previews, but the Telegram scraping path is unbounded and an AIS key is hardcoded."
+        }
+      }
+    }
   }
 }

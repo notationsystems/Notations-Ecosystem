@@ -4,45 +4,443 @@
   "kind": "api",
   "description": "Fork of Cargofy's ATLAS (AI Transport Logistics Agent Standard): a self-hosted Node MCP server that indexes a logistics company's shipments, carriers, lanes, rates, documents, tracking events and disruption issues into SQLite/PostgreSQL and exposes them to AI agents over MCP (stdio and HTTP/SSE) plus a REST API and web UI. In the Notations Universe it is the candidate logistics-context provider for the physical-economy layer: agents ask it questions, raw operational data never leaves the perimeter. It must never become the canonical world state; it is a read-mostly context index with operator-gated ingestion (seed, file import, AI extraction, connector sync, knowledge base edits).",
   "capabilities": [
-    { "capabilityId": "mcp.get_available_models", "label": "MCP: list enabled data models", "description": "Lists all enabled ATLAS data models (shipments, carriers, lanes, rates, documents, tracking_events, service_levels and opt-in extensions) with record counts. Agents call it before querying.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_available_models", "evidence": "src/index.js", "data_domain": "logistics" },
-    { "capabilityId": "mcp.get_schema", "label": "MCP: get model schema", "description": "Returns the JSON Schema and description for one ATLAS data model (models/*.json, published under https://atlasmcp.org/models/<model>/v1).", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_schema", "evidence": "src/index.js; models/shipment.json", "data_domain": "logistics" },
-    { "capabilityId": "mcp.get_available_carriers", "label": "MCP: list carriers", "description": "Lists all indexed carriers with id, name, country, type (trucking, shipping_line, airline, rail, freight_broker, 3pl) and rating.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_available_carriers", "evidence": "src/index.js; models/carrier.json", "data_domain": "carrier-identity" },
-    { "capabilityId": "mcp.get_available_lanes", "label": "MCP: list lanes", "description": "Lists indexed origin-to-destination lanes with mode and average transit days for which rate data exists.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_available_lanes", "evidence": "src/index.js; seed/lanes.json", "data_domain": "trade-lanes" },
-    { "capabilityId": "mcp.get_available_document_types", "label": "MCP: list document types", "description": "Lists logistics document types indexed (BOL, CMR, AWB, invoice, customs, POD, packing list, certificate of origin, dangerous goods) with counts.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_available_document_types", "evidence": "src/index.js; models/document.json", "data_domain": "trade-documents" },
-    { "capabilityId": "mcp.get_sync_status", "label": "MCP: data freshness and connector health", "description": "Returns per-table record counts and last sync timestamps plus connector runner statistics (runs, last_run, interval).", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_sync_status", "evidence": "src/index.js; src/connector-runner.js", "data_domain": "logistics" },
-    { "capabilityId": "mcp.get_records", "label": "MCP: query any model with filters", "description": "Generic query over any enabled model by name with field-equality filters and limit (max 200). Used for extension models such as tenders, assets, issues, load_listings.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_records", "evidence": "src/index.js", "data_domain": "logistics" },
-    { "capabilityId": "mcp.query", "label": "MCP: natural-language search", "description": "Keyword/natural-language search across all indexed logistics data (shipments, carriers, lanes) returning ranked results and a context block. v0.1 uses keyword matching; vector search is on the roadmap.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "query", "evidence": "src/index.js; ROADMAP.md", "data_domain": "logistics" },
-    { "capabilityId": "mcp.get_shipment", "label": "MCP: get shipment by id", "description": "Returns full details of one shipment: mode, status, origin/destination, carrier, cargo, planned/actual dates, financials.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_shipment", "evidence": "src/index.js; models/shipment.json", "data_domain": "shipments" },
-    { "capabilityId": "mcp.get_shipments", "label": "MCP: list shipments", "description": "Lists shipments filtered by status (pending, in_transit, customs, delivered, exception, cancelled), mode (road, ocean, air, rail, multimodal) and date range.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_shipments", "evidence": "src/index.js", "data_domain": "shipments" },
-    { "capabilityId": "mcp.get_shipment_events", "label": "MCP: shipment tracking timeline", "description": "Returns the tracking event timeline (pickup, transit, delivery, exception scans with location and optional lat/lon) for one shipment, optionally exceptions only.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_shipment_events", "evidence": "src/index.js; models/event.json", "data_domain": "tracking-events" },
-    { "capabilityId": "mcp.get_unsigned_documents", "label": "MCP: unsigned documents for a shipment", "description": "Returns documents attached to a shipment that are still pending signature.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_unsigned_documents", "evidence": "src/index.js", "data_domain": "trade-documents" },
-    { "capabilityId": "mcp.get_closure_checklist", "label": "MCP: shipment closure checklist", "description": "Computes what is still needed to close a shipment (POD, signatures, review) and returns it as a checklist for review; does not change state.", "mode": "propose", "approval": "automatic", "surface": "mcp", "path": "get_closure_checklist", "evidence": "src/index.js", "data_domain": "shipments" },
-    { "capabilityId": "mcp.search_carriers", "label": "MCP: search carriers", "description": "Searches carriers by ISO country, type, minimum rating or free text.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "search_carriers", "evidence": "src/index.js", "data_domain": "carrier-identity" },
-    { "capabilityId": "mcp.get_carrier_shipments", "label": "MCP: shipments handled by a carrier", "description": "Lists all shipments handled by a given carrier id with carrier name.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_carrier_shipments", "evidence": "src/index.js", "data_domain": "shipments" },
-    { "capabilityId": "mcp.get_rate_history", "label": "MCP: freight rate history", "description": "Retrieves freight rate history for a lane (ISO origin/destination), carrier and mode over a date range; at least one of origin, destination or carrier_id is required.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_rate_history", "evidence": "src/index.js; models/rate.json", "data_domain": "freight-rates" },
-    { "capabilityId": "mcp.list_documents", "label": "MCP: list logistics documents", "description": "Lists logistics documents filtered by shipment id or document type.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "list_documents", "evidence": "src/index.js", "data_domain": "trade-documents" },
-    { "capabilityId": "mcp.get_sla_violations", "label": "MCP: SLA violations", "description": "Returns shipments that exceeded their service-level planned transit time, filterable by mode, origin/destination country and sync time. Core exception-management observation.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_sla_violations", "evidence": "src/index.js; seed/service_levels.json", "data_domain": "service-levels" },
-    { "capabilityId": "mcp.get_idle_assets", "label": "MCP: idle assets", "description": "Returns assets (trucks/vehicles, extension model) that appear stationary with engine running beyond an idle-minutes threshold.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_idle_assets", "evidence": "src/index.js; seed/extensions/assets.json", "data_domain": "fleet-assets" },
-    { "capabilityId": "mcp.get_anomalies", "label": "MCP: tracking anomalies", "description": "Returns all tracking events flagged as exceptions since a timestamp.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_anomalies", "evidence": "src/index.js", "data_domain": "tracking-events" },
-    { "capabilityId": "mcp.get_active_issues", "label": "MCP: active disruption issues", "description": "Returns unresolved operational disruption issues (carrier no-show, cargo not ready, mechanical failure, customs hold, border closure, tender withdrawal and 20+ standard types) filterable by type, severity and requires_replanning.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "get_active_issues", "evidence": "src/index.js; seed/extensions/issues.json", "data_domain": "disruptions" },
-    { "capabilityId": "mcp.transport.stdio", "label": "MCP stdio transport", "description": "Full 21-tool MCP server over stdio for Claude Desktop / CLI clients (node src/index.js; docker run cargofy/atlas node src/index.js). README claims 35 tools; code registers 21.", "mode": "observe", "approval": "automatic", "surface": "mcp", "path": "stdio", "evidence": "src/index.js; claude_desktop_config.json" },
-    { "capabilityId": "mcp.transport.http_sse", "label": "MCP HTTP/SSE transport", "description": "Remote MCP: GET /mcp opens an SSE session (bearer-token auth from config auth.tokens), POST /mcp/message?sessionId= carries client messages. This transport registers a 12-tool subset (discovery, shipments, carriers, rates, documents, query).", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/mcp", "evidence": "src/ui-server.js; server.json" },
-    { "capabilityId": "http.health", "label": "Health report", "description": "GET /api/health returns overall status (healthy/degraded), version, uptime, per-table record counts and per-connector health (ok/starting/error/stale). Used by the Docker HEALTHCHECK.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/api/health", "evidence": "src/health.js; Dockerfile" },
-    { "capabilityId": "http.status", "label": "Server status and setup status", "description": "GET /api/status and GET /api/setup/status return instance name, config source, whether AI/auth are configured and whether the setup wizard is needed.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/api/status", "evidence": "src/ui-server.js" },
-    { "capabilityId": "http.data.read", "label": "REST: read table rows", "description": "GET /api/data/{shipments|carriers|routes|rates|documents|events}?limit&search returns raw rows from the local store; POST /api/query dispatches a named read tool (query, get_shipment, search_carriers, get_rate_history, list_documents) for the Explorer/Playground UI.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/api/data/{table}", "evidence": "src/ui-server.js", "data_domain": "logistics" },
-    { "capabilityId": "http.connectors.read", "label": "REST: list connectors", "description": "GET /api/connectors lists configured data-source connectors (rest_api, filesystem, ai_extract) with sync interval and stats.", "mode": "observe", "approval": "automatic", "surface": "http", "method": "GET", "path": "/api/connectors", "evidence": "src/ui-server.js; config.example.yml" },
-    { "capabilityId": "http.connectors.sync", "label": "REST: trigger connector sync", "description": "POST /api/connectors/{id}/sync runs a connector immediately, pulling from the external TMS/ERP/rate API and upserting records into the local store.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/connectors/{id}/sync", "evidence": "src/ui-server.js; src/connector-runner.js", "side_effects": "external API calls; writes rows" },
-    { "capabilityId": "http.import.seed", "label": "REST: seed database", "description": "POST /api/import/seed loads the bundled seed/ dataset (synthetic shipments, carriers, lanes, rates, documents, parties, tracking events, service levels, tenders, assets, issues) into the store.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/import/seed", "evidence": "src/ui-server.js; seed/README.md", "provenance": "synthetic:demo" },
-    { "capabilityId": "http.import.file", "label": "REST: import data files", "description": "POST /api/import/file and POST /api/import/folder ingest JSON, CSV or XLSX rows mapped by filename to an entity; POST /api/import/ai runs AI entity extraction over an uploaded document (PDF, CSV, XLSX, email) and writes extracted shipments/carriers/rates/documents.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/import/file", "evidence": "src/ui-server.js; src/ai/extract-pipeline.js", "side_effects": "writes rows; LLM calls" },
-    { "capabilityId": "http.chat", "label": "REST: chat with tools", "description": "POST /api/chat runs a conversational LLM turn (Claude, OpenAI or Ollama via role routing) that can call ATLAS read tools; GET /api/ai/models and /api/ai/stats expose configured models and usage.", "mode": "propose", "approval": "automatic", "surface": "http", "method": "POST", "path": "/api/chat", "evidence": "src/ui-server.js; src/ai/chat.js; src/ai/model-registry.js", "cost": "LLM tokens" },
-    { "capabilityId": "http.config", "label": "REST: read/write config", "description": "GET /api/config reads the YAML config (tokens redacted by the UI); POST /api/config writes config.yml; POST /api/admin/reload hot-reloads; POST /api/setup/save and /api/setup/test-ai back the first-run wizard.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/config", "evidence": "src/ui-server.js", "side_effects": "rewrites config.yml" },
-    { "capabilityId": "http.admin.prune", "label": "REST: prune old records", "description": "POST /api/admin/prune deletes records older than storage.retention_days (default 90) and expired rates.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/admin/prune", "evidence": "src/ui-server.js; src/atlas.js", "side_effects": "deletes rows" },
-    { "capabilityId": "http.kb", "label": "REST: knowledge base files", "description": "GET /api/kb/tree and GET /api/kb/file read the markdown enterprise knowledge base; POST/DELETE /api/kb/file and POST /api/kb/folder edit it; POST /api/knowledge/enrich asks the LLM to append facts and flag contradictions from extractions.", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/kb/file", "evidence": "src/ui-server.js; src/ai/knowledge-engine.js", "side_effects": "writes knowledge/*.md" },
-    { "capabilityId": "http.modules", "label": "REST: plugin modules", "description": "GET /api/modules lists file-watch, knowledge-enricher and google-drive modules with status; POST /api/modules/{id}/enable|disable|sync toggles them or forces a run (google-drive pulls files from Drive and runs AI analysis).", "mode": "execute", "approval": "operator", "surface": "http", "method": "POST", "path": "/api/modules/{id}/sync", "evidence": "src/ui-server.js; src/module-loader.js; src/modules/", "side_effects": "external Drive calls; LLM calls; writes rows" },
-    { "capabilityId": "webhook.events", "label": "Outbound webhooks", "description": "Wire contract: when configured in config.yml, ATLAS POSTs JSON {event, timestamp, atlas_version, payload} with an HMAC-SHA256 X-Atlas-Signature header for sla_violation, sync_error, new_exception, new_issue and sync_complete events; fire-and-forget with one retry.", "mode": "execute", "approval": "operator", "surface": "webhook", "method": "POST", "path": "config.webhooks[].url", "evidence": "src/webhooks.js", "side_effects": "outbound HTTP" },
-    { "capabilityId": "cli.atlas", "label": "CLI: atlas init/validate/seed/status/start", "description": "bin/atlas.js: init writes a config.yml interactively, validate checks it, seed loads JSON/CSV/XLSX files from a folder, status prints record counts and sync times, start launches the HTTP server.", "mode": "execute", "approval": "operator", "surface": "cli", "path": "atlas <init|validate|seed|status|start>", "evidence": "bin/atlas.js; package.json" },
-    { "capabilityId": "contract.models", "label": "ATLAS data model schemas", "description": "JSON Schema (draft 2020-12) contracts for shipment, carrier, route, document, rate and event, validated with AJV (npm run validate-models). The wire contract other logistics systems map onto.", "mode": "observe", "approval": "automatic", "surface": "file", "path": "models/*.json", "evidence": "models/shipment.json; src/validate-models.js", "data_domain": "logistics" },
-    { "capabilityId": "ui.web", "label": "Web UI", "description": "Single-page web UI on port 3000: Dashboard, Explorer, Chat, Playground, Knowledge Base, Import, Connectors, Modules, Settings and Setup Wizard.", "mode": "observe", "approval": "automatic", "surface": "ui", "method": "GET", "path": "/", "evidence": "src/ui/index.html; src/ui/pages/" }
+    {
+      "capabilityId": "mcp.get_available_models",
+      "label": "MCP: list enabled data models",
+      "description": "Lists all enabled ATLAS data models (shipments, carriers, lanes, rates, documents, tracking_events, service_levels and opt-in extensions) with record counts. Agents call it before querying.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_available_models",
+      "evidence": "src/index.js",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "mcp.get_schema",
+      "label": "MCP: get model schema",
+      "description": "Returns the JSON Schema and description for one ATLAS data model (models/*.json, published under https://atlasmcp.org/models/<model>/v1).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_schema",
+      "evidence": "src/index.js; models/shipment.json",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "mcp.get_available_carriers",
+      "label": "MCP: list carriers",
+      "description": "Lists all indexed carriers with id, name, country, type (trucking, shipping_line, airline, rail, freight_broker, 3pl) and rating.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_available_carriers",
+      "evidence": "src/index.js; models/carrier.json",
+      "data_domain": "carrier-identity"
+    },
+    {
+      "capabilityId": "mcp.get_available_lanes",
+      "label": "MCP: list lanes",
+      "description": "Lists indexed origin-to-destination lanes with mode and average transit days for which rate data exists.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_available_lanes",
+      "evidence": "src/index.js; seed/lanes.json",
+      "data_domain": "trade-lanes"
+    },
+    {
+      "capabilityId": "mcp.get_available_document_types",
+      "label": "MCP: list document types",
+      "description": "Lists logistics document types indexed (BOL, CMR, AWB, invoice, customs, POD, packing list, certificate of origin, dangerous goods) with counts.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_available_document_types",
+      "evidence": "src/index.js; models/document.json",
+      "data_domain": "trade-documents"
+    },
+    {
+      "capabilityId": "mcp.get_sync_status",
+      "label": "MCP: data freshness and connector health",
+      "description": "Returns per-table record counts and last sync timestamps plus connector runner statistics (runs, last_run, interval).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_sync_status",
+      "evidence": "src/index.js; src/connector-runner.js",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "mcp.get_records",
+      "label": "MCP: query any model with filters",
+      "description": "Generic query over any enabled model by name with field-equality filters and limit (max 200). Used for extension models such as tenders, assets, issues, load_listings.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_records",
+      "evidence": "src/index.js",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "mcp.query",
+      "label": "MCP: natural-language search",
+      "description": "Keyword/natural-language search across all indexed logistics data (shipments, carriers, lanes) returning ranked results and a context block. v0.1 uses keyword matching; vector search is on the roadmap.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "query",
+      "evidence": "src/index.js; ROADMAP.md",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "mcp.get_shipment",
+      "label": "MCP: get shipment by id",
+      "description": "Returns full details of one shipment: mode, status, origin/destination, carrier, cargo, planned/actual dates, financials.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_shipment",
+      "evidence": "src/index.js; models/shipment.json",
+      "data_domain": "shipments"
+    },
+    {
+      "capabilityId": "mcp.get_shipments",
+      "label": "MCP: list shipments",
+      "description": "Lists shipments filtered by status (pending, in_transit, customs, delivered, exception, cancelled), mode (road, ocean, air, rail, multimodal) and date range.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_shipments",
+      "evidence": "src/index.js",
+      "data_domain": "shipments"
+    },
+    {
+      "capabilityId": "mcp.get_shipment_events",
+      "label": "MCP: shipment tracking timeline",
+      "description": "Returns the tracking event timeline (pickup, transit, delivery, exception scans with location and optional lat/lon) for one shipment, optionally exceptions only.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_shipment_events",
+      "evidence": "src/index.js; models/event.json",
+      "data_domain": "tracking-events"
+    },
+    {
+      "capabilityId": "mcp.get_unsigned_documents",
+      "label": "MCP: unsigned documents for a shipment",
+      "description": "Returns documents attached to a shipment that are still pending signature.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_unsigned_documents",
+      "evidence": "src/index.js",
+      "data_domain": "trade-documents"
+    },
+    {
+      "capabilityId": "mcp.get_closure_checklist",
+      "label": "MCP: shipment closure checklist",
+      "description": "Computes what is still needed to close a shipment (POD, signatures, review) and returns it as a checklist for review; does not change state.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_closure_checklist",
+      "evidence": "src/index.js",
+      "data_domain": "shipments"
+    },
+    {
+      "capabilityId": "mcp.search_carriers",
+      "label": "MCP: search carriers",
+      "description": "Searches carriers by ISO country, type, minimum rating or free text.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "search_carriers",
+      "evidence": "src/index.js",
+      "data_domain": "carrier-identity"
+    },
+    {
+      "capabilityId": "mcp.get_carrier_shipments",
+      "label": "MCP: shipments handled by a carrier",
+      "description": "Lists all shipments handled by a given carrier id with carrier name.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_carrier_shipments",
+      "evidence": "src/index.js",
+      "data_domain": "shipments"
+    },
+    {
+      "capabilityId": "mcp.get_rate_history",
+      "label": "MCP: freight rate history",
+      "description": "Retrieves freight rate history for a lane (ISO origin/destination), carrier and mode over a date range; at least one of origin, destination or carrier_id is required.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_rate_history",
+      "evidence": "src/index.js; models/rate.json",
+      "data_domain": "freight-rates"
+    },
+    {
+      "capabilityId": "mcp.list_documents",
+      "label": "MCP: list logistics documents",
+      "description": "Lists logistics documents filtered by shipment id or document type.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "list_documents",
+      "evidence": "src/index.js",
+      "data_domain": "trade-documents"
+    },
+    {
+      "capabilityId": "mcp.get_sla_violations",
+      "label": "MCP: SLA violations",
+      "description": "Returns shipments that exceeded their service-level planned transit time, filterable by mode, origin/destination country and sync time. Core exception-management observation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_sla_violations",
+      "evidence": "src/index.js; seed/service_levels.json",
+      "data_domain": "service-levels"
+    },
+    {
+      "capabilityId": "mcp.get_idle_assets",
+      "label": "MCP: idle assets",
+      "description": "Returns assets (trucks/vehicles, extension model) that appear stationary with engine running beyond an idle-minutes threshold.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_idle_assets",
+      "evidence": "src/index.js; seed/extensions/assets.json",
+      "data_domain": "fleet-assets"
+    },
+    {
+      "capabilityId": "mcp.get_anomalies",
+      "label": "MCP: tracking anomalies",
+      "description": "Returns all tracking events flagged as exceptions since a timestamp.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_anomalies",
+      "evidence": "src/index.js",
+      "data_domain": "tracking-events"
+    },
+    {
+      "capabilityId": "mcp.get_active_issues",
+      "label": "MCP: active disruption issues",
+      "description": "Returns unresolved operational disruption issues (carrier no-show, cargo not ready, mechanical failure, customs hold, border closure, tender withdrawal and 20+ standard types) filterable by type, severity and requires_replanning.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "get_active_issues",
+      "evidence": "src/index.js; seed/extensions/issues.json",
+      "data_domain": "disruptions"
+    },
+    {
+      "capabilityId": "mcp.transport.stdio",
+      "label": "MCP stdio transport",
+      "description": "Full 21-tool MCP server over stdio for Claude Desktop / CLI clients (node src/index.js; docker run cargofy/atlas node src/index.js). README claims 35 tools; code registers 21.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "stdio",
+      "evidence": "src/index.js; claude_desktop_config.json"
+    },
+    {
+      "capabilityId": "mcp.transport.http_sse",
+      "label": "MCP HTTP/SSE transport",
+      "description": "Remote MCP: GET /mcp opens an SSE session (bearer-token auth from config auth.tokens), POST /mcp/message?sessionId= carries client messages. This transport registers a 12-tool subset (discovery, shipments, carriers, rates, documents, query).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/mcp",
+      "evidence": "src/ui-server.js; server.json"
+    },
+    {
+      "capabilityId": "http.health",
+      "label": "Health report",
+      "description": "GET /api/health returns overall status (healthy/degraded), version, uptime, per-table record counts and per-connector health (ok/starting/error/stale). Used by the Docker HEALTHCHECK.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/health",
+      "evidence": "src/health.js; Dockerfile"
+    },
+    {
+      "capabilityId": "http.status",
+      "label": "Server status and setup status",
+      "description": "GET /api/status and GET /api/setup/status return instance name, config source, whether AI/auth are configured and whether the setup wizard is needed.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/status",
+      "evidence": "src/ui-server.js"
+    },
+    {
+      "capabilityId": "http.data.read",
+      "label": "REST: read table rows",
+      "description": "GET /api/data/{shipments|carriers|routes|rates|documents|events}?limit&search returns raw rows from the local store; POST /api/query dispatches a named read tool (query, get_shipment, search_carriers, get_rate_history, list_documents) for the Explorer/Playground UI.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/data/{table}",
+      "evidence": "src/ui-server.js",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "http.connectors.read",
+      "label": "REST: list connectors",
+      "description": "GET /api/connectors lists configured data-source connectors (rest_api, filesystem, ai_extract) with sync interval and stats.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/connectors",
+      "evidence": "src/ui-server.js; config.example.yml"
+    },
+    {
+      "capabilityId": "http.connectors.sync",
+      "label": "REST: trigger connector sync",
+      "description": "POST /api/connectors/{id}/sync runs a connector immediately, pulling from the external TMS/ERP/rate API and upserting records into the local store.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/connectors/{id}/sync",
+      "evidence": "src/ui-server.js; src/connector-runner.js",
+      "side_effects": "external API calls; writes rows"
+    },
+    {
+      "capabilityId": "http.import.seed",
+      "label": "REST: seed database",
+      "description": "POST /api/import/seed loads the bundled seed/ dataset (synthetic shipments, carriers, lanes, rates, documents, parties, tracking events, service levels, tenders, assets, issues) into the store.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/import/seed",
+      "evidence": "src/ui-server.js; seed/README.md",
+      "provenance": "synthetic:demo"
+    },
+    {
+      "capabilityId": "http.import.file",
+      "label": "REST: import data files",
+      "description": "POST /api/import/file and POST /api/import/folder ingest JSON, CSV or XLSX rows mapped by filename to an entity; POST /api/import/ai runs AI entity extraction over an uploaded document (PDF, CSV, XLSX, email) and writes extracted shipments/carriers/rates/documents.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/import/file",
+      "evidence": "src/ui-server.js; src/ai/extract-pipeline.js",
+      "side_effects": "writes rows; LLM calls"
+    },
+    {
+      "capabilityId": "http.chat",
+      "label": "REST: chat with tools",
+      "description": "POST /api/chat runs a conversational LLM turn (Claude, OpenAI or Ollama via role routing) that can call ATLAS read tools; GET /api/ai/models and /api/ai/stats expose configured models and usage.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/chat",
+      "evidence": "src/ui-server.js; src/ai/chat.js; src/ai/model-registry.js",
+      "cost": "LLM tokens"
+    },
+    {
+      "capabilityId": "http.config",
+      "label": "REST: read/write config",
+      "description": "GET /api/config reads the YAML config (tokens redacted by the UI); POST /api/config writes config.yml; POST /api/admin/reload hot-reloads; POST /api/setup/save and /api/setup/test-ai back the first-run wizard.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/config",
+      "evidence": "src/ui-server.js",
+      "side_effects": "rewrites config.yml"
+    },
+    {
+      "capabilityId": "http.admin.prune",
+      "label": "REST: prune old records",
+      "description": "POST /api/admin/prune deletes records older than storage.retention_days (default 90) and expired rates.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/admin/prune",
+      "evidence": "src/ui-server.js; src/atlas.js",
+      "side_effects": "deletes rows"
+    },
+    {
+      "capabilityId": "http.kb",
+      "label": "REST: knowledge base files",
+      "description": "GET /api/kb/tree and GET /api/kb/file read the markdown enterprise knowledge base; POST/DELETE /api/kb/file and POST /api/kb/folder edit it; POST /api/knowledge/enrich asks the LLM to append facts and flag contradictions from extractions.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/kb/file",
+      "evidence": "src/ui-server.js; src/ai/knowledge-engine.js",
+      "side_effects": "writes knowledge/*.md"
+    },
+    {
+      "capabilityId": "http.modules",
+      "label": "REST: plugin modules",
+      "description": "GET /api/modules lists file-watch, knowledge-enricher and google-drive modules with status; POST /api/modules/{id}/enable|disable|sync toggles them or forces a run (google-drive pulls files from Drive and runs AI analysis).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/modules/{id}/sync",
+      "evidence": "src/ui-server.js; src/module-loader.js; src/modules/",
+      "side_effects": "external Drive calls; LLM calls; writes rows"
+    },
+    {
+      "capabilityId": "webhook.events",
+      "label": "Outbound webhooks",
+      "description": "Wire contract: when configured in config.yml, ATLAS POSTs JSON {event, timestamp, atlas_version, payload} with an HMAC-SHA256 X-Atlas-Signature header for sla_violation, sync_error, new_exception, new_issue and sync_complete events; fire-and-forget with one retry.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "webhook",
+      "method": "POST",
+      "path": "config.webhooks[].url",
+      "evidence": "src/webhooks.js",
+      "side_effects": "outbound HTTP"
+    },
+    {
+      "capabilityId": "cli.atlas",
+      "label": "CLI: atlas init/validate/seed/status/start",
+      "description": "bin/atlas.js: init writes a config.yml interactively, validate checks it, seed loads JSON/CSV/XLSX files from a folder, status prints record counts and sync times, start launches the HTTP server.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "atlas <init|validate|seed|status|start>",
+      "evidence": "bin/atlas.js; package.json"
+    },
+    {
+      "capabilityId": "contract.models",
+      "label": "ATLAS data model schemas",
+      "description": "JSON Schema (draft 2020-12) contracts for shipment, carrier, route, document, rate and event, validated with AJV (npm run validate-models). The wire contract other logistics systems map onto.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "models/*.json",
+      "evidence": "models/shipment.json; src/validate-models.js",
+      "data_domain": "logistics"
+    },
+    {
+      "capabilityId": "ui.web",
+      "label": "Web UI",
+      "description": "Single-page web UI on port 3000: Dashboard, Explorer, Chat, Playground, Knowledge Base, Import, Connectors, Modules, Settings and Setup Wizard.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "method": "GET",
+      "path": "/",
+      "evidence": "src/ui/index.html; src/ui/pages/"
+    }
   ],
   "metadata": {
     "repo": "notationsystems/ATLASUniversal-MCP-server-for-logistics.",
@@ -73,36 +471,137 @@
   ],
   "reference": {
     "runtime": {
-      "entrypoints": ["src/index.js (MCP stdio)", "src/ui-server.js (HTTP: UI + REST + MCP/SSE)", "bin/atlas.js (CLI)", "seed.js"],
-      "run": ["npm start", "npm run start:ui", "node seed.js", "docker run -p 3000:3000 cargofy/atlas", "docker compose up"],
-      "ports": [3000],
+      "entrypoints": [
+        "src/index.js (MCP stdio)",
+        "src/ui-server.js (HTTP: UI + REST + MCP/SSE)",
+        "bin/atlas.js (CLI)",
+        "seed.js"
+      ],
+      "run": [
+        "npm start",
+        "npm run start:ui",
+        "node seed.js",
+        "docker run -p 3000:3000 cargofy/atlas",
+        "docker compose up"
+      ],
+      "ports": [
+        3000
+      ],
       "container": true
     },
     "contracts": [
-      { "name": "ATLAS data models", "path": "models/", "summary": "JSON Schema for shipment, carrier, route, document, rate, event" },
-      { "name": "MCP server manifest", "path": "server.json", "summary": "MCP registry manifest: OCI package docker.io/cargofy/atlas, remote https://atlas.cargohub.co/mcp" },
-      { "name": "Config schema", "path": "config.example.yml", "summary": "atlas/storage/auth/ai/connectors/modules/models/webhooks sections with ${ENV} substitution" },
-      { "name": "Webhook payload", "path": "src/webhooks.js", "summary": "{event,timestamp,atlas_version,payload} signed with X-Atlas-Signature" }
+      {
+        "name": "ATLAS data models",
+        "path": "models/",
+        "summary": "JSON Schema for shipment, carrier, route, document, rate, event"
+      },
+      {
+        "name": "MCP server manifest",
+        "path": "server.json",
+        "summary": "MCP registry manifest: OCI package docker.io/cargofy/atlas, remote https://atlas.cargohub.co/mcp"
+      },
+      {
+        "name": "Config schema",
+        "path": "config.example.yml",
+        "summary": "atlas/storage/auth/ai/connectors/modules/models/webhooks sections with ${ENV} substitution"
+      },
+      {
+        "name": "Webhook payload",
+        "path": "src/webhooks.js",
+        "summary": "{event,timestamp,atlas_version,payload} signed with X-Atlas-Signature"
+      }
     ],
     "resources": [
-      { "name": "Seed dataset", "classification": "public", "path": "seed/", "description": "Synthetic demo shipments, carriers, lanes, rates, documents, parties, tracking events, service levels, tenders, assets, issues" },
-      { "name": "Local store", "classification": "sensitive", "path": "./atlas.db (ATLAS_DB_PATH)", "description": "SQLite copy of the operator's logistics data; never leaves the perimeter" },
-      { "name": "Knowledge base", "classification": "sensitive", "path": "knowledge/", "description": "Markdown enterprise knowledge files edited by UI and AI enrichment" }
+      {
+        "name": "Seed dataset",
+        "classification": "public",
+        "path": "seed/",
+        "description": "Synthetic demo shipments, carriers, lanes, rates, documents, parties, tracking events, service levels, tenders, assets, issues"
+      },
+      {
+        "name": "Local store",
+        "classification": "sensitive",
+        "path": "./atlas.db (ATLAS_DB_PATH)",
+        "description": "SQLite copy of the operator's logistics data; never leaves the perimeter"
+      },
+      {
+        "name": "Knowledge base",
+        "classification": "sensitive",
+        "path": "knowledge/",
+        "description": "Markdown enterprise knowledge files edited by UI and AI enrichment"
+      }
     ],
     "external_services": [
-      { "name": "Anthropic API", "domain": "api.anthropic.com", "purpose": "chat, extraction, knowledge enrichment", "auth": "API key" },
-      { "name": "OpenAI API / Ollama", "domain": "api.openai.com or localhost:11434", "purpose": "alternative LLM providers", "auth": "API key or none" },
-      { "name": "Google Drive", "domain": "www.googleapis.com", "purpose": "google-drive module file sync", "auth": "service account JWT" },
-      { "name": "Operator TMS / ERP / rate APIs", "domain": "configured per connector", "purpose": "rest_api connectors", "auth": "bearer, basic or api_key" }
+      {
+        "name": "Anthropic API",
+        "domain": "api.anthropic.com",
+        "purpose": "chat, extraction, knowledge enrichment",
+        "auth": "API key"
+      },
+      {
+        "name": "OpenAI API / Ollama",
+        "domain": "api.openai.com or localhost:11434",
+        "purpose": "alternative LLM providers",
+        "auth": "API key or none"
+      },
+      {
+        "name": "Google Drive",
+        "domain": "www.googleapis.com",
+        "purpose": "google-drive module file sync",
+        "auth": "service account JWT"
+      },
+      {
+        "name": "Operator TMS / ERP / rate APIs",
+        "domain": "configured per connector",
+        "purpose": "rest_api connectors",
+        "auth": "bearer, basic or api_key"
+      }
     ],
-    "secrets_env": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CARGOFY_MCP_TOKEN", "TMS_API_TOKEN", "TMS_API_KEY", "RATES_API_KEY", "EMAIL_PASSWORD", "WEBHOOK_SECRET", "ATLAS_CONFIG", "ATLAS_DB_PATH", "ATLAS_PORT"],
-    "health": { "method": "http", "endpoint": "/api/health" },
+    "secrets_env": [
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY",
+      "CARGOFY_MCP_TOKEN",
+      "TMS_API_TOKEN",
+      "TMS_API_KEY",
+      "RATES_API_KEY",
+      "EMAIL_PASSWORD",
+      "WEBHOOK_SECRET",
+      "ATLAS_CONFIG",
+      "ATLAS_DB_PATH",
+      "ATLAS_PORT"
+    ],
+    "health": {
+      "method": "http",
+      "endpoint": "/api/health"
+    },
     "spatial": "Carries ISO country codes and city names on shipment origin/destination and lanes, plus optional lat/lon on tracking events; no fixed site of its own.",
     "temporal": "Shipment planned/actual pickup and delivery dates, ETD/ETA, rate validity windows, tracking event timestamps, per-table last-sync times and a retention window (default 90 days).",
     "open_questions": [
       "README claims 35 MCP tools; src/index.js registers 21 and the HTTP/SSE transport only 12. Which surface is the contract for the universe?",
       "No first-party Notations code references ATLAS yet; the payload-terminal relation is inferred from domain only.",
       "No CI workflow is present in the fork (.github has no workflows directory)."
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "A logistics operator's shipments, carriers, lanes, rates, documents, tracking events and disruption issues, indexed into SQLite or PostgreSQL inside the operator perimeter.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "models/shipment.json; models/carrier.json; models/rate.json",
+          "note": "The holding is declared model by model."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "src/connector-runner.js",
+          "note": "Ingestion is operator-gated: seed, file import, AI extraction, connector sync and knowledge-base edits all require an operator."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/atlas-mcp.json",
+          "note": "Must never become the canonical world state; it is a read-mostly context index and raw operational data never leaves the perimeter."
+        }
+      }
+    }
   }
 }

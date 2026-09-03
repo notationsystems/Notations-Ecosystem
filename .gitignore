@@ -11,8 +11,10 @@ dock/public/layers/
 # Runtime state, and the material that protects it. The documented defaults put the
 # journal, its rollback anchor, the signing key store and the credential registry
 # here; none of them may ever be committed (SEC-004).
-data/
-deploy/
+/data/
+/deploy/
+/control-plane/data/*
+!/control-plane/data/.gitkeep
 *.jsonl.anchor
 keystore.json
 principals.json

@@ -153,6 +153,14 @@ components:
       required: [nodeId, name, kind, description, capabilities]
       properties:
         nodeId: { type: string }
+        uri:
+          type: string
+          readOnly: true
+          example: notation://node/notationsystems/payload-terminal
+          description: >
+            The node's name in the canonical identity space, derived from nodeId and
+            present on reads only. It is a name, not an address: the control plane holds
+            no resolver, so nothing here can be dereferenced.
         name: { type: string }
         kind: { type: string, enum: [api, world_model, information_library, reasoning_engine, visual_dock, operator_surface] }
         description: { type: string }

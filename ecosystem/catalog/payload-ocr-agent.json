@@ -444,6 +444,56 @@
       "There is no HTTP/MCP wrapper: higher-level Payload agents must import createOcrTools in-process. Should the control plane expose the ocr.* tools via an MCP binding?",
       "Only four extraction schemas exist (rate confirmation, BOL, POD, invoice); the other ten classification types have no structured pass yet.",
       "Document content is transmitted to Mistral in live mode; a data-handling policy for sensitive freight paperwork should be recorded at the platform level."
-    ]
+    ],
+    "corpus": {
+      "role": "feed",
+      "owner_of": [],
+      "holding": "ObservationBundles derived from freight paperwork: rate confirmations, bills of lading, proofs of delivery, invoices and scans, each field bound to verbatim text and a page and character span in the preserved OCR output.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "src/observation/types.ts",
+          "note": "The output unit is a named, typed ObservationBundle rather than a free-form extraction."
+        },
+        "COR-002": {
+          "standing": "exempt",
+          "note": "A perception subsystem: no canonical-state types, stores or writers exist in the package, and tests audit the source tree to keep it that way."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "src/model/types.ts (EvidenceLocation)",
+          "note": "Every field carries verbatim raw text, a normalized value and an evidence location — page plus character span into the preserved OCR text."
+        },
+        "COR-004": {
+          "standing": "holds",
+          "evidence": "src/core/epistemics.ts",
+          "note": "A TemporalFrame per observation separates documentCreatedAt, documentReceivedAt, eventTime, effectiveTime, knownAt and extractedAt, with written precision preserved."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "src/core/refusals.ts",
+          "note": "Conflicts are detected and reported without being resolved; entity candidates are proposed without identity being asserted."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "src/canonical/boundary.ts; src/evidence/port.ts",
+          "note": "Bundles are wrapped as a CanonicalStateCandidate with adjudication fixed at pending and handed to the host EvidencePool through the EvidenceSink port."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "src/artifact/acquire.ts; src/core/ids.ts",
+          "note": "The source artifact is acquired and identified before extraction, and the OCR text is preserved so every span can be resolved."
+        },
+        "COR-009": {
+          "standing": "exempt",
+          "note": "Emits observations; it renders nothing and writes to no state."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "docs/BOUNDARIES.md",
+          "note": "Must never become a source of truth; the boundary is audited by tests over the source tree."
+        }
+      }
+    }
   }
 }

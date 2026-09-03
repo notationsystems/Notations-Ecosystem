@@ -275,6 +275,36 @@
       "Is the engine meant to live in this repository, in osiris-dashboard/osint-war-room, or be retired? Its intake targets 20+ terminal routes that are now 503 route_retired.",
       "Which LLM backend, Kalshi credentials and ENGINE_PORT are intended for deployment?",
       "Forecasts and briefs mix simulated LLM output with sourced data; how should the terminal's valueKind/provenance discipline apply if any of this is ever surfaced there?"
-    ]
+    ],
+    "corpus": {
+      "role": "transform",
+      "owner_of": [],
+      "holding": "No corpus. Forecasts per horizon, persisted to an append-only ledger, scored later against the archived world.",
+      "standing": {
+        "COR-003": {
+          "standing": "fails",
+          "note": "The source is not committed — only CPython 3.14 bytecode — so no basis for any forecast can be inspected."
+        },
+        "COR-005": {
+          "standing": "fails",
+          "note": "Intake targets routes the terminal has retired and now answer 503; a failed intake degrades into a thinner brief rather than a named refusal."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "runs/ledger.jsonl",
+          "note": "Forecasts are written to a ledger as proposals and judged later; nothing is promoted into state."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "runs/ledger.jsonl",
+          "note": "The forecast ledger is append-only, and resolution is recorded against the original entry."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/pythia-oracle-engine.json",
+          "note": "Must never be treated as canonical state or as validated risk; its forecasts are catalogued as proposals."
+        }
+      }
+    }
   }
 }

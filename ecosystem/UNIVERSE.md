@@ -1,6 +1,6 @@
 # The Notations Universe
 
-Synthesised from `ecosystem/catalog/*.json` (30 nodes, 627 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=0), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
+Synthesised from `ecosystem/catalog/*.json` (30 nodes, 632 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=0), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
 
 ## 1. How the ecosystem fits together
 

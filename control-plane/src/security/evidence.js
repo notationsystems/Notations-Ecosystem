@@ -27,6 +27,7 @@
 import { invalid } from '../errors.js';
 import { detectSecretShape, safeText } from './text.js';
 import { isKnown, lookup, sealedKeys, sealedTable } from './table.js';
+import { isUri } from '../identity/uri.js';
 
 /** The dimensions of the constellation. Unknown dimensions are refused. */
 export const POSTURE_DIMENSIONS = sealedTable({
@@ -52,6 +53,27 @@ export const MAX_SUMMARY_CHARACTERS = 280;
 export const MAX_FINDING_COUNT = 1_000_000;
 
 const EVIDENCE_REF = /^(?:sha256:[a-f0-9]{64}|[A-Za-z0-9][A-Za-z0-9:_.-]{0,79})$/;
+
+/**
+ * A reference may also be a Notation identity — `notation://artifact/ns/id@v`.
+ *
+ * The published contract has always said so; the opaque form above could not express
+ * it, because it admits no `/`. Accepting the identity grammar instead of widening the
+ * character class is the safer of the two repairs: `parseUri` refuses percent-encoding,
+ * queries, fragments, relative segments, empty segments and any class it does not know,
+ * so what gets in is a name from a closed space rather than an arbitrary string with
+ * slashes in it. It remains a name and not a link: `resolve()` throws by construction,
+ * so the plane still cannot dereference what it records.
+ *
+ * The length bound is tighter than the identity space's own 512, because this field is
+ * attestor-supplied and a long free-form tail is the one thing a name should not have.
+ */
+const MAX_EVIDENCE_URI_LENGTH = 200;
+
+function isEvidenceReference(value) {
+  if (EVIDENCE_REF.test(value)) return true;
+  return value.length <= MAX_EVIDENCE_URI_LENGTH && isUri(value);
+}
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 /**
@@ -227,9 +249,9 @@ export function parseSignal(value, index) {
 
   if (parsed.evidenceRef !== undefined) {
     const reference = safeText(parsed.evidenceRef, `${path}.evidenceRef`).trim();
-    if (!EVIDENCE_REF.test(reference)) {
+    if (!isEvidenceReference(reference)) {
       throw invalid(
-        `${path}.evidenceRef must be an opaque identifier such as sha256:<hex>.`,
+        `${path}.evidenceRef must be an opaque identifier such as sha256:<hex>, or a notation:// identity.`,
         'A reference identifies the attestation in the system that produced it. It is deliberately not a link: the control plane must not carry a pointer to raw findings.',
       );
     }

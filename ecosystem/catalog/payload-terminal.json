@@ -906,6 +906,65 @@
       "/api/entity/expand still forwards type=person to the intel layer, which resolves natural persons via Wikidata and returns RIPE abuse-contact addresses as person nodes; is that consistent with the collection policy?",
       "The Polybolos SDK ingest/stream store is in-memory per process and the ingest key is a single shared secret; is this surface meant to stay, or is it upstream residue?",
       "Freight operating policy (30/120 min, 24 h) is fixed in code pending a per-customer configuration ledger."
-    ]
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [
+        "physical-economy"
+      ],
+      "holding": "The commodity and freight world state of the physical economy: copper and aluminium figures, loads, lanes, carriers and commitments, with the served snapshots under src/data/economy/snapshots/ and append-only freight journals.",
+      "standing": {
+        "COR-001": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/route.ts",
+          "note": "The state is addressable and its extent is the commodity and freight domains it serves."
+        },
+        "COR-002": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/route.ts",
+          "note": "The single canonical owner of the physical economy; Payload Earth projects it and owns nothing."
+        },
+        "COR-003": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/entity/route.ts",
+          "note": "Every figure carries source, basis and the date it became knowable."
+        },
+        "COR-004": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/route.ts",
+          "note": "Every projection accepts asOf and knowledge=best_known|as_known_then; journals carry occurredAt/knownAt/recordedAt."
+        },
+        "COR-005": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/refusals/route.ts",
+          "note": "An unanswerable question returns value null with a refusalType and a remedy, and the refusal itself is recorded as demand evidence."
+        },
+        "COR-006": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/validate/route.ts",
+          "note": "Claims are validated and guarded; an export is never accepted back into state."
+        },
+        "COR-007": {
+          "standing": "holds",
+          "evidence": "scripts/archive-manifest.mjs; data-archive/MANIFEST.json",
+          "note": "Captures are archived under a sha256 manifest before they are parsed; the unreconstructable Comtrade class is mirrored off-repository."
+        },
+        "COR-008": {
+          "standing": "holds",
+          "evidence": "src/app/api/freight/operations/route.ts",
+          "note": "Freight journals are append-only and hash-chained."
+        },
+        "COR-009": {
+          "standing": "holds",
+          "evidence": "src/app/api/economy/route.ts",
+          "note": "Projections under /api/economy are read paths; nothing downstream writes back."
+        },
+        "COR-010": {
+          "standing": "holds",
+          "evidence": "ecosystem/catalog/payload-terminal.json",
+          "note": "Must never become a person-intelligence tool: username, breach, phone and scanning routes were deleted and CI gates every route."
+        }
+      }
+    }
   }
 }
