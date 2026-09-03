@@ -109,3 +109,32 @@ test('the surface vocabulary is closed too, and its aliases are recorded', async
   aliased.capabilities[0].surface = 'docs';
   assert.ok(checkEntry(aliased, file).errors.some((e) => /is a recorded spelling of "doc"/.test(e)));
 });
+
+test('a mirror is machine-legible, and so is what it is a mirror of', async () => {
+  const entries = await loadCatalog();
+  const mirrors = entries.filter(({ entry }) => entry.metadata.maturity === 'upstream-mirror');
+  assert.equal(mirrors.length, 10);
+  for (const { entry } of mirrors) {
+    // Mirroring someone else's code without recording whose, and under what terms, is
+    // the one provenance question this catalog is uniquely able to answer about itself.
+    assert.ok(entry.metadata.upstream, `${entry.nodeId}: an upstream-mirror must name its upstream`);
+    assert.ok(entry.metadata.license, `${entry.nodeId}: an upstream-mirror must state a licence`);
+  }
+
+  // `upstream` carried two relationships: an ongoing copy, which brings the upstream's
+  // licence with it, and a one-time ancestry, which does not. Five first-party nodes
+  // recorded the second under the first. Lineage is `derived_from` now, and no node
+  // claims both.
+  for (const { entry } of entries) {
+    const { maturity, upstream, derived_from: derived } = entry.metadata;
+    if (upstream) assert.equal(maturity, 'upstream-mirror', `${entry.nodeId}: upstream is for mirrors`);
+    assert.ok(!(upstream && derived), `${entry.nodeId}: a node is a mirror or a descendant, not both`);
+  }
+  assert.equal(entries.filter(({ entry }) => entry.metadata.derived_from).length, 5);
+
+  // And the validator refuses the confusion rather than leaving it to review.
+  const [{ entry, file }] = entries.filter((e) => e.entry.nodeId === 'payload-terminal');
+  const confused = structuredClone(entry);
+  confused.metadata.upstream = 'somebody/else';
+  assert.ok(checkEntry(confused, file).errors.some((e) => /a node that mirrors another repository is an upstream-mirror/.test(e)));
+});

@@ -171,7 +171,8 @@
     "last_pushed_at": "2025-11-25T10:42:48Z",
     "capability_count": 12,
     "version": "v0.1.0",
-    "gpu_required": true
+    "gpu_required": true,
+    "license": "unrecorded"
   },
   "location": null,
   "relations": [

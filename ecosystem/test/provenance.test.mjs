@@ -105,3 +105,25 @@ test('every layer names a node that exists in the catalog', async () => {
     assert.ok(known.has(layer.source_system), `${layer.id}: source_system "${layer.source_system}" is not a catalog node`);
   }
 });
+
+test('COR-003 a provenance string may not claim work the extractor did not do', async () => {
+  const { layers } = await manifest();
+  // `archive-coverage` rows once read "sha256-verified vintages" while archiveCoverage()
+  // read three manifest fields — path, bytes, class — and opened no capture and
+  // recomputed no digest. A provenance string that claims a verification nobody performed
+  // is the estate's own fabrication, committed in the field that exists to prevent it.
+  const source = await readFile(path.join(PAYLOAD, 'extract-terminal.mjs'), 'utf8');
+  const verifies = /createHash|sha256\s*\(|digest\(/.test(source);
+  for (const layer of layers) {
+    const rows = await rowsOf(layer);
+    for (const row of rows) {
+      if (!verifies) {
+        assert.ok(!/sha256[- ]verified|verified vintages|hash[- ]checked/i.test(row.provenance),
+          `${layer.id}: a row claims a verification the extractor does not perform: "${row.provenance}"`);
+      }
+    }
+    if (!verifies) {
+      assert.ok(!/sha256[- ]verified/i.test(layer.provenance), `${layer.id}: the manifest claims a verification the extractor does not perform`);
+    }
+  }
+});

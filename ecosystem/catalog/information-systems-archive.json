@@ -119,7 +119,6 @@
     "language": "JSON/HTML/XML data; JavaScript (verify.mjs)",
     "framework": "none (node verify script)",
     "exposure": "git",
-    "upstream": "notationsystems/Sea-Dog-OSIRIS-Terminal-V0 (formerly Notations-OSIRIS-Overwatch-Engine)",
     "visibility": "public",
     "last_pushed_at": "2026-08-27T16:52:06Z",
     "capability_count": 8,
@@ -132,7 +131,8 @@
     "latest_capture_date": "2026-08-27",
     "comtrade_reporters": "CHL 152, PER 604, CHN 156, COD 180, IDN 360",
     "comtrade_commodities": "HS 2603 copper ores and concentrates; HS 7403 refined copper",
-    "provider_independent_backup": false
+    "provider_independent_backup": false,
+    "derived_from": "notationsystems/Sea-Dog-OSIRIS-Terminal-V0 (formerly Notations-OSIRIS-Overwatch-Engine)"
   },
   "location": {
     "longitude": -70.4,

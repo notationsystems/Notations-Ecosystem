@@ -76,7 +76,6 @@
     "language": "Webflow / Next.js",
     "framework": "Webflow + Webflow Cloud (OpenNext on Cloudflare)",
     "exposure": "deployed",
-    "upstream": "Webflow",
     "visibility": "private",
     "last_pushed_at": "2026-08-31T02:47:31Z",
     "webflow_site_id": "6a98a59e681119615d9c67c0",

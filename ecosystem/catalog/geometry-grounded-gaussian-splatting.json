@@ -177,7 +177,8 @@
     "visibility": "public",
     "last_pushed_at": "2026-03-16T08:08:08Z",
     "capability_count": 13,
-    "gpu_required": true
+    "gpu_required": true,
+    "license": "unrecorded"
   },
   "location": null,
   "relations": [

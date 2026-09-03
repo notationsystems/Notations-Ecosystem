@@ -212,6 +212,15 @@ Corpus ownership
   `geometry-grounded-gaussian-splatting`) without claiming to own the domain's state.
   `platform` is owned by nothing because the coordination journal is not a domain state.
 
+Provenance of the estate itself
+- Two mirrors record `license: "unrecorded"` — `geometry-grounded-gaussian-splatting`
+  (HKUST-SAIL) and `matrix-3d` (SkyworkAI). Both are research code with no licence
+  recorded in this catalog; until someone reads the upstream repositories, what may be
+  done with those mirrors is unknown, and the catalog now says so rather than leaving the
+  field absent.
+- `metadata.upstream` (a copy, carrying the upstream's licence) is now distinct from
+  `metadata.derived_from` (ancestry, carrying none). Ten mirrors, five descendants.
+
 Policy
 - `osiris-intel` still resolves natural persons and returns RIPE abuse contacts as person nodes; `osiris-dashboard` still serves person-targeting routes; `osint-war-room` hardcodes an AIS key and pins scraping libraries no route uses. The universe-level collection policy should be declared once and applied to the forks.
 - Licence constraints on map layers: OpenSky (non-commercial), TeleGeography cables (CC BY-NC-SA), Westmetall (republisher scrape, licensed LME feed is the remedy), CanadaBuys (ca-ogl-lgo).

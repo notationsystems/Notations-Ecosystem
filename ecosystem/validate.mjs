@@ -146,6 +146,21 @@ export function checkEntry(entry, file, known = new Set()) {
   if (!DOMAINS.has(md.domain)) errors.push(`metadata.domain "${md.domain}" is not one of ${[...DOMAINS].join(', ')}`);
   if (md.maturity !== undefined && !MATURITIES.has(md.maturity)) errors.push(`metadata.maturity "${md.maturity}" is not allowed`);
   if (!md.repo) warnings.push('metadata.repo is missing');
+  // Mirroring someone else's code without recording whose, and under what terms, is the
+  // one provenance question this catalog is uniquely able to answer about itself.
+  // `unrecorded` is a legal answer and a visible one; an absent field reads as "not
+  // applicable", and for a mirror it never is.
+  if (md.maturity === 'upstream-mirror') {
+    if (!md.upstream) errors.push('an upstream-mirror must name its metadata.upstream');
+    if (!md.license) errors.push('an upstream-mirror must state metadata.license, or "unrecorded" to name the gap');
+    else if (md.license === 'unrecorded') warnings.push('metadata.license is "unrecorded": the mirror\'s terms are unknown');
+  } else if (md.upstream) {
+    // `upstream` used to carry two different relationships: "this repository is a copy of
+    // X", which is ongoing and carries X's licence, and "this descends from X", which is
+    // ancestry and does not. Six first-party nodes recorded the second under the first,
+    // so a reader could not tell a mirror from a fork. Lineage is `derived_from`.
+    errors.push(`metadata.upstream is set but maturity is "${md.maturity}"; a node that mirrors another repository is an upstream-mirror, and a node that descends from one records metadata.derived_from`);
+  }
   if (entry.location && typeof entry.location.label !== 'string') warnings.push('location has no label');
   for (const k of Object.keys(entry)) if (!['nodeId', 'name', 'kind', 'description', 'capabilities', 'metadata', 'location', 'relations', 'reference'].includes(k)) warnings.push(`unknown top-level field "${k}"`);
   // Corpus conformance (docs/CORPUS.md): what the node claims to hold, and against which

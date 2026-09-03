@@ -175,13 +175,13 @@
     "language": "Python",
     "framework": "FastAPI + uvicorn + httpx; Ollama-compatible LLM",
     "exposure": "local-only",
-    "upstream": "MiroFish (swarm idea, per docstrings)",
     "visibility": "public",
     "last_pushed_at": "2026-09-01T06:28:31Z",
     "subdirectory": "engine/",
     "source_state": "bytecode-only (engine/__pycache__/*.cpython-314.pyc); no .py committed",
     "ledger_records": 9,
-    "capability_count": 15
+    "capability_count": 15,
+    "derived_from": "MiroFish (swarm idea, per docstrings)"
   },
   "location": null,
   "relations": [

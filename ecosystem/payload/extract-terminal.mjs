@@ -78,8 +78,9 @@ async function archiveCoverage(centroids) {
     const [, captured, reporter, cmd, flow, year] = m;
     const c = centroids.get(String(Number(reporter))) ?? EXTRA_CENTROIDS[String(Number(reporter))];
     if (!c) continue;
-    const cur = byReporter.get(reporter) ?? { reporter_code: Number(reporter), reporter: M49_NAME[Number(reporter)] ?? c.name, latitude: c.lat, longitude: c.lon, captures: 0, unreconstructable: 0, commodities: new Set(), flows: new Set(), years: new Set(), first_capture: captured, last_capture: captured, bytes: 0 };
+    const cur = byReporter.get(reporter) ?? { reporter_code: Number(reporter), reporter: M49_NAME[Number(reporter)] ?? c.name, latitude: c.lat, longitude: c.lon, captures: 0, unreconstructable: 0, commodities: new Set(), flows: new Set(), years: new Set(), first_capture: captured, last_capture: captured, bytes: 0, digests: 0 };
     cur.captures += 1; cur.bytes += f.bytes ?? 0;
+    if (typeof f.sha256 === 'string' && /^[a-f0-9]{64}$/.test(f.sha256)) cur.digests += 1;
     if (f.class === 'unreconstructable') cur.unreconstructable += 1;
     cur.commodities.add(cmd); cur.flows.add(flow); cur.years.add(year);
     if (captured < cur.first_capture) cur.first_capture = captured;
@@ -94,7 +95,12 @@ async function archiveCoverage(centroids) {
     flows: [...r.flows].sort().join(' '),
     years: [...r.years].sort().join(' '),
     ...rowProvenance({
-      source: 'Payload Terminal data-archive/MANIFEST.json (sha256-verified vintages)',
+      // What this extractor actually did: read the manifest's index. It does not open a
+      // capture and it does not recompute a digest, so it may not say "sha256-verified"
+      // — a provenance string that claims a verification nobody performed is the same
+      // fabrication the estate refuses in its values, committed in the field that exists
+      // to prevent it. `verify.mjs` in the archive repository is what checks the digests.
+      source: `Payload Terminal data-archive/MANIFEST.json (index read, ${r.digests} of ${r.captures} entries carry a sha256; digests not recomputed here)`,
       knownAt: r.last_capture,
       validFrom: [...r.years].sort()[0] ? `${[...r.years].sort()[0]}-01-01` : undefined,
       validTo: [...r.years].sort().at(-1) ? `${[...r.years].sort().at(-1)}-12-31` : undefined,

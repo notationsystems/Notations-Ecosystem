@@ -98,13 +98,13 @@
     "language": "JavaScript",
     "framework": "Express 5 (Node 22)",
     "exposure": "docker",
-    "upstream": "simplifaisoul/osiris (MIT fork)",
     "visibility": "public",
     "last_pushed_at": "2026-09-01T06:28:31Z",
     "default_port": 4000,
     "subdirectory": "intel/",
     "compose_service": "payload-intel",
-    "capability_count": 8
+    "capability_count": 8,
+    "derived_from": "simplifaisoul/osiris (MIT fork)"
   },
   "location": null,
   "relations": [

@@ -687,7 +687,6 @@
     "language": "TypeScript",
     "framework": "Next.js 16 (App Router) + MapLibre GL + MCP SDK",
     "exposure": "docker",
-    "upstream": "simplifaisoul/osiris (MIT fork; recon capabilities removed)",
     "visibility": "public",
     "last_pushed_at": "2026-09-01T06:28:31Z",
     "default_port": 3000,
@@ -697,7 +696,8 @@
     "mcp_transport": "stdio",
     "mcp_tool_count": 12,
     "access_posture": "internal, operator-controlled; no public exposure decided",
-    "capability_count": 59
+    "capability_count": 59,
+    "derived_from": "simplifaisoul/osiris (MIT fork; recon capabilities removed)"
   },
   "location": {
     "longitude": 103.85,

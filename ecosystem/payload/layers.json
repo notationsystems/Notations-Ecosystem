@@ -278,7 +278,7 @@
       "source_system": "information-systems-archive",
       "geometry": "point",
       "file": "archive-coverage.json",
-      "provenance": "Payload Terminal data-archive/MANIFEST.json (sha256-verified)",
+      "provenance": "Payload Terminal data-archive/MANIFEST.json — the index, read. Digest verification is verify.mjs in the archive repository, not this extractor.",
       "real": true,
       "default_visible": true,
       "kepler": {
