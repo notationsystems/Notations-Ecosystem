@@ -165,6 +165,13 @@
   .strip > div:last-child { border-right: none; }
   .app.strip-min .strip > div > *:not(h4) { display: none; }
   .app.strip-min .strip > div { padding-bottom: 8px; }
+  .app.solo { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .app.solo > .top, .app.solo > .rail, .app.solo > .side, .app.solo > .strip { display: none; }
+  .soloexit { position: absolute; top: 10px; right: 12px; z-index: 6; display: none; align-items: center; gap: 8px; }
+  .app.solo .soloexit { display: flex; }
+  .soloexit .mark { font-family: var(--mono); font-size: 11px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .app.solo .skyhud, .app.solo .skynote, .app.solo .soloexit { transition: opacity .5s ease; }
+  .app.solo.idle .skyhud, .app.solo.idle .skynote, .app.solo.idle .soloexit { opacity: 0; pointer-events: none; }
   .app.rail-min { grid-template-columns: 0 1fr 352px; }
   .app.rail-min .rail { display: none; }
   .edge { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 12px; line-height: 1; padding: 5px 7px; flex: none; }
@@ -200,7 +207,7 @@
     <span class="chip" id="fold-chip" title="Whether this page's fold of the journal at its head matches the snapshot the plane exported">fold: checking</span>
     <div class="counts" id="counts"></div>
     <input class="search" id="search" placeholder="/ search bodies, capabilities, subjects" aria-label="Search">
-    <div class="edges"><button class="edge" id="rail-toggle" aria-expanded="true" title="Collapse the controls (\)">◧</button><button class="edge" id="strip-toggle" aria-expanded="true" title="Collapse the time and fidelity strip (-)">▁</button></div>
+    <div class="edges"><button class="edge" id="solo" aria-pressed="false" title="Run the twin alone, with every panel hidden (h)">◱</button><button class="edge" id="rail-toggle" aria-expanded="true" title="Collapse the controls (\)">◧</button><button class="edge" id="strip-toggle" aria-expanded="true" title="Collapse the time and fidelity strip (-)">▁</button></div>
   </header>
 
   <nav class="rail">
@@ -216,6 +223,7 @@
     <div id="sky" aria-label="The estate as a Keplerian solar system"></div>
     <div class="skyhud"><button id="play" aria-pressed="true">pause</button><button id="speed">×2</button><button id="fit">fit</button><button id="focus-sun">sun</button><button id="follow">follow</button><button id="back-now" hidden>back to now</button><span class="clock" id="orbit-clock">t+0s</span></div>
     <div class="skynote">nothing here is a place and none of this is telemetry · axis is the domain ring, eccentricity is one minus corpus coverage, period follows Kepler’s third law · drag to orbit, wheel to zoom, click a body</div>
+    <div class="soloexit"><span class="mark" id="solo-mark">Notations · Control Universe</span><button class="edge" id="solo-exit" title="Show the panels again (h or Escape)">◫</button></div>
     <div class="tooltip" id="tip"></div>
     <div class="view" id="view-tower"></div>
     <div class="view" id="view-ledger"></div>
@@ -583,7 +591,7 @@ function buildLayers() {
     layers.push(new D.TextLayer({
       id: 'body-labels', data: marks.bodies,
       getPosition: m => m.body.pos, getText: m => m.text,
-      getSize: m => (m.body.isSun ? 13 : 11), sizeUnits: 'pixels',
+      getSize: m => (m.body.isSun ? 13 : 11), sizeUnits: 'pixels', sizeMinPixels: 10, sizeMaxPixels: 11.5,
       getColor: m => rgb(m.force ? c.text : c.muted, 240),
       getPixelOffset: m => [0, Math.round(12 + bodySize(m.body) * 4)],
       fontFamily: 'ui-monospace, monospace', characterSet: 'auto',
@@ -595,7 +603,7 @@ function buildLayers() {
     layers.push(new D.TextLayer({
       id: 'ring-labels', data: marks.rings,
       getPosition: m => m.position, getText: m => m.orbit.domain,
-      getSize: 10, sizeUnits: 'pixels', getColor: rgb(c.faint, 210),
+      getSize: 10, sizeUnits: 'pixels', sizeMinPixels: 9, sizeMaxPixels: 11, getColor: rgb(c.faint, 210),
       fontFamily: 'ui-monospace, monospace', getTextAnchor: 'middle', getAlignmentBaseline: 'center',
       updateTriggers: { getPosition: sky.t }, parameters: { depthTest: false },
     }));
@@ -1077,11 +1085,12 @@ function renderStrip() {
 }
 $('axis').addEventListener('input', e => setCursor(Number(e.target.value)));
 $('search').addEventListener('input', e => { state.search = e.target.value; renderAll(); });
-document.addEventListener('keydown', e => { const tag = document.activeElement?.tagName; if (['INPUT','TEXTAREA','SELECT'].includes(tag)) { if (e.key === 'Escape') document.activeElement.blur(); return; } if (e.key === '/') { e.preventDefault(); $('search').focus(); } else if (e.key === ':') { e.preventDefault(); $('cmd').focus(); } else if (e.key === 'f') fit(); else if (e.key === '\\') { e.preventDefault(); $('rail-toggle').click(); } else if (e.key === '_' || e.key === '-') { e.preventDefault(); $('strip-toggle').click(); } else if (e.key === 'Escape') select(null); else if (e.key === '[') setCursor(Math.max(0, state.cursor - 1)); else if (e.key === ']') setCursor(Math.min(RECORDS.length, state.cursor + 1)); });
+document.addEventListener('keydown', e => { const tag = document.activeElement?.tagName; if (['INPUT','TEXTAREA','SELECT'].includes(tag)) { if (e.key === 'Escape') document.activeElement.blur(); return; } if (e.key === '/') { e.preventDefault(); $('search').focus(); } else if (e.key === ':') { e.preventDefault(); $('cmd').focus(); } else if (e.key === 'f') fit(); else if (e.key === '\\') { e.preventDefault(); $('rail-toggle').click(); } else if (e.key === '_' || e.key === '-') { e.preventDefault(); $('strip-toggle').click(); } else if (e.key === 'h') { e.preventDefault(); setSolo(!document.querySelector('.app').classList.contains('solo')); } else if (e.key === 'Escape') { if (document.querySelector('.app').classList.contains('solo')) setSolo(false); else select(null); } else if (e.key === '[') setCursor(Math.max(0, state.cursor - 1)); else if (e.key === ']') setCursor(Math.min(RECORDS.length, state.cursor + 1)); });
 const mq = window.matchMedia('(prefers-color-scheme: light)'); if (mq.addEventListener) mq.addEventListener('change', () => renderAll());
 new MutationObserver(() => renderAll()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 function renderAll() { renderRail(); renderStrip(); renderInspector(); renderView(); draw(); }
+$('solo-mark').textContent = FOLD_AGREES ? 'Notations \u00b7 Control Universe' : 'Notations \u00b7 Control Universe \u00b7 fold disagrees';
 $('fold-chip').textContent = FOLD_AGREES ? 'fold agrees with the plane at head' : 'fold DISAGREES with the plane at head'; $('fold-chip').classList.add(FOLD_AGREES ? 'ok' : 'bad');
 $('fold-chip').title = FOLD_AGREES ? `This page folded the ${RECORDS.length}-record journal itself and reached the plane's head: same revision, same bodies and health, same decisions, same bindings.` : 'The local fold and the plane’s exported snapshot differ; trust the plane.';
 // Which panels a viewer keeps open is a convenience of theirs, so it is remembered in their own
@@ -1112,7 +1121,35 @@ function applyPanels() {
   };
   rail.onclick = () => flip(rail, 'rail-min', 'rail');
   strip.onclick = () => flip(strip, 'strip-min', 'strip');
+  // #solo opens straight into the running twin, so a link can hand someone the sky and nothing else.
+  const asked = location.hash === '#solo';
+  setSolo(asked || saved.solo === true, asked);
+  if (asked) requestAnimationFrame(() => fit());
 }
+
+// Solo runs the twin with nothing around it. The panels are hidden rather than unmade, so every
+// filter, draft and cursor is exactly where it was when they come back.
+let idleTimer = 0;
+function setSolo(on, remember = true) {
+  const app = document.querySelector('.app');
+  app.classList.toggle('solo', on);
+  $('solo').setAttribute('aria-pressed', String(on));
+  if (on && state.lens !== 'sky') setLens('sky');
+  if (remember) { const next = readPanels(); next.solo = on; writePanels(next); }
+  if (!on) { app.classList.remove('idle'); clearTimeout(idleTimer); } else stir();
+  draw();
+}
+// Anything the operator does keeps the sky's own controls up; a few still seconds and they fade,
+// which is the whole point of running it alone.
+function stir() {
+  const app = document.querySelector('.app');
+  app.classList.remove('idle');
+  clearTimeout(idleTimer);
+  if (app.classList.contains('solo')) idleTimer = setTimeout(() => app.classList.add('idle'), 2600);
+}
+$('solo').onclick = () => setSolo(!document.querySelector('.app').classList.contains('solo'));
+$('solo-exit').onclick = () => setSolo(false);
+for (const ev of ['pointermove', 'pointerdown', 'wheel', 'keydown']) document.addEventListener(ev, stir, { passive: true });
 applyPanels();
 $('play').onclick = () => { sky.playing = !sky.playing; renderMotion(); };
 $('speed').onclick = () => { sky.speed = SPEEDS[(SPEEDS.indexOf(sky.speed) + 1) % SPEEDS.length]; renderMotion(); };

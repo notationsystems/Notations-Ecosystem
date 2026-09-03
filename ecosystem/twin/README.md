@@ -35,6 +35,14 @@ byte. `test/twin.test.mjs` asserts it.
 | Drafter and command bar | Compose a command, run the plane's own validation against it, and hold it. |
 | Time axis | Scrub the journal. The page folds each prefix itself. |
 
+Every rail panel is a disclosure, and two edge controls collapse whole regions: the rail (`\`) and
+the time-and-fidelity strip (`-`), which folds to its four titles rather than vanishing. **Solo**
+(`h`, or the `#solo` fragment on the URL) hides every panel and runs the twin alone; after a few
+still seconds the sky's own controls fade too. Escape or `h` brings the instrument panel back
+exactly as it was — the panels are hidden, never unmade, so filters, drafts and the journal cursor
+all survive. What a viewer keeps open is remembered in their own browser and nowhere else, guarded
+so that a viewer who blocks site data still gets the page as designed.
+
 ## The orbits
 
 Nothing in the sky is a place, and none of the motion is telemetry. Every orbital element is read
