@@ -94,6 +94,8 @@ export function withCorpusMetadata(entry) {
   const graded = gradeNode(entry);
   const subjects = subjectsOf(entry);
   if (subjects) metadata.data_domains = subjects;
+  const surfaces = surfacesOf(entry);
+  if (surfaces) metadata.surfaces = surfaces;
   metadata.corpus_role = graded.role;
   metadata.corpus_grade = graded.grade;
   if (typeof graded.coverage === 'number') metadata.corpus_coverage = graded.coverage;
@@ -112,22 +114,44 @@ export function withCorpusMetadata(entry) {
 }
 
 /**
- * The distinct data-domain subjects a node's capabilities touch.
+ * The distinct values of one closed-vocabulary capability field, as one bounded string.
  *
- * Per-capability annotations are catalog-only — the journal's capability contract is
- * five fields and stays that way. But the *set* is one bounded string, and it turns
- * "which systems touch trade-flows?" into a question a snapshot can answer, which is the
- * thing a coordination layer exists to do.
+ * A capability carries fifteen fields in the catalog and five in the journal, and that
+ * asymmetry is deliberate: `evidence` and `path` are pointers into another system,
+ * `cost`, `latency` and `provenance` are measurements about it, and none of them belong
+ * in a coordination ledger. But two of the ten are drawn from closed vocabularies of
+ * bounded values, and dropping *those* costs the plane the questions it exists to answer.
+ * So the set crosses, per node, while the per-capability annotation stays here.
  */
-export function subjectsOf(entry, maximum = 480) {
-  const subjects = [...new Set((entry.capabilities ?? []).map((c) => c.data_domain).filter(Boolean))].sort();
-  let joined = subjects.join(' ');
-  // Truncate on a whole subject, never mid-word: a half-spelled subject is a wrong one.
-  while (joined.length > maximum && subjects.length) {
-    subjects.pop();
-    joined = subjects.join(' ');
+function vocabularyOf(entry, field, maximum) {
+  const values = [...new Set((entry.capabilities ?? []).map((c) => c[field]).filter(Boolean))].sort();
+  let joined = values.join(' ');
+  // Truncate on a whole value, never mid-word: a half-spelled subject is a wrong one.
+  while (joined.length > maximum && values.length) {
+    values.pop();
+    joined = values.join(' ');
   }
   return joined;
+}
+
+/**
+ * The distinct data-domain subjects a node's capabilities touch — "which systems touch
+ * trade-flows?", answerable from a snapshot alone.
+ */
+export function subjectsOf(entry, maximum = 480) {
+  return vocabularyOf(entry, 'data_domain', maximum);
+}
+
+/**
+ * The distinct surfaces a node's capabilities are reached through — "which systems
+ * expose an MCP tool?", the other half of the same question.
+ *
+ * A surface is a kind, not an address: `mcp_tool`, `http_get`, `cli`. It says how a
+ * system is spoken to, never where it lives, so it crosses the boundary that a URL,
+ * a port or an internal hostname would not.
+ */
+export function surfacesOf(entry, maximum = 240) {
+  return vocabularyOf(entry, 'surface', maximum);
 }
 
 export function toRegisterCommand(entry, expectedRevision = null, actorId = 'seed:ecosystem-catalog', submittedAt = NOW) {

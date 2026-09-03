@@ -138,3 +138,28 @@ describe('the sample snapshot states where every node sits under the collection 
     expect(refused.length).toBeGreaterThan(serving.length * 5);
   });
 });
+
+describe('the closed vocabularies reach the snapshot and are searchable', () => {
+  it('gives every node the surfaces its capabilities are reached through', () => {
+    for (const n of sample.nodes) expect(typeof n.metadata.surfaces).toBe('string');
+    const all = new Set(sample.nodes.flatMap((n) => String(n.metadata.surfaces).split(' ')).filter(Boolean));
+    // All nineteen, so the vocabulary is answerable from a snapshot rather than partly.
+    expect(all.size).toBe(19);
+  });
+
+  it('says how a node is reached and never where it lives', () => {
+    // A surface is a kind drawn from a closed vocabulary — `http`, `mcp`, `cli` — and
+    // never a locator. `http` is a legal surface; `http://payload:3000` would be a
+    // hostname and a port crossing a boundary the plane exists to hold, so the check is
+    // membership in the vocabulary rather than a guess at what a locator looks like.
+    const vocabulary = new Set(
+      Object.keys(JSON.parse(readFileSync(path.resolve(__dirname, '../../ecosystem/surfaces.json'), 'utf8')).surfaces),
+    );
+    for (const n of sample.nodes) {
+      for (const surface of String(n.metadata.surfaces).split(' ').filter(Boolean)) {
+        expect(vocabulary.has(surface)).toBe(true);
+        expect(surface).toMatch(/^[a-z][a-z0-9_-]*$/);
+      }
+    }
+  });
+});

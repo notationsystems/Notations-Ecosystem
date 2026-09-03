@@ -18,7 +18,11 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
   const collection = collectionStanding(node);
   // Per-capability annotations stay in the catalog; the set a node touches crosses, so
   // "which systems touch trade-flows?" is answerable from a snapshot alone.
-  const subjects = typeof md.data_domains === 'string' && md.data_domains.trim() ? md.data_domains.trim().split(/\s+/) : [];
+  const words = (value: unknown): string[] => (typeof value === 'string' && value.trim() ? value.trim().split(/\s+/) : []);
+  const subjects = words(md.data_domains);
+  // How the node is spoken to, never where it lives: a surface is `mcp_tool` or `cli`,
+  // not a URL, a port or an internal hostname.
+  const surfaces = words(md.surfaces);
   return (
     <aside className="inspector">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8 }}>
@@ -78,6 +82,14 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
           <div className="sub" style={{ marginBottom: 4 }}>data domains · {subjects.length}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {subjects.map((subject) => <span className="badge" key={subject}>{subject}</span>)}
+          </div>
+        </div>
+      )}
+      {surfaces.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div className="sub" style={{ marginBottom: 4 }} title="How this node's capabilities are reached. A kind, not an address.">surfaces · {surfaces.length}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {surfaces.map((surface) => <span className="badge" key={surface}>{surface}</span>)}
           </div>
         </div>
       )}

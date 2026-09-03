@@ -28,7 +28,12 @@ export function applyFilters(snapshot: Snapshot, f: Filters): Snapshot {
     if (f.domains.size && !f.domains.has(domain)) return false;
     if (f.locatedOnly && !n.location) return false;
     if (q) {
-      const hay = `${n.nodeId} ${n.name} ${n.description} ${n.capabilities.map((c) => `${c.capabilityId} ${c.label}`).join(' ')}`.toLowerCase();
+      // The two closed vocabularies are in the haystack deliberately. They exist so the
+      // estate can be asked "which systems touch sanctions?" and "which are reachable
+      // over MCP?"; a vocabulary nothing can be searched by is a vocabulary that only
+      // validates.
+      const vocabulary = `${typeof n.metadata.data_domains === 'string' ? n.metadata.data_domains : ''} ${typeof n.metadata.surfaces === 'string' ? n.metadata.surfaces : ''}`;
+      const hay = `${n.nodeId} ${n.name} ${n.description} ${vocabulary} ${n.capabilities.map((c) => `${c.capabilityId} ${c.label}`).join(' ')}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
