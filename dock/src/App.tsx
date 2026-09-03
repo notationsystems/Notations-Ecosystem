@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useControlPlane } from './api/useControlPlane';
 import { ConnectionPanel } from './components/ConnectionPanel';
 import { Inspector } from './components/Inspector';
+import { ApiLens } from './lenses/ApiLens';
 import { ConsoleLens } from './lenses/ConsoleLens';
 import { CorpusLens } from './lenses/CorpusLens';
 import { GraphLens } from './lenses/GraphLens';
@@ -14,9 +15,9 @@ import { applyFilters, type Filters } from './lenses/types';
 import { domainSummary, snapshotStats } from './model/graph';
 import { KIND_COLOR, KIND_LABEL, NODE_KINDS, RELATION_COLOR, RELATION_KINDS, RELATION_LABEL, type NodeKind, type RelationKind } from './model/types';
 
-type LensId = 'operator' | 'security' | 'corpus' | 'map' | 'graph' | 'ledger' | 'timeline' | 'console';
+type LensId = 'operator' | 'security' | 'corpus' | 'api' | 'map' | 'graph' | 'ledger' | 'timeline' | 'console';
 const LENSES: Array<{ id: LensId; label: string }> = [
-  { id: 'operator', label: 'Operator' }, { id: 'security', label: 'Security' }, { id: 'corpus', label: 'Corpus' }, { id: 'map', label: 'Map' }, { id: 'graph', label: 'Graph' }, { id: 'ledger', label: 'Ledger' }, { id: 'timeline', label: 'Timeline' }, { id: 'console', label: 'Console' },
+  { id: 'operator', label: 'Operator' }, { id: 'security', label: 'Security' }, { id: 'corpus', label: 'Corpus' }, { id: 'api', label: 'Api' }, { id: 'map', label: 'Map' }, { id: 'graph', label: 'Graph' }, { id: 'ledger', label: 'Ledger' }, { id: 'timeline', label: 'Timeline' }, { id: 'console', label: 'Console' },
 ];
 
 export interface ConsoleIntent { action: 'request_capability' | 'record_observation' | 'resolve_coordination'; nodeId?: string; capabilityId?: string; coordinationId?: string }
@@ -75,6 +76,7 @@ export function App() {
             case 'operator': return <OperatorLens {...props} onResolve={(coordinationId) => goConsole({ action: 'resolve_coordination', coordinationId })} onObserve={(nodeId) => goConsole({ action: 'record_observation', nodeId })} />;
             case 'security': return <SecurityLens {...props} />;
             case 'corpus': return <CorpusLens {...props} />;
+            case 'api': return <ApiLens {...props} />;
             case 'map': return <MapLens {...props} />;
             case 'graph': return <GraphLens {...props} />;
             case 'ledger': return <LedgerLens {...props} onResolve={(coordinationId) => goConsole({ action: 'resolve_coordination', coordinationId })} />;

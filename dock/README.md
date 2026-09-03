@@ -8,6 +8,7 @@ submits `POST /v1/commands` with the snapshot revision, and renders:
 | Operator | healthy · stale · needs approval · blocked, with the observed → proposed → approved → dispatched strip |
 | Security | the constellation: 11 posture dimensions, weakest-link state, coverage and severity counts, and every node that has not been attested |
 | Corpus | corpus standing across the estate: role, grade, coverage, the invariants each node declares it fails and the ones it has not assessed ([docs/CORPUS.md](../docs/CORPUS.md)), and beside them where each node sits under the estate's collection policy ([docs/COLLECTION_POLICY.md](../docs/COLLECTION_POLICY.md)) |
+| Api | the four planes of [docs/API_PLANES.md](../docs/API_PLANES.md): which systems are served on Tenant Read, Verification, Governance and Operator, how many of their capabilities write, how many are off every plane, and the count that must stay zero — writes reachable on a public plane |
 | Map | Kepler.gl: located nodes, relation arcs, and the nine Payload layers — 562 rows, each showing its own provenance and, where the rows carry it, when the value became knowable |
 | Graph | force-directed capability graph, ring = health, size = capabilities |
 | Ledger | every coordination record; approved ones read *approved · not dispatched* |

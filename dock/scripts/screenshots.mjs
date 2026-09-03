@@ -12,7 +12,7 @@ const base = process.argv[2] ?? 'http://127.0.0.1:4173';
 await mkdir(out, { recursive: true });
 
 /** Every lens, in rail order. The list the test in dock/test also reads. */
-export const LENSES = ['Operator', 'Security', 'Corpus', 'Map', 'Graph', 'Ledger', 'Timeline', 'Console'];
+export const LENSES = ['Operator', 'Security', 'Corpus', 'Api', 'Map', 'Graph', 'Ledger', 'Timeline', 'Console'];
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];

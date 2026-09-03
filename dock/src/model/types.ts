@@ -428,3 +428,59 @@ export const POSTURE_DIMENSION_ORDER: PostureDimension[] = [
   'identity', 'authorization', 'encryption_in_transit', 'encryption_at_rest', 'key_lifecycle',
   'dependency_risk', 'exposure', 'audit_integrity', 'backup', 'incident', 'control_plane_integrity',
 ];
+
+/** The four planes of docs/API_PLANES.md, in the order that document states them. */
+export type ApiPlane = 'tenant_read' | 'verification' | 'governance' | 'internal_operator';
+
+export const API_PLANE_ORDER: ApiPlane[] = ['tenant_read', 'verification', 'governance', 'internal_operator'];
+
+export const API_PLANE_LABEL: Record<ApiPlane, string> = {
+  tenant_read: 'Tenant Read',
+  verification: 'Verification',
+  governance: 'Governance',
+  internal_operator: 'Operator',
+};
+
+export const API_PLANE_BLURB: Record<ApiPlane, string> = {
+  tenant_read: 'Corpus, projection, search, releases, timelines, proof navigation. Tenant-bound, and returns references rather than unrestricted data.',
+  verification: 'Any supported VerificationEnvelope, closure, checks, Warrant Graph. Answers whether something verifies, and against what root.',
+  governance: 'Coverage, source-policy windows, retention, readiness, preflight, replay, challenges. A readiness answer is never an authorization.',
+  internal_operator: 'Signed federation packets and controlled operational actions. Never public canonical CRUD.',
+};
+
+/** Which two planes anyone may call. The rule "never public canonical CRUD" is about these. */
+export const API_PLANE_PUBLIC: Record<ApiPlane, boolean> = {
+  tenant_read: true,
+  verification: true,
+  governance: false,
+  internal_operator: false,
+};
+
+/**
+ * A node's place in the API architecture, from the metadata the seed derives.
+ *
+ * The per-capability family stays in the catalog: the plane is the fact an operator acts
+ * on, and "which systems can write at all?" should be answerable from a snapshot alone.
+ */
+export interface ApiStanding {
+  planes: ApiPlane[];
+  /** Capabilities whose role mutates. Every one passes a governed gate or it is a defect. */
+  writes: number;
+  /** On no plane: actions a person triggers — key rotation, activation, a runtime switch. */
+  operatorOnly: number;
+  /** Writes the architecture would not serve, declared rather than hidden. */
+  deviations: number;
+}
+
+export function apiStanding(node: SnapshotNode): ApiStanding | null {
+  const raw = node.metadata.api_planes;
+  const planes = typeof raw === 'string' && raw.trim() ? raw.trim().split(/\s+/) : [];
+  const number = (value: unknown): number => (typeof value === 'number' ? value : 0);
+  if (!planes.length && !number(node.metadata.api_operator_only)) return null;
+  return {
+    planes: planes.filter((p): p is ApiPlane => (API_PLANE_ORDER as string[]).includes(p)),
+    writes: number(node.metadata.api_writes),
+    operatorOnly: number(node.metadata.api_operator_only),
+    deviations: number(node.metadata.api_deviations),
+  };
+}
