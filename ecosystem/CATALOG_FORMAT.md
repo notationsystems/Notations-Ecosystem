@@ -79,7 +79,7 @@ runs the real validator over every file.
 
 ### Rules (enforced)
 
-- `nodeId`, `capabilityId`, `relationId`: `^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$`. Use kebab-case node ids and dotted capability ids (`world.read`, `sdk.ingest`).
+- `nodeId`, `capabilityId`, `relationId`: `^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$`. Use kebab-case node ids and dotted capability ids (`economy.state.read`, `sdk.ingest` — both real, from `payload-terminal.json`).
 - `name` ≤ 160 chars; `description` 1–1200 chars; capability `label` ≤ 120; capability `description` ≤ 600.
 - `kind` ∈ `api` · `world_model` · `information_library` · `reasoning_engine` · `visual_dock` · `operator_surface`.
 - 1–100 capabilities, unique ids. `mode` ∈ `observe` · `propose` · `execute`; `approval` ∈ `automatic` · `operator`; **`execute` requires `operator`**.

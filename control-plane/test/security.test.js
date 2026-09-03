@@ -93,7 +93,12 @@ async function harness(overrides = {}) {
   return { directory, tokens, config, runtime, server, base, call, command, revision, node, securityLog, close };
 }
 
-const OBSERVE = [{ capabilityId: 'world.read', label: 'Read world state', description: 'Returns a published world projection.', mode: 'observe', approval: 'automatic' }];
+// Fixtures, not the estate. The control plane knows no catalog: `src/` names no node of
+// the Notations Universe, and these ids are here because a test needs *a* node id, one of
+// them shaped like `payload-*` because a prefix scope has to be tested against something.
+// A capability id here is deliberately not one any catalog node declares, so nothing in
+// this repository can be read as the plane having an opinion about what Payload can do.
+const OBSERVE = [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Returns a published projection.', mode: 'observe', approval: 'automatic' }];
 const EXECUTE = [{ capabilityId: 'scenario.run', label: 'Run scenario', description: 'Runs an approved scenario.', mode: 'execute', approval: 'operator' }];
 
 test('SEC-001 no unauthenticated actor may read state or invoke a transition', async () => {
@@ -1010,7 +1015,7 @@ test('SEC-037 material with no legitimate reading is refused in every field, not
 
     // Classes that do have a legitimate reading elsewhere stay scoped to posture: a
     // repository reference is exactly what node metadata is for.
-    const ordinary = await register('payload-terminal', 'Payload terminal serves the published world projection.', { domain: 'platform', repo: 'notationsystems/payload-terminal' });
+    const ordinary = await register('payload-terminal', 'A fixture node that serves a published projection.', { domain: 'platform', repo: 'notationsystems/payload-terminal' });
     assert.equal(ordinary.status, 201);
   } finally {
     await h.close();
@@ -1074,7 +1079,7 @@ test('SEC-010 the identity space is reachable from the contract, and is still no
     // terminal stage — the one stage this plane actually writes — is addressable.
     const requested = await h.command(h.tokens['agent:planner'], {
       actorId: 'agent:planner', action: 'request_capability', coordinationId: 'coord:uri-1',
-      requesterNodeId: 'payload-terminal', targetNodeId: 'payload-terminal', capabilityId: 'world.read',
+      requesterNodeId: 'payload-terminal', targetNodeId: 'payload-terminal', capabilityId: 'example.read',
       requestedMode: 'observe', purpose: 'Confirm a decision is addressable in the identity space.',
     });
     assert.equal(requested.status, 201);

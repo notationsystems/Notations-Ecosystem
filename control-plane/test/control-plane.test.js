@@ -14,6 +14,8 @@ async function fixture() {
   return { directory, plane };
 }
 
+// Fixtures, not the estate — see the note in security.test.js. The plane's `src/` names
+// no node of the Notations Universe, and neither do these ids beyond needing to be ids.
 function node(nodeId, kind, capabilities) {
   return {
     requestId: `register-${nodeId}`,
@@ -33,7 +35,7 @@ async function submit(plane, command) {
 test('records the graph, health, and event deltas for a visual dock', async () => {
   const { directory, plane } = await fixture();
   try {
-    await submit(plane, node('payload-terminal', 'api', [{ capabilityId: 'world.read', label: 'Read evidence-backed world state', description: 'Returns a published world projection.', mode: 'observe', approval: 'automatic' }]));
+    await submit(plane, node('payload-terminal', 'api', [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Returns a published projection.', mode: 'observe', approval: 'automatic' }]));
     await submit(plane, node('kepler-dock', 'visual_dock', [{ capabilityId: 'graph.observe', label: 'Observe coordination graph', description: 'Renders graph state without dispatching a command.', mode: 'observe', approval: 'automatic' }]));
     await submit(plane, { requestId: 'payload-to-dock', actorId: 'operator:local', submittedAt: NOW, action: 'declare_relation', relationId: 'payload-supplies-dock', sourceNodeId: 'payload-terminal', targetNodeId: 'kepler-dock', kind: 'visualizes', description: 'The dock renders Payload state and capability health.' });
     const observation = await submit(plane, { requestId: 'payload-health', actorId: 'monitor:payload', submittedAt: NOW, action: 'record_observation', nodeId: 'payload-terminal', health: 'healthy', observedAt: NOW, source: 'health_check', detail: 'Published query surface is responding.' });
@@ -68,13 +70,13 @@ test('rejects credential-shaped metadata and stale writers', async () => {
   const { directory, plane } = await fixture();
   try {
     await assert.rejects(
-      plane.command({ ...node('unsafe-node', 'api', [{ capabilityId: 'world.read', label: 'Read world state', description: 'Reads a world projection.', mode: 'observe', approval: 'automatic' }]), node: { ...node('unsafe-node', 'api', [{ capabilityId: 'world.read', label: 'Read world state', description: 'Reads a world projection.', mode: 'observe', approval: 'automatic' }]).node, metadata: { api_token: 'must-not-persist' } } }),
+      plane.command({ ...node('unsafe-node', 'api', [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Reads a published projection.', mode: 'observe', approval: 'automatic' }]), node: { ...node('unsafe-node', 'api', [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Reads a published projection.', mode: 'observe', approval: 'automatic' }]).node, metadata: { api_token: 'must-not-persist' } } }),
       error => error instanceof ControlPlaneError && error.code === 'CONTROL_PLANE_COMMAND_INVALID',
     );
 
-    const first = await submit(plane, node('payload-terminal', 'api', [{ capabilityId: 'world.read', label: 'Read world state', description: 'Reads a world projection.', mode: 'observe', approval: 'automatic' }]));
+    const first = await submit(plane, node('payload-terminal', 'api', [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Reads a published projection.', mode: 'observe', approval: 'automatic' }]));
     await assert.rejects(
-      plane.command({ ...node('another-node', 'api', [{ capabilityId: 'world.read', label: 'Read world state', description: 'Reads a world projection.', mode: 'observe', approval: 'automatic' }]), expectedRevision: null }),
+      plane.command({ ...node('another-node', 'api', [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Reads a published projection.', mode: 'observe', approval: 'automatic' }]), expectedRevision: null }),
       error => error instanceof ControlPlaneError && error.code === 'REVISION_CONFLICT',
     );
     assert.ok(first.snapshot.revision);
