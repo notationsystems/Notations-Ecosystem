@@ -201,7 +201,10 @@ export class HashJournal {
       const records = [...await this.read()];
       const duplicate = records.find(record => record.event.eventId === event.eventId);
       if (duplicate) {
-        if (JSON.stringify(canonicalize(duplicate.event)) === JSON.stringify(canonicalize(event))) return { outcome: 'duplicate', record: duplicate };
+        // Server receipt time is intentionally not part of a command hash. A
+        // network retry may arrive later, but it must still resolve to the
+        // original immutable event rather than become a false conflict.
+        if (duplicate.event.commandHash === event.commandHash) return { outcome: 'duplicate', record: duplicate };
         throw new ControlPlaneError(409, 'EVENT_ID_CONFLICT', `Event id ${event.eventId} already identifies different content.`, 'Retry the original command or choose a new request id.');
       }
       const tail = records.length ? records[records.length - 1].recordHash : null;

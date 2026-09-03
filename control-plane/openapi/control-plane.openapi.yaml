@@ -401,6 +401,9 @@ components:
         - JOURNAL_ROLLBACK
         - CONTROL_PLANE_INTERNAL_ERROR
         - API_CONTRACT_VIOLATION
+        - SECURITY_ATTESTATION_INVALID
+        - SECURITY_ATTESTERS_NOT_CONFIGURED
+        - SECURITY_ATTESTER_UNTRUSTED
     SnapshotNode:
       allOf:
         - $ref: '#/components/schemas/Node'
