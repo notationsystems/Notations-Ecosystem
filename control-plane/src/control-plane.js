@@ -1,3 +1,4 @@
+import { dirname, join, resolve } from 'node:path';
 import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
 import { parseCommand } from './validation.js';
@@ -7,6 +8,16 @@ import { LOCAL_PRINCIPAL } from './security/identity.js';
 import { permissionForAction, requireActorBinding, requireNodeBinding, requirePermission, requireSeparationOfDuties } from './security/policy.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
+
+/**
+ * Where a journal's signing key lives when nothing says otherwise: beside the journal.
+ *
+ * Exported so the server derives the same default rather than keeping a second copy of
+ * the rule — one of them would eventually be changed alone.
+ */
+export function defaultKeystorePath(journalPath) {
+  return join(dirname(resolve(journalPath)), 'keystore.json');
+}
 
 /**
  * How far in the past a command may have been signed and still be accepted.
@@ -270,6 +281,17 @@ export class ControlPlane {
    * happened to be the writer, and "is this history signed?" would have no useful
    * answer. This makes the signing configuration a property of the journal rather
    * than of whoever opened it.
+   *
+   * The key store follows the journal for the same reason, and it is not a
+   * convenience. `data/keystore.json` resolved against the working directory means a
+   * seed run from the repository root signs `control-plane/data/control-plane.jsonl`
+   * with a key written to `<root>/data/keystore.json` — after which the server, started
+   * from `control-plane/`, creates its own key, cannot find the one that signed the
+   * chain, and refuses every read with `JOURNAL_CORRUPT`. Following the documented
+   * commands was enough to produce it. The rollback anchor already lives beside the
+   * journal; a signing key that does not is a key separated from the only history it
+   * can verify, and a `CRYPTOGRAPHIC_SECRET` written wherever the operator happened to
+   * be standing.
    */
   static async fromEnvironment(journalPath, environment = process.env, clock = undefined) {
     const [{ KeyStore }, { KeyEncryptionKey }] = await Promise.all([
@@ -280,7 +302,7 @@ export class ControlPlane {
     let keyStore = null;
     if (enabled) {
       const kek = environment.CONTROL_PLANE_KEK ? KeyEncryptionKey.fromBase64('kek-primary', environment.CONTROL_PLANE_KEK) : null;
-      keyStore = await KeyStore.load({ filePath: environment.CONTROL_PLANE_KEYSTORE || 'data/keystore.json', kek, create: true });
+      keyStore = await KeyStore.load({ filePath: environment.CONTROL_PLANE_KEYSTORE || defaultKeystorePath(journalPath), kek, create: true });
     }
     return ControlPlane.fromPath(journalPath, clock, {
       keyStore,

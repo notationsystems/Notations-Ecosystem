@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ControlPlane } from './control-plane.js';
+import { ControlPlane, defaultKeystorePath } from './control-plane.js';
 import { ControlPlaneError } from './errors.js';
 import { HashJournal } from './journal.js';
 import { SecurityLog, SECURITY_EVENTS, sourceKey } from './security/audit.js';
@@ -36,7 +36,7 @@ export function readConfig(env = process.env) {
     principalsFile: env.CONTROL_PLANE_PRINCIPALS_FILE || null,
     tls: env.CONTROL_PLANE_TLS_CERT && env.CONTROL_PLANE_TLS_KEY ? { cert: env.CONTROL_PLANE_TLS_CERT, key: env.CONTROL_PLANE_TLS_KEY } : null,
     trustProxyTls: boolean(env.CONTROL_PLANE_TRUST_PROXY_TLS),
-    keystorePath: env.CONTROL_PLANE_KEYSTORE || resolve(process.cwd(), 'data/keystore.json'),
+    keystorePath: env.CONTROL_PLANE_KEYSTORE || defaultKeystorePath(resolve(process.cwd(), env.CONTROL_PLANE_JOURNAL_PATH || 'data/control-plane.jsonl')),
     kek: env.CONTROL_PLANE_KEK || null,
     signing: boolean(env.CONTROL_PLANE_SIGNING, true),
     requireSignatures: boolean(env.CONTROL_PLANE_REQUIRE_SIGNATURES),

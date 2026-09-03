@@ -17,6 +17,7 @@
 import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
+import { defaultKeystorePath } from '../control-plane.js';
 import { issueCredential, validatePrincipalRecord } from './identity.js';
 import { ROLES } from './policy.js';
 import { isKnown } from './table.js';
@@ -69,7 +70,11 @@ async function saveRegistry(path, registry) {
 }
 
 const registryPath = () => resolve(process.env.CONTROL_PLANE_PRINCIPALS_FILE || 'data/principals.json');
-const keystorePath = () => resolve(process.env.CONTROL_PLANE_KEYSTORE || 'data/keystore.json');
+// The same rule the server and the offline tools use: absent an explicit setting, the
+// signing key lives beside the journal it signs, not beside whoever ran the command.
+const keystorePath = () => (process.env.CONTROL_PLANE_KEYSTORE
+  ? resolve(process.env.CONTROL_PLANE_KEYSTORE)
+  : defaultKeystorePath(resolve(process.env.CONTROL_PLANE_JOURNAL_PATH || 'data/control-plane.jsonl')));
 const kek = () => (process.env.CONTROL_PLANE_KEK ? KeyEncryptionKey.fromBase64('kek-primary', process.env.CONTROL_PLANE_KEK) : null);
 
 async function cmdIssue(args) {

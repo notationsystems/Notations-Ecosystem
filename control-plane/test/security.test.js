@@ -17,7 +17,7 @@ import test from 'node:test';
 import { createControlPlaneServer, createRuntime, readConfig, assertTransportPolicy } from '../src/server.js';
 import { SecurityLog } from '../src/security/audit.js';
 import { issueCredential } from '../src/security/identity.js';
-import { ControlPlane } from '../src/control-plane.js';
+import { ControlPlane, defaultKeystorePath } from '../src/control-plane.js';
 import { KeyStore } from '../src/security/crypto/signing.js';
 import { KeyEncryptionKey, open, seal, rewrap } from '../src/security/crypto/envelope.js';
 import { parseUri, assertClass, isAuthorityIdentity, isInformationIdentity, nodeUri, resolve as resolveUri, uri } from '../src/identity/uri.js';
@@ -1260,4 +1260,46 @@ test('SEC-PRODUCER the authorization signal measures something other than itself
   const source = await readFile(new URL('../src/validation.js', import.meta.url), 'utf8');
   const cases = [...source.matchAll(/^ {4}case '([a-z_]+)':/gm)].map(m => m[1]).sort();
   assert.deepEqual(cases, [...parsed].sort());
+});
+
+test('SEC-042 a journal\'s signing key lives beside the journal, not beside whoever opened it', async () => {
+  // How this was found: seeding from the repository root and then starting the server
+  // from control-plane/ produced JOURNAL_CORRUPT on every read. The journal path was
+  // explicit; the key store path was `data/keystore.json` resolved against the working
+  // directory, so the seed signed the chain with a key it wrote to <root>/data and the
+  // server created a different key in control-plane/data and could verify nothing.
+  // Following the documented commands was enough to reach the plane's most severe state.
+  const root = await mkdtemp(join(tmpdir(), 'notations-keystore-'));
+  const journal = join(root, 'plane', 'control-plane.jsonl');
+  const elsewhere = await mkdtemp(join(tmpdir(), 'notations-cwd-'));
+  const previous = process.cwd();
+
+  try {
+    // The key store is derived from the journal, so where the writer stands is irrelevant.
+    assert.equal(defaultKeystorePath(journal), join(root, 'plane', 'keystore.json'));
+
+    process.chdir(elsewhere);
+    const seeded = await ControlPlane.fromEnvironment(journal, {});
+    await seeded.command({
+      requestId: 'register:keystore-fixture', actorId: 'operator:local', submittedAt: new Date().toISOString(), expectedRevision: null,
+      action: 'register_node',
+      node: { nodeId: 'keystore-fixture', name: 'Fixture', kind: 'api', description: 'A fixture node.', capabilities: OBSERVE, metadata: {}, location: null },
+    });
+
+    // Nothing was written where the writer happened to be standing. A key store is
+    // CRYPTOGRAPHIC_SECRET material; it does not get scattered by a chdir.
+    assert.deepEqual((await readdir(elsewhere)).filter(f => f !== 'node_modules'), []);
+    assert.ok((await readdir(join(root, 'plane'))).includes('keystore.json'));
+
+    // A second reader, opened from a third directory, verifies the chain the first wrote.
+    process.chdir(root);
+    const reader = await ControlPlane.fromEnvironment(journal, {});
+    const snapshot = await reader.snapshot();
+    assert.equal(snapshot.nodes.length, 1);
+    assert.equal(snapshot.nodes[0].nodeId, 'keystore-fixture');
+  } finally {
+    process.chdir(previous);
+    await rm(root, { recursive: true, force: true });
+    await rm(elsewhere, { recursive: true, force: true });
+  }
 });

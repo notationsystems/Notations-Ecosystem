@@ -11,6 +11,11 @@
  *   node security/scan-secrets.mjs --staged        # what is about to be committed
  *   node security/scan-secrets.mjs path/to/file    # specific paths
  *
+ * A walk of the working tree also sees runtime state git is told to ignore — a signing
+ * key store, a credential registry. That material is real but cannot be committed, so it
+ * is reported as *held* and does not fail the run. Under `--staged` nothing is held:
+ * a staged file is on its way into history by definition.
+ *
  * Findings print the file, line and the rule that fired. The matched text is NOT
  * printed: a scanner that echoes secrets into CI logs has moved the exposure rather
  * than removed it.
@@ -128,24 +133,56 @@ export async function scan(targets) {
   return findings;
 }
 
+/**
+ * The paths git is told to ignore, among the ones given.
+ *
+ * The invariant is that no secret may be *committed*, and a walk of the working tree
+ * also sees what an operator's own runs leave behind. Running the plane once writes a
+ * plaintext Ed25519 signing key to `control-plane/data/keystore.json` — real key
+ * material, correctly ignored, and impossible to commit. Reporting it as a violation
+ * teaches people that a red scan is normal, which is the state in which a real finding
+ * goes unread.
+ *
+ * It is not silently dropped either: an ignored file that carries credential material is
+ * still worth a line, because "ignored" is a claim about `.gitignore` today and the
+ * material is real. So it is reported as *held*, separately from what is committable,
+ * and it does not fail the run.
+ */
+function ignoredPaths(files) {
+  if (!files.length) return new Set();
+  try {
+    const output = execFileSync('git', ['check-ignore', '--stdin'], { cwd: ROOT, encoding: 'utf8', input: files.join('\n') });
+    return new Set(output.split('\n').filter(Boolean).map(file => path.resolve(ROOT, file)));
+  } catch (error) {
+    // `git check-ignore` exits 1 when nothing matched, which is not an error here.
+    if (error.status === 1) return new Set(String(error.stdout ?? '').split('\n').filter(Boolean).map(file => path.resolve(ROOT, file)));
+    return new Set();
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   let targets;
+  // A staged file is by definition on its way into history: nothing there is exempt.
+  let ignored = new Set();
   if (args.includes('--staged')) targets = stagedFiles();
   else if (args.length) targets = args.map(file => path.resolve(file));
   else {
     targets = [];
     for await (const file of walk(ROOT)) targets.push(file);
   }
+  if (!args.includes('--staged')) ignored = ignoredPaths(targets);
 
   const findings = await scan(targets);
-  const errors = findings.filter(finding => !finding.warning && !finding.allowed);
-  const warnings = findings.filter(finding => finding.warning && !finding.allowed);
+  const held = findings.filter(finding => !finding.allowed && ignored.has(path.resolve(finding.file)));
+  const errors = findings.filter(finding => !finding.warning && !finding.allowed && !ignored.has(path.resolve(finding.file)));
+  const warnings = findings.filter(finding => finding.warning && !finding.allowed && !ignored.has(path.resolve(finding.file)));
   const allowed = findings.filter(finding => finding.allowed);
 
+  for (const finding of held) console.log(`held  ${path.relative(ROOT, finding.file)}:${finding.line}  ${finding.rule}  git-ignored runtime state: real material, not committable`);
   for (const finding of warnings) console.warn(`warn  ${path.relative(ROOT, finding.file)}:${finding.line}  ${finding.rule}  ${finding.detail}`);
   for (const finding of errors) console.error(`error ${path.relative(ROOT, finding.file)}:${finding.line}  ${finding.rule}  ${finding.detail}`);
-  console.log(`scanned ${targets.length} file(s): ${errors.length} finding(s), ${warnings.length} warning(s), ${allowed.length} exempted in place`);
+  console.log(`scanned ${targets.length} file(s): ${errors.length} finding(s), ${warnings.length} warning(s), ${held.length} held out of source control, ${allowed.length} exempted in place`);
   if (errors.length) {
     console.error('\nA secret must never be committed. Rotate anything that reached the repository, then remove it from the working tree and from history.');
     process.exit(1);

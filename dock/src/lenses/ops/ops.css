@@ -20,6 +20,9 @@
 .ledger table.grid .badge[class*='status-'] { white-space: normal; line-height: 1.35; padding: 2px 7px; }
 .ledger td.mono, .ledger .mono { font-size: 11.5px; }
 .ledger td.cid { overflow-wrap: anywhere; }
+/* A dotted capability id has no spaces, and the table is fixed-layout: without this
+   `freight.operations.command` runs straight over the purpose beside it. */
+.ledger .cap { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
 .ledger .pair { display: flex; flex-direction: column; gap: 1px; align-items: flex-start; }
 .ledger .pair .arrow { color: var(--muted); font-size: 11px; }
 .ledger .ids { color: var(--muted); font-size: 10.5px; margin-top: 3px; overflow-wrap: break-word; }

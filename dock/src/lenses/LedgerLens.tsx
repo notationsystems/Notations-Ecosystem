@@ -82,7 +82,7 @@ export function LedgerLens({ snapshot, onSelect, onResolve }: LedgerLensProps) {
                     <div className="ids mono">{c.requesterNodeId} → {c.targetNodeId}</div>
                   </td>
                   <td>
-                    <span className="mono" style={{ color: 'var(--amber)' }}>{c.capabilityId}</span>
+                    <span className="mono cap" style={{ color: 'var(--amber)' }}>{c.capabilityId}</span>
                     <div style={{ marginTop: 3 }}><span className={`badge ${c.requestedMode}`}>{c.requestedMode}</span></div>
                   </td>
                   <td className="purpose">{c.purpose}</td>

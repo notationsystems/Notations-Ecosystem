@@ -19,7 +19,9 @@ npm install
 npm run dev        # http://localhost:5173, proxies /cp → http://127.0.0.1:8787
 npm run build      # typecheck + vite build (dist/)
 npm test           # vitest over the model, commands, client and layer manifest
-npm run screenshots # Playwright screenshots of every lens into docs/media/
+npm run screenshots # Playwright screenshots of every lens and detail view into docs/media/
+                   # CONTROL_PLANE_TOKEN=… also captures the ledger against a live plane;
+                   # the run fails if any image in docs/media is one it cannot reproduce
 ```
 
 Connection: enter the bearer token in the rail. It is held **in memory for the page only** —

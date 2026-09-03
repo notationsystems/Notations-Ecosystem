@@ -49,6 +49,7 @@ Run them with `cd control-plane && npm test`.
 | SEC-039 | Every variable the plane reads is documented, and nothing else is. | `.env.example`, checked against the source tree. | `SEC-CONFIG every variable the plane reads is documented…` |
 | SEC-040 | The evidence producer holds itself to the boundary it claims, not a subset of it. | `assertProducerOutputIsEvidence` runs the server's `parseSignals`. | `SEC-PRODUCER the producer holds itself…` |
 | SEC-041 | Every action the parser accepts requires a named permission. | `SUPPORTED_ACTIONS` compared against `ACTION_PERMISSIONS`, in the producer and in a test. | `SEC-PRODUCER the authorization signal measures something other than itself` |
+| SEC-042 | A journal's signing key lives beside the journal it signs, never beside whoever opened it. | `defaultKeystorePath(journalPath)` in `control-plane.js`, used by the server, the offline tools and the key CLI alike. | `SEC-042 a journal's signing key lives beside the journal…` |
 
 ## Recovery
 
