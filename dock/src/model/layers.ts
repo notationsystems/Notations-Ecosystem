@@ -59,7 +59,8 @@ export function rowsToDataset(id: string, label: string, rows: Row[]): KeplerDat
   return { info: { id, label }, data: { fields, rows: data } };
 }
 
-export const datasetIdFor = (layer: LayerEntry) => `payload-${layer.id}`;
+/** Kepler dataset id, namespaced by adapter so two ecosystems may share a layer id. */
+export const datasetIdFor = (layer: LayerEntry, adapter = 'payload') => `${adapter}-${layer.id}`;
 
 const GROUP_PALETTE: Record<string, string[]> = {
   facilities: ['#F5B942', '#E8A33D', '#D98E38', '#C97A33', '#B8672F', '#A6552A'],
@@ -70,15 +71,15 @@ const GROUP_PALETTE: Record<string, string[]> = {
 };
 
 /** Kepler.gl v1 layer config for a manifest entry. */
-export function layerConfig(layer: LayerEntry, visible = layer.default_visible): Record<string, unknown> {
-  const dataId = datasetIdFor(layer);
+export function layerConfig(layer: LayerEntry, visible = layer.default_visible, adapter = 'payload'): Record<string, unknown> {
+  const dataId = datasetIdFor(layer, adapter);
   const colors = GROUP_PALETTE[layer.group] ?? GROUP_PALETTE.facilities!;
   const colorRange = { name: `payload-${layer.group}`, type: 'custom', category: 'Custom', colors };
   const k = layer.kepler;
   const base = { dataId, label: layer.name, isVisible: visible, columns: k.columns };
   if (k.type === 'point') {
     return {
-      id: `layer-${layer.id}`, type: 'point',
+      id: `layer-${adapter}-${layer.id}`, type: 'point',
       config: { ...base, color: [245, 185, 66], visConfig: { radius: 8, fixedRadius: false, opacity: 0.85, outline: true, thickness: 1.5, strokeColor: [8, 12, 20], radiusRange: k.radiusRange ?? [4, 20], colorRange },
         textLabel: k.label ? [{ field: { name: k.label, type: 'string' }, color: [230, 233, 239], size: 11, offset: [0, 14], anchor: 'middle', alignment: 'center' }] : [] },
       visualChannels: { colorField: k.colorField ?? null, colorScale: k.colorField?.type === 'string' ? 'ordinal' : 'quantile', sizeField: k.sizeField ?? null, sizeScale: 'sqrt' },
@@ -86,13 +87,13 @@ export function layerConfig(layer: LayerEntry, visible = layer.default_visible):
   }
   if (k.type === 'arc') {
     return {
-      id: `layer-${layer.id}`, type: 'arc',
+      id: `layer-${adapter}-${layer.id}`, type: 'arc',
       config: { ...base, color: [57, 198, 216], visConfig: { opacity: 0.7, thickness: 2, colorRange, sizeRange: [1, 8], targetColor: [245, 185, 66] } },
       visualChannels: { colorField: k.colorField ?? null, colorScale: k.colorField?.type === 'string' ? 'ordinal' : 'quantile', sizeField: k.sizeField ?? null, sizeScale: 'sqrt' },
     };
   }
   return {
-    id: `layer-${layer.id}`, type: 'geojson',
+    id: `layer-${adapter}-${layer.id}`, type: 'geojson',
     config: { ...base, color: [57, 198, 216], visConfig: { opacity: 0.8, strokeOpacity: 0.8, thickness: 1.5, strokeColor: null, colorRange, strokeColorRange: colorRange, radius: 6, sizeRange: [0.5, 4], stroked: true, filled: false, enable3d: false, wireframe: false },
       textLabel: [] },
     visualChannels: { colorField: null, colorScale: 'quantile', strokeColorField: k.colorField ?? null, strokeColorScale: k.colorField?.type === 'string' ? 'ordinal' : 'quantile', sizeField: k.sizeField ?? null, sizeScale: 'linear', heightField: null, heightScale: 'linear', radiusField: null, radiusScale: 'linear' },
@@ -103,22 +104,50 @@ export function tooltipFields(layer: LayerEntry): Array<{ name: string; format: 
   return (layer.kepler.tooltip ?? []).map((name) => ({ name, format: null }));
 }
 
-/** Fetch the manifest and every layer file from the dock's public dir. */
-export async function loadPayloadLayers(base = `${import.meta.env.BASE_URL}layers/payload/`): Promise<{ manifest: LayerManifest; datasets: Map<string, KeplerDataset>; errors: string[] }> {
-  const res = await fetch(`${base}layers.json`);
-  if (!res.ok) throw new Error(`layers.json missing at ${base}; run \`npm run sync\` in dock/`);
+/** One ecosystem adapter's manifest and its rows. */
+export interface AdapterLayers { adapter: string; manifest: LayerManifest; datasets: Map<string, KeplerDataset>; errors: string[] }
+
+/** Fetch one adapter's manifest and every layer file it names. */
+export async function loadAdapterLayers(adapter: string, base = `${import.meta.env.BASE_URL}layers/`): Promise<AdapterLayers> {
+  const dir = `${base}${adapter}/`;
+  const res = await fetch(`${dir}layers.json`);
+  if (!res.ok) throw new Error(`layers.json missing at ${dir}; run \`npm run sync\` in dock/`);
   const manifest = (await res.json()) as LayerManifest;
   const datasets = new Map<string, KeplerDataset>();
   const errors: string[] = [];
   await Promise.all(manifest.layers.map(async (layer) => {
     try {
-      const r = await fetch(`${base}${layer.file}`);
+      const r = await fetch(`${dir}${layer.file}`);
       if (!r.ok) throw new Error(`${layer.file}: HTTP ${r.status}`);
       const rows = (await r.json()) as Row[];
-      datasets.set(layer.id, rowsToDataset(datasetIdFor(layer), layer.name, rows));
-    } catch (e) { errors.push(`${layer.id}: ${(e as Error).message}`); }
+      // Namespaced by adapter, so two ecosystems may both have a `facilities` layer.
+      datasets.set(`${adapter}/${layer.id}`, rowsToDataset(datasetIdFor(layer, adapter), layer.name, rows));
+    } catch (e) { errors.push(`${adapter}/${layer.id}: ${(e as Error).message}`); }
   }));
-  return { manifest, datasets, errors };
+  return { adapter, manifest, datasets, errors };
+}
+
+/**
+ * Every ecosystem adapter that carries spatial layers.
+ *
+ * PAYLOAD_FIRST.md promises the pattern generalises — "the next ecosystem adds catalog
+ * nodes, an `ecosystem/<name>/` adapter and, if it has geography, a `layers.json`" — and
+ * the tooling named Payload in three places, so a second adapter would have been
+ * extracted, ignored by the sync and invisible here. The sync writes an index of what it
+ * found; this reads it.
+ */
+export async function loadEcosystemLayers(base = `${import.meta.env.BASE_URL}layers/`): Promise<AdapterLayers[]> {
+  const res = await fetch(`${base}index.json`);
+  if (!res.ok) throw new Error(`layers/index.json missing; run \`npm run sync\` in dock/`);
+  const { adapters = [] } = (await res.json()) as { adapters: Array<{ adapter: string }> };
+  const loaded = await Promise.all(adapters.map(async ({ adapter }) => {
+    try {
+      return await loadAdapterLayers(adapter, base);
+    } catch {
+      return null;
+    }
+  }));
+  return loaded.filter((a): a is AdapterLayers => a !== null);
 }
 
 /**
@@ -137,13 +166,16 @@ export async function loadPayloadLayers(base = `${import.meta.env.BASE_URL}layer
  */
 export function withPayloadLayers<T extends { datasets: KeplerDataset[]; config: { config: { visState: { layers: unknown[]; interactionConfig: { tooltip: { fieldsToShow: Record<string, unknown> } } } } } }>(
   bundle: T,
-  loaded: { manifest: LayerManifest; datasets: Map<string, KeplerDataset> } | null,
+  loaded: AdapterLayers | AdapterLayers[] | null,
 ): T & { payloadLayers: number; payloadRows: number } {
-  if (!loaded || !loaded.datasets.size) return { ...bundle, payloadLayers: 0, payloadRows: 0 };
-  const present = loaded.manifest.layers.filter((layer) => loaded.datasets.has(layer.id));
-  const datasets = present.map((layer) => loaded.datasets.get(layer.id)!);
+  const all = (loaded === null ? [] : Array.isArray(loaded) ? loaded : [loaded]).filter((a) => a.datasets.size);
+  if (!all.length) return { ...bundle, payloadLayers: 0, payloadRows: 0 };
+  const present = all.flatMap((a) => a.manifest.layers
+    .filter((layer) => a.datasets.has(`${a.adapter}/${layer.id}`))
+    .map((layer) => ({ adapter: a.adapter, layer, dataset: a.datasets.get(`${a.adapter}/${layer.id}`)! })));
+  const datasets = present.map((p) => p.dataset);
   const fieldsToShow: Record<string, unknown> = { ...bundle.config.config.visState.interactionConfig.tooltip.fieldsToShow };
-  for (const layer of present) fieldsToShow[datasetIdFor(layer)] = tooltipFields(layer);
+  for (const { adapter, layer } of present) fieldsToShow[datasetIdFor(layer, adapter)] = tooltipFields(layer);
   return {
     ...bundle,
     datasets: [...bundle.datasets, ...datasets],
@@ -153,7 +185,7 @@ export function withPayloadLayers<T extends { datasets: KeplerDataset[]; config:
         ...bundle.config.config,
         visState: {
           ...bundle.config.config.visState,
-          layers: [...bundle.config.config.visState.layers, ...present.map((layer) => layerConfig(layer))],
+          layers: [...bundle.config.config.visState.layers, ...present.map(({ adapter, layer }) => layerConfig(layer, layer.default_visible, adapter))],
           interactionConfig: {
             ...bundle.config.config.visState.interactionConfig,
             tooltip: { ...bundle.config.config.visState.interactionConfig.tooltip, fieldsToShow },

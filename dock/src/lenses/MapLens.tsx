@@ -3,7 +3,7 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { KeplerGl } from '@kepler.gl/components';
 import { addDataToMap, fitBounds, removeDataset, wrapTo } from '@kepler.gl/actions';
 import { universeMapBundle } from '../model/kepler';
-import { loadPayloadLayers, withPayloadLayers, type LayerManifest } from '../model/layers';
+import { loadEcosystemLayers, withPayloadLayers, type AdapterLayers } from '../model/layers';
 import type { KeplerDataset } from '../model/kepler';
 
 type MapConfig = Parameters<typeof addDataToMap>[0]['config'];
@@ -49,11 +49,11 @@ export function MapLens({ dock, filtered, selected, selectedNode, onSelect }: Le
   // The Payload layers are fetched once from the dock's own public dir. Absent (a dev
   // tree that has not run `npm run sync`) is not an error: the map draws the universe and
   // the overlay says how many layers it has.
-  const [payload, setPayload] = useState<{ manifest: LayerManifest; datasets: Map<string, KeplerDataset> } | null>(null);
+  const [payload, setPayload] = useState<AdapterLayers[] | null>(null);
   useEffect(() => {
     let stopped = false;
-    void loadPayloadLayers()
-      .then((loaded) => { if (!stopped) setPayload({ manifest: loaded.manifest, datasets: loaded.datasets }); })
+    void loadEcosystemLayers()
+      .then((loaded) => { if (!stopped) setPayload(loaded); })
       .catch(() => { if (!stopped) setPayload(null); });
     return () => { stopped = true; };
   }, []);

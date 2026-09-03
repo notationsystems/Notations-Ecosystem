@@ -51,9 +51,11 @@ describe('folding the Payload layers into the universe map', () => {
     config: { version: 'v1', config: { visState: { layers: [{ id: 'universe-nodes-points' }], interactionConfig: { tooltip: { enabled: true, fieldsToShow: { 'universe-nodes': [] } } } } } },
     located: 7, arcs: 5, unlocated: [],
   });
-  const load = (layers: LayerManifest['layers']) => ({
+  const load = (layers: LayerManifest['layers'], adapter = 'payload') => ({
+    adapter,
     manifest,
-    datasets: new Map<string, KeplerDataset>(layers.map((l) => [l.id, { info: { id: datasetIdFor(l), label: l.name }, data: { fields: [], rows: [[1], [2]] } }])),
+    errors: [],
+    datasets: new Map<string, KeplerDataset>(layers.map((l) => [`${adapter}/${l.id}`, { info: { id: datasetIdFor(l, adapter), label: l.name }, data: { fields: [], rows: [[1], [2]] } }])),
   });
 
   it('adds one Kepler layer and one dataset per loaded manifest entry', () => {
@@ -68,7 +70,7 @@ describe('folding the Payload layers into the universe map', () => {
     const folded = withPayloadLayers(universe(), load(manifest.layers));
     const shown = folded.config.config.visState.interactionConfig.tooltip.fieldsToShow as Record<string, Array<{ name: string }>>;
     for (const layer of manifest.layers) {
-      const fields = shown[datasetIdFor(layer)]!.map((f) => f.name);
+      const fields = shown[datasetIdFor(layer, 'payload')]!.map((f) => f.name);
       expect(fields).toContain('provenance');
       if (layer.provenance_fields.includes('known_at')) expect(fields).toContain('known_at');
     }
@@ -85,5 +87,17 @@ describe('folding the Payload layers into the universe map', () => {
     const folded = withPayloadLayers(universe(), load([manifest.layers[0]!]));
     expect(folded.payloadLayers).toBe(1);
     expect(folded.config.config.visState.layers).toHaveLength(2);
+  });
+
+  it('folds more than one adapter, namespacing so two ecosystems may share a layer id', () => {
+    // PAYLOAD_FIRST.md promises the next ecosystem adds an `ecosystem/<name>/` adapter and
+    // a layers.json. The tooling named Payload in three places, so a second adapter would
+    // have been extracted, ignored by the sync and invisible on the map.
+    const two = withPayloadLayers(universe(), [load(manifest.layers, 'payload'), load(manifest.layers, 'atlas')]);
+    expect(two.payloadLayers).toBe(manifest.layers.length * 2);
+    const ids = (two.config.config.visState.layers as Array<{ id: string }>).map((l) => l.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.some((id) => id.startsWith('layer-atlas-'))).toBe(true);
+    expect(new Set(two.datasets.map((d) => d.info.id)).size).toBe(two.datasets.length);
   });
 });

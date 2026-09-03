@@ -79,6 +79,18 @@ dispatched never lit by anything the dock knows; an execution adapter is a separ
 ## What generalises
 
 The catalog format, the seed (idempotent by content digest), the probe pattern (observe a
-health surface, record an observation), the layer manifest (rows with provenance + a Kepler
-spec) and the dock lenses are all ecosystem-agnostic. The next ecosystem adds catalog nodes, an
-`ecosystem/<name>/` adapter and, if it has geography, a `layers.json`.
+health surface, record an observation), the layer manifest (rows in one declared
+provenance shape plus a Kepler spec) and the dock lenses are all ecosystem-agnostic. The
+next ecosystem adds catalog nodes, an `ecosystem/<name>/` adapter and, if it has
+geography, a `layers.json` beside a `layers/` directory.
+
+That sentence was aspirational until recently: `dock/scripts/sync-layers.mjs` named
+`ecosystem/payload` in its source and the loader named `layers/payload/`, so a second
+adapter would have been extracted, ignored by the sync and invisible on the map. The sync
+discovers adapters now and writes an index of what it found; the dock reads the index,
+loads each one, and namespaces datasets and Kepler layer ids by adapter so two ecosystems
+may both have a layer called `facilities`.
+
+What is still Payload-shaped is the extraction itself — `extract-earth.mjs` and
+`extract-terminal.mjs` know those repositories' file layouts, as any adapter must. The
+contract between an adapter and the dock is the manifest, and that is general.
