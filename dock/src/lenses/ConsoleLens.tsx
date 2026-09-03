@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ConsoleIntent } from '../App';
 import { ControlPlaneApiError } from '../api/controlPlane';
 import { validateCommand } from '../model/commands';
-import { CAPABILITY_MODES, HEALTHS, KIND_LABEL, NODE_KINDS, RELATION_KINDS, RELATION_LABEL, type Approval, type CapabilityMode, type CommandResult, type Health, type NodeKind, type ObservationSource, type RelationKind, type SnapshotNode } from '../model/types';
+import { ATTESTATION_METHODS, CAPABILITY_MODES, HEALTHS, KIND_LABEL, NODE_KINDS, POSTURE_DIMENSION_LABEL, POSTURE_DIMENSION_ORDER, RELATION_KINDS, RELATION_LABEL, type Approval, type AttestationMethod, type CapabilityMode, type CommandResult, type Health, type NodeKind, type ObservationSource, type PostureDimension, type PostureState, type RelationKind, type SnapshotNode } from '../model/types';
 import type { LensProps } from './types';
-import { CONSOLE_ACTIONS, alignRequestToTarget, applyIntent, applyCapabilityPatch, blankCapability, buildCommand, initialDrafts, type CapabilityDraft, type ConsoleAction, type Drafts } from './ops/consoleDrafts';
+import { CONSOLE_ACTIONS, alignRequestToTarget, applyIntent, applyCapabilityPatch, blankCapability, blankSignal, buildCommand, initialDrafts, type CapabilityDraft, type ConsoleAction, type Drafts, type SignalDraft } from './ops/consoleDrafts';
 import { shortHash } from './ops/format';
 import './ops/ops.css';
 
@@ -154,6 +154,54 @@ export function ConsoleLens({ dock, snapshot, intent, onIntentConsumed }: Consol
               <Field label="Source"><select value={o.source} onChange={(e) => set('observation', { source: e.target.value as ObservationSource })}>{SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}</select></Field>
             </div>
             <Field label="Detail"><textarea value={o.detail} onChange={(e) => set('observation', { detail: e.target.value })} placeholder="What was observed, and how." /></Field>
+          </>
+        );
+      }
+      case 'record_security_posture': {
+        const p = drafts.posture;
+        const setSignal = (index: number, patch: Partial<SignalDraft>) =>
+          set('posture', { signals: p.signals.map((sig, i) => (i === index ? { ...sig, ...patch } : sig)) });
+        return (
+          <>
+            <div className="grid2">
+              <Field label="Node"><NodeSelect value={p.nodeId} nodes={nodes} onChange={(v) => set('posture', { nodeId: v })} /></Field>
+              <Field label="Method" hint="How this posture was established">
+                <select value={p.method} onChange={(e) => set('posture', { method: e.target.value as AttestationMethod })}>
+                  {ATTESTATION_METHODS.map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                </select>
+              </Field>
+            </div>
+            <div className="hint">
+              Posture replaces this node's whole attestation, so send every dimension you mean to state.
+              Evidence only: a summary carrying an address, an advisory id, a package version, a tooling
+              invocation, a URL or a path is refused at the boundary, with the plane's own wording.
+            </div>
+            {p.signals.map((sig, index) => (
+              <div key={index} className="cap" style={{ marginTop: 8 }}>
+                <div className="grid2">
+                  <Field label="Dimension">
+                    <select value={sig.dimension} onChange={(e) => setSignal(index, { dimension: e.target.value as PostureDimension })}>
+                      {POSTURE_DIMENSION_ORDER.map((d) => <option key={d} value={d}>{POSTURE_DIMENSION_LABEL[d]}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="State">
+                    <select value={sig.state} onChange={(e) => setSignal(index, { state: e.target.value as PostureState })}>
+                      {(['strong', 'adequate', 'weak', 'failing', 'unknown'] as PostureState[]).map((st) => <option key={st} value={st}>{st}</option>)}
+                    </select>
+                  </Field>
+                </div>
+                <Field label="Coverage" hint="0 to 1, or leave empty — empty means not measured, which is not the same as zero">
+                  <input value={sig.coverage} onChange={(e) => setSignal(index, { coverage: e.target.value })} placeholder="" inputMode="decimal" />
+                </Field>
+                <Field label="Summary" hint="One sentence, at most 280 characters">
+                  <textarea value={sig.summary} onChange={(e) => setSignal(index, { summary: e.target.value })} placeholder="What the control is, in one sentence. No addresses, versions, advisories or links." />
+                </Field>
+                {p.signals.length > 1 && (
+                  <button className="btn small" onClick={() => set('posture', { signals: p.signals.filter((_, i) => i !== index) })}>Remove dimension</button>
+                )}
+              </div>
+            ))}
+            <button className="btn small" style={{ marginTop: 8 }} onClick={() => set('posture', { signals: [...p.signals, blankSignal()] })}>Add dimension</button>
           </>
         );
       }

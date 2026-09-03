@@ -3,14 +3,15 @@
  * command. Kept free of React so the mapping can be unit-tested.
  */
 import type { ConsoleIntent } from '../../App';
-import { declareRelation, recordObservation, registerNode, requestCapability, resolveCoordination, type CommandContext } from '../../model/commands';
-import type { Approval, CapabilityMode, Command, Health, MetadataValue, NodeKind, ObservationSource, RelationKind, Snapshot } from '../../model/types';
+import { declareRelation, recordObservation, recordSecurityPosture, registerNode, requestCapability, resolveCoordination, type CommandContext } from '../../model/commands';
+import type { Approval, AttestationMethod, CapabilityMode, Command, Health, MetadataValue, NodeKind, ObservationSource, PostureDimension, PostureState, RelationKind, Snapshot } from '../../model/types';
 
-export type ConsoleAction = 'register_node' | 'declare_relation' | 'record_observation' | 'request_capability' | 'resolve_coordination';
+export type ConsoleAction = 'register_node' | 'declare_relation' | 'record_observation' | 'record_security_posture' | 'request_capability' | 'resolve_coordination';
 export const CONSOLE_ACTIONS: Array<{ id: ConsoleAction; label: string; blurb: string }> = [
   { id: 'register_node', label: 'Register node', blurb: 'Add a node and the capabilities it declares. Execute capabilities always require an operator decision.' },
   { id: 'declare_relation', label: 'Declare relation', blurb: 'Record how two registered nodes relate. Relations are descriptive; they grant nothing.' },
   { id: 'record_observation', label: 'Record observation', blurb: 'Journal a health observation for a node from the operator, a health check, or a webhook.' },
+  { id: 'record_security_posture', label: 'Record posture', blurb: 'Attest one or more security dimensions for a node. Evidence only: a summary carrying an address, an advisory id, a package version or a link is refused at the boundary.' },
   { id: 'request_capability', label: 'Request capability', blurb: 'Ask for one node to use another node’s capability. The request becomes a coordination record; nothing is dispatched.' },
   { id: 'resolve_coordination', label: 'Resolve coordination', blurb: 'Approve or reject a pending request. Approval is recorded, never executed, by the control plane.' },
 ];
@@ -27,10 +28,13 @@ export interface RelationDraft { sourceNodeId: string; targetNodeId: string; kin
 export interface ObservationDraft { nodeId: string; health: Health; source: ObservationSource; detail: string }
 export interface RequestDraft { requesterNodeId: string; targetNodeId: string; capabilityId: string; requestedMode: CapabilityMode; purpose: string }
 export interface ResolveDraft { coordinationId: string; decision: 'approved' | 'rejected'; note: string }
+export interface SignalDraft { dimension: PostureDimension; state: PostureState; coverage: string; summary: string }
+export interface PostureDraft { nodeId: string; method: AttestationMethod; signals: SignalDraft[] }
 
-export interface Drafts { register: RegisterDraft; relation: RelationDraft; observation: ObservationDraft; request: RequestDraft; resolve: ResolveDraft }
+export interface Drafts { register: RegisterDraft; relation: RelationDraft; observation: ObservationDraft; posture: PostureDraft; request: RequestDraft; resolve: ResolveDraft }
 
 export const blankCapability = (): CapabilityDraft => ({ capabilityId: '', label: '', description: '', mode: 'observe', approval: 'automatic' });
+export const blankSignal = (): SignalDraft => ({ dimension: 'identity', state: 'unknown', coverage: '', summary: '' });
 
 export function initialDrafts(snapshot: Snapshot): Drafts {
   const first = snapshot.nodes[0]?.nodeId ?? '';
@@ -40,6 +44,7 @@ export function initialDrafts(snapshot: Snapshot): Drafts {
     register: { nodeId: '', name: '', kind: 'api', description: '', capabilities: [blankCapability()], metadata: [{ key: 'domain', value: '' }], latitude: '', longitude: '' },
     relation: { sourceNodeId: first, targetNodeId: second, kind: 'depends_on', description: '' },
     observation: { nodeId: first, health: 'healthy', source: 'operator', detail: '' },
+    posture: { nodeId: first, method: 'operator_review', signals: [blankSignal()] },
     request: { requesterNodeId: first, targetNodeId: second, capabilityId: '', requestedMode: 'observe', purpose: '' },
     resolve: { coordinationId: pending?.coordinationId ?? '', decision: 'approved', note: '' },
   };
@@ -103,6 +108,17 @@ export function buildCommand(action: ConsoleAction, d: Drafts, ctx: CommandConte
       return declareRelation(ctx, d.relation);
     case 'record_observation':
       return recordObservation(ctx, d.observation);
+    case 'record_security_posture': {
+      // An empty coverage box means "not measured", never zero: the plane distinguishes
+      // an absent coverage from a measured 0, and so must the draft.
+      const signals = d.posture.signals.map((s) => ({
+        dimension: s.dimension,
+        state: s.state,
+        ...(s.coverage.trim() === '' ? {} : { coverage: Number(s.coverage) }),
+        ...(s.summary.trim() === '' ? {} : { summary: s.summary.trim() }),
+      }));
+      return recordSecurityPosture(ctx, { nodeId: d.posture.nodeId, method: d.posture.method, signals: signals as never });
+    }
     case 'request_capability':
       return requestCapability(ctx, d.request);
     case 'resolve_coordination':

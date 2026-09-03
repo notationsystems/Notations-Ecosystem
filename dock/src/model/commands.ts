@@ -1,5 +1,5 @@
 import { parseCommand } from '@control-plane/validation.js';
-import type { Approval, CapabilityMode, Command, Health, NodeInput, ObservationSource, RelationKind } from './types';
+import type { Approval, AttestationMethod, CapabilityMode, Command, Health, NodeInput, ObservationSource, PostureSignal, RelationKind } from './types';
 
 /** Identifier alphabet accepted by the control plane. */
 export const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
@@ -38,6 +38,33 @@ export function requestCapability(ctx: CommandContext, input: { coordinationId?:
 
 export function resolveCoordination(ctx: CommandContext, input: { coordinationId: string; decision: 'approved' | 'rejected'; note: string }): Command {
   return { requestId: requestId('resolve_coordination'), actorId: ctx.actorId, submittedAt: stamp(ctx), expectedRevision: ctx.expectedRevision, action: 'resolve_coordination', coordinationId: input.coordinationId, decision: input.decision, note: input.note };
+}
+
+/**
+ * Record posture for a node.
+ *
+ * The security lens has always told an operator to "record an operator review from the
+ * console", and the console had five actions to the plane's six. `operator_review` is one
+ * of the four attestation methods the contract declares, and it existed with no way to
+ * use it.
+ *
+ * The signals go through the plane's own `parseSignals` in `validateCommand`, so the
+ * evidence boundary applies here with the server's wording: a summary carrying an
+ * address, an advisory id, a package version, a tooling invocation, a URL or a path is
+ * refused before it is ever sent.
+ */
+export function recordSecurityPosture(ctx: CommandContext, input: { nodeId: string; method: AttestationMethod; signals: PostureSignal[]; attestedAt?: string }): Command {
+  return {
+    requestId: requestId('record_security_posture'),
+    actorId: ctx.actorId,
+    submittedAt: stamp(ctx),
+    expectedRevision: ctx.expectedRevision,
+    action: 'record_security_posture',
+    nodeId: input.nodeId,
+    attestedAt: input.attestedAt ?? stamp(ctx),
+    method: input.method,
+    signals: input.signals,
+  } as unknown as Command;
 }
 
 export type ValidationOutcome = { ok: true; command: Command } | { ok: false; detail: string; remedy?: string };

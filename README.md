@@ -87,7 +87,7 @@ add_header Referrer-Policy no-referrer always;
 | What is healthy / stale / waiting for approval / blocked? | dock → **Operator** lens |
 | Where are Payload's facilities, corridors, chokepoints, trade flows, disruptions, archive coverage? | dock → **Map** lens (`ecosystem/payload/layers.json`) |
 | What changed, why, who asked, was anything dispatched? | dock → **Timeline** / **Ledger** (journal events; every record `not_dispatched`) |
-| How do I add a node or relation, record health, request or resolve a capability? | dock → **Console** (validated with the control plane's own validator) |
+| How do I add a node or relation, record health, attest posture, request or resolve a capability? | dock → **Console** (all six commands, validated with the control plane's own validator) |
 | How does Payload plug in? | `ecosystem/payload/README.md` (seed, probe, layer extractors) |
 | Why is it modelled this way? | `docs/PAYLOAD_FIRST.md`, `ecosystem/UNIVERSE.md` |
 | What is the security model, and what proves it? | [SECURITY.md](SECURITY.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/SECURITY_INVARIANTS.md](docs/SECURITY_INVARIANTS.md) |

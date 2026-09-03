@@ -7,11 +7,12 @@ submits `POST /v1/commands` with the snapshot revision, and renders:
 | --- | --- |
 | Operator | healthy · stale · needs approval · blocked, with the observed → proposed → approved → dispatched strip |
 | Security | the constellation: 11 posture dimensions, weakest-link state, coverage and severity counts, and every node that has not been attested |
-| Map | Kepler.gl: located nodes, relation arcs, and the Payload layers (facilities, corridors, chokepoints, flows, disruptions, coverage) |
+| Corpus | corpus standing across the estate: role, grade, coverage, the invariants each node declares it fails and the ones it has not assessed ([docs/CORPUS.md](../docs/CORPUS.md)) |
+| Map | Kepler.gl: located nodes, relation arcs, and the nine Payload layers — 562 rows, each showing its own provenance and, where the rows carry it, when the value became knowable |
 | Graph | force-directed capability graph, ring = health, size = capabilities |
 | Ledger | every coordination record; approved ones read *approved · not dispatched* |
 | Timeline | journal events (polled every 5 s) and a maturity timeline of nodes |
-| Console | the five commands, validated client-side with the control plane's own `validation.js` |
+| Console | all six commands the plane accepts — including recording an operator review, whose signals cross the same evidence boundary the server enforces — validated client-side with the control plane's own `validation.js` |
 
 ```sh
 npm install

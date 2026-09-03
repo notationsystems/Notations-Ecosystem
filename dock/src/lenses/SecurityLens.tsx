@@ -85,9 +85,12 @@ export function SecurityLens({ snapshot, filtered, onSelect, dock }: LensProps) 
     );
   }, [constellation]);
 
-  const attested = snapshot.nodes.filter((node) => node.security);
+  // One population throughout. This used to count attestations across the whole snapshot
+  // and unattested nodes across the filtered one, so with any rail filter active the KPI
+  // read "12 / 30" against a list of four — two different questions in one sentence.
+  const attested = filtered.nodes.filter((node) => node.security);
   const unattested = filtered.nodes.filter((node) => !node.security);
-  const detail = selectedDimension ? nodesFor(snapshot.nodes, selectedDimension) : [];
+  const detail = selectedDimension ? nodesFor(filtered.nodes, selectedDimension) : [];
 
   return (
     <div className="lens scroll">
@@ -95,7 +98,7 @@ export function SecurityLens({ snapshot, filtered, onSelect, dock }: LensProps) 
         <div className="kpi">
           <span>attested nodes</span>
           <b>
-            {attested.length} / {snapshot.nodes.length}
+            {attested.length} / {filtered.nodes.length}
           </b>
         </div>
         <div className="kpi">

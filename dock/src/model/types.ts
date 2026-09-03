@@ -338,6 +338,9 @@ export const POSTURE_DIMENSION_LABEL: Record<PostureDimension, string> = {
   control_plane_integrity: 'Control-plane integrity',
 };
 
+/** How a posture was established. The four the contract declares, in the plane's order. */
+export const ATTESTATION_METHODS: AttestationMethod[] = ['operator_review', 'automated_scan', 'external_audit', 'self_declared'];
+
 export const POSTURE_DIMENSION_ORDER: PostureDimension[] = [
   'identity', 'authorization', 'encryption_in_transit', 'encryption_at_rest', 'key_lifecycle',
   'dependency_risk', 'exposure', 'audit_integrity', 'backup', 'incident', 'control_plane_integrity',
