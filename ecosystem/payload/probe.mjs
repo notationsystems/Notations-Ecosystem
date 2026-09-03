@@ -5,6 +5,7 @@
 //   add --loop 60 to keep probing every 60 s.
 // The probe never forwards response bodies into the journal: only a health verdict and a ≤600-char detail.
 import path from 'node:path';
+import { HttpControlPlane } from '../../control-plane/src/client.js';
 import { fileURLToPath } from 'node:url';
 
 export const TARGETS = [
@@ -63,13 +64,6 @@ export async function recordObservations(plane, observations, { actorId = 'monit
   return results;
 }
 
-class HttpPlane {
-  constructor(base, token) { this.base = base.replace(/\/$/, ''); this.token = token; }
-  headers(json = false) { return { authorization: `Bearer ${this.token}`, accept: 'application/json', ...(json ? { 'content-type': 'application/json' } : {}) }; }
-  async snapshot() { const r = await fetch(`${this.base}/v1/snapshot`, { headers: this.headers() }); if (!r.ok) throw new Error(`snapshot ${r.status}: ${await r.text()}`); return r.json(); }
-  async command(cmd) { const r = await fetch(`${this.base}/v1/commands`, { method: 'POST', headers: this.headers(true), body: JSON.stringify(cmd) }); if (!r.ok) throw new Error(`command ${cmd.requestId} ${r.status}: ${await r.text()}`); return r.json(); }
-}
-
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
@@ -77,15 +71,16 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const url = opt('--url');
   const token = opt('--token') ?? process.env.NOTATIONS_CONTROL_PLANE_TOKEN;
   const loop = Number(opt('--loop') ?? 0);
+  const actorId = opt('--actor') ?? 'monitor:payload-probe';
   let plane;
   if (journal) { const { ControlPlane } = await import('../../control-plane/src/control-plane.js'); plane = await ControlPlane.fromEnvironment(path.resolve(journal)); }
-  else if (url && token) plane = new HttpPlane(url, token);
-  else { console.error('usage: node ecosystem/payload/probe.mjs --journal <path> | --url <base> [--token <token>] [--loop <seconds>]'); process.exit(2); }
+  else if (url && token) plane = new HttpControlPlane(url, token, { log: (m) => console.error(`  ${m}`) });
+  else { console.error('usage: node ecosystem/payload/probe.mjs --journal <path> | --url <base> [--token <token>] [--actor <actorId>] [--loop <seconds>]'); process.exit(2); }
   const configured = TARGETS.filter((t) => process.env[t.env]);
   if (!configured.length) { console.error(`no targets configured; set ${TARGETS.map((t) => t.env).join(' and/or ')}`); process.exit(2); }
   const once = async () => {
     const observations = await Promise.all(configured.map((t) => probeTarget(t, process.env[t.env])));
-    await recordObservations(plane, observations, { log: (l) => console.log(`${new Date().toISOString()} ${l}`) });
+    await recordObservations(plane, observations, { actorId, log: (l) => console.log(`${new Date().toISOString()} ${l}`) });
   };
   await once();
   if (loop > 0) setInterval(() => { once().catch((e) => console.error('probe failed:', e.message)); }, loop * 1000);

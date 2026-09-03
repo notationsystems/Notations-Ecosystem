@@ -146,6 +146,7 @@ export interface JournalEvent {
   node?: SnapshotNode;
   relation?: Relation;
   observation?: { nodeId: string; health: Health; observedAt: string; source: ObservationSource; detail: string };
+  posture?: { nodeId: string; attestedAt: string; attestedBy: string; method: AttestationMethod; signals: PostureSignal[] };
   request?: Coordination;
   coordinationId?: string;
   decision?: 'approved' | 'rejected';

@@ -4,7 +4,7 @@ import type { LensProps } from './types';
 import { fmtTime, monthLabel, shortHash } from './ops/format';
 import './ops/ops.css';
 
-const EVENT_KINDS: EventKind[] = ['node_registered', 'relation_declared', 'observation_recorded', 'coordination_requested', 'coordination_resolved'];
+const EVENT_KINDS: EventKind[] = ['node_registered', 'relation_declared', 'observation_recorded', 'security_posture_recorded', 'coordination_requested', 'coordination_resolved'];
 
 interface EventView { subject: string; nodeId: string | null; detail: string }
 
@@ -18,6 +18,13 @@ function describe(r: JournalRecord): EventView {
       return { subject: e.relation?.relationId ?? '—', nodeId: null, detail: e.relation ? `${e.relation.sourceNodeId} ${e.relation.kind.replace(/_/g, ' ')} ${e.relation.targetNodeId} · ${e.relation.description}` : 'relation declared' };
     case 'observation_recorded':
       return { subject: e.observation?.nodeId ?? '—', nodeId: e.observation?.nodeId ?? null, detail: e.observation ? `${e.observation.health} · ${e.observation.source} · ${e.observation.detail}` : 'observation recorded' };
+    case 'security_posture_recorded': {
+      const p = e.posture;
+      if (!p) return { subject: '—', nodeId: null, detail: 'security posture recorded' };
+      // Counts and states only — the same discipline the command boundary enforces.
+      const worst = ['failing', 'weak', 'unknown', 'adequate', 'strong'].find((state) => p.signals.some((sig) => sig.state === state)) ?? 'unknown';
+      return { subject: p.nodeId, nodeId: p.nodeId, detail: `${p.signals.length} signal${p.signals.length === 1 ? '' : 's'} · worst ${worst} · ${p.method.replace(/_/g, ' ')} · by ${p.attestedBy}` };
+    }
     case 'coordination_requested':
       return { subject: e.request?.coordinationId ?? '—', nodeId: null, detail: e.request ? `${e.request.requesterNodeId} → ${e.request.targetNodeId} · ${e.request.capabilityId} (${e.request.requestedMode}) · ${e.request.purpose}` : 'capability requested' };
     case 'coordination_resolved':

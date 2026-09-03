@@ -26,6 +26,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { detectRefusedMaterial, POSTURE_DIMENSIONS } from '../control-plane/src/security/evidence.js';
+import { HttpControlPlane } from '../control-plane/src/client.js';
 
 const run = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -298,29 +299,6 @@ export async function collectPosture({ environment = process.env, journalPath, p
   return assertProducerOutputIsEvidence(signals);
 }
 
-class HttpPlane {
-  constructor(base, token) {
-    this.base = base.replace(/\/$/, '');
-    this.token = token;
-  }
-
-  headers(json = false) {
-    return { authorization: `Bearer ${this.token}`, accept: 'application/json', ...(json ? { 'content-type': 'application/json' } : {}) };
-  }
-
-  async snapshot() {
-    const response = await fetch(`${this.base}/v1/snapshot`, { headers: this.headers() });
-    if (!response.ok) throw new Error(`snapshot ${response.status}: ${await response.text()}`);
-    return response.json();
-  }
-
-  async command(command) {
-    const response = await fetch(`${this.base}/v1/commands`, { method: 'POST', headers: this.headers(true), body: JSON.stringify(command) });
-    if (!response.ok) throw new Error(`command ${response.status}: ${await response.text()}`);
-    return response.json();
-  }
-}
-
 export async function attest(plane, { nodeId, actorId = 'attestor:local', signals, method = 'automated_scan', now = () => new Date().toISOString() }) {
   const snapshot = await plane.snapshot();
   if (!snapshot.nodes.some(node => node.nodeId === nodeId)) {
@@ -370,7 +348,7 @@ async function main() {
   if (option('url')) {
     const token = option('token') ?? process.env.NOTATIONS_CONTROL_PLANE_TOKEN;
     if (!token) throw new Error('--token or NOTATIONS_CONTROL_PLANE_TOKEN is required with --url');
-    plane = new HttpPlane(option('url'), token);
+    plane = new HttpControlPlane(option('url'), token, { log: (m) => process.stderr.write(`  ${m}\n`) });
   } else {
     const { ControlPlane } = await import('../control-plane/src/control-plane.js');
     plane = await ControlPlane.fromEnvironment(journalPath);

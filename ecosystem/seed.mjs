@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalize } from '../control-plane/src/journal.js';
+import { HttpControlPlane } from '../control-plane/src/client.js';
 import { checkEntry, loadCatalog, toNode, toRegisterCommand, toRelationCommands } from './validate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -110,19 +111,15 @@ export async function seed(plane, entries, { actorId = 'seed:ecosystem-catalog',
   return { ...outcomes, revision, nodes: nodes.length, relations: relations.length };
 }
 
-class HttpPlane {
-  constructor(base, token) { this.base = base.replace(/\/$/, ''); this.token = token; }
-  headers(json = false) { return { authorization: `Bearer ${this.token}`, accept: 'application/json', ...(json ? { 'content-type': 'application/json' } : {}) }; }
-  async snapshot() { const r = await fetch(`${this.base}/v1/snapshot`, { headers: this.headers() }); if (!r.ok) throw new Error(`snapshot ${r.status}: ${await r.text()}`); return r.json(); }
-  async command(cmd) { const r = await fetch(`${this.base}/v1/commands`, { method: 'POST', headers: this.headers(true), body: JSON.stringify(cmd) }); if (!r.ok) throw new Error(`command ${cmd.requestId} ${r.status}: ${await r.text()}`); return r.json(); }
-}
-
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
   const journal = opt('--journal');
   const url = opt('--url');
   const token = opt('--token') ?? process.env.NOTATIONS_CONTROL_PLANE_TOKEN;
+  // The actor recorded in history. It must be one the credential is bound to, so it is
+  // configurable rather than assumed: a deployment names its own principals.
+  const actorId = opt('--actor') ?? 'seed:ecosystem-catalog';
   let plane;
   if (journal) {
     const { ControlPlane } = await import('../control-plane/src/control-plane.js');
@@ -131,12 +128,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     plane = await ControlPlane.fromEnvironment(path.resolve(journal));
   } else if (url) {
     if (!token) { console.error('--token or NOTATIONS_CONTROL_PLANE_TOKEN is required with --url'); process.exit(2); }
-    plane = new HttpPlane(url, token);
+    plane = new HttpControlPlane(url, token, { log: (m) => console.error(`  ${m}`) });
   } else {
-    console.error('usage: node ecosystem/seed.mjs --journal <path> | --url <base> [--token <token>] [--skip-invalid]');
+    console.error('usage: node ecosystem/seed.mjs --journal <path> | --url <base> [--token <token>] [--actor <actorId>] [--skip-invalid]');
     process.exit(2);
   }
   const entries = await loadCatalog(path.join(here, 'catalog'));
-  const result = await seed(plane, entries, { log: (line) => console.log(line), skipInvalid: args.includes('--skip-invalid') });
+  const result = await seed(plane, entries, { actorId, log: (line) => console.log(line), skipInvalid: args.includes('--skip-invalid') });
   console.log(`seeded ${result.nodes} nodes and ${result.relations} relations: appended=${result.appended} unchanged=${result.unchanged} duplicate=${result.duplicate} skipped=${result.skipped} invalid=${result.invalid}; revision=${result.revision}`);
 }

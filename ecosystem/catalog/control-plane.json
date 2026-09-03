@@ -2,7 +2,7 @@
   "nodeId": "control-plane",
   "name": "Notations Ecosystem Control Plane",
   "kind": "api",
-  "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked journal of node registrations, relations, health observations and capability requests. It records intent and operator approval but never stores provider credentials and never dispatches an external call; every write carries expectedRevision so a stale dock or agent cannot overwrite newer state. Execution adapters are a later, separate least-privilege boundary.",
+  "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked and Ed25519-signed journal of node registrations, relations, health observations, security posture and capability requests. Credentials resolve to principals whose roles decide what they may do and which actor identity they may record, so the audit trail is authenticated rather than self-asserted. It records intent and operator approval but never stores provider credentials, key material, vulnerability detail or network topology, and never dispatches an external call.",
   "capabilities": [
     {
       "capabilityId": "snapshot.read",
@@ -18,7 +18,7 @@
     {
       "capabilityId": "events.read",
       "label": "Read events after a cursor",
-      "description": "GET /v1/events?after=<eventCursor>: append-only records after a known cursor; 409 CURSOR_UNKNOWN means refresh the snapshot.",
+      "description": "GET /v1/events?after=<eventCursor>&limit=<n>: append-only records after a known cursor, paginated with a server-side cap; 409 CURSOR_UNKNOWN means refresh the snapshot.",
       "mode": "observe",
       "approval": "automatic",
       "surface": "http",
@@ -29,7 +29,7 @@
     {
       "capabilityId": "health.read",
       "label": "Liveness and journal summary",
-      "description": "GET /health (unauthenticated): service status, revision and node count.",
+      "description": "GET /health (unauthenticated): liveness and uptime only. It deliberately discloses no revision and no node count, so an anonymous caller learns nothing about history.",
       "mode": "observe",
       "approval": "automatic",
       "surface": "http",
@@ -84,13 +84,57 @@
     {
       "capabilityId": "coordination.resolve",
       "label": "Approve or reject a coordination request",
-      "description": "POST /v1/commands action=resolve_coordination by an operator. Approval is not execution: the record remains not_dispatched.",
+      "description": "POST /v1/commands action=resolve_coordination by an operator. Separation of duties: the approving actor may not be the actor that proposed the intent. Approval is not execution: the record stays not_dispatched.",
       "mode": "execute",
       "approval": "operator",
       "surface": "http",
       "method": "POST",
       "path": "/v1/commands",
       "evidence": "control-plane/src/control-plane.js"
+    },
+    {
+      "capabilityId": "security.status.read",
+      "label": "Read the control plane's own security posture",
+      "description": "GET /v1/security/status: identity binding, the authorization model, transport state, key lifecycle, journal integrity and abuse counters. Requires the operator or admin role. Names no credential, key, address or journal content.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/v1/security/status",
+      "evidence": "control-plane/src/server.js",
+      "data_domain": "security-posture"
+    },
+    {
+      "capabilityId": "posture.record",
+      "label": "Record a security posture attestation",
+      "description": "POST /v1/commands action=record_security_posture: up to 12 signals across identity, authorization, encryption, key lifecycle, dependency risk, exposure, audit integrity, backup, incident and control-plane integrity. Carries states, coverage fractions and severity counts only.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/v1/commands",
+      "evidence": "control-plane/src/security/evidence.js",
+      "data_domain": "security-posture"
+    },
+    {
+      "capabilityId": "credential.issue",
+      "label": "Issue a principal credential",
+      "description": "CLI: mints an ncp.<keyId>.<secret> credential bound to a principal, its roles, the actor identities it may claim and optionally the nodes it may act for. The secret is printed once; only a SHA-256 digest is stored.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "evidence": "control-plane/src/security/cli.js",
+      "data_domain": "identity"
+    },
+    {
+      "capabilityId": "key.rotate",
+      "label": "Rotate the journal signing key",
+      "description": "CLI: generates a new Ed25519 signing key, retires the previous one and records the journal length from which the new key is expected. Records signed by the retired key keep verifying.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "evidence": "control-plane/src/security/crypto/signing.js",
+      "data_domain": "key-lifecycle"
     }
   ],
   "metadata": {
@@ -105,7 +149,10 @@
     "last_pushed_at": "2026-09-03T01:40:38Z",
     "durability": "local_jsonl_single_writer",
     "default_port": 8787,
-    "capability_count": 8
+    "capability_count": 12,
+    "signing": "ed25519",
+    "at_rest": "envelope-encrypted signing key",
+    "auth": "per-principal bearer credentials"
   },
   "location": null,
   "relations": [

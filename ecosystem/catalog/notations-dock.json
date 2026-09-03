@@ -2,7 +2,7 @@
   "nodeId": "notations-dock",
   "name": "Notations Universe Dock",
   "kind": "visual_dock",
-  "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It never talks to a provider directly and holds no credentials of its own.",
+  "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, an operator view, a security constellation, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It holds its credential in memory only, never in browser storage, and refuses to send it to any origin but its own, loopback, or the one it was configured with.",
   "capabilities": [
     {
       "capabilityId": "map.observe",
@@ -48,6 +48,16 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/ConsoleLens.tsx"
+    },
+    {
+      "capabilityId": "security.observe",
+      "label": "Security constellation",
+      "description": "Eleven posture dimensions rendered weakest-link with coverage, severity counts and staleness, plus every node that has not been attested. Shows only what the control plane is permitted to hold.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "dock/src/lenses/SecurityLens.tsx",
+      "data_domain": "security-posture"
     }
   ],
   "metadata": {
@@ -61,7 +71,7 @@
     "visibility": "public",
     "last_pushed_at": "2026-09-03T01:40:38Z",
     "default_port": 5173,
-    "capability_count": 5
+    "capability_count": 6
   },
   "location": null,
   "relations": [

@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "e558ea7186b362d31dbfc5bc41371546c79ef4916db6a881f474684d332c7fa4",
+  "revision": "1f28b1be56edb6c379347883a403e464c1abfb3c770c1507321aa58449244cda",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -620,7 +620,7 @@
       "nodeId": "control-plane",
       "name": "Notations Ecosystem Control Plane",
       "kind": "api",
-      "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked journal of node registrations, relations, health observations and capability requests. It records intent and operator approval but never stores provider credentials and never dispatches an external call; every write carries expectedRevision so a stale dock or agent cannot overwrite newer state. Execution adapters are a later, separate least-privilege boundary.",
+      "description": "The private coordination backend of the Notations Universe: an append-only, SHA-256 hash-linked and Ed25519-signed journal of node registrations, relations, health observations, security posture and capability requests. Credentials resolve to principals whose roles decide what they may do and which actor identity they may record, so the audit trail is authenticated rather than self-asserted. It records intent and operator approval but never stores provider credentials, key material, vulnerability detail or network topology, and never dispatches an external call.",
       "capabilities": [
         {
           "capabilityId": "snapshot.read",
@@ -632,14 +632,14 @@
         {
           "capabilityId": "events.read",
           "label": "Read events after a cursor",
-          "description": "GET /v1/events?after=<eventCursor>: append-only records after a known cursor; 409 CURSOR_UNKNOWN means refresh the snapshot.",
+          "description": "GET /v1/events?after=<eventCursor>&limit=<n>: append-only records after a known cursor, paginated with a server-side cap; 409 CURSOR_UNKNOWN means refresh the snapshot.",
           "mode": "observe",
           "approval": "automatic"
         },
         {
           "capabilityId": "health.read",
           "label": "Liveness and journal summary",
-          "description": "GET /health (unauthenticated): service status, revision and node count.",
+          "description": "GET /health (unauthenticated): liveness and uptime only. It deliberately discloses no revision and no node count, so an anonymous caller learns nothing about history.",
           "mode": "observe",
           "approval": "automatic"
         },
@@ -674,7 +674,35 @@
         {
           "capabilityId": "coordination.resolve",
           "label": "Approve or reject a coordination request",
-          "description": "POST /v1/commands action=resolve_coordination by an operator. Approval is not execution: the record remains not_dispatched.",
+          "description": "POST /v1/commands action=resolve_coordination by an operator. Separation of duties: the approving actor may not be the actor that proposed the intent. Approval is not execution: the record stays not_dispatched.",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "security.status.read",
+          "label": "Read the control plane's own security posture",
+          "description": "GET /v1/security/status: identity binding, the authorization model, transport state, key lifecycle, journal integrity and abuse counters. Requires the operator or admin role. Names no credential, key, address or journal content.",
+          "mode": "observe",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "posture.record",
+          "label": "Record a security posture attestation",
+          "description": "POST /v1/commands action=record_security_posture: up to 12 signals across identity, authorization, encryption, key lifecycle, dependency risk, exposure, audit integrity, backup, incident and control-plane integrity. Carries states, coverage fractions and severity counts only.",
+          "mode": "propose",
+          "approval": "automatic"
+        },
+        {
+          "capabilityId": "credential.issue",
+          "label": "Issue a principal credential",
+          "description": "CLI: mints an ncp.<keyId>.<secret> credential bound to a principal, its roles, the actor identities it may claim and optionally the nodes it may act for. The secret is printed once; only a SHA-256 digest is stored.",
+          "mode": "execute",
+          "approval": "operator"
+        },
+        {
+          "capabilityId": "key.rotate",
+          "label": "Rotate the journal signing key",
+          "description": "CLI: generates a new Ed25519 signing key, retires the previous one and records the journal length from which the new key is expected. Records signed by the retired key keep verifying.",
           "mode": "execute",
           "approval": "operator"
         }
@@ -691,7 +719,10 @@
         "last_pushed_at": "2026-09-03T01:40:38Z",
         "durability": "local_jsonl_single_writer",
         "default_port": 8787,
-        "capability_count": 8
+        "capability_count": 12,
+        "signing": "ed25519",
+        "at_rest": "envelope-encrypted signing key",
+        "auth": "per-principal bearer credentials"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2589,7 +2620,7 @@
       "nodeId": "notations-dock",
       "name": "Notations Universe Dock",
       "kind": "visual_dock",
-      "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It never talks to a provider directly and holds no credentials of its own.",
+      "description": "The visual dock of the Notations Universe: a browser front end that renders the control plane's snapshot as a Kepler.gl map of located nodes and relation arcs, a force-directed capability graph, an operator view, a security constellation, a coordination ledger and an event timeline. It reads /v1/snapshot and /v1/events, submits commands with the current revision, and renders approved intents as approved, not dispatched. It holds its credential in memory only, never in browser storage, and refuses to send it to any origin but its own, loopback, or the one it was configured with.",
       "capabilities": [
         {
           "capabilityId": "map.observe",
@@ -2625,6 +2656,13 @@
           "description": "Composes register_node, declare_relation, record_observation, request_capability and resolve_coordination commands, validated with the control plane's own validator, and submits them with the current revision.",
           "mode": "propose",
           "approval": "automatic"
+        },
+        {
+          "capabilityId": "security.observe",
+          "label": "Security constellation",
+          "description": "Eleven posture dimensions rendered weakest-link with coverage, severity counts and staleness, plus every node that has not been attested. Shows only what the control plane is permitted to hold.",
+          "mode": "observe",
+          "approval": "automatic"
         }
       ],
       "metadata": {
@@ -2638,7 +2676,7 @@
         "visibility": "public",
         "last_pushed_at": "2026-09-03T01:40:38Z",
         "default_port": 5173,
-        "capability_count": 5
+        "capability_count": 6
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",

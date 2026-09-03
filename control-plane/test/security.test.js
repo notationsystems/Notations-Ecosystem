@@ -577,3 +577,29 @@ test('SEC-005 an in-process caller is still bound by policy', async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('SEC-ABUSE a legitimate bulk writer backs off rather than defeating the budget', async () => {
+  // The command budget is a real control: a client that crashed on 429 would create
+  // pressure to raise the limit, which is the wrong direction. It waits instead.
+  const { HttpControlPlane, ControlPlaneHttpError } = await import('../src/client.js');
+  const responses = [
+    new Response(JSON.stringify({ error: 'CONTROL_PLANE_RATE_LIMITED', detail: 'budget spent', retryAfterSeconds: 3 }), { status: 429, headers: { 'retry-after': '3' } }),
+    new Response(JSON.stringify({ ok: true }), { status: 201 }),
+  ];
+  const waited = [];
+  // secret-scan:allow a deliberately fake credential in a mocked-transport test
+  const plane = new HttpControlPlane('http://127.0.0.1:1', 'ncp.k-x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', {
+    fetchImpl: async () => responses.shift(),
+    sleep: async ms => { waited.push(ms); },
+  });
+  assert.deepEqual(await plane.command({ requestId: 'bulk' }), { ok: true });
+  assert.deepEqual(waited, [3000], 'the client waits exactly the Retry-After the server named');
+
+  // Authorization failures are never retried: the answer will not change.
+  // secret-scan:allow a deliberately fake credential in a mocked-transport test
+  const denied = new HttpControlPlane('http://127.0.0.1:1', 'ncp.k-x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', {
+    fetchImpl: async () => new Response(JSON.stringify({ error: 'CONTROL_PLANE_FORBIDDEN', detail: 'no' }), { status: 403 }),
+    sleep: async () => { throw new Error('must not sleep on a 403'); },
+  });
+  await assert.rejects(denied.command({ requestId: 'x' }), error => error instanceof ControlPlaneHttpError && error.status === 403);
+});

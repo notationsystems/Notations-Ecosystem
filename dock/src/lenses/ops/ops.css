@@ -39,6 +39,7 @@
 .pill.node_registered { color: #7fb6f5; border-color: rgba(79, 163, 247, 0.4); background: rgba(79, 163, 247, 0.08); }
 .pill.relation_declared { color: #a99cf7; border-color: rgba(139, 124, 246, 0.4); background: rgba(139, 124, 246, 0.08); }
 .pill.observation_recorded { color: #7ed69a; border-color: rgba(90, 199, 122, 0.4); background: rgba(90, 199, 122, 0.08); }
+.pill.security_posture_recorded { color: #f19aa6; border-color: rgba(232, 106, 122, 0.45); background: rgba(232, 106, 122, 0.08); }
 .pill.coordination_requested { color: #f3c866; border-color: rgba(245, 185, 66, 0.45); background: rgba(245, 185, 66, 0.08); }
 .pill.coordination_resolved { color: #6fd3e0; border-color: rgba(57, 198, 216, 0.45); background: rgba(57, 198, 216, 0.08); }
 .chip.k-node_registered.on { color: #7fb6f5; border-color: rgba(79, 163, 247, 0.5); }
