@@ -1,0 +1,226 @@
+{
+  "nodeId": "geometry-grounded-gaussian-splatting",
+  "name": "Geometry-Grounded Gaussian Splatting",
+  "kind": "world_model",
+  "description": "Upstream mirror of HKUST-SAIL's Geometry-Grounded Gaussian Splatting (Zhang, Jiang, Li, Shen, Tan): a 3DGS variant with multi-view geometric and NCC consistency losses, GOF densification, Mip-Splatting filters and optional spherical-Gaussian appearance, built on RaDe-GS. Given a COLMAP-registered image set it optimises a Gaussian scene, renders novel views and extracts watertight meshes (recon_post.ply) that score on DTU and Tanks-and-Temples. In the universe it is the scene-reconstruction engine whose meshes become scan evidence for the BIM state transformer. All entrypoints are GPU CLIs; it holds no canonical state of its own and must not be treated as a measured survey.",
+  "capabilities": [
+    {
+      "capabilityId": "cli.train",
+      "label": "Train a Gaussian scene (train.py)",
+      "description": "`python train.py -s <colmap_or_blender_dir> -m <output_dir> [-r 2] [--eval] [--use_decoupled_appearance 0|1|2|3] [--sh_degree N --sg_degree N] [--iterations 30000] [--test_iterations ...] [--save_iterations ...] [--checkpoint_iterations ...] [--start_checkpoint]`. Optimises Gaussians with photometric, depth-normal, multi-view geometry and NCC losses; writes point_cloud/iteration_N/point_cloud.ply, cameras.json, cfg_args and checkpoints under -m.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "train.py",
+      "evidence": "train.py; arguments/__init__.py",
+      "side_effects": "writes model dir; opens TCP listener for SIBR network viewer (--ip/--port 6009)",
+      "cost": "GPU: ~tens of minutes per scene",
+      "latency": "minutes to an hour",
+      "provenance": "optimisation from input images",
+      "data_domain": "3d-reconstruction"
+    },
+    {
+      "capabilityId": "cli.render",
+      "label": "Render train/test views (render.py)",
+      "description": "`python render.py -m <output_dir> [--iteration N] [--skip_train] [--skip_test]` renders every camera of the train and test splits from the trained model into <output_dir>/{train,test}/ours_N/{renders,gt}/ for metric computation.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "render.py",
+      "evidence": "render.py",
+      "side_effects": "writes rendered PNGs",
+      "cost": "GPU seconds to minutes",
+      "data_domain": "novel-view-synthesis"
+    },
+    {
+      "capabilityId": "cli.mesh_extract",
+      "label": "Extract mesh by TSDF fusion (mesh_extract.py)",
+      "description": "`python mesh_extract.py -m <output_dir> [--iteration N] [--num_cluster 1]` renders depth from the trained Gaussians and fuses it into a mesh; used for the DTU pipeline. Output mesh written alongside the model (recon.ply / recon_post.ply after cleaning).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "mesh_extract.py",
+      "evidence": "mesh_extract.py",
+      "side_effects": "writes mesh PLY",
+      "cost": "GPU minutes",
+      "data_domain": "mesh"
+    },
+    {
+      "capabilityId": "cli.mesh_extract_tetrahedra",
+      "label": "Extract mesh by marching tetrahedra (mesh_extract_tetrahedra.py)",
+      "description": "`python mesh_extract_tetrahedra.py -m <output_dir> [--iteration N] [--num_cluster] [--move_cpu] [--export_color]` builds a tetrahedral grid from Gaussian centres (CGAL tetra_triangulation), evaluates opacity fields and marches to a mesh; --export_color bakes vertex colors. Recommended for Tanks-and-Temples scale scenes; produces <output_dir>/recon_post.ply.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "mesh_extract_tetrahedra.py",
+      "evidence": "mesh_extract_tetrahedra.py; README.md",
+      "side_effects": "writes mesh PLY",
+      "cost": "GPU minutes, high VRAM (--move_cpu reduces)",
+      "data_domain": "mesh"
+    },
+    {
+      "capabilityId": "cli.metrics",
+      "label": "Compute PSNR/SSIM/LPIPS (metric.py)",
+      "description": "`python metric.py -m <output_dir> [...]` compares renders against ground truth for each model path and writes results.json / per_view.json with PSNR, SSIM and LPIPS. (README refers to it as metrics.py; the file is metric.py.)",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "path": "metric.py",
+      "evidence": "metric.py",
+      "cost": "GPU seconds",
+      "data_domain": "evaluation"
+    },
+    {
+      "capabilityId": "cli.evaluate_dtu_mesh",
+      "label": "Evaluate mesh against DTU ground truth",
+      "description": "`python evaluate_dtu_mesh.py -m <output_dir> [--scan_id N] [--DTU dtu_eval/Offical_DTU_Dataset] [--iteration 30000]` culls the extracted mesh with the DTU masks and computes Chamfer accuracy/completeness against the official DTU point clouds (DTUeval-python).",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "path": "evaluate_dtu_mesh.py",
+      "evidence": "evaluate_dtu_mesh.py; dtu_eval/",
+      "cost": "CPU/GPU minutes",
+      "data_domain": "evaluation"
+    },
+    {
+      "capabilityId": "cli.eval_tnt",
+      "label": "Evaluate mesh on Tanks and Temples",
+      "description": "`python eval_tnt/run.py --dataset-dir <GT_TNT> --traj-path <COLMAP_SfM.log> --ply-path <output_dir>/recon_post.ply --out-dir <output_dir>/mesh` aligns the reconstruction to the GT trajectory and reports precision/recall/F-score using the official TnT toolbox.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "cli",
+      "path": "eval_tnt/run.py",
+      "evidence": "eval_tnt/run.py",
+      "cost": "CPU minutes",
+      "data_domain": "evaluation"
+    },
+    {
+      "capabilityId": "cli.ply2gs",
+      "label": "Convert output PLY to standard 3DGS PLY (ply2gs.py)",
+      "description": "`python ply2gs.py --in_ply <point_cloud.ply> --out_ply <out.ply> [--out_sh_degree 3|-1]` drops spherical-Gaussian attributes and bakes the 3D filter into scale/opacity so the scene loads in SuperSplat, LichtFeld Studio and other standard Gaussian viewers.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "ply2gs.py",
+      "evidence": "ply2gs.py",
+      "side_effects": "writes converted PLY",
+      "cost": "free",
+      "latency": "seconds",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.batch_scripts",
+      "label": "Batch train/extract/evaluate scripts",
+      "description": "scripts/dtu.sh, scripts/tnt.sh, scripts/mip360.sh loop train.py -> mesh extraction -> evaluation over each benchmark scene with the paper's settings (-r 2 --use_decoupled_appearance 3). Dataset paths are hard-coded and must be edited.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "scripts/*.sh",
+      "evidence": "scripts/dtu.sh",
+      "side_effects": "many GPU jobs; writes output/",
+      "cost": "GPU hours",
+      "workflow": "benchmark"
+    },
+    {
+      "capabilityId": "viewer.network_gui",
+      "label": "SIBR network viewer socket during training",
+      "description": "train.py listens on --ip 127.0.0.1 --port 6009 for the SIBR remote viewer (SIBR_viewers/, patched for embree4/newer Boost) which streams interactive renders of the scene while it optimises. Wire protocol is the original graphdeco 3DGS network_gui.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "tcp",
+      "path": "127.0.0.1:6009",
+      "evidence": "train.py (network_gui); gaussian_renderer/network_gui.py; SIBR_viewers/",
+      "data_domain": "visualisation"
+    },
+    {
+      "capabilityId": "contract.colmap_dataset",
+      "label": "COLMAP scene input contract",
+      "description": "`-s` directory with images/ (or --images name) and sparse/0/{cameras.bin, images.bin, points3D.bin} (or .txt). Optional resolution downscale via -r; --eval holds out every 8th view (llffhold=8). DTU expects the 2DGS-preprocessed layout; TnT the PGSR preprocessing.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "<source>/sparse/0",
+      "evidence": "scene/dataset_readers.py (readColmapSceneInfo); scene/colmap_loader.py",
+      "data_domain": "sfm"
+    },
+    {
+      "capabilityId": "contract.blender_dataset",
+      "label": "NeRF-synthetic (Blender) input contract",
+      "description": "`-s` directory with transforms_train.json / transforms_test.json and PNG frames, selected automatically when no sparse/ folder exists; --white_background controls compositing.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "<source>/transforms_train.json",
+      "evidence": "scene/dataset_readers.py (readNerfSyntheticInfo)",
+      "data_domain": "synthetic-scenes"
+    },
+    {
+      "capabilityId": "contract.model_output",
+      "label": "Trained model directory contract",
+      "description": "<output_dir>/point_cloud/iteration_N/point_cloud.ply (Gaussian attributes incl. filter_3D and optional SG terms), cameras.json, cfg_args, chkpntN.pth, and after extraction recon.ply / recon_post.ply meshes. recon_post.ply is the artefact other ecosystem nodes consume.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "<output_dir>/",
+      "evidence": "train.py; mesh_extract_tetrahedra.py; README.md",
+      "data_domain": "gaussian-splat"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Geometry-Grounded-Gaussian-Splatting",
+    "domain": "perception-3d",
+    "maturity": "upstream-mirror",
+    "language": "Python / CUDA",
+    "framework": "PyTorch, diff-gaussian-rasterization, warp-patch-ncc, simple-knn, tetra_triangulation (CGAL)",
+    "exposure": "cli",
+    "upstream": "HKUST-SAIL/Geometry-Grounded-Gaussian-Splatting",
+    "visibility": "public",
+    "last_pushed_at": "2026-03-16T08:08:08Z",
+    "capability_count": 13,
+    "gpu_required": true
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "geometry-grounded-gaussian-splatting--supplies_context_to--bim-state-transformer-engine",
+      "targetNodeId": "bim-state-transformer-engine",
+      "kind": "supplies_context_to",
+      "description": "Confirmed on the consumer side: the BIM state transformer names recon_post.ply from this repository as its first scan-evidence input (gat/geometry/scan_io.py load_ply_points -> ScanRegistrar). This repository itself has no reference to the BIM engine; the flow is mesh -> registration evidence.",
+      "evidence": "mesh_extract_tetrahedra.py (recon_post.ply); bim-state-transformer-engine catalog open_questions / contracts"
+    },
+    {
+      "relationId": "geometry-grounded-gaussian-splatting--supplies_context_to--lichtfeld-studio",
+      "targetNodeId": "lichtfeld-studio",
+      "kind": "supplies_context_to",
+      "description": "Inferred from formats, not code: ply2gs.py exists precisely to convert this repo's output into the standard 3DGS PLY that viewers such as LichtFeld Studio (scene.load_ply) accept.",
+      "evidence": "ply2gs.py; LichtFeld-Studio src/mcp/shared_scene_tools.cpp (scene.load_ply)"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["train.py", "render.py", "mesh_extract.py", "mesh_extract_tetrahedra.py", "metric.py", "evaluate_dtu_mesh.py", "eval_tnt/run.py", "ply2gs.py"],
+      "run": ["conda create -n gggs python=3.12", "pip install -r requirements.txt", "pip install submodules/{diff-gaussian-rasterization,warp-patch-ncc,simple-knn,tetra_triangulation} --no-build-isolation", "python train.py -s <data> -m <out> -r 2 --use_decoupled_appearance 3"],
+      "ports": [6009],
+      "container": false
+    },
+    "contracts": [
+      { "name": "COLMAP input", "path": "scene/dataset_readers.py", "summary": "images/ + sparse/0/*.bin|txt" },
+      { "name": "recon_post.ply", "path": "mesh_extract_tetrahedra.py", "summary": "cleaned triangle mesh, optional vertex colors; consumed by BIM registration" },
+      { "name": "standard 3DGS PLY", "path": "ply2gs.py", "summary": "SH-degree-3 Gaussian PLY without SG terms for generic viewers" }
+    ],
+    "resources": [
+      { "name": "dtu_eval", "classification": "public", "path": "dtu_eval/", "description": "DTU evaluation toolkit; official GT point clouds must be downloaded separately" },
+      { "name": "eval_tnt", "classification": "public", "path": "eval_tnt/", "description": "Tanks and Temples evaluation toolbox" },
+      { "name": "SIBR_viewers", "classification": "public", "path": "SIBR_viewers/", "description": "patched real-time viewer source" }
+    ],
+    "external_services": [],
+    "secrets_env": [],
+    "health": { "method": "cli", "endpoint": "python train.py --help" },
+    "spatial": "Scene-local metric coordinates from COLMAP SfM (arbitrary scale/orientation unless the dataset is georeferenced); no GIS.",
+    "temporal": "Static scenes; optimisation iteration is the only time axis.",
+    "open_questions": [
+      "Which node runs COLMAP to produce the sparse/0 input in the ecosystem (payload-render-engine? data-acquisition-channel)?",
+      "Should recon_post.ply provenance (input image hashes, iteration) be recorded so the BIM engine's scan sha256 evidence is traceable to a capture?"
+    ]
+  }
+}

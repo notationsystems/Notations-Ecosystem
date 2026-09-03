@@ -7,13 +7,15 @@ import { universeMapBundle } from '../model/kepler';
 type MapConfig = Parameters<typeof addDataToMap>[0]['config'];
 import type { LensProps } from './types';
 import { MapOverlay } from './map/MapOverlay';
-import { MAP_ID, SELECTED_DATASET_ID, locatedBounds, resolveClickedNodeId, selectionBundle, withAnalyzerTypes, type KeplerInstanceState, type PickedInfo } from './map/keplerBridge';
+import { MAP_ID, SELECTED_DATASET_ID, locatedBounds, resolveClickedNodeId, selectionBundle, withAnalyzerTypes, withPresentation, type KeplerInstanceState, type PickedInfo } from './map/keplerBridge';
 
 interface KeplerRoot { keplerGl?: Record<string, (KeplerInstanceState & { mapStyle?: { styleType: string; isLoading: Record<string, boolean>; mapStyles: Record<string, { style?: unknown }> } }) | undefined> }
 
 const selectClicked = (s: KeplerRoot): PickedInfo | null => s.keplerGl?.[MAP_ID]?.visState?.clicked ?? null;
 const selectBasemapLoaded = (s: KeplerRoot): boolean => { const ms = s.keplerGl?.[MAP_ID]?.mapStyle; return Boolean(ms && ms.mapStyles?.[ms.styleType]?.style); };
 const BASEMAP_TIMEOUT_MS = 8000;
+// Kepler's container re-registers (and wipes) the instance whenever this prop changes identity, so it must be a constant.
+const INITIAL_UI_STATE = { readOnly: false, currentModal: null, activeSidePanel: null };
 
 /**
  * Kepler.gl universe map. Located nodes are points (colour = kind, size = capabilities), relations between two
@@ -59,7 +61,7 @@ export function MapLens({ dock, filtered, selected, selectedNode, onSelect }: Le
     const mapState = first || !live
       ? bundle.config.config.mapState
       : { ...bundle.config.config.mapState, latitude: live.latitude, longitude: live.longitude, zoom: live.zoom, bearing: live.bearing, pitch: live.pitch };
-    const config = { version: bundle.config.version, config: { ...bundle.config.config, mapState } } as unknown as MapConfig;
+    const config = withPresentation({ version: bundle.config.version, config: { ...bundle.config.config, mapState } }) as unknown as MapConfig;
     dispatch(wrapTo(MAP_ID, addDataToMap({ datasets: withAnalyzerTypes(bundle.datasets), options: { centerMap: false, readOnly: false, keepExistingConfig: false }, config })));
     if (first && bounds) dispatch(wrapTo(MAP_ID, fitBounds(bounds)));
   }, [bundle, ready, dispatch, store]); // eslint-disable-line react-hooks/exhaustive-deps -- bounds only matter on the first load
@@ -104,7 +106,7 @@ export function MapLens({ dock, filtered, selected, selectedNode, onSelect }: Le
           mapStylesReplaceDefault={false}
           appName="Notations Universe"
           version="dock"
-          initialUiState={{ readOnly: false, currentModal: null, activeSidePanel: null }}
+          initialUiState={INITIAL_UI_STATE}
         />
       )}
       <MapOverlay

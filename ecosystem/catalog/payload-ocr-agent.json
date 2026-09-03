@@ -352,6 +352,13 @@
       "kind": "supplies_context_to",
       "description": "Observation bundles and CanonicalStateCandidates flow from the OCR agent into Payload's EvidencePool -> EntityResolution -> Validation -> canonical state, which the Payload Terminal owns; the agent ships only an EvidenceSink port the host implements. Direction: agent -> terminal, candidates only. Inferred from docs and code comments (ARCHITECTURE.md, BOUNDARIES.md integration contract, 'the terminal's claim relations' in observation/types.ts and conflict/detect.ts); no import or network call to the Terminal exists in this repo.",
       "evidence": "docs/BOUNDARIES.md#integration-contract-for-the-host; docs/ARCHITECTURE.md#position-in-payload; src/evidence/port.ts; src/observation/types.ts; src/conflict/detect.ts"
+    },
+    {
+      "relationId": "payload-ocr-agent--supplies_context_to--payload-corpus-graph",
+      "targetNodeId": "payload-corpus-graph",
+      "kind": "supplies_context_to",
+      "description": "Planned, inferred from naming and the corpus-graph charter, not confirmed by code: the PayLoad-Corpus-Graph repository (no commits yet) is described as the provenance-linked store of documents perceived by this agent, i.e. a candidate host for the EvidencePool behind the EvidenceSink port. No adapter exists in either repository; the only evidenced sink today is the terminal's OCR candidate inbox.",
+      "evidence": "src/evidence/port.ts (EvidenceSink port); docs/BOUNDARIES.md#integration-contract-for-the-host; ecosystem/catalog/payload-corpus-graph.json (charter); repo naming only"
     }
   ],
   "reference": {

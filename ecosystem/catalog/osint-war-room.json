@@ -1,0 +1,383 @@
+{
+  "nodeId": "osint-war-room",
+  "name": "OSINT War Room",
+  "kind": "visual_dock",
+  "description": "Fork of Hue-Jhan/OSINT-War-Room: a FastAPI backend (backend/main.py, port 8000) that serves a vanilla-JS Leaflet tactical dashboard and four routers (/api/radar, /api/alerts, /api/economy, /api/news) proxying GDELT conflict events, Ukraine air-raid alarms, OpenStreetMap military bases, OpenSky aircraft, AISStream vessels, CISA KEV vulnerabilities, Telegram frontline channels, yfinance markets, Polymarket odds and the Pentagon Pizza Index into one command-center view with a nuke simulator and DEFCON meter. State is a flat backend/database.json holding scraped alerts and the channel list; everything else is in-memory cache. In the Notations Universe it is a lightweight rendering dock and a catalogue of conflict-domain feeds; it must not become a canonical record and its person-facing scraping (Telegram, disabled Twitter) should stay confined to public channel previews.",
+  "capabilities": [
+    {
+      "capabilityId": "ops.status",
+      "label": "Backend status",
+      "description": "GET /api/status returns a static liveness string for the FastAPI backend.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/status",
+      "evidence": "backend/main.py"
+    },
+    {
+      "capabilityId": "ui.war_room",
+      "label": "Tactical dashboard",
+      "description": "Principal view served from /: a Leaflet tactical map with region presets (Global, Middle East, Ukraine, Taiwan), Split.js multi-pane layout, floating panels, DEFCON threat meter, casualty tracker, procedural sound engine and a customizable webcam grid of YouTube/CCTV streams.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/",
+      "evidence": "frontend/index.html; frontend/js/main.js; frontend/js/map.js; frontend/js/ui.js"
+    },
+    {
+      "capabilityId": "radar.conflicts",
+      "label": "GDELT conflict events",
+      "description": "GET /api/radar/conflicts downloads the latest GDELT 2.0 events export, filters explosion/attack event codes prioritising the Middle East and Ukraine, and returns geocoded events with NumKilled/NumWounded; cached 15 min with pending-request locking.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/conflicts",
+      "evidence": "backend/api/radar.py",
+      "data_domain": "conflict",
+      "provenance": "GDELT 2.0 15-minute export",
+      "latency": "10-30 s cold"
+    },
+    {
+      "capabilityId": "radar.alarms",
+      "label": "Ukraine air raid alarms",
+      "description": "GET /api/radar/alarms polls api.alerts.in.ua for active air raid alerts; also feeds the DEFCON threat meter.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/alarms",
+      "evidence": "backend/api/radar.py",
+      "data_domain": "civil-defence",
+      "provenance": "alerts.in.ua"
+    },
+    {
+      "capabilityId": "radar.bases",
+      "label": "Military bases (OSM)",
+      "description": "GET /api/radar/bases queries the Overpass API for military bases, airfields and naval ports across Ukraine, the Middle East and the Taiwan Strait; cached 6 h.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/bases",
+      "evidence": "backend/api/radar.py",
+      "data_domain": "defence-infrastructure",
+      "provenance": "OpenStreetMap Overpass"
+    },
+    {
+      "capabilityId": "radar.aircraft",
+      "label": "Live aircraft (OpenSky)",
+      "description": "GET /api/radar/aircraft?lamin&lomin&lamax&lomax returns OpenSky state vectors (position, altitude, heading, callsign) for a bounding box.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/aircraft",
+      "evidence": "backend/api/radar.py",
+      "data_domain": "aviation",
+      "provenance": "OpenSky Network anonymous"
+    },
+    {
+      "capabilityId": "radar.ships",
+      "label": "AIS vessels",
+      "description": "GET /api/radar/ships opens a short AISStream websocket subscription over four regional bounding boxes and returns collected vessel positions colour-coded by type; the API key is hardcoded as a placeholder in radar.py and the working AIS feed is opened client-side in frontend/js/map.js.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/ships",
+      "evidence": "backend/api/radar.py; frontend/js/map.js",
+      "data_domain": "maritime",
+      "provenance": "AISStream.io"
+    },
+    {
+      "capabilityId": "radar.cyber",
+      "label": "CISA KEV cyber feed",
+      "description": "GET /api/radar/cyber returns recent CISA Known Exploited Vulnerabilities mapped to world coordinates and typed (exploit, DDoS, malware, breach).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/cyber",
+      "evidence": "backend/api/radar.py",
+      "data_domain": "cyber",
+      "provenance": "CISA KEV JSON"
+    },
+    {
+      "capabilityId": "radar.ground",
+      "label": "Ground radar placeholder",
+      "description": "GET /api/radar/ground returns an empty dataset; reserved for a future ground-track layer.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radar/ground",
+      "evidence": "backend/api/radar.py"
+    },
+    {
+      "capabilityId": "alerts.telegram",
+      "label": "Telegram frontline alerts",
+      "description": "GET /api/alerts/telegram returns the last 200 posts scraped every 15 s from public t.me/s/<channel> previews by the background task started in main.py and cached in backend/database.json.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/alerts/telegram",
+      "evidence": "backend/api/alerts.py; backend/main.py; backend/database.json",
+      "data_domain": "osint-social",
+      "provenance": "Telegram public web previews"
+    },
+    {
+      "capabilityId": "alerts.settings.read",
+      "label": "Read Telegram channel settings",
+      "description": "GET /api/alerts/settings returns the configured channel list (defaults: monitor_the_situation, terroralarm, ConflictsTracker, aljazeeraglobal, OSINTWarfare).",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/alerts/settings",
+      "evidence": "backend/api/alerts.py"
+    },
+    {
+      "capabilityId": "alerts.settings.write",
+      "label": "Update Telegram channel settings",
+      "description": "POST /api/alerts/settings {channels[]} rewrites settings.telegram_channels in backend/database.json and redirects the scraper. Writes persistent configuration.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/alerts/settings",
+      "evidence": "backend/api/alerts.py",
+      "side_effects": "writes backend/database.json"
+    },
+    {
+      "capabilityId": "news.feed",
+      "label": "Unified news feed",
+      "description": "GET /api/news/feed merges cached alerts and news from database.json sorted by timestamp (max 200). The Twitter scraper behind it is disabled; the route is marked unused in the README.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/news/feed",
+      "evidence": "backend/api/news.py; README.md"
+    },
+    {
+      "capabilityId": "economy.markets",
+      "label": "Market dashboard",
+      "description": "GET /api/economy/markets returns yfinance quotes and daily change for S&P 500, FTSE 100, Nikkei, gold, silver, WTI, natural gas, wheat, BTC, ETH, XMR; GET /api/economy/vix returns the VIX fear index.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/markets",
+      "evidence": "backend/api/economy.py",
+      "data_domain": "markets",
+      "provenance": "yfinance"
+    },
+    {
+      "capabilityId": "economy.polymarket",
+      "label": "Polymarket geopolitical odds",
+      "description": "GET /api/economy/polymarket returns live prediction-market odds from gamma-api.polymarket.com with sports filtered out, showing 24h trending and highest-volume markets.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/polymarket",
+      "evidence": "backend/api/economy.py",
+      "data_domain": "prediction-markets"
+    },
+    {
+      "capabilityId": "economy.pizza",
+      "label": "Pentagon Pizza Index",
+      "description": "GET /api/economy/pizza proxies monitor-the-situation.com/api/pizza (order volume near the Pentagon as an activity proxy) into a doughcon level and graph.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/pizza",
+      "evidence": "backend/api/economy.py",
+      "data_domain": "indicators"
+    },
+    {
+      "capabilityId": "economy.ticker",
+      "label": "News ticker headlines",
+      "description": "GET /api/economy/ticker aggregates RSS headlines from BBC World, Reuters, Al Jazeera and AP for the scrolling ticker.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/economy/ticker",
+      "evidence": "backend/api/economy.py",
+      "data_domain": "news"
+    },
+    {
+      "capabilityId": "sim.nuke",
+      "label": "Nuclear detonation simulator",
+      "description": "Click-to-detonate simulation in the map UI using Glasstone & Dolan cube-root scaling for seven historical weapons and five blast rings; a modelled overlay, not a live layer.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "frontend/js/map.js; README.md",
+      "provenance": "synthetic:simulation"
+    },
+    {
+      "capabilityId": "ui.tactical_tools",
+      "label": "Tactical tools",
+      "description": "Distance measurement, custom labelled markers, coordinate HUD, legend, simulated radio-intercept widget (Web Audio) and DEFCON meter derived from active alarms plus GDELT event density.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "frontend/js/map.js; frontend/js/ui.js"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/OSINT-War-Room",
+    "domain": "intelligence",
+    "maturity": "upstream-mirror",
+    "language": "Python",
+    "framework": "FastAPI 0.135 + uvicorn; Leaflet.js frontend",
+    "exposure": "local-only",
+    "upstream": "Hue-Jhan/OSINT-War-Room (MIT)",
+    "visibility": "public",
+    "last_pushed_at": "2026-06-04T08:13:03Z",
+    "default_port": 8000,
+    "license": "MIT",
+    "state_store": "backend/database.json (flat file)",
+    "capability_count": 19
+  },
+  "location": {
+    "longitude": 30.5234,
+    "latitude": 50.4501,
+    "label": "Kyiv (Ukraine air-raid alarm focus and default region preset)"
+  },
+  "relations": [],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "backend/main.py",
+        "frontend/index.html"
+      ],
+      "run": [
+        "pip install -r requirements.txt",
+        "uvicorn backend.main:app --reload"
+      ],
+      "ports": [
+        8000
+      ],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "Router response envelope",
+        "path": "backend/api/radar.py",
+        "summary": "Every route returns {status: success|error, data: [...]}."
+      },
+      {
+        "name": "Settings document",
+        "path": "backend/database.json",
+        "summary": "{alerts[], news[], settings.telegram_channels[]} flat-file store."
+      }
+    ],
+    "resources": [
+      {
+        "name": "Flat-file cache",
+        "classification": "internal",
+        "path": "backend/database.json",
+        "description": "Scraped Telegram alerts (max 200) and user channel settings."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "GDELT Project",
+        "domain": "data.gdeltproject.org",
+        "purpose": "conflict events export",
+        "auth": "none"
+      },
+      {
+        "name": "alerts.in.ua",
+        "domain": "api.alerts.in.ua",
+        "purpose": "Ukraine air raid alarms",
+        "auth": "none"
+      },
+      {
+        "name": "OpenStreetMap Overpass",
+        "domain": "overpass-api.de",
+        "purpose": "military bases",
+        "auth": "none"
+      },
+      {
+        "name": "OpenSky Network",
+        "domain": "opensky-network.org",
+        "purpose": "aircraft state vectors",
+        "auth": "none (anonymous)"
+      },
+      {
+        "name": "AISStream.io",
+        "domain": "stream.aisstream.io",
+        "purpose": "AIS vessels",
+        "auth": "API key hardcoded in frontend/js/map.js and placeholder in radar.py"
+      },
+      {
+        "name": "CISA KEV",
+        "domain": "www.cisa.gov",
+        "purpose": "exploited vulnerabilities",
+        "auth": "none"
+      },
+      {
+        "name": "Telegram public previews",
+        "domain": "t.me",
+        "purpose": "frontline channel posts",
+        "auth": "none"
+      },
+      {
+        "name": "ACLED",
+        "domain": "acleddata.com",
+        "purpose": "conflict data (OAuth token helper present, placeholder credentials)",
+        "auth": "hardcoded placeholders in radar.py"
+      },
+      {
+        "name": "Yahoo Finance via yfinance",
+        "domain": "query1.finance.yahoo.com",
+        "purpose": "market quotes",
+        "auth": "none"
+      },
+      {
+        "name": "Polymarket Gamma API",
+        "domain": "gamma-api.polymarket.com",
+        "purpose": "prediction-market odds",
+        "auth": "none"
+      },
+      {
+        "name": "monitor-the-situation.com",
+        "domain": "monitor-the-situation.com",
+        "purpose": "Pentagon Pizza Index",
+        "auth": "none"
+      },
+      {
+        "name": "BBC / Reuters / Al Jazeera / AP RSS",
+        "domain": "feeds.bbci.co.uk, feeds.reuters.com, aljazeera.com, feeds.apnews.com",
+        "purpose": "ticker headlines",
+        "auth": "none"
+      },
+      {
+        "name": "YouTube embeds",
+        "domain": "www.youtube.com",
+        "purpose": "webcam grid streams",
+        "auth": "none"
+      }
+    ],
+    "secrets_env": [],
+    "health": {
+      "method": "http",
+      "endpoint": "/api/status"
+    },
+    "spatial": "Regional tactical map with presets for Global, Middle East, Ukraine and Taiwan; all feeds are point-geocoded.",
+    "temporal": "Near-real-time: Telegram every 15 s, GDELT every 15 min, bases every 6 h; no history beyond the last 200 alerts.",
+    "open_questions": [
+      "No environment variables are read: the AIS key is hardcoded client-side and ACLED credentials are placeholders in radar.py; secrets handling must be introduced before any shared deployment.",
+      "requirements.txt pins scraping and captcha-solving libraries (2captcha, apify, tweety, cloudscraper) that no served route uses; confirm intended scope.",
+      "Last upstream push is June 2026 and no Notations-specific commits are visible; treat as a pure upstream mirror."
+    ]
+  }
+}

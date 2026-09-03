@@ -108,7 +108,15 @@
     "capability_count": 8
   },
   "location": null,
-  "relations": [],
+  "relations": [
+    {
+      "relationId": "control-plane--governs--notations-dock",
+      "targetNodeId": "notations-dock",
+      "kind": "governs",
+      "description": "Confirmed by code: the control plane's OpenAPI contract and validation.js are the only contract the dock follows. dock/src/api/controlPlane.ts consumes /v1/snapshot, /v1/events and /v1/commands exactly as specified, dock/src/control-plane.d.ts types the snapshot, and the console lens validates every drafted command with the control plane's own validator before submitting it with expectedRevision.",
+      "evidence": "control-plane/openapi/control-plane.openapi.yaml; control-plane/src/validation.js; dock/src/api/controlPlane.ts; dock/src/control-plane.d.ts; dock/src/lenses/ConsoleLens.tsx; dock/src/model/commands.ts"
+    }
+  ],
   "reference": {
     "runtime": {
       "entrypoints": [

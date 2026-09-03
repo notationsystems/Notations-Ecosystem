@@ -1,8 +1,23 @@
 import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
 import { parseCommand } from './validation.js';
+import { buildConstellation } from './security/evidence.js';
+import { LOCAL_PRINCIPAL } from './security/identity.js';
+import { permissionForAction, requireActorBinding, requireNodeBinding, requirePermission, requireSeparationOfDuties } from './security/policy.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
+
+/**
+ * How far in the past a command may have been signed and still be accepted.
+ *
+ * The event id already makes an identical replay a no-op, but a bounded freshness
+ * window means a captured command cannot be held indefinitely and released at a
+ * chosen moment. Clock skew in the other direction is bounded separately and more
+ * tightly, because a future-dated command would otherwise sit in history claiming to
+ * predate events it actually followed.
+ */
+const DEFAULT_MAX_COMMAND_AGE_SECONDS = 900;
+const MAX_CLOCK_SKEW_SECONDS = 60;
 
 function frozen(value) {
   return Object.freeze(value);
@@ -13,6 +28,7 @@ function derive(records) {
   const relations = new Map();
   const observations = new Map();
   const coordination = new Map();
+  const posture = new Map();
 
   for (const { event } of records) {
     switch (event.kind) {
@@ -24,6 +40,9 @@ function derive(records) {
         break;
       case 'observation_recorded':
         observations.set(event.observation.nodeId, event.observation);
+        break;
+      case 'security_posture_recorded':
+        posture.set(event.posture.nodeId, event.posture);
         break;
       case 'coordination_requested':
         coordination.set(event.request.coordinationId, event.request);
@@ -45,7 +64,7 @@ function derive(records) {
         throw new ControlPlaneError(503, 'JOURNAL_CORRUPT', `Journal contains unsupported event kind ${event.kind}.`, 'Restore a journal produced by a compatible control-plane release.');
     }
   }
-  return { nodes, relations, observations, coordination };
+  return { nodes, relations, observations, coordination, posture };
 }
 
 function makeSnapshot(records, durability, generatedAt) {
@@ -53,11 +72,13 @@ function makeSnapshot(records, durability, generatedAt) {
   const nodes = [...state.nodes.values()]
     .map(node => {
       const observed = state.observations.get(node.nodeId);
+      const posture = state.posture.get(node.nodeId);
       return frozen({
         ...node,
         health: observed?.health ?? 'unknown',
         lastObservedAt: observed?.observedAt ?? null,
         lastObservation: observed ? { source: observed.source, detail: observed.detail } : null,
+        security: posture ? frozen({ attestedAt: posture.attestedAt, method: posture.method, attestedBy: posture.attestedBy, signals: posture.signals }) : null,
       });
     })
     .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
@@ -71,6 +92,7 @@ function makeSnapshot(records, durability, generatedAt) {
     nodes,
     relations: [...state.relations.values()].sort((left, right) => left.relationId.localeCompare(right.relationId)),
     coordination: [...state.coordination.values()].sort((left, right) => left.coordinationId.localeCompare(right.coordinationId)),
+    constellation: buildConstellation(Object.fromEntries(state.posture), { now: Date.parse(generatedAt) || Date.now() }),
   });
 }
 
@@ -128,6 +150,20 @@ function actionEvent(command, state, recordedAt) {
         observation: frozen({ nodeId: command.nodeId, health: command.health, observedAt: command.observedAt, source: command.source, detail: command.detail }),
       };
     }
+    case 'record_security_posture': {
+      if (!state.nodes.has(command.nodeId)) throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Node ${command.nodeId} is not registered.`, 'Register the node before attesting its security posture.');
+      return {
+        ...base,
+        kind: 'security_posture_recorded',
+        posture: frozen({
+          nodeId: command.nodeId,
+          attestedAt: command.attestedAt,
+          attestedBy: command.actorId,
+          method: command.method,
+          signals: frozen(command.signals.map(frozen)),
+        }),
+      };
+    }
     case 'request_capability': {
       const requester = state.nodes.get(command.requesterNodeId);
       const target = state.nodes.get(command.targetNodeId);
@@ -160,6 +196,10 @@ function actionEvent(command, state, recordedAt) {
       const request = state.coordination.get(command.coordinationId);
       if (!request) throw new ControlPlaneError(404, 'COORDINATION_NOT_FOUND', `Coordination id ${command.coordinationId} is not registered.`, 'Request the capability before resolving it.');
       if (request.status !== 'approval_required') throw new ControlPlaneError(409, 'COORDINATION_NOT_PENDING', `Coordination id ${command.coordinationId} is ${request.status}, not awaiting operator approval.`, 'Only an execution intent awaiting approval can be resolved.');
+      // Separation of duties: the actor that proposed an execution intent may not be
+      // the actor that approves it, whatever roles it holds. This is what stops an
+      // agent from granting itself a capability.
+      requireSeparationOfDuties(command.actorId, request.requestedBy);
       return {
         ...base,
         kind: 'coordination_resolved',
@@ -175,14 +215,34 @@ function actionEvent(command, state, recordedAt) {
   }
 }
 
+/**
+ * The subject node a command concerns, for node-scoped credentials. `null` means the
+ * command is not about one particular node.
+ */
+function subjectNode(command) {
+  switch (command.action) {
+    case 'register_node':
+      return command.node.nodeId;
+    case 'record_observation':
+    case 'record_security_posture':
+      return command.nodeId;
+    case 'request_capability':
+      return command.requesterNodeId;
+    default:
+      return null;
+  }
+}
+
 export class ControlPlane {
-  constructor(journal, clock = () => new Date().toISOString()) {
+  constructor(journal, clock = () => new Date().toISOString(), { maxCommandAgeSeconds = DEFAULT_MAX_COMMAND_AGE_SECONDS } = {}) {
     this.journal = journal;
     this.clock = clock;
+    this.maxCommandAgeSeconds = maxCommandAgeSeconds;
   }
 
-  static fromPath(path, clock) {
-    return new ControlPlane(new HashJournal(path), clock);
+  static fromPath(path, clock, options = {}) {
+    const { keyStore = null, requireSignatures = false, anchor = true, ...rest } = options;
+    return new ControlPlane(new HashJournal(path, { keyStore, requireSignatures, anchor }), clock, rest);
   }
 
   async snapshot() {
@@ -190,7 +250,7 @@ export class ControlPlane {
     return makeSnapshot(records, 'local_jsonl_single_writer', this.clock());
   }
 
-  async events(afterEventId) {
+  async events(afterEventId, { limit = null } = {}) {
     const records = await this.journal.read();
     let selected = records;
     if (afterEventId) {
@@ -198,18 +258,48 @@ export class ControlPlane {
       if (index < 0) throw new ControlPlaneError(409, 'CURSOR_UNKNOWN', `Event cursor ${afterEventId} is not present in the journal.`, 'Refresh the complete snapshot and resume with its eventCursor.');
       selected = records.slice(index + 1);
     }
+    const truncated = limit !== null && selected.length > limit;
+    const page = truncated ? selected.slice(0, limit) : selected;
     return frozen({
       schema: 'notations.control-plane.events.v1',
       revision: records.length ? records[records.length - 1].recordHash : null,
       eventCursor: records.length ? records[records.length - 1].event.eventId : null,
-      events: selected,
+      events: page,
+      truncated,
+      nextCursor: truncated && page.length ? page[page.length - 1].event.eventId : null,
     });
   }
 
-  async command(input) {
+  /**
+   * Append one coordination command.
+   *
+   * @param {unknown} input the caller's command
+   * @param {object} [context]
+   * @param {import('./security/identity.js').Principal} [context.principal] the authenticated caller
+   */
+  async command(input, context = {}) {
+    const principal = context.principal ?? LOCAL_PRINCIPAL;
     const command = parseCommand(input);
+
+    // Authorization happens before any state is read or written, and every check
+    // fails closed: an unrecognised action has no permission, a principal without the
+    // permission is refused, and an actor identity that is not bound to the
+    // credential cannot be written into history.
+    requirePermission(principal, permissionForAction(command.action));
+    requireActorBinding(principal, command.actorId);
+    const subject = subjectNode(command);
+    if (subject) requireNodeBinding(principal, subject);
+
     const recordedAt = this.clock();
-    if (Date.parse(command.submittedAt) > Date.parse(recordedAt) + 60_000) throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the caller clock and submit the same command again.');
+    const submittedAtMs = Date.parse(command.submittedAt);
+    const recordedAtMs = Date.parse(recordedAt);
+    if (submittedAtMs > recordedAtMs + MAX_CLOCK_SKEW_SECONDS * 1000) {
+      throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the caller clock and submit the same command again.');
+    }
+    if (this.maxCommandAgeSeconds > 0 && submittedAtMs < recordedAtMs - this.maxCommandAgeSeconds * 1000) {
+      throw new ControlPlaneError(422, 'COMMAND_STALE', `submittedAt is older than the ${this.maxCommandAgeSeconds}-second freshness window.`, 'Re-sign the command with a current timestamp. A captured command cannot be replayed at a chosen moment.');
+    }
+
     const records = await this.journal.read();
     const event = actionEvent(command, derive(records), recordedAt);
     const append = await this.journal.append(event, command.expectedRevision);

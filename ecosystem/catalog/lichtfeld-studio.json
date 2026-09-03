@@ -1,0 +1,349 @@
+{
+  "nodeId": "lichtfeld-studio",
+  "name": "LichtFeld Studio",
+  "kind": "operator_surface",
+  "description": "Upstream mirror of MrNeRF's LichtFeld Studio: a native C++23/CUDA workstation for 3D Gaussian Splatting that trains scenes from COLMAP datasets, inspects them in real time, edits Gaussian selections and scene nodes with undo/redo, and exports to PLY, SOG, SPZ, USD, RAD or a standalone HTML viewer. It is where a human operates on splat scenes; agents reach the same surface through a local MCP HTTP server (http://127.0.0.1:45677/mcp) with discovery resources and mutation tools, an embedded Python API (`import lichtfeld as lf`) and a manifest-driven Python plugin system. It must never be the canonical store of scene state: it consumes datasets and checkpoints from disk and hands exports back to the ecosystem. NVIDIA GPU required; Windows binaries via the LichtFeld portal, Linux via source or the docker/ image.",
+  "capabilities": [
+    {
+      "capabilityId": "cli.train",
+      "label": "Train from a COLMAP dataset (CLI / headless)",
+      "description": "`LichtFeld-Studio -d <data-path> -o <output-path> [--headless] [-i iter] [--strategy mcmc|default] [--sh-degree N] [--max-cap N] [--config file] [--init ply] [--import-cameras] [--images dir] [--test-every N] [--timelapse-every N] [--ppisp-sidecar] [--python-script file]`. Headless mode requires --data-path or --resume. Writes checkpoints and PLY snapshots to the output path.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "LichtFeld-Studio",
+      "evidence": "src/core/argument_parser.cpp",
+      "side_effects": "GPU training job; writes output dir",
+      "cost": "GPU minutes to hours",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.view",
+      "label": "Open a PLY/checkpoint in the viewer (-v)",
+      "description": "`LichtFeld-Studio -v <file.ply>` or `--resume <checkpoint>` launches the GUI on an existing scene without training; the app also starts with no arguments as an empty workstation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "path": "LichtFeld-Studio -v",
+      "evidence": "src/core/argument_parser.cpp",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.export",
+      "label": "Convert/export a scene from the CLI (-f)",
+      "description": "Export sub-parser: `-f/--format ply|sog|spz|html|usd|usda|usdc|rad [--sog-iterations K] [--sh-degree N]` converts a loaded PLY/checkpoint into the chosen delivery format without the GUI.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "LichtFeld-Studio ... -f <format>",
+      "evidence": "src/core/argument_parser.cpp (format, sog-iterations flags)",
+      "side_effects": "writes export file",
+      "cost": "free; SOG k-means seconds",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.plugin",
+      "label": "Plugin scaffolding and validation CLI",
+      "description": "`LichtFeld-Studio plugin create <name>` (package + .venv + VS Code config under ~/.lichtfeld/plugins/), `plugin check <name>` (validate manifest/structure), `plugin list` (installed plugins).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "LichtFeld-Studio plugin",
+      "evidence": "src/core/argument_parser.cpp; docs/plugin-system.md",
+      "side_effects": "writes files under ~/.lichtfeld/plugins; creates uv venv",
+      "cost": "free"
+    },
+    {
+      "capabilityId": "mcp.server",
+      "label": "Local MCP HTTP endpoint",
+      "description": "The GUI application starts an MCP server with resources enabled on http://127.0.0.1:45677/mcp (Streamable HTTP). `scripts/lichtfeld_mcp_bridge.py` (wired by .mcp.json) launches the app and proxies stdio MCP to it; LICHTFELD_MCP_ENDPOINT overrides the URL. Initialize, then tools/list and resources/list.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "method": "POST",
+      "path": "http://127.0.0.1:45677/mcp",
+      "evidence": "src/app/application.cpp; src/mcp/mcp_http_server.hpp; scripts/lichtfeld_mcp_bridge.py; AGENTS.md",
+      "data_domain": "automation"
+    },
+    {
+      "capabilityId": "mcp.resources.discovery",
+      "label": "MCP discovery resources (runtime/ui/scene/selection/history)",
+      "description": "Read-only URIs: lichtfeld://runtime/catalog (job ids, event types), runtime/state, runtime/jobs/<id>, runtime/events/<type>, ui/state, ui/tools, ui/menus, ui/panels, operators/registry, operators/modal_state, scene/state, scene/nodes, scene/selected_nodes, selection/current, history/state, history/stack, gaussians/stats, training/loss_curve. Agents read these before choosing tools.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "lichtfeld://*",
+      "evidence": "AGENTS.md; docs/docs/development/mcp/index.md; src/mcp/shared_scene_tools.cpp",
+      "data_domain": "automation"
+    },
+    {
+      "capabilityId": "mcp.scene.load",
+      "label": "scene.load_dataset / load_checkpoint / load_ply",
+      "description": "MCP tools that import a COLMAP dataset (job import.dataset), resume a training checkpoint, or add a Gaussian PLY as a scene node. Long-running; pair with runtime.job.wait.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "scene.load_dataset|scene.load_checkpoint|scene.load_ply",
+      "evidence": "src/mcp/shared_scene_tools.cpp; AGENTS.md",
+      "side_effects": "loads GPU memory; replaces current scene",
+      "cost": "GPU memory",
+      "latency": "seconds to minutes"
+    },
+    {
+      "capabilityId": "mcp.scene.nodes",
+      "label": "Scene graph inspection and edits",
+      "description": "scene.list_nodes, scene.get_selected_nodes (observe) plus scene.delete_node, scene.save_checkpoint and node operations surfaced through operator.invoke (rename, reparent, duplicate, visibility, lock, groups, crop boxes/ellipsoids, merge to single PLY).",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "scene.*",
+      "evidence": "src/mcp/shared_scene_tools.cpp; src/app/mcp_operator_tools.cpp",
+      "side_effects": "mutates in-app scene graph (undoable)"
+    },
+    {
+      "capabilityId": "mcp.scene.export",
+      "label": "scene.export_* (ply, sog, spz, html, usd, usdz_nurec, rad, colmap)",
+      "description": "Synchronous exports of the current scene: scene.export_ply, export_sog (SuperSplat), export_spz (Niantic), export_html (standalone web viewer), export_usd / export_usdz_nurec (OpenUSD / NuRec), export_rad, export_colmap (sparse cameras). scene.export_status reports idle; scene.export_cancel cannot stop a running export.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "scene.export_*",
+      "evidence": "src/mcp/shared_scene_tools.cpp; AGENTS.md",
+      "side_effects": "writes files to disk",
+      "cost": "free",
+      "latency": "seconds",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "mcp.training",
+      "label": "training.start / get_state / get_loss_history / list_operations / ask_advisor",
+      "description": "Start training on the loaded dataset (job training.main), read current iteration/loss state, fetch loss history, list available training operations, and ask the built-in training advisor for parameter suggestions. Pause/resume/stop go through runtime.job.control on training.main.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "training.*",
+      "evidence": "src/mcp/shared_scene_tools.cpp; src/python/lfs/module.cpp; docs/docs/development/mcp/index.md",
+      "side_effects": "GPU training job",
+      "cost": "GPU minutes to hours"
+    },
+    {
+      "capabilityId": "mcp.runtime.jobs",
+      "label": "runtime.job.* and runtime.events.* tracking",
+      "description": "runtime.job.list / describe / wait / control over normalised job ids (training.main, editor.python, import.dataset, export.scene, export.video, operator.modal) and runtime.events.tail / clear for event streams (training.progress, scene.changed, selection.changed, export.completed ...). The sanctioned alternative to polling.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "mcp",
+      "path": "runtime.*",
+      "evidence": "src/app/mcp_runtime_tools.cpp",
+      "data_domain": "automation"
+    },
+    {
+      "capabilityId": "mcp.selection",
+      "label": "Screen-space and attribute Gaussian selection",
+      "description": "selection.rect, click, brush, lasso, polygon, ring, stroke, by_description (text), by_text, by_color, by_opacity, by_scale, grow, shrink, invert, clear, mask, preview, histogram and selection.get. Selections are the operand for gaussians.write, transform.* and operators.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "selection.*",
+      "evidence": "src/app/mcp_gui_tools.cpp; AGENTS.md",
+      "side_effects": "changes in-app selection state"
+    },
+    {
+      "capabilityId": "mcp.gaussians",
+      "label": "gaussians.read / gaussians.write raw tensors",
+      "description": "Read positions, scales, rotations, opacities and SH colors of the (selected) Gaussians as tensors, and write modified tensors back into the live model with undo history.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "gaussians.read|gaussians.write",
+      "evidence": "src/app/mcp_gui_tools.cpp",
+      "side_effects": "mutates model parameters",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "mcp.transform",
+      "label": "transform.get / set / translate / rotate / scale",
+      "description": "Inspect and edit the transform of a scene node or selection, mirroring the native gizmos; edits are recorded in the shared history.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "transform.*",
+      "evidence": "src/app/mcp_gui_tools.cpp",
+      "side_effects": "mutates node transforms (undoable)"
+    },
+    {
+      "capabilityId": "mcp.history",
+      "label": "Undo/redo history and transactions",
+      "description": "history.list / get (observe), history.undo / redo / jump / shrink, and history.begin_transaction / commit_transaction / rollback_transaction to group multiple mutations into one undoable step.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "history.*",
+      "evidence": "src/app/mcp_gui_tools.cpp; docs/docs/development/mcp/index.md",
+      "side_effects": "rewinds or replays scene edits"
+    },
+    {
+      "capabilityId": "mcp.ui",
+      "label": "Drive GUI tools, menus, panels and operators",
+      "description": "ui.tool.list / describe / invoke / set_submode / clear_active, ui.menu.list / describe / invoke, ui.panel.list / describe / update, ui.operator.activate / clear_active, and operator.list / describe / invoke / cancel_modal (modal flows surface via operator.modal job and operators/modal_state). Never guess ids; read the registry resources first.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "ui.*|operator.*",
+      "evidence": "src/app/mcp_ui_registry_tools.cpp; src/app/mcp_operator_tools.cpp",
+      "side_effects": "arbitrary GUI actions incl. destructive operators (check `destructive` metadata)"
+    },
+    {
+      "capabilityId": "mcp.camera_render",
+      "label": "camera.* view control and render.* captures",
+      "description": "camera.get / set_view / reset / list / go_to_dataset_camera position the viewport; render.capture / capture_window / frame / settings.get / settings.set produce image or alpha captures of the current view for QA and reports.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "camera.*|render.*",
+      "evidence": "src/app/mcp_gui_tools.cpp",
+      "side_effects": "writes capture images; moves viewport",
+      "data_domain": "visualisation"
+    },
+    {
+      "capabilityId": "mcp.sequencer",
+      "label": "Camera path sequencer and video export",
+      "description": "sequencer.get / add_keyframe / update_keyframe / delete_keyframe / set_easing / play / pause / stop / set_playback_speed / save_path / load_path build a keyframed camera timeline; export.video (job export.video) renders it to a movie.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "sequencer.*",
+      "evidence": "src/app/mcp_sequencer_tools.cpp",
+      "side_effects": "writes video file",
+      "cost": "GPU minutes"
+    },
+    {
+      "capabilityId": "mcp.editor",
+      "label": "Embedded Python console over MCP",
+      "description": "editor.set_code / get_code / run / is_running / wait / interrupt / get_output execute arbitrary Python inside the app's interpreter (job editor.python) with the `lichtfeld` module available. Full-power escape hatch; treat as remote code execution.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "mcp",
+      "path": "editor.*",
+      "evidence": "src/app/mcp_runtime_tools.cpp; AGENTS.md",
+      "side_effects": "arbitrary code execution inside the workstation"
+    },
+    {
+      "capabilityId": "py.lichtfeld_api",
+      "label": "Embedded `lichtfeld` Python API",
+      "description": "`import lichtfeld as lf`: lf.ui.Panel (immediate/mixed/hybrid RML panels), Operator, Event, typed Properties, ToolDef/ToolRegistry, native transform gizmos, Signals, Capabilities (CapabilityRegistry/Broker, SceneContext, ViewContext), lf.plugins manager, lf.log, and a Layout API of widgets. Documented in docs/plugins/api-reference.md; version gated by lf.PLUGIN_API_VERSION.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "lichtfeld",
+      "evidence": "docs/plugins/api-reference.md; src/python/lfs/module.cpp",
+      "side_effects": "extends and mutates the running app"
+    },
+    {
+      "capabilityId": "py.plugins.manage",
+      "label": "Plugin lifecycle management (lf.plugins)",
+      "description": "lf.plugins.discover / load / reload / unload / load_all / start_watcher / stop_watcher / install('owner/repo') / update / search / install_from_registry / check_updates / get_state / get_error / get_traceback / create. Plugins are pyproject packages under ~/.lichtfeld/plugins with a [tool.lichtfeld] manifest and isolated uv venvs.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "python",
+      "path": "lichtfeld.plugins",
+      "evidence": "docs/plugin-system.md; src/python/lfs_plugins/",
+      "side_effects": "installs third-party code from GitHub/registry; creates venvs",
+      "cost": "network"
+    },
+    {
+      "capabilityId": "contract.plugin_manifest",
+      "label": "Plugin manifest contract ([tool.lichtfeld])",
+      "description": "pyproject.toml must declare hot_reload, plugin_api (e.g. \">=1,<2\"), lichtfeld_version (\">=0.4.2\") and required_features; [project].dependencies are installed per plugin. Legacy min/max_lichtfeld_version fields are rejected. Panels may ship sibling .rml/.rcss/.theme.rcss templates.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "~/.lichtfeld/plugins/<name>/pyproject.toml",
+      "evidence": "docs/plugin-system.md"
+    },
+    {
+      "capabilityId": "contract.export_formats",
+      "label": "Supported export formats",
+      "description": "PLY (standard 3DGS), SOG (SuperSplat), SPZ (Niantic), HTML standalone viewer, USD/USDA/USDC (OpenUSD), USDZ NuRec, RAD (random access), COLMAP sparse cameras. Format ids appear in src as export.format.*.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "export.format.*",
+      "evidence": "src/mcp/shared_scene_tools.cpp; src/core/argument_parser.cpp",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "runtime.docker",
+      "label": "Docker build/run for Linux",
+      "description": "docker/Dockerfile (CUDA_VERSION arg), docker-compose.yml (host network, gpus all, X11 and ~/.lichtfeld mounts) and run_docker.sh build a development image with GUI passthrough; not a headless service image.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "docker",
+      "path": "docker/docker-compose.yml",
+      "evidence": "docker/Dockerfile; docker/docker-compose.yml",
+      "side_effects": "builds image; privileged container with host network"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/LichtFeld-Studio",
+    "domain": "perception-3d",
+    "maturity": "upstream-mirror",
+    "language": "C++23 / CUDA / Python",
+    "framework": "CMake + vcpkg, embedded Python, RmlUi, MCP over HTTP",
+    "exposure": "desktop+mcp+cli",
+    "upstream": "MrNeRF/LichtFeld-Studio",
+    "visibility": "public",
+    "last_pushed_at": "2026-05-13T20:47:41Z",
+    "capability_count": 24,
+    "license": "GPL-3.0",
+    "mcp_port": 45677,
+    "gpu_required": true
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "lichtfeld-studio--visualizes--geometry-grounded-gaussian-splatting",
+      "targetNodeId": "geometry-grounded-gaussian-splatting",
+      "kind": "visualizes",
+      "description": "Inferred from formats, not from code: LichtFeld loads standard 3DGS PLY (scene.load_ply / -v) and GGGS ships ply2gs.py to produce exactly that; no explicit reference between the repositories.",
+      "evidence": "src/mcp/shared_scene_tools.cpp (scene.load_ply); Geometry-Grounded-Gaussian-Splatting ply2gs.py"
+    },
+    {
+      "relationId": "lichtfeld-studio--visualizes--matrix-3d",
+      "targetNodeId": "matrix-3d",
+      "kind": "visualizes",
+      "description": "Inferred from formats, not from code: Matrix-3D emits generated_3dgs_opt.ply Gaussian scenes that LichtFeld can open, inspect and re-export; neither repository references the other.",
+      "evidence": "src/mcp/shared_scene_tools.cpp (scene.load_ply); Matrix-3D code/panoramic_video_to_3DScene.py"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["LichtFeld-Studio", "scripts/lichtfeld_mcp_bridge.py", ".mcp.json"],
+      "run": ["cmake presets per docs/building_and_distribution.md", "docker/run_docker.sh", "LichtFeld-Studio -d <colmap> -o <out> --headless"],
+      "ports": [45677],
+      "container": true
+    },
+    "contracts": [
+      { "name": "MCP endpoint", "path": "src/mcp/mcp_http_server.hpp", "summary": "Streamable HTTP MCP on 127.0.0.1:45677/mcp with resources + tools" },
+      { "name": "Plugin manifest", "path": "docs/plugin-system.md", "summary": "[tool.lichtfeld] plugin_api / lichtfeld_version / required_features" },
+      { "name": "Export formats", "path": "src/core/argument_parser.cpp", "summary": "ply, sog, spz, html, usd/usda/usdc, usdz_nurec, rad, colmap" }
+    ],
+    "resources": [
+      { "name": "docs site", "classification": "public", "path": "docs/", "description": "Docusaurus docs: plugin system, API reference, MCP guide and recipes" },
+      { "name": "eval", "classification": "public", "path": "eval/", "description": "evaluation scripts and benchmark configs" }
+    ],
+    "external_services": [
+      { "name": "LichtFeld Portal", "domain": "portal.lichtfeld.io", "purpose": "Windows binary downloads / daily builds", "auth": "account + donation" },
+      { "name": "GitHub", "domain": "github.com", "purpose": "lf.plugins.install('owner/repo') fetches plugin sources", "auth": "none for public repos" }
+    ],
+    "secrets_env": ["LICHTFELD_MCP_ENDPOINT", "LICHTFELD_MCP_START_TIMEOUT_S", "LICHTFELD_MCP_BRIDGE_LOG", "LICHTFELD_MCP_BRIDGE_LOCK"],
+    "health": { "method": "http", "endpoint": "http://127.0.0.1:45677/mcp (MCP initialize)" },
+    "spatial": "Scene-local coordinates of loaded splats/COLMAP cameras; no GIS georeferencing.",
+    "temporal": "Training iterations, undo history stack and sequencer timeline; no calendar time.",
+    "open_questions": [
+      "MCP server binds localhost only; how does the control plane reach it from another host (bridge script per workstation, or an SSH tunnel)?",
+      "The MCP surface has no authentication and editor.run is arbitrary code execution; the universe should gate all lichtfeld tools behind operator approval as declared here.",
+      "Which ecosystem exports (USD to bim-state-transformer-engine? HTML viewer to notations-dock?) are intended is not evidenced in any repository yet."
+    ]
+  }
+}

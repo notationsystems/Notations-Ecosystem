@@ -1,0 +1,517 @@
+{
+  "nodeId": "gods-eye-view",
+  "name": "God's Eye View",
+  "kind": "visual_dock",
+  "description": "Fork of bilawalsidhu/gods-eye-view: a browser spy-satellite simulator that turns public signals into a place. A vanilla-JS CesiumJS globe on Google Photorealistic 3D Tiles renders thirteen live layers (OpenSky/adsb.lol flights, AISStream vessels, CelesTrak satellites via SGP4, USGS earthquakes, TomTom/OSM traffic, ~800 projected public cameras, Radio Browser stations, GBFS bikeshare, NASA FIRMS fires, Launch Library 2 missions, OSM military installations) plus bundled datacenters, dams and submarine cables, with cockpit view, sensor-look shaders, detection overlay, scene director and an OpenAI Realtime voice agent. The server is a set of Vite dev/preview middlewares under /api/* that broker keys, cache and budget upstream calls; there is no database and nothing is stored beyond caches. In the Notations Universe it is a rendering dock and a reference for honest freshness labelling (live, delayed, simulated, unavailable); it must never become a state holder or an intelligence record.",
+  "capabilities": [
+    {
+      "capabilityId": "ui.globe",
+      "label": "Photorealistic 3D globe",
+      "description": "Principal view: CesiumJS globe on Google Photorealistic 3D Tiles (Bing via Cesium ion or OSM as alternates) with thirteen toggleable live layers, click-to-track, cockpit view, contacts roster, GLSL sensor styles (CRT, NVG, FLIR, Noir, Snow), detection overlay, military HUD, scene director and share links.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/",
+      "evidence": "index.html; src/main.js; src/ui.js; src/mapStackController.js; README.md"
+    },
+    {
+      "capabilityId": "layer.flights",
+      "label": "Live flights",
+      "description": "Server-side /api/opensky proxy (OAuth / basic / anonymous, credit governor, last-good cache) with a bounded adsb.lol point-snapshot fallback; /api/opensky-track and /api/adsblol/trace return flown tracks; /api/adsbdb resolves aircraft identity. Rendered one poll interval behind real time with interpolation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/opensky",
+      "evidence": "vite.config.js; src/data/flights.js; src/data/adsbLolFallback.js",
+      "data_domain": "aviation",
+      "provenance": "OpenSky Network / adsb.lol live",
+      "cost": "OpenSky credits, governed"
+    },
+    {
+      "capabilityId": "layer.military_flights",
+      "label": "Military flights",
+      "description": "/api/adsblol/mil proxies adsb.lol military ADS-B traffic, rendered in amber.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/adsblol/mil",
+      "evidence": "vite.config.js; src/data/aircraftClass.js",
+      "data_domain": "aviation",
+      "provenance": "adsb.lol (ODbL)"
+    },
+    {
+      "capabilityId": "layer.vessels",
+      "label": "Live vessels (AIS)",
+      "description": "/api/ais-live serves vessel positions from a server-held AISStream websocket (AISSTREAM_API_KEY, configurable bounding boxes and silence watchdog); layer reports partial/delayed/unavailable states.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/ais-live",
+      "evidence": "vite.config.js; src/data/aisLiveVessels.js; src/data/aisStreamAdapter.js; src/data/aisWatchdog.js",
+      "data_domain": "maritime",
+      "provenance": "AISStream.io live"
+    },
+    {
+      "capabilityId": "layer.satellites",
+      "label": "Satellites (SGP4)",
+      "description": "/api/celestrak proxies and disk-caches CelesTrak TLEs; the client propagates an ~840-object core catalog (DENSE chip adds the Starlink shell) with SGP4 and GMST-locked orbit rings.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/celestrak",
+      "evidence": "vite.config.js; src/orbit.js; src/celestialRing.js",
+      "data_domain": "space",
+      "provenance": "CelesTrak TLEs"
+    },
+    {
+      "capabilityId": "layer.earthquakes",
+      "label": "Earthquakes (24h)",
+      "description": "Client fetches the USGS all-day GeoJSON feed directly (no server proxy) and renders global seismic activity for the last 24 h.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson",
+      "evidence": "src/data/earthquakes.js",
+      "data_domain": "seismic",
+      "provenance": "USGS"
+    },
+    {
+      "capabilityId": "layer.traffic",
+      "label": "Traffic flow",
+      "description": "/api/overpass proxies OpenStreetMap road geometry and /api/tomtom/flow/{z}/{x}/{y}.pbf proxies TomTom flow vector tiles under a daily tile budget; keyless the layer runs a labeled simulation.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/tomtom",
+      "evidence": "vite.config.js; src/data/flowTiles.js; src/data/flowMatch.js",
+      "data_domain": "road-traffic",
+      "provenance": "TomTom + OSM Overpass, or simulation when keyless"
+    },
+    {
+      "capabilityId": "layer.cctv",
+      "label": "CCTV mesh",
+      "description": "/api/cctv lists ~800 public cameras (Austin Open Data, Caltrans, TfL JamCams; config/cctv_sources.*.json) and /api/cctv/frame/{id} and /api/cctv/media/{id} proxy frames and streams; cameras are projected into the 3D scene with estimated poses and a viewshed mode.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/cctv",
+      "evidence": "vite.config.js; config/cctv_sources.austin.json; src/data/cctv.js; src/data/cctvViewshed.js",
+      "data_domain": "cctv"
+    },
+    {
+      "capabilityId": "layer.radio",
+      "label": "Geolocated radio",
+      "description": "/api/radio/stations discovers Radio Browser mirrors and returns up to 750 geolocated HTTPS stations (45-min cache); the analog tuner flies the globe to each broadcaster and reports click counts back.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/radio",
+      "evidence": "vite.config.js; DATA_SOURCES.md",
+      "data_domain": "broadcast",
+      "provenance": "Radio Browser (PDDL)"
+    },
+    {
+      "capabilityId": "layer.bikeshare",
+      "label": "Bikeshare availability",
+      "description": "/api/gbfs proxies GBFS station feeds (Lyft / BCycle) for live dock availability.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/gbfs",
+      "evidence": "vite.config.js; src/data/bikeshare.js",
+      "data_domain": "mobility"
+    },
+    {
+      "capabilityId": "layer.fires",
+      "label": "Active fires (NASA FIRMS)",
+      "description": "/api/firms proxies VIIRS active-fire CSV (three sensors, trailing 24 h) with FIRMS_MAP_KEY; rendered as heatmap and anchors, with hand-off to the nearest live camera.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/firms",
+      "evidence": "vite.config.js; src/data/firmsCsv.js; src/data/firmsHeatmap.js",
+      "data_domain": "environment",
+      "provenance": "NASA FIRMS VIIRS"
+    },
+    {
+      "capabilityId": "layer.launches",
+      "label": "Space missions (30d)",
+      "description": "/api/launches makes a rolling 30-day Launch Library 2 query (payload, stage, recovery detail), cached 15 min in memory and on disk; LL2_API_TOKEN optional. Ascent playback is marked RECONSTRUCTED ESTIMATE.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/launches",
+      "evidence": "vite.config.js; DATA_SOURCES.md",
+      "data_domain": "space",
+      "provenance": "The Space Devs Launch Library 2"
+    },
+    {
+      "capabilityId": "layer.military_installations",
+      "label": "Mapped installations (OSM)",
+      "description": "/api/military-installations returns viewport-bounded (max 10 degrees) allow-listed OSM military=* and landuse=military features, cached, labeled as incomplete community mapping.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/military-installations",
+      "evidence": "vite.config.js; DATA_SOURCES.md",
+      "data_domain": "defence-infrastructure",
+      "provenance": "OpenStreetMap Overpass"
+    },
+    {
+      "capabilityId": "layer.infrastructure_static",
+      "label": "Bundled static infrastructure",
+      "description": "Datacenters (4,351), dams (704) and TeleGeography submarine cables (712, CC BY-NC-SA carve-out) shipped with the app and drawn as world overlays; reachable by hand and by voice.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "evidence": "src/data/localLayers.js; src/data/localGeojson.js; src/data/telegeographySubmarineCables.js; src/data/dataCredits.js; DATA_SOURCES.md",
+      "data_domain": "infrastructure"
+    },
+    {
+      "capabilityId": "cockpit.regional_brief",
+      "label": "Regional briefing",
+      "description": "/api/regional-brief returns a cached place label (Nominatim), current weather (Open-Meteo) and location-matched headlines (Google News RSS with GDELT DOC fallback) for the cockpit Local Info and Regional News pages.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/regional-brief",
+      "evidence": "vite.config.js; src/hudLocality.js",
+      "data_domain": "local-context"
+    },
+    {
+      "capabilityId": "cockpit.weather_effects",
+      "label": "Camera-local weather effects",
+      "description": "/api/weather-effects returns Open-Meteo observations around the camera to drive the opt-in volumetric WX cloud effect.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/weather-effects",
+      "evidence": "vite.config.js; src/cockpitCloudEffects.js; src/weatherEffectsMath.js",
+      "data_domain": "weather"
+    },
+    {
+      "capabilityId": "terrain.heights",
+      "label": "Ellipsoidal height lookup",
+      "description": "/api/terrain/heights resolves ground heights at points from Re:Earth keyless terrain (EGM2008 geoid) so entities sit on the rendered terrain.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/terrain/heights",
+      "evidence": "vite.config.js; DATA_SOURCES.md",
+      "data_domain": "terrain"
+    },
+    {
+      "capabilityId": "geo.route",
+      "label": "Route drawing",
+      "description": "/api/route resolves a route between two places for the voice whiteboard and the fly-the-route cinematic.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/route",
+      "evidence": "vite.config.js; src/annotations; src/cameraVerbs.js"
+    },
+    {
+      "capabilityId": "geo.google_places",
+      "label": "Google Places search (metered)",
+      "description": "/api/google/nearby-places and /api/google/text-search broker Google Places queries server-side for voice scene context and on-demand installation search; opt-in per-IP throttle GEV_RATELIMIT_GOOGLE_PER_MIN. Spends the operator's Google quota.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "GET",
+      "path": "/api/google/nearby-places",
+      "evidence": "vite.config.js; .env.example",
+      "cost": "metered Google Places",
+      "side_effects": "billable API calls"
+    },
+    {
+      "capabilityId": "voice.realtime_session",
+      "label": "Voice agent session token",
+      "description": "/api/realtime/token mints a short-lived OpenAI Realtime session (model, voice, context window from env) so the browser can talk to the globe through 28 tools; /api/realtime/debug-log receives client diagnostics. Spends OpenAI credit.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/realtime/token",
+      "evidence": "vite.config.js; src/voice/gevRealtime.js; src/voice/gevActions.js; src/voice/voiceCost.js",
+      "cost": "metered OpenAI Realtime",
+      "side_effects": "billable LLM session"
+    },
+    {
+      "capabilityId": "voice.hud_summary",
+      "label": "AI HUD summary",
+      "description": "/api/openai/hud-summary returns a terse scene summary for the HUD via OPENAI_HUD_SUMMARY_MODEL; throttled by GEV_RATELIMIT_OPENAI_PER_MIN.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "http",
+      "method": "POST",
+      "path": "/api/openai/hud-summary",
+      "evidence": "vite.config.js; src/hud.js",
+      "cost": "metered OpenAI"
+    },
+    {
+      "capabilityId": "ui.share_link",
+      "label": "Share links",
+      "description": "Camera, style, layers and one tracked target serialize into a URL so a live target can be handed off to another viewer.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "path": "/?<serialized state>",
+      "evidence": "src/sharelink.js"
+    },
+    {
+      "capabilityId": "ui.scene_director",
+      "label": "Scene director",
+      "description": "Captures and plays cinematic camera tours (recipes such as Orbital Watch) for clips and demos.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "ui",
+      "evidence": "src/scenes/director.js; src/scenes/recipes.js"
+    },
+    {
+      "capabilityId": "cli.qa_suite",
+      "label": "QA and regression scripts",
+      "description": "npm test runs the unit suite; scripts/qa-*.mjs drive Puppeteer captures for layers, cockpit, traffic, voice routing and performance; npm run opensky:import imports OpenSky credentials.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "evidence": "package.json; scripts/run-unit-tests.mjs; scripts/track-regression.mjs; TESTING.md"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/gods-eye-view",
+    "domain": "geospatial",
+    "maturity": "upstream-mirror",
+    "language": "JavaScript",
+    "framework": "Vite 6 + CesiumJS 1.124 (vanilla JS, no framework)",
+    "exposure": "local-only",
+    "upstream": "bilawalsidhu/gods-eye-view (MIT)",
+    "visibility": "public",
+    "last_pushed_at": "2026-08-31T20:25:02Z",
+    "default_port": 4173,
+    "license": "MIT (code only; data carve-outs in DATA_SOURCES.md)",
+    "live_layer_count": 13,
+    "node_engines": ">=24.14 <25 || >=26 <27",
+    "capability_count": 24
+  },
+  "location": {
+    "longitude": -97.7431,
+    "latitude": 30.2672,
+    "label": "Austin, TX (default CCTV mesh and first-run missions)"
+  },
+  "relations": [],
+  "reference": {
+    "runtime": {
+      "entrypoints": [
+        "index.html",
+        "src/main.js",
+        "vite.config.js"
+      ],
+      "run": [
+        "npm install",
+        "npm run dev -- --host localhost --port 4173",
+        "npm run build && npm run preview",
+        "npm test"
+      ],
+      "ports": [
+        4173
+      ],
+      "container": false
+    },
+    "contracts": [
+      {
+        "name": "Layer credit and freshness",
+        "path": "src/data/dataCredits.js",
+        "summary": "Per-layer source attribution and freshness states shown in-app."
+      },
+      {
+        "name": "Voice tool playbook",
+        "path": "src/voice/gevActions.js",
+        "summary": "The 28 tools the Realtime agent may call (camera verbs, annotations, analyst queries, console control)."
+      },
+      {
+        "name": "Share link state",
+        "path": "src/sharelink.js",
+        "summary": "URL serialization of camera, style, layers and tracked target."
+      }
+    ],
+    "resources": [
+      {
+        "name": "CCTV source catalogs",
+        "classification": "public",
+        "path": "config/cctv_sources.austin.json; config/cctv_sources.shinjuku.json",
+        "description": "Camera positions and estimated poses used by the CCTV mesh."
+      },
+      {
+        "name": "Bundled infrastructure datasets",
+        "classification": "public",
+        "path": "src/data/localLayers.js; src/data/localGeojson.js; src/data/telegeographySubmarineCables.js",
+        "description": "Datacenters, dams and TeleGeography submarine cables (CC BY-NC-SA, commercial users must remove)."
+      },
+      {
+        "name": "Capture media",
+        "classification": "public",
+        "path": "docs/media",
+        "description": "README GIFs with provenance recorded in docs/media/README.md."
+      }
+    ],
+    "external_services": [
+      {
+        "name": "Google Map Tiles / Places / Geocoding",
+        "domain": "tile.googleapis.com, places.googleapis.com",
+        "purpose": "photorealistic 3D globe and place search",
+        "auth": "GOOGLE_MAPS_API_KEY (client-exposed, metered)"
+      },
+      {
+        "name": "Cesium ion",
+        "domain": "api.cesium.com",
+        "purpose": "Bing imagery stacks and world terrain",
+        "auth": "CESIUM_ION_TOKEN (client-exposed)"
+      },
+      {
+        "name": "OpenSky Network",
+        "domain": "opensky-network.org",
+        "purpose": "live flight state vectors",
+        "auth": "anonymous or OPENSKY_CLIENT_ID/SECRET OAuth2"
+      },
+      {
+        "name": "adsb.lol",
+        "domain": "api.adsb.lol",
+        "purpose": "military flights, traces, point fallback",
+        "auth": "none"
+      },
+      {
+        "name": "adsbdb",
+        "domain": "api.adsbdb.com",
+        "purpose": "aircraft identity",
+        "auth": "none"
+      },
+      {
+        "name": "AISStream.io",
+        "domain": "stream.aisstream.io",
+        "purpose": "live AIS vessels",
+        "auth": "AISSTREAM_API_KEY"
+      },
+      {
+        "name": "CelesTrak",
+        "domain": "celestrak.org",
+        "purpose": "satellite TLEs",
+        "auth": "none"
+      },
+      {
+        "name": "USGS",
+        "domain": "earthquake.usgs.gov",
+        "purpose": "earthquakes",
+        "auth": "none"
+      },
+      {
+        "name": "OpenStreetMap Overpass / Nominatim",
+        "domain": "overpass-api.de, nominatim.openstreetmap.org",
+        "purpose": "roads, military installations, reverse geocoding",
+        "auth": "none"
+      },
+      {
+        "name": "TomTom Traffic",
+        "domain": "api.tomtom.com",
+        "purpose": "live flow vector tiles",
+        "auth": "TOMTOM_API_KEY (optional)"
+      },
+      {
+        "name": "NASA FIRMS",
+        "domain": "firms.modaps.eosdis.nasa.gov",
+        "purpose": "active fires",
+        "auth": "FIRMS_MAP_KEY"
+      },
+      {
+        "name": "Launch Library 2",
+        "domain": "ll.thespacedevs.com",
+        "purpose": "rocket launches",
+        "auth": "none (LL2_API_TOKEN optional)"
+      },
+      {
+        "name": "Radio Browser",
+        "domain": "api.radio-browser.info mirrors",
+        "purpose": "station directory",
+        "auth": "none"
+      },
+      {
+        "name": "GBFS (Lyft / BCycle)",
+        "domain": "gbfs.*",
+        "purpose": "bikeshare availability",
+        "auth": "none"
+      },
+      {
+        "name": "City of Austin / Caltrans / TfL JamCams",
+        "domain": "data.austintexas.gov, cwwp2.dot.ca.gov, api.tfl.gov.uk",
+        "purpose": "CCTV catalogs and frames",
+        "auth": "none (TFL_APP_KEY optional)"
+      },
+      {
+        "name": "Open-Meteo",
+        "domain": "api.open-meteo.com",
+        "purpose": "cockpit weather",
+        "auth": "none"
+      },
+      {
+        "name": "Google News RSS / GDELT DOC 2.0",
+        "domain": "news.google.com, api.gdeltproject.org",
+        "purpose": "regional headlines",
+        "auth": "none"
+      },
+      {
+        "name": "Re:Earth Terrain (Mapterhorn)",
+        "domain": "reearth.io terrain",
+        "purpose": "keyless terrain mesh and point heights",
+        "auth": "none"
+      },
+      {
+        "name": "OpenAI Realtime / Responses",
+        "domain": "api.openai.com",
+        "purpose": "voice agent and HUD summary",
+        "auth": "OPENAI_API_KEY (server-side, metered)"
+      }
+    ],
+    "secrets_env": [
+      "GOOGLE_MAPS_API_KEY",
+      "CESIUM_ION_TOKEN",
+      "OPENAI_API_KEY",
+      "AISSTREAM_API_KEY",
+      "FIRMS_MAP_KEY",
+      "TOMTOM_API_KEY",
+      "OPENSKY_CLIENT_ID",
+      "OPENSKY_CLIENT_SECRET",
+      "OPENSKY_USERNAME",
+      "OPENSKY_PASSWORD",
+      "LL2_API_TOKEN",
+      "TFL_APP_KEY",
+      "GEV_RATELIMIT_GOOGLE_PER_MIN",
+      "GEV_RATELIMIT_OPENAI_PER_MIN"
+    ],
+    "health": {
+      "method": "manifest-only",
+      "endpoint": ""
+    },
+    "spatial": "Whole-Earth 3D globe; every layer is geolocated and the CCTV mesh is calibrated for Austin, California and London; bundled infrastructure is global.",
+    "temporal": "Live feeds polled every 15-30 s and rendered one interval behind real time; earthquakes and fires trail 24 h, launches 30 days; caches only, nothing archived.",
+    "open_questions": [
+      "The /api/* surface exists only inside Vite dev/preview middlewares; is there an intended production server for the Notations deployment?",
+      "OpenSky's non-commercial licence and the TeleGeography CC BY-NC-SA cables constrain any commercial use inside the Universe.",
+      "No Notations-specific changes are visible on the fork; treat as a pure upstream mirror until a diverging commit appears."
+    ]
+  }
+}

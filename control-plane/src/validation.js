@@ -1,9 +1,19 @@
 import { invalid } from './errors.js';
+import { parseSignals } from './security/evidence.js';
+import { assertBoundedStructure, assertNoPollutedKeys, safeText } from './security/text.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 const HASH = /^[a-f0-9]{64}$/;
 const METADATA_KEY = /^[a-z][a-z0-9_.-]{0,80}$/;
 const SENSITIVE_METADATA_KEY = /(token|secret|password|credential|authorization|cookie|email|phone|contact)/i;
+
+/**
+ * ISO-8601 with an explicit offset. `Date.parse` accepts far more than this —
+ * RFC 2822, bare years, implementation-defined shapes — and two callers disagreeing
+ * about what "2026-09-03" means is a correctness defect in a ledger whose ordering
+ * and freshness checks depend on time.
+ */
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 const NODE_KINDS = new Set(['api', 'world_model', 'information_library', 'reasoning_engine', 'visual_dock', 'operator_surface']);
 const CAPABILITY_MODES = new Set(['observe', 'propose', 'execute']);
@@ -11,6 +21,9 @@ const APPROVALS = new Set(['automatic', 'operator']);
 const RELATIONS = new Set(['supplies_context_to', 'coordinates', 'visualizes', 'governs', 'depends_on']);
 const HEALTH = new Set(['unknown', 'healthy', 'degraded', 'offline']);
 const OBSERVATION_SOURCES = new Set(['operator', 'health_check', 'webhook']);
+const ATTESTATION_METHODS = new Set(['automated_scan', 'operator_review', 'external_audit', 'self_declared']);
+
+const MAX_METADATA_KEYS = 40;
 
 function record(value, path) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid(`${path} must be an object.`);
@@ -29,9 +42,18 @@ function exactKeys(value, path, required, optional = []) {
   return object;
 }
 
+/**
+ * Every string that reaches the journal passes through `safeText` first: no control
+ * characters, no bidirectional overrides, no invisible formatting, no credential
+ * shapes. A ledger read by humans in terminals and by agents in prompts must not
+ * carry text that renders as something other than what was stored.
+ */
 function string(value, path, maximum = 1_200) {
-  if (typeof value !== 'string' || !value.trim() || value.trim().length > maximum) throw invalid(`${path} must be a non-empty string no longer than ${maximum} characters.`);
-  return value.trim();
+  if (typeof value !== 'string') throw invalid(`${path} must be a non-empty string no longer than ${maximum} characters.`);
+  const safe = safeText(value, path);
+  const trimmed = safe.trim();
+  if (!trimmed || trimmed.length > maximum) throw invalid(`${path} must be a non-empty string no longer than ${maximum} characters.`);
+  return trimmed;
 }
 
 function identifier(value, path) {
@@ -42,7 +64,9 @@ function identifier(value, path) {
 
 function instant(value, path) {
   const parsed = string(value, path, 80);
-  if (!Number.isFinite(Date.parse(parsed))) throw invalid(`${path} must be an ISO date-time.`);
+  if (!ISO_INSTANT.test(parsed) || !Number.isFinite(Date.parse(parsed))) {
+    throw invalid(`${path} must be an ISO date-time.`, 'Use an ISO-8601 instant with an explicit offset, for example 2026-09-03T12:00:00.000Z.');
+  }
   return parsed;
 }
 
@@ -60,6 +84,8 @@ function nullableRevision(value) {
 
 function metadata(value) {
   const parsed = value === undefined ? {} : record(value, 'node.metadata');
+  const keys = Object.keys(parsed);
+  if (keys.length > MAX_METADATA_KEYS) throw invalid(`node.metadata may not carry more than ${MAX_METADATA_KEYS} keys.`);
   const out = {};
   for (const [key, entry] of Object.entries(parsed)) {
     if (!METADATA_KEY.test(key)) throw invalid(`node.metadata.${key} is not a valid metadata key.`);
@@ -68,7 +94,8 @@ function metadata(value) {
       throw invalid(`node.metadata.${key} must be a string, finite number, or boolean.`);
     }
     if (typeof entry === 'string' && entry.length > 500) throw invalid(`node.metadata.${key} exceeds 500 characters.`);
-    out[key] = typeof entry === 'string' ? entry.trim() : entry;
+    // Key-name filtering alone does not stop a credential pasted into a value.
+    out[key] = typeof entry === 'string' ? safeText(entry, `node.metadata.${key}`).trim() : entry;
   }
   return out;
 }
@@ -131,6 +158,11 @@ function base(input, action, fields) {
 
 export function parseCommand(input) {
   const top = record(input, 'command');
+  // Bound the shape before anything recurses over it. The command digest
+  // canonicalizes the caller's own object, so an unbounded nesting depth here is a
+  // stack-exhaustion vector reachable from any authenticated caller.
+  assertBoundedStructure(top, { path: 'command' });
+  assertNoPollutedKeys(top, 'command');
   const action = top.action;
   if (typeof action !== 'string') throw invalid('command.action is required.');
 
@@ -146,6 +178,16 @@ export function parseCommand(input) {
     case 'record_observation': {
       const parsed = base(top, action, ['nodeId', 'health', 'observedAt', 'source', 'detail']);
       return { ...parsed, nodeId: identifier(parsed.raw.nodeId, 'nodeId'), health: member(parsed.raw.health, 'health', HEALTH), observedAt: instant(parsed.raw.observedAt, 'observedAt'), source: member(parsed.raw.source, 'source', OBSERVATION_SOURCES), detail: string(parsed.raw.detail, 'detail', 600) };
+    }
+    case 'record_security_posture': {
+      const parsed = base(top, action, ['nodeId', 'attestedAt', 'method', 'signals']);
+      return {
+        ...parsed,
+        nodeId: identifier(parsed.raw.nodeId, 'nodeId'),
+        attestedAt: instant(parsed.raw.attestedAt, 'attestedAt'),
+        method: member(parsed.raw.method, 'method', ATTESTATION_METHODS),
+        signals: parseSignals(parsed.raw.signals),
+      };
     }
     case 'request_capability': {
       const parsed = base(top, action, ['coordinationId', 'requesterNodeId', 'targetNodeId', 'capabilityId', 'requestedMode', 'purpose']);

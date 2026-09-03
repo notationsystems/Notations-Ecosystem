@@ -191,6 +191,13 @@
       "kind": "depends_on",
       "description": "Confirmed by bytecode strings: osiris_intake reads OSIRIS_URL (default http://localhost:3000) routes /api/economy, /api/markets, /api/weather, /api/infrastructure, /api/health and many retired ones (/api/conflicts, /api/gdelt, /api/fires, /api/earthquakes, /api/polymarket...) as its only world source; without the terminal the oracle has no brief. Several of those routes now answer 503 route_retired.",
       "evidence": "engine/__pycache__/osiris_intake.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc; src/lib/routeGate.ts"
+    },
+    {
+      "relationId": "pythia-oracle-engine--depends_on--osiris-dashboard",
+      "targetNodeId": "osiris-dashboard",
+      "kind": "depends_on",
+      "description": "Inferred from bytecode in the ancestor repository, not readable source: osiris-palantir-dashboard carries the identical engine/__pycache__ (osiris_intake, oracle, swarm, ledger, webhooks, server) and its own runs/ledger.jsonl, and still serves every /api/* route the intake names (conflicts, gdelt, fires, earthquakes, polymarket) that Payload Terminal has retired behind 503. Against the dashboard's OSIRIS_URL the oracle gets a complete brief; against the terminal a partial one. Which instance is the intended world source is open.",
+      "evidence": "osiris-palantir-dashboard/engine/__pycache__/osiris_intake.cpython-314.pyc; osiris-palantir-dashboard/runs/ledger.jsonl; Payload-Terminal-V0/src/lib/routeGate.ts (retired routes)"
     }
   ],
   "reference": {

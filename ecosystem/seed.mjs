@@ -43,10 +43,25 @@ export function contentDigest(value) {
   return createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex').slice(0, 16);
 }
 
-/** The registered node as the control plane would store it, minus derived fields, for change detection. */
+/**
+ * The contract fields of a registered node, for change detection.
+ *
+ * An allowlist, not a denylist: the snapshot decorates nodes with derived state
+ * (health, observations, security posture) and gains more over time. Subtracting the
+ * fields we know about would silently treat every node as modified the first time a
+ * new derived field appeared, and re-submit the whole catalog under request ids whose
+ * content no longer matched.
+ */
 export function registeredShape(node) {
-  const { registeredAt, updatedAt, health, lastObservedAt, lastObservation, ...rest } = node;
-  return canonicalize(rest);
+  return canonicalize({
+    nodeId: node.nodeId,
+    name: node.name,
+    kind: node.kind,
+    description: node.description,
+    capabilities: node.capabilities,
+    metadata: node.metadata,
+    location: node.location,
+  });
 }
 
 /** Drive any object with `snapshot()` and `command(cmd)` (the ControlPlane class or an HTTP client). */

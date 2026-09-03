@@ -1,5 +1,5 @@
 import { NODES_DATASET_ID, RELATIONS_DATASET_ID, type KeplerDataset, type KeplerFieldType } from '../../model/kepler';
-import type { SnapshotNode } from '../../model/types';
+import { KIND_COLOR, NODE_KINDS, RELATION_COLOR, RELATION_KINDS, type SnapshotNode } from '../../model/types';
 
 /** Kepler instance id: every action for the universe map is wrapped with `wrapTo(MAP_ID, …)`. */
 export const MAP_ID = 'universe';
@@ -64,6 +64,46 @@ export function withAnalyzerTypes(datasets: KeplerDataset[]): KeplerDataset[] {
   }));
 }
 
+/** Explicit value → colour map so a kind keeps its colour whichever kinds survive the filters. */
+const KIND_COLOR_MAP = NODE_KINDS.map((k) => [k, KIND_COLOR[k]] as [string, string]);
+const RELATION_COLOR_MAP = RELATION_KINDS.map((k) => [k, RELATION_COLOR[k]] as [string, string]);
+
+type LayerConfig = { id: string; type: string; config: { visConfig: Record<string, unknown>; textLabel?: Array<Record<string, unknown>> }; visualChannels: Record<string, unknown> };
+
+/**
+ * Presentation overrides on the model's Kepler config, applied at dispatch time and written so they are no-ops once
+ * the model adopts the same values:
+ * - Kepler scales a point's `radius` by 2^(14 - zoom) metres, i.e. ~0.1·radius screen pixels below zoom 14, so the
+ *   model's 10-34 renders as a 1-3 px dot; the floor here keeps nodes legible at continental zoom.
+ * - A text label is positioned by anchor/alignment (offset is recomputed from the radius), so `middle`/`center`
+ *   centres the text on the point; `bottom` puts it under the point.
+ * - An ordinal colour scale assigns palette colours by sorted domain order, so the kind → colour mapping drifts as
+ *   filters remove kinds; a `customOrdinal` scale with a colorMap pins each kind to KIND_COLOR (the only non-ordinal colour scale a string field accepts).
+ */
+export function withPresentation<T extends { config: { visState: { layers: unknown[] } } }>(config: T): T {
+  const layers = (config.config.visState.layers as LayerConfig[]).map((layer) => {
+    if (layer.type === 'point') {
+      const vc = layer.config.visConfig;
+      const range = Array.isArray(vc.radiusRange) ? (vc.radiusRange as number[]) : [10, 34];
+      const visConfig = {
+        ...vc,
+        radius: Math.max(Number(vc.radius) || 0, 50),
+        radiusRange: [Math.max(range[0] ?? 10, 50), Math.max(range[1] ?? 34, 110)],
+        ...(layer.visualChannels.colorField ? { colorRange: { ...(vc.colorRange as object), colorMap: KIND_COLOR_MAP } } : {}),
+      };
+      const textLabel = layer.config.textLabel?.map((t) => ({ ...t, anchor: 'middle', alignment: 'bottom' }));
+      const visualChannels = layer.visualChannels.colorField ? { ...layer.visualChannels, colorScale: 'customOrdinal' } : layer.visualChannels;
+      return { ...layer, config: { ...layer.config, visConfig, ...(textLabel ? { textLabel } : {}) }, visualChannels };
+    }
+    if (layer.type === 'arc' && layer.visualChannels.colorField) {
+      const vc = layer.config.visConfig;
+      return { ...layer, config: { ...layer.config, visConfig: { ...vc, colorRange: { ...(vc.colorRange as object), colorMap: RELATION_COLOR_MAP } } }, visualChannels: { ...layer.visualChannels, colorScale: 'customOrdinal' } };
+    }
+    return layer;
+  });
+  return { ...config, config: { ...config.config, visState: { ...config.config.visState, layers } } };
+}
+
 export type Bounds = [minLng: number, minLat: number, maxLng: number, maxLat: number];
 
 /** Bounding box of the located nodes, padded so a single point or a tight cluster still yields a sane zoom. */
@@ -100,7 +140,7 @@ export function selectionBundle(node: SnapshotNode): { datasets: KeplerDataset[]
             dataId: SELECTED_DATASET_ID, label: 'Selected', color: [245, 185, 66],
             columns: { lat: 'latitude', lng: 'longitude', altitude: null },
             isVisible: true,
-            visConfig: { radius: 30, fixedRadius: false, opacity: 1, outline: true, filled: false, thickness: 3, strokeColor: [245, 185, 66] },
+            visConfig: { radius: 150, fixedRadius: false, opacity: 1, outline: true, filled: false, thickness: 3, strokeColor: [245, 185, 66] },
           },
           visualChannels: { colorField: null, colorScale: 'quantile', sizeField: null, sizeScale: 'linear', strokeColorField: null, strokeColorScale: 'quantile' },
         }],

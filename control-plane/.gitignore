@@ -5,3 +5,6 @@ coverage/
 data/*.jsonl
 data/*.json
 !data/.gitkeep
+data/*.anchor
+data/keystore.json
+data/principals.json

@@ -9,7 +9,7 @@ export type Force = ((alpha: number) => void) & { initialize?: (nodes: SimNode[]
  * Pairwise collision force: keeps discs (radius = nodeRadius + padding) from overlapping so labels stay readable.
  * O(n²) per tick, which is fine for an ecosystem graph of tens to a few hundred nodes.
  */
-export function collideForce(padding = 10, strength = 0.7): Force {
+export function collideForce(padding = 16, strength = 0.7): Force {
   let nodes: SimNode[] = [];
   const force: Force = () => {
     for (let i = 0; i < nodes.length; i++) {
@@ -36,5 +36,5 @@ export function collideForce(padding = 10, strength = 0.7): Force {
 }
 
 /** Charge strength and link distance that keep the layout calm and legible for large discs. */
-export const CHARGE_STRENGTH = -260;
-export const LINK_DISTANCE = 90;
+export const CHARGE_STRENGTH = -70;
+export const LINK_DISTANCE = 70;

@@ -1,0 +1,214 @@
+{
+  "nodeId": "matrix-3d",
+  "name": "Matrix-3D",
+  "kind": "world_model",
+  "description": "Upstream mirror of Skywork's Matrix-3D v0.1: omnidirectional explorable 3D world generation. A three-stage GPU pipeline turns a text prompt or a single image into a panorama (FLUX.1 LoRA), the panorama plus a camera trajectory into a panoramic tour video (Wan2.1 / Wan2.2-5B LoRA conditioned on MoGe-depth warped renders), and the video into a 3D Gaussian scene (optimisation-based Pano_GS_Opt or feed-forward PanoLRM). In the universe it is a generative world model: it fabricates plausible scenes, so its outputs are synthetic and must never be registered as observed geometry. Exposed as CLI stages, generate.sh and a Gradio demo; checkpoints are pulled from Hugging Face.",
+  "capabilities": [
+    {
+      "capabilityId": "cli.generate_pipeline",
+      "label": "One-command world generation (generate.sh)",
+      "description": "Runs Step1 text-to-panorama, Step2 torchrun panorama-to-video at 720p, Step3 optimisation-based 3D scene extraction into output/example1. Edit the prompt/output_dir inside the script; ~1 hour for 720p on an A800.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "generate.sh",
+      "evidence": "generate.sh",
+      "side_effects": "hours of GPU compute; writes output dir",
+      "cost": "GPU hours (16-80 GB VRAM by stage)",
+      "latency": "about an hour",
+      "provenance": "synthetic: generative model",
+      "workflow": "world-generation"
+    },
+    {
+      "capabilityId": "cli.download_checkpoints",
+      "label": "Download model checkpoints",
+      "description": "`python code/download_checkpoints.py` pulls Ruicheng/moge-vitl, Iceclear/StableSR and Skywork/Matrix-3D artefacts (text2panoimage_lora.safetensors, pano_video_gen_480p.ckpt, pano_video_gen_720p.bin, pano_video_gen_720p_5b.safetensors, pano_lrm_480p.pt) into ./checkpoints/{moge,StableSR,flux_lora,pano_lrm,Wan-AI/wan_lora}.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/download_checkpoints.py",
+      "evidence": "code/download_checkpoints.py",
+      "side_effects": "tens of GB downloaded from huggingface.co",
+      "cost": "bandwidth/disk"
+    },
+    {
+      "capabilityId": "cli.panorama_generate",
+      "label": "Step 1: text/image to panorama (panoramic_image_generation.py)",
+      "description": "`python code/panoramic_image_generation.py --mode t2p --prompt \"...\" --output_path DIR` or `--mode i2p --input_image_path img.jpg [--fov F]` plus --seed/--device. Writes DIR/pano_img.jpg (equirectangular) and DIR/prompt.txt. Externally produced panoramas can be dropped into the same layout to skip this stage.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/panoramic_image_generation.py",
+      "evidence": "code/panoramic_image_generation.py; README.md",
+      "side_effects": "writes pano_img.jpg, prompt.txt",
+      "cost": "GPU ~16 GB VRAM, seconds-minutes",
+      "provenance": "synthetic: FLUX.1 + Matrix-3D LoRA",
+      "data_domain": "panorama"
+    },
+    {
+      "capabilityId": "cli.panorama_to_video",
+      "label": "Step 2: panorama to panoramic tour video (torchrun)",
+      "description": "`torchrun --nproc_per_node N code/panoramic_image_to_video.py --inout_dir DIR --resolution 480|720 [--movement_mode straight|s_curve|l_curve|r_curve] [--angle deg] [--movement_range 0-0.8] [--json_path cams.json] [--seed] [--use_5b_model] [--enable_vram_management]`. Estimates depth with MoGe, warps the panorama along the trajectory into rendered_rgb.mp4 / rendered_mask.mp4 conditions, and generates DIR/pano_video.mp4 (960x480 or 1440x720, 81 frames) with the Wan video LoRA. Multi-GPU via xfuser.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/panoramic_image_to_video.py",
+      "evidence": "code/panoramic_image_to_video.py; README.md",
+      "side_effects": "writes condition videos and pano_video.mp4",
+      "cost": "GPU 12-60 GB VRAM; ~1 h at 720p on A800",
+      "latency": "minutes to an hour",
+      "provenance": "synthetic: Wan2.1/2.2 video diffusion",
+      "data_domain": "panoramic-video"
+    },
+    {
+      "capabilityId": "cli.video_to_3dscene_opt",
+      "label": "Step 3a: optimisation-based 3D scene extraction",
+      "description": "`python code/panoramic_video_to_3DScene.py --inout_dir DIR --resolution 480|720 [--device]`. Optionally super-resolves the video (VideoSR/StableSR), initialises Gaussians from panoramic frames and runs Pano_GS_Opt training (3000 iterations); copies point_cloud/iteration_3000/point_cloud.ply to DIR/generated_3dgs_opt.ply.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/panoramic_video_to_3DScene.py",
+      "evidence": "code/panoramic_video_to_3DScene.py; code/Pano_GS_Opt/train.py",
+      "side_effects": "writes generated_3dgs_opt.ply and training dir",
+      "cost": "GPU ~10 GB VRAM, minutes",
+      "provenance": "synthetic: optimised from generated video",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.video_to_3dscene_lrm",
+      "label": "Step 3b: feed-forward PanoLRM reconstruction (480p)",
+      "description": "`python code/panoramic_video_480p_to_3DScene_lrm.py --video_path pano.mp4 --pose_path cams.json --out_path DIR [--config_paths ...] [--ckpt_path pano_lrm_480p.pt] [--wan_model_path] [--sample_idx] [--device] [-v]`. Single forward pass of the panoramic large reconstruction model; writes a Gaussian .ply and rendered perspective videos. Needs ~80 GB VRAM.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/panoramic_video_480p_to_3DScene_lrm.py",
+      "evidence": "code/panoramic_video_480p_to_3DScene_lrm.py; code/Pano_LRM/",
+      "side_effects": "writes ply and mp4 renders",
+      "cost": "GPU ~80 GB VRAM, seconds-minutes",
+      "provenance": "synthetic: PanoLRM feed-forward",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "cli.generate_example_camera",
+      "label": "Generate a camera trajectory JSON",
+      "description": "`python code/generate_example_camera.py` writes test_cam_{front,back,left,right}.json: 81 4x4 world-to-camera matrices (OpenCV convention) as a JSON list, the format accepted by --json_path / --pose_path. Adapt the script for custom rails.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "path": "code/generate_example_camera.py",
+      "evidence": "code/generate_example_camera.py; data/test_cameras/",
+      "side_effects": "writes JSON files in cwd",
+      "cost": "free",
+      "data_domain": "camera-trajectory"
+    },
+    {
+      "capabilityId": "ui.gradio_demo",
+      "label": "Gradio demo web UI (app_matrix3d.py)",
+      "description": "`python code/app_matrix3d.py --max_gpus N` launches a Gradio app (demo.launch(share=True) creates a public gradio.live tunnel) chaining text->video->3D on one GPU (>=62 GB) or text/image->video->3D across N GPUs. Helpers in code/gradio_demo/{image_to_video,extract_3d_scene}.py.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "http",
+      "path": "gradio default :7860 (+ public share link)",
+      "evidence": "code/app_matrix3d.py; code/gradio_demo/",
+      "side_effects": "opens a public share tunnel; runs GPU jobs on user request",
+      "cost": "GPU hours"
+    },
+    {
+      "capabilityId": "contract.working_dir",
+      "label": "Working directory (inout_dir) contract",
+      "description": "Stage handoff by files in one directory: pano_img.jpg|png + prompt.txt (Step1 out / Step2 in) -> condition/rendered_rgb.mp4, rendered_mask.mp4, generated/generated.mp4, pano_video.mp4 (Step2 out) -> generated_3dgs_opt.ply (Step3 out). Third-party panoramas (e.g. HunyuanWorld) may be substituted at Step1's output.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "output/<name>/",
+      "evidence": "code/panoramic_image_generation.py; code/panoramic_image_to_video.py; code/panoramic_video_to_3DScene.py; README.md",
+      "data_domain": "pipeline-artifacts"
+    },
+    {
+      "capabilityId": "contract.camera_json",
+      "label": "Camera trajectory JSON contract",
+      "description": "JSON list of 81 4x4 world-to-camera matrices in OpenCV format, translations in the depth-scaled units of the panorama (example rails travel 1000 units). Sample: data/test_cameras/test_cam_front.json and data/case1/sample_cam.json.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "data/test_cameras/test_cam_front.json",
+      "evidence": "code/generate_example_camera.py; README.md",
+      "data_domain": "camera-trajectory"
+    },
+    {
+      "capabilityId": "contract.output_scene",
+      "label": "Generated 3DGS scene output",
+      "description": "generated_3dgs_opt.ply (or the LRM .ply): standard 3D Gaussian Splatting PLY reconstructed from the panoramic video, loadable in generic splat viewers. Scene scale is relative to MoGe's monocular depth estimate, not metric.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "file",
+      "path": "output/<name>/generated_3dgs_opt.ply",
+      "evidence": "code/panoramic_video_to_3DScene.py",
+      "provenance": "synthetic",
+      "data_domain": "gaussian-splat"
+    },
+    {
+      "capabilityId": "contract.checkpoints",
+      "label": "Model zoo (Hugging Face Skywork/Matrix-3D)",
+      "description": "Text2PanoImage LoRA (~16 GB VRAM), PanoVideoGen-480p (~40 GB / 15 GB low-VRAM), PanoVideoGen-720p (~60 GB / 19 GB), PanoVideoGen-720p-5B (~19 GB / 12 GB), PanoLRM-480p (~80 GB); plus third-party MoGe-ViT-L, StableSR and VEnhancer weights.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "external",
+      "path": "https://huggingface.co/Skywork/Matrix-3D",
+      "evidence": "README.md; code/download_checkpoints.py",
+      "data_domain": "model-weights"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Matrix-3D",
+    "domain": "perception-3d",
+    "maturity": "upstream-mirror",
+    "language": "Python / CUDA",
+    "framework": "PyTorch 2.7, DiffSynth-Studio (FLUX.1, Wan2.1/2.2), MoGe, nvdiffrast, gaussian-splatting, xfuser, Gradio",
+    "exposure": "cli+gradio",
+    "upstream": "SkyworkAI/Matrix-3D",
+    "visibility": "public",
+    "last_pushed_at": "2025-11-25T10:42:48Z",
+    "capability_count": 12,
+    "version": "v0.1.0",
+    "gpu_required": true
+  },
+  "location": null,
+  "relations": [
+    {
+      "relationId": "matrix-3d--supplies_context_to--lichtfeld-studio",
+      "targetNodeId": "lichtfeld-studio",
+      "kind": "supplies_context_to",
+      "description": "Inferred from formats, not code: the generated Gaussian PLY scenes are the kind of asset LichtFeld Studio opens (scene.load_ply) for inspection, editing and re-export. No reference between the repositories.",
+      "evidence": "code/panoramic_video_to_3DScene.py (generated_3dgs_opt.ply); LichtFeld-Studio src/mcp/shared_scene_tools.cpp"
+    }
+  ],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["generate.sh", "code/panoramic_image_generation.py", "code/panoramic_image_to_video.py", "code/panoramic_video_to_3DScene.py", "code/panoramic_video_480p_to_3DScene_lrm.py", "code/app_matrix3d.py"],
+      "run": ["conda create -n matrix3d python=3.10", "pip install torch==2.7.0 torchvision==0.22.0", "./install.sh", "python code/download_checkpoints.py", "./generate.sh"],
+      "ports": [7860],
+      "container": false
+    },
+    "contracts": [
+      { "name": "inout_dir layout", "path": "code/panoramic_image_to_video.py", "summary": "pano_img.jpg + prompt.txt -> pano_video.mp4 -> generated_3dgs_opt.ply" },
+      { "name": "camera JSON", "path": "code/generate_example_camera.py", "summary": "list of 81 4x4 OpenCV world-to-camera matrices" }
+    ],
+    "resources": [
+      { "name": "sample data", "classification": "public", "path": "data/", "description": "example images, case1 sample video + poses, test camera rails" },
+      { "name": "vendored components", "classification": "public", "path": "code/{DiffSynth-Studio,MoGe,Pano_GS_Opt,Pano_LRM,StableSR,VideoSR}", "description": "in-tree copies of upstream projects used by the stages" }
+    ],
+    "external_services": [
+      { "name": "Hugging Face Hub", "domain": "huggingface.co", "purpose": "checkpoint downloads (Skywork/Matrix-3D, Ruicheng/moge-vitl, Iceclear/StableSR)", "auth": "none for public repos" },
+      { "name": "Gradio share", "domain": "gradio.live", "purpose": "public tunnel created by demo.launch(share=True)", "auth": "none (public URL)" }
+    ],
+    "secrets_env": ["HF_TOKEN", "VISIBLE_GPU_NUM"],
+    "health": { "method": "cli", "endpoint": "python code/panoramic_image_generation.py --help" },
+    "spatial": "Scene-local, non-metric coordinates scaled by monocular depth; panoramas are equirectangular; no GIS.",
+    "temporal": "81-frame camera tour (video time); no calendar time.",
+    "open_questions": [
+      "Is Matrix-3D meant to be a synthetic-scene source for training/testing other nodes (bim-state-transformer-engine, payload-render-engine) or an operator content tool? No caller is evidenced.",
+      "The Gradio demo publishes a public share link by default; the universe should disable share=True before any deployment."
+    ]
+  }
+}
