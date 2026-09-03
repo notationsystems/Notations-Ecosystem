@@ -2,15 +2,17 @@ import { resolve } from 'node:path';
 import { ControlPlane } from '../src/control-plane.js';
 import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 import { securityConstellationProfile } from '../src/profiles/security-constellation.js';
+import { notationDataFabricProfile } from '../src/profiles/notation-data-fabric.js';
 
 const profiles = {
   'payload-terminal': payloadTerminalProfile,
   'security-constellation': securityConstellationProfile,
+  'notation-data-fabric': notationDataFabricProfile,
 };
 const profileId = process.argv[2];
 const makeProfile = profiles[profileId];
 if (!makeProfile) {
-  console.error('Usage: node scripts/apply-internal-profile.js <payload-terminal|security-constellation>');
+  console.error('Usage: node scripts/apply-internal-profile.js <payload-terminal|security-constellation|notation-data-fabric>');
   process.exit(64);
 }
 const actorId = process.env.NOTATIONS_INTERNAL_ACTOR?.trim();

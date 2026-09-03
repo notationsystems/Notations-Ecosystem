@@ -1,6 +1,6 @@
 import { ControlPlaneError, invalid } from './errors.js';
 import { digest, HashJournal } from './journal.js';
-import { parseCommand, parseProfileApplication, parseSecurityAttestation } from './validation.js';
+import { parseCommand, parseProfileApplication, parseSecurityAttestation, parseFabricSync } from './validation.js';
 import { verifySecurityAttestation } from './security/attestation.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
@@ -15,6 +15,7 @@ function derive(records) {
   const observations = new Map();
   const coordination = new Map();
   const securityAttestations = new Map();
+  const fabricSyncs = new Map();
 
   for (const { event } of records) {
     switch (event.kind) {
@@ -50,11 +51,14 @@ function derive(records) {
       case 'security_attested':
         securityAttestations.set(`${event.attestation.subjectNodeId}\u0000${event.attestation.category}`, event);
         break;
+      case 'fabric_sync_registered':
+        fabricSyncs.set(event.manifest.syncId, event.manifest);
+        break;
       default:
         throw new ControlPlaneError(503, 'JOURNAL_CORRUPT', `Journal contains unsupported event kind ${event.kind}.`, 'Restore a journal produced by a compatible control-plane release.');
     }
   }
-  return { nodes, relations, observations, coordination, securityAttestations };
+  return { nodes, relations, observations, coordination, securityAttestations, fabricSyncs };
 }
 
 function securityPosture(nodeId, securityAttestations, generatedAt) {
@@ -104,6 +108,10 @@ function makeSnapshot(records, durability, generatedAt) {
     nodes,
     relations: [...state.relations.values()].sort((left, right) => left.relationId.localeCompare(right.relationId)),
     coordination: [...state.coordination.values()].sort((left, right) => left.coordinationId.localeCompare(right.coordinationId)),
+    fabric: frozen({
+      identityScheme: 'notation://{kind}/{authority}/{local-id}',
+      syncs: [...state.fabricSyncs.values()].sort((left, right) => left.syncId.localeCompare(right.syncId)),
+    }),
   });
 }
 
@@ -319,6 +327,36 @@ export class ControlPlane {
       kind: 'security_attested',
       attestation: command.attestation,
       verification,
+    });
+    const append = await this.journal.append(event, command.expectedRevision);
+    const current = await this.journal.read();
+    return frozen({
+      schema: 'notations.control-plane.command-result.v1',
+      outcome: append.outcome,
+      event: { eventId: append.record.event.eventId, kind: append.record.event.kind, recordHash: append.record.recordHash },
+      snapshot: makeSnapshot(current, 'local_jsonl_single_writer', this.clock()),
+    });
+  }
+
+  /** Register a logical Fabric sync without moving or duplicating the system’s raw data. */
+  async registerFabricSync(input) {
+    const command = parseFabricSync(input);
+    const recordedAt = this.clock();
+    if (Date.parse(command.submittedAt) > Date.parse(recordedAt) + 60_000) throw invalid('submittedAt is more than one minute ahead of the control-plane clock.', 'Correct the internal operator clock and submit the same Fabric manifest again.');
+    const records = await this.journal.read();
+    const state = derive(records);
+    if (!state.nodes.has(command.manifest.systemNodeId)) {
+      throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Fabric sync system ${command.manifest.systemNodeId} is not registered.`, 'Apply the system profile before registering its Fabric synchronization contract.');
+    }
+    if (!state.nodes.has(command.manifest.fabricNodeId)) {
+      throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Fabric anchor ${command.manifest.fabricNodeId} is not registered.`, 'Apply the Notation Data Fabric profile before registering its synchronization contract.');
+    }
+    const event = frozen({
+      eventId: `fabric-sync:${digest({ actorId: command.actorId, requestId: command.requestId, syncId: command.manifest.syncId })}`,
+      recordedAt,
+      commandHash: digest(command.raw),
+      kind: 'fabric_sync_registered',
+      manifest: command.manifest,
     });
     const append = await this.journal.append(event, command.expectedRevision);
     const current = await this.journal.read();

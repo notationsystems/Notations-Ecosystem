@@ -56,6 +56,16 @@ function searchText(node) {
 /** Build a projection that can always be discarded and rebuilt from the journal. */
 export function buildOperationalIndex(snapshot, builtAt = new Date().toISOString(), overrides = {}) {
   const options = { ...DEFAULTS, ...overrides };
+  const fabricSyncs = (snapshot.fabric?.syncs || []).map(sync => ({
+    syncId: sync.syncId,
+    systemNodeId: sync.systemNodeId,
+    systemIdentity: sync.systemIdentity,
+    fabricNodeId: sync.fabricNodeId,
+    mode: sync.mode,
+    authority: sync.authority,
+    identityKinds: [...sync.identityKinds],
+    representations: [...sync.representations],
+  })).sort((left, right) => left.syncId.localeCompare(right.syncId));
   const nodes = snapshot.nodes.map(node => ({
     nodeId: node.nodeId,
     name: node.name,
@@ -91,6 +101,10 @@ export function buildOperationalIndex(snapshot, builtAt = new Date().toISOString
     sourceRevision: snapshot.revision,
     sourceEventCursor: snapshot.eventCursor,
     builtAt,
+    fabric: {
+      identityScheme: snapshot.fabric?.identityScheme || 'notation://{kind}/{authority}/{local-id}',
+      registeredSyncs: fabricSyncs,
+    },
     nodes,
     relations: snapshot.relations.map(relation => ({ ...relation })),
     capabilities,
@@ -100,6 +114,7 @@ export function buildOperationalIndex(snapshot, builtAt = new Date().toISOString
       observation: valuesBy(nodes, node => node.observationState),
       security: valuesBy(nodes, node => node.securityOverall),
       capabilityMode: valuesBy(capabilities, capability => capability.mode),
+      fabricAuthority: valuesBy(fabricSyncs, sync => sync.authority),
     },
     signals: {
       unobservedNodeIds: nodes.filter(node => node.observationState === 'unobserved').map(node => node.nodeId),

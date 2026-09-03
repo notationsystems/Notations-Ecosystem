@@ -1,0 +1,30 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "payload-corpus-canonical-state",
+  "systemNodeId": "payload-corpus",
+  "systemIdentity": "notation://node/payload/payload-corpus",
+  "fabricNodeId": "notation-canonical-state",
+  "mode": "event_stream",
+  "authority": "canonical_state",
+  "identityKinds": [
+    "source",
+    "artifact",
+    "entity",
+    "observation",
+    "claim",
+    "dataset",
+    "state",
+    "transform",
+    "proof"
+  ],
+  "representations": [
+    "object",
+    "graph",
+    "spatial",
+    "vector",
+    "sql",
+    "compute"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

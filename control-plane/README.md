@@ -74,6 +74,38 @@ and persists only a bounded `healthy`, `degraded`, or `offline` observation.
 It does not forward the remote body, headers, credentials, or any other
 Payload data into the control-plane journal.
 
+## Canonical Data Fabric synchronization
+
+The Control Plane is not a master database. The Evidence Lake and its
+purpose-built representations retain their own data; the Control Plane records
+which systems participate in the shared canonical identity and provenance
+model. Every identity follows:
+
+```text
+notation://<kind>/<authority>/<local-id>
+```
+
+First materialize the Fabric and the system profile, then register a compact
+sync contract. The included first contract binds the Payload **Corpus** to
+Notation Canonical State—not the Payload user interface—to keep data authority
+and projections distinct.
+
+```sh
+NOTATIONS_INTERNAL_ACTOR=operator:data npm run profile:fabric
+NOTATIONS_INTERNAL_ACTOR=operator:data npm run profile:payload
+NOTATIONS_INTERNAL_ACTOR=operator:data npm run fabric:register -- manifests/payload-corpus.fabric-sync.json
+```
+
+Each contract names the system node, its canonical `notation://node/...`
+identity, Fabric anchor, sync mode, logical authority, identity kinds, and
+physical representations. Provenance and `knownAt` are mandatory. It records
+no provider URL, raw records, source documents, credentials, or object bytes.
+The visual dock can connect `systemNodeId` to `fabricNodeId` from
+`snapshot.fabric.syncs` to show data lineage without becoming a data store.
+It can fetch the private layer-and-panel metadata from
+`GET /v1/profiles/notation-data-fabric`; there is intentionally no HTTP route
+that applies a Fabric profile or registers a sync.
+
 ## Internal Security Constellation
 
 Security posture is an internal operation, not a product API and not a

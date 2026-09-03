@@ -1,4 +1,5 @@
 import { invalid } from './errors.js';
+import { CANONICAL_KINDS, parseCanonicalURI } from './identity/canonical-uri.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -200,6 +201,51 @@ export function parseSecurityAttestation(input) {
       summary: string(attestation.summary, 'attestation.summary', 600),
       signerId: identifier(attestation.signerId, 'attestation.signerId'),
       signature,
+    },
+  };
+}
+
+/** A declared synchronization contract for one physical system and the Fabric. */
+export function parseFabricSync(input) {
+  const parsed = exactKeys(input, 'fabric sync', ['requestId', 'actorId', 'submittedAt', 'expectedRevision', 'manifest']);
+  const manifest = exactKeys(parsed.manifest, 'manifest', ['schema', 'syncId', 'systemNodeId', 'systemIdentity', 'fabricNodeId', 'mode', 'authority', 'identityKinds', 'representations', 'provenanceRequired', 'knownAtRequired']);
+  if (manifest.schema !== 'notations.fabric-sync-manifest.v1') throw invalid('manifest.schema must be notations.fabric-sync-manifest.v1.');
+  let systemIdentity;
+  try {
+    systemIdentity = parseCanonicalURI(manifest.systemIdentity);
+  } catch (error) {
+    throw invalid(`manifest.systemIdentity is invalid: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  if (systemIdentity.kind !== 'node') throw invalid('manifest.systemIdentity must identify the synchronized system as a notation://node/... identity.');
+  const modes = new Set(['append_only', 'snapshot', 'event_stream']);
+  const authorities = new Set(['evidence_source', 'canonical_state', 'projection', 'derived_compute']);
+  const representations = new Set(['object', 'graph', 'spatial', 'vector', 'sql', 'rdf', 'lakehouse', 'compute']);
+  if (!Array.isArray(manifest.identityKinds) || !manifest.identityKinds.length || manifest.identityKinds.length > CANONICAL_KINDS.length) throw invalid('manifest.identityKinds must name one or more canonical identity kinds.');
+  if (!manifest.identityKinds.every(kind => typeof kind === 'string' && CANONICAL_KINDS.includes(kind))) throw invalid('manifest.identityKinds contains an unsupported canonical identity kind.');
+  if (new Set(manifest.identityKinds).size !== manifest.identityKinds.length) throw invalid('manifest.identityKinds must not contain duplicates.');
+  if (!Array.isArray(manifest.representations) || !manifest.representations.length || manifest.representations.length > representations.size) throw invalid('manifest.representations must name one or more physical representations.');
+  if (!manifest.representations.every(representation => typeof representation === 'string' && representations.has(representation))) throw invalid('manifest.representations contains an unsupported physical representation.');
+  if (new Set(manifest.representations).size !== manifest.representations.length) throw invalid('manifest.representations must not contain duplicates.');
+  if (typeof manifest.provenanceRequired !== 'boolean' || typeof manifest.knownAtRequired !== 'boolean') throw invalid('manifest provenanceRequired and knownAtRequired must be boolean.');
+  if (!manifest.provenanceRequired || !manifest.knownAtRequired) throw invalid('Every Fabric sync must require provenance and knownAt; this cannot be relaxed by a system manifest.');
+  return {
+    requestId: identifier(parsed.requestId, 'requestId'),
+    actorId: identifier(parsed.actorId, 'actorId'),
+    submittedAt: instant(parsed.submittedAt, 'submittedAt'),
+    expectedRevision: nullableRevision(parsed.expectedRevision),
+    raw: parsed,
+    manifest: {
+      schema: manifest.schema,
+      syncId: identifier(manifest.syncId, 'manifest.syncId'),
+      systemNodeId: identifier(manifest.systemNodeId, 'manifest.systemNodeId'),
+      systemIdentity: systemIdentity.uri,
+      fabricNodeId: identifier(manifest.fabricNodeId, 'manifest.fabricNodeId'),
+      mode: member(manifest.mode, 'manifest.mode', modes),
+      authority: member(manifest.authority, 'manifest.authority', authorities),
+      identityKinds: [...manifest.identityKinds],
+      representations: [...manifest.representations],
+      provenanceRequired: true,
+      knownAtRequired: true,
     },
   };
 }

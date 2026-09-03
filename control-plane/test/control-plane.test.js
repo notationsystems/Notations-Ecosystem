@@ -9,6 +9,8 @@ import { ControlPlaneError } from '../src/errors.js';
 import { observePayloadTerminal } from '../src/adapters/payload-terminal.js';
 import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 import { securityConstellationProfile } from '../src/profiles/security-constellation.js';
+import { notationDataFabricProfile } from '../src/profiles/notation-data-fabric.js';
+import { canonicalURI, parseCanonicalURI } from '../src/identity/canonical-uri.js';
 import { attestationPayload } from '../src/security/attestation.js';
 import { buildOperationalIndex, queryOperationalIndex } from '../src/indexing/operational-index.js';
 
@@ -179,6 +181,50 @@ test('rebuilds a narrow searchable operational index from existing control-plane
     const result = queryOperationalIndex(index, 'physical economy');
     assert.equal(result.results.some(node => node.nodeId === 'payload-terminal'), true);
     assert.equal(JSON.stringify(index).includes('unique private reasoning purpose'), false);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('binds an ecosystem to the canonical data fabric without copying its evidence', async () => {
+  const { directory, plane } = await fixture();
+  try {
+    await plane.applyProfile({ requestId: 'bootstrap-payload-fabric', actorId: 'operator:local', submittedAt: NOW, expectedRevision: null }, payloadTerminalProfile());
+    let snapshot = await plane.snapshot();
+    const fabricProfile = notationDataFabricProfile();
+    await plane.applyProfile({ requestId: 'bootstrap-notation-fabric', actorId: 'operator:local', submittedAt: NOW, expectedRevision: snapshot.revision }, fabricProfile);
+    snapshot = await plane.snapshot();
+    const manifest = {
+      schema: 'notations.fabric-sync-manifest.v1',
+      syncId: 'payload-corpus-canonical-state',
+      systemNodeId: 'payload-corpus',
+      systemIdentity: canonicalURI('node', 'payload', 'payload-corpus'),
+      fabricNodeId: 'notation-canonical-state',
+      mode: 'event_stream',
+      authority: 'canonical_state',
+      identityKinds: ['source', 'artifact', 'entity', 'observation', 'claim', 'dataset', 'state', 'transform', 'proof'],
+      representations: ['object', 'graph', 'spatial', 'vector', 'sql', 'compute'],
+      provenanceRequired: true,
+      knownAtRequired: true,
+    };
+    const registered = await plane.registerFabricSync({
+      requestId: 'register-payload-corpus-fabric', actorId: 'operator:local', submittedAt: NOW, expectedRevision: snapshot.revision, manifest,
+    });
+    assert.equal(registered.event.kind, 'fabric_sync_registered');
+    assert.equal(registered.snapshot.fabric.identityScheme, 'notation://{kind}/{authority}/{local-id}');
+    assert.deepEqual(registered.snapshot.fabric.syncs[0], manifest);
+    assert.deepEqual(parseCanonicalURI(manifest.systemIdentity), { uri: manifest.systemIdentity, kind: 'node', authority: 'payload', localId: 'payload-corpus' });
+    const index = buildOperationalIndex(registered.snapshot, NOW);
+    assert.equal(index.fabric.registeredSyncs[0].fabricNodeId, 'notation-canonical-state');
+    assert.equal(index.facets.fabricAuthority.canonical_state, 1);
+
+    await assert.rejects(
+      plane.registerFabricSync({
+        requestId: 'invalid-payload-fabric', actorId: 'operator:local', submittedAt: NOW, expectedRevision: registered.snapshot.revision,
+        manifest: { ...manifest, syncId: 'invalid-payload-sync', knownAtRequired: false },
+      }),
+      error => error instanceof ControlPlaneError && error.code === 'CONTROL_PLANE_COMMAND_INVALID',
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

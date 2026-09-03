@@ -83,6 +83,17 @@ paths:
           description: The Payload nodes and relations were appended as one profile event.
         '409':
           description: The dock is stale or this profile request was already used differently.
+  /v1/profiles/notation-data-fabric:
+    get:
+      summary: Preview the private Notation Data Fabric topology
+      description: >-
+        A dock-ready projection of the shared identity, provenance, evidence,
+        state, graph, analytical, retrieval, and derived-compute layers.
+        Applying the profile and registering sync contracts are direct internal
+        operations, not HTTP actions.
+      responses:
+        '200':
+          description: A dock-ready Data Fabric profile with layers and detail panels.
   /v1/adapters/payload-terminal/observe:
     post:
       summary: Probe the one configured Payload Terminal health surface
@@ -175,7 +186,7 @@ components:
           properties:
             action: { const: record_observation }
             nodeId: { type: string }
-            health: { type: string, enum: [unknown, healthy, degraded, offline] }
+            health: { type: string, enum: [unknown, healthy, degraded, critical, offline] }
             observedAt: { type: string, format: date-time }
             source: { type: string, enum: [operator, health_check, webhook] }
             detail: { type: string }
@@ -204,7 +215,7 @@ components:
             note: { type: string }
     Snapshot:
       type: object
-      required: [schema, revision, eventCursor, durability, generatedAt, nodes, relations, coordination]
+      required: [schema, revision, eventCursor, durability, generatedAt, nodes, relations, coordination, fabric]
       properties:
         schema: { const: notations.control-plane.snapshot.v1 }
         revision: { oneOf: [{ type: string }, { type: 'null' }] }
@@ -214,6 +225,34 @@ components:
         nodes: { type: array }
         relations: { type: array }
         coordination: { type: array }
+        fabric: { $ref: '#/components/schemas/Fabric' }
+    Fabric:
+      type: object
+      required: [identityScheme, syncs]
+      properties:
+        identityScheme: { const: 'notation://{kind}/{authority}/{local-id}' }
+        syncs:
+          type: array
+          items: { $ref: '#/components/schemas/FabricSync' }
+    FabricSync:
+      type: object
+      required: [schema, syncId, systemNodeId, systemIdentity, fabricNodeId, mode, authority, identityKinds, representations, provenanceRequired, knownAtRequired]
+      properties:
+        schema: { const: notations.fabric-sync-manifest.v1 }
+        syncId: { type: string }
+        systemNodeId: { type: string }
+        systemIdentity: { type: string, pattern: '^notation://node/[a-z0-9][a-z0-9._-]{0,62}/.+' }
+        fabricNodeId: { type: string }
+        mode: { type: string, enum: [append_only, snapshot, event_stream] }
+        authority: { type: string, enum: [evidence_source, canonical_state, projection, derived_compute] }
+        identityKinds:
+          type: array
+          items: { type: string, enum: [source, artifact, entity, observation, claim, dataset, model, state, transform, proof, node] }
+        representations:
+          type: array
+          items: { type: string, enum: [object, graph, spatial, vector, sql, rdf, lakehouse, compute] }
+        provenanceRequired: { const: true }
+        knownAtRequired: { const: true }
     ProfileApplication:
       type: object
       required: [requestId, actorId, submittedAt, expectedRevision]
