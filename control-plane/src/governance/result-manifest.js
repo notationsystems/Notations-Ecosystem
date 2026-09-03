@@ -1,3 +1,4 @@
+import { invalid } from '../errors.js';
 import { parseUri } from '../identity/uri.js';
 
 /**
@@ -12,6 +13,10 @@ function parseCanonicalURI(value) {
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 const HASH = /^[a-f0-9]{64}$/;
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/** The version the plane publishes at GET /v1/contracts/result-manifest. */
+export const RESULT_MANIFEST_VERSION = 'v1';
 const UNCERTAINTY_KINDS = new Set(['source_disagreement', 'confidence_interval', 'prediction_interval', 'candidate_probabilities', 'support_significance', 'geometric_uncertainty', 'insufficient_evidence']);
 const VERIFICATION_STATUSES = new Set(['verified', 'partially_verified', 'unverified', 'challenged']);
 
@@ -42,32 +47,33 @@ export const RESULT_MANIFEST_SCHEMA = Object.freeze({
 });
 
 function record(value, path) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${path} must be an object.`);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid(`${path} must be an object.`);
   return value;
 }
 
 function exactKeys(value, path, required) {
   const parsed = record(value, path);
   const allowed = new Set(required);
-  for (const key of Object.keys(parsed)) if (!allowed.has(key)) throw new Error(`${path}.${key} is not part of the result-manifest contract.`);
-  for (const key of required) if (!(key in parsed)) throw new Error(`${path}.${key} is required.`);
+  for (const key of Object.keys(parsed)) if (!allowed.has(key)) throw invalid(`${path}.${key} is not part of the result-manifest contract.`);
+  for (const key of required) if (!(key in parsed)) throw invalid(`${path}.${key} is required.`);
   return parsed;
 }
 
 function text(value, path, maximum = 1_200) {
-  if (typeof value !== 'string' || !value.trim() || value.trim().length > maximum) throw new Error(`${path} must be a non-empty string no longer than ${maximum} characters.`);
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > maximum) throw invalid(`${path} must be a non-empty string no longer than ${maximum} characters.`);
   return value.trim();
 }
 
 function identifier(value, path) {
   const parsed = text(value, path, 180);
-  if (!IDENTIFIER.test(parsed)) throw new Error(`${path} has an invalid identifier.`);
+  if (!IDENTIFIER.test(parsed)) throw invalid(`${path} has an invalid identifier.`);
   return parsed;
 }
 
 function instant(value, path) {
   const parsed = text(value, path, 80);
-  if (!Number.isFinite(Date.parse(parsed))) throw new Error(`${path} must be an ISO date-time.`);
+  // The same grammar the journal holds its own instants to: an explicit offset, always.
+  if (!ISO_INSTANT.test(parsed) || !Number.isFinite(Date.parse(parsed))) throw invalid(`${path} must be an ISO date-time with an explicit offset.`);
   return parsed;
 }
 
@@ -77,44 +83,44 @@ function jsonObject(value, path) {
   try {
     encoded = JSON.stringify(parsed);
   } catch {
-    throw new Error(`${path} must be JSON-compatible.`);
+    throw invalid(`${path} must be JSON-compatible.`);
   }
-  if (encoded.length > 64_000) throw new Error(`${path} exceeds the 64 KiB result-manifest limit.`);
+  if (encoded.length > 64_000) throw invalid(`${path} exceeds the 64 KiB result-manifest limit.`);
   return parsed;
 }
 
 function identities(value, path, allowedKinds) {
-  if (!Array.isArray(value) || value.length > 500) throw new Error(`${path} must be an array with at most 500 canonical identities.`);
+  if (!Array.isArray(value) || value.length > 500) throw invalid(`${path} must be an array with at most 500 canonical identities.`);
   const parsed = value.map((identity, index) => {
     const reference = parseCanonicalURI(identity);
-    if (allowedKinds && !allowedKinds.has(reference.kind)) throw new Error(`${path}[${index}] has an unsupported canonical identity kind.`);
+    if (allowedKinds && !allowedKinds.has(reference.kind)) throw invalid(`${path}[${index}] has an unsupported canonical identity kind.`);
     return reference.uri;
   });
-  if (new Set(parsed).size !== parsed.length) throw new Error(`${path} must not contain duplicate canonical identities.`);
+  if (new Set(parsed).size !== parsed.length) throw invalid(`${path} must not contain duplicate canonical identities.`);
   return parsed;
 }
 
 function computations(value) {
-  if (!Array.isArray(value) || value.length > 100) throw new Error('computations must contain at most 100 bounded records.');
+  if (!Array.isArray(value) || value.length > 100) throw invalid('computations must contain at most 100 bounded records.');
   return value.map((entry, index) => {
     const parsed = exactKeys(entry, `computations[${index}]`, ['transformId', 'outputIds', 'deterministic', 'parametersSha256']);
     const transform = parseCanonicalURI(parsed.transformId);
-    if (transform.kind !== 'transform') throw new Error(`computations[${index}].transformId must be a transform identity.`);
-    if (!Array.isArray(parsed.outputIds) || !parsed.outputIds.length || parsed.outputIds.length > 100) throw new Error(`computations[${index}].outputIds must contain between one and 100 canonical identities.`);
+    if (transform.kind !== 'transform') throw invalid(`computations[${index}].transformId must be a transform identity.`);
+    if (!Array.isArray(parsed.outputIds) || !parsed.outputIds.length || parsed.outputIds.length > 100) throw invalid(`computations[${index}].outputIds must contain between one and 100 canonical identities.`);
     const outputIds = parsed.outputIds.map((outputId, outputIndex) => parseCanonicalURI(outputId).uri);
-    if (new Set(outputIds).size !== outputIds.length) throw new Error(`computations[${index}].outputIds must not contain duplicates.`);
-    if (typeof parsed.deterministic !== 'boolean') throw new Error(`computations[${index}].deterministic must be boolean.`);
-    if (parsed.parametersSha256 !== null && (typeof parsed.parametersSha256 !== 'string' || !HASH.test(parsed.parametersSha256))) throw new Error(`computations[${index}].parametersSha256 must be null or a SHA-256 digest.`);
+    if (new Set(outputIds).size !== outputIds.length) throw invalid(`computations[${index}].outputIds must not contain duplicates.`);
+    if (typeof parsed.deterministic !== 'boolean') throw invalid(`computations[${index}].deterministic must be boolean.`);
+    if (parsed.parametersSha256 !== null && (typeof parsed.parametersSha256 !== 'string' || !HASH.test(parsed.parametersSha256))) throw invalid(`computations[${index}].parametersSha256 must be null or a SHA-256 digest.`);
     return Object.freeze({ transformId: transform.uri, outputIds, deterministic: parsed.deterministic, parametersSha256: parsed.parametersSha256 });
   });
 }
 
 function uncertainties(value) {
-  if (!Array.isArray(value) || value.length > 100) throw new Error('uncertainties must contain at most 100 bounded records.');
+  if (!Array.isArray(value) || value.length > 100) throw invalid('uncertainties must contain at most 100 bounded records.');
   return value.map((entry, index) => {
     const parsed = exactKeys(entry, `uncertainties[${index}]`, ['kind', 'summary']);
     const kind = text(parsed.kind, `uncertainties[${index}].kind`, 80);
-    if (!UNCERTAINTY_KINDS.has(kind)) throw new Error(`uncertainties[${index}].kind is not supported.`);
+    if (!UNCERTAINTY_KINDS.has(kind)) throw invalid(`uncertainties[${index}].kind is not supported.`);
     return Object.freeze({ kind, summary: text(parsed.summary, `uncertainties[${index}].summary`, 600) });
   });
 }
@@ -122,12 +128,12 @@ function uncertainties(value) {
 /** Validate and normalize a bounded, provenance-oriented result sidecar. */
 export function parseResultManifest(input) {
   const value = exactKeys(input, 'result manifest', ['schema', 'manifestId', 'queryId', 'corpusBuild', 'methodology', 'knownAt', 'result', 'entitiesUsed', 'assertionsUsed', 'evidenceUsed', 'computations', 'uncertainties', 'contradictions', 'verification']);
-  if (value.schema !== 'notations.result-manifest.v1') throw new Error('result manifest schema must be notations.result-manifest.v1.');
+  if (value.schema !== 'notations.result-manifest.v1') throw invalid('result manifest schema must be notations.result-manifest.v1.');
   const corpusBuild = exactKeys(value.corpusBuild, 'corpusBuild', ['buildId', 'knownAt']);
   const methodology = exactKeys(value.methodology, 'methodology', ['methodologyId', 'version']);
   const verification = exactKeys(value.verification, 'verification', ['status', 'checkedAt']);
   const verificationStatus = text(verification.status, 'verification.status', 80);
-  if (!VERIFICATION_STATUSES.has(verificationStatus)) throw new Error('verification.status is not supported.');
+  if (!VERIFICATION_STATUSES.has(verificationStatus)) throw invalid('verification.status is not supported.');
   return Object.freeze({
     schema: value.schema,
     manifestId: identifier(value.manifestId, 'manifestId'),

@@ -5,7 +5,10 @@ import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ControlPlane, defaultKeystorePath } from './control-plane.js';
-import { LIVENESS_LIMITATIONS, REFUSAL_LIMITATIONS, SECURITY_STATUS_LIMITATIONS, checkApiZero, observed, referenced } from './api/response.js';
+import { CONTRACT_LIMITATIONS, INDEX_LIMITATIONS, LIVENESS_LIMITATIONS, REFUSAL_LIMITATIONS, SECURITY_STATUS_LIMITATIONS, checkApiZero, observed, referenced } from './api/response.js';
+import { RESULT_MANIFEST_SCHEMA, RESULT_MANIFEST_VERSION } from './governance/result-manifest.js';
+import { buildOperationalIndex } from './indexing/operational-index.js';
+import { parseAttesters } from './security/attestation.js';
 import { ControlPlaneError } from './errors.js';
 import { HashJournal } from './journal.js';
 import { SecurityLog, SECURITY_EVENTS, sourceKey } from './security/audit.js';
@@ -49,6 +52,9 @@ export function readConfig(env = process.env) {
     authFailuresPerMinute: integer(env.CONTROL_PLANE_AUTH_FAILURES_PER_MINUTE, 10),
     lockoutSeconds: integer(env.CONTROL_PLANE_LOCKOUT_SECONDS, 300),
     debugSecurityLog: boolean(env.CONTROL_PLANE_DEBUG_SECURITY_LOG),
+    // Raw here; parsed at boot, where a malformed allowlist refuses to start rather than
+    // silently trusting nobody.
+    attesters: env.NOTATIONS_SECURITY_ATTESTERS || null,
     isLoopback: LOOPBACK.has(host),
   };
 }
@@ -104,8 +110,9 @@ export async function createRuntime(config = readConfig(), { securityLog = new S
     throw new Error('CONTROL_PLANE_REQUIRE_SIGNATURES is set but signing is disabled, so no signature could ever be checked. Set CONTROL_PLANE_SIGNING=1, or unset the requirement.');
   }
 
+  const attesters = parseAttesters(config.attesters);
   const journal = new HashJournal(config.journalPath, { keyStore, requireSignatures: config.requireSignatures, anchor: config.anchor });
-  const controlPlane = new ControlPlane(journal, undefined, { maxCommandAgeSeconds: config.maxCommandAgeSeconds });
+  const controlPlane = new ControlPlane(journal, undefined, { maxCommandAgeSeconds: config.maxCommandAgeSeconds, attesters });
   const limiter = new RateLimiter(config);
   const verificationCache = new VerificationCache();
   // Source pseudonyms are salted per process: a log copy cannot be correlated back to
@@ -121,6 +128,7 @@ export async function createRuntime(config = readConfig(), { securityLog = new S
     requireSignatures: config.requireSignatures,
     rollbackAnchor: config.anchor,
     allowedOrigins: config.allowedOrigins.size,
+    trustedAttesters: attesters?.size ?? 0,
   });
 
   return { config, transport, registry, keyStore, journal, controlPlane, limiter, verificationCache, securityLog, sourceSalt, startedAt: Date.now() };
@@ -267,6 +275,33 @@ export function createControlPlaneServer(runtime) {
         return json(response, 200, observed(securityStatus(runtime, principal), SECURITY_STATUS_LIMITATIONS), headers);
       }
 
+      /**
+       * The operational index: a projection over the snapshot the caller could read
+       * itself, built by the plane so there is one derivation of "stale", "unattested"
+       * and "unbound" rather than one per client. An observation under API-000 — it is
+       * rebuildable and judged by this process's thresholds — and it names the referenced
+       * snapshot it was built from.
+       */
+      if (request.method === 'GET' && url.pathname === '/v1/index') {
+        limiter.chargeRead(identity);
+        requirePermission(principal, PERMISSIONS.SNAPSHOT_READ);
+        const snapshot = await controlPlane.snapshot();
+        return json(response, 200, observed(buildOperationalIndex(snapshot), INDEX_LIMITATIONS), headers);
+      }
+
+      /**
+       * A published contract. The result manifest is the machine-readable sidecar every
+       * corpus answer should carry (COR-003, COR-004 made concrete); the plane publishes
+       * the schema and validates manifests it is shown, and holds no result. It is
+       * versioned with the plane's release, not with the journal, so it is an
+       * observation and not a referenced read.
+       */
+      if (request.method === 'GET' && url.pathname === '/v1/contracts/result-manifest') {
+        limiter.chargeRead(identity);
+        requirePermission(principal, PERMISSIONS.SNAPSHOT_READ);
+        return json(response, 200, observed({ schema: 'notations.control-plane.contract.v1', contract: 'result-manifest', version: RESULT_MANIFEST_VERSION, jsonSchema: RESULT_MANIFEST_SCHEMA }, CONTRACT_LIMITATIONS), headers);
+      }
+
       if (request.method === 'POST' && url.pathname === '/v1/commands') {
         limiter.chargeCommand(identity);
         const body = await readJSON(request);
@@ -274,8 +309,10 @@ export function createControlPlaneServer(runtime) {
           const result = await controlPlane.command(body, { principal });
           securityLog.record(SECURITY_EVENTS.COMMAND_ACCEPTED, { source, principal: identity, kind: result.event.kind, outcome: result.outcome });
           // The record hash of the appended event is the root this write landed at, so a
-          // caller can point at exactly the history their command produced.
-          return json(response, 201, referenced(result, {
+          // caller can point at exactly the history their command produced. A duplicate
+          // — the same command, retried — is 200: nothing was created, and the client
+          // that retried should be able to tell.
+          return json(response, result.outcome === 'appended' ? 201 : 200, referenced(result, {
             revision: result.revision ?? result.event?.recordHash ?? null,
             integrity: controlPlane.journal.integrity(),
           }), headers);
@@ -343,6 +380,9 @@ export function securityStatus(runtime, principal) {
       allowedOrigins: config.allowedOrigins.size,
     },
     keyLifecycle: keyStore ? keyStore.describe() : { algorithm: null, state: 'disabled' },
+    // How many independent collectors this plane can verify. Zero is honest and common: it
+    // means every recorded posture rests on the submitting principal's authority.
+    attestation: { trustedSigners: runtime.controlPlane.attesters?.size ?? 0 },
     auditIntegrity: journal.integrity(),
     abuse: limiter.status(),
     events: securityLog.summary(),

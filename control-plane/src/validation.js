@@ -1,6 +1,9 @@
 import { invalid } from './errors.js';
 import { assertNoWeaponisedText, parseSignals } from './security/evidence.js';
 import { assertBoundedStructure, assertNoPollutedKeys, safeText } from './security/text.js';
+import { CAPABILITY_MATURITY_SET } from './governance/maturity.js';
+import { SIGNATURE } from './security/attestation.js';
+import { INFORMATION_CLASSES, nodeUri, parseUri, tryUri } from './identity/uri.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -19,7 +22,11 @@ const NODE_KINDS = new Set(['api', 'world_model', 'information_library', 'reason
 const CAPABILITY_MODES = new Set(['observe', 'propose', 'execute']);
 const APPROVALS = new Set(['automatic', 'operator']);
 const RELATIONS = new Set(['supplies_context_to', 'coordinates', 'visualizes', 'governs', 'depends_on']);
-const HEALTH = new Set(['unknown', 'healthy', 'degraded', 'offline']);
+// `critical` sits between degraded and offline: the node answers, and what it answers
+// says it must not be relied on. The plane this one was merged with recorded it, and a
+// probe that can only say "degraded" for a service reporting a failed dependency is
+// rounding a verdict down.
+const HEALTH = new Set(['unknown', 'healthy', 'degraded', 'critical', 'offline']);
 const OBSERVATION_SOURCES = new Set(['operator', 'health_check', 'webhook']);
 const ATTESTATION_METHODS = new Set(['automated_scan', 'operator_review', 'external_audit', 'self_declared']);
 
@@ -111,17 +118,23 @@ function location(value) {
 
 function capability(value, index) {
   const path = `node.capabilities[${index}]`;
-  const parsed = exactKeys(value, path, ['capabilityId', 'label', 'description', 'mode', 'approval']);
+  const parsed = exactKeys(value, path, ['capabilityId', 'label', 'description', 'mode', 'approval'], ['maturity', 'methodologyVersion']);
   const mode = member(parsed.mode, `${path}.mode`, CAPABILITY_MODES);
   const approval = member(parsed.approval, `${path}.approval`, APPROVALS);
   if (mode === 'execute' && approval !== 'operator') throw invalid(`${path}.approval must be "operator" for an execute capability.`);
-  return {
+  const out = {
     capabilityId: identifier(parsed.capabilityId, `${path}.capabilityId`),
     label: string(parsed.label, `${path}.label`, 120),
     description: string(parsed.description, `${path}.description`, 600),
     mode,
     approval,
   };
+  // Maturity is declared, never defaulted. The plane this one was merged with normalised
+  // an absent maturity to `research`; a plane that knows no estate cannot write a maturity
+  // onto code it has never seen, so absent stays absent and the dock says "undeclared".
+  if (parsed.maturity !== undefined) out.maturity = member(parsed.maturity, `${path}.maturity`, CAPABILITY_MATURITY_SET);
+  if (parsed.methodologyVersion !== undefined) out.methodologyVersion = string(parsed.methodologyVersion, `${path}.methodologyVersion`, 80);
+  return out;
 }
 
 function node(value) {
@@ -144,8 +157,68 @@ function node(value) {
   };
 }
 
-function base(input, action, fields) {
-  const parsed = exactKeys(input, 'command', ['requestId', 'actorId', 'submittedAt', 'expectedRevision', 'action', ...fields]);
+/**
+ * The fabric sync manifest: how one system's data participates in the canonical fabric
+ * (docs/SUBSTRATE.md, docs/PLATFORM.md). It records which node, under which authority,
+ * carrying which identity classes in which physical representations — never a provider
+ * URL, a record, a document, a credential or an object byte. The plane this one was
+ * merged with defined the shape; the identity grammar and the closed lists are this
+ * plane's own.
+ */
+export const FABRIC_SYNC_SCHEMA = 'notations.fabric-sync-manifest.v1';
+export const FABRIC_MODES = Object.freeze(['append_only', 'snapshot', 'event_stream']);
+export const FABRIC_AUTHORITIES = Object.freeze(['evidence_source', 'canonical_state', 'projection', 'derived_compute']);
+export const FABRIC_REPRESENTATIONS = Object.freeze(['object', 'graph', 'spatial', 'vector', 'sql', 'rdf', 'lakehouse', 'compute']);
+
+function closedList(value, path, allowed, noun) {
+  if (!Array.isArray(value) || !value.length || value.length > allowed.length) throw invalid(`${path} must name between one and ${allowed.length} ${noun}s.`);
+  const out = value.map((entry, index) => {
+    if (typeof entry !== 'string' || !allowed.includes(entry)) throw invalid(`${path}[${index}] is not a ${noun}.`, `Use one of: ${allowed.join(', ')}.`);
+    return entry;
+  });
+  if (new Set(out).size !== out.length) throw invalid(`${path} must not repeat a ${noun}.`);
+  return out;
+}
+
+function fabricManifest(value) {
+  const parsed = exactKeys(value, 'manifest', ['schema', 'syncId', 'systemNodeId', 'systemIdentity', 'fabricNodeId', 'mode', 'authority', 'identityKinds', 'representations', 'provenanceRequired', 'knownAtRequired']);
+  if (parsed.schema !== FABRIC_SYNC_SCHEMA) throw invalid(`manifest.schema must be ${FABRIC_SYNC_SCHEMA}.`);
+  const systemNodeId = identifier(parsed.systemNodeId, 'manifest.systemNodeId');
+  let identity;
+  try {
+    identity = parseUri(string(parsed.systemIdentity, 'manifest.systemIdentity', 512));
+  } catch (error) {
+    throw invalid(`manifest.systemIdentity is not a notation:// identity: ${error.detail ?? error.message}`);
+  }
+  // One system, one spelling. The plane already names every node in the identity space;
+  // a manifest that spelled the same node differently would give it a second identity,
+  // which is the thing the typed space exists to prevent.
+  if (identity.uri !== tryUri(nodeUri, systemNodeId)) {
+    throw invalid(`manifest.systemIdentity must be the plane's own name for ${systemNodeId}: ${tryUri(nodeUri, systemNodeId) ?? 'an id this grammar cannot name'}.`);
+  }
+  if (parsed.provenanceRequired !== true || parsed.knownAtRequired !== true) {
+    throw invalid(
+      'Every fabric sync requires provenance and knownAt; a system manifest cannot relax either.',
+      'Set provenanceRequired and knownAtRequired to true. A sync that carried values without their source or their knowledge time would be the fabric copying a corpus without its provenance (COR-003, COR-004).',
+    );
+  }
+  return {
+    schema: FABRIC_SYNC_SCHEMA,
+    syncId: identifier(parsed.syncId, 'manifest.syncId'),
+    systemNodeId,
+    systemIdentity: identity.uri,
+    fabricNodeId: identifier(parsed.fabricNodeId, 'manifest.fabricNodeId'),
+    mode: member(parsed.mode, 'manifest.mode', new Set(FABRIC_MODES)),
+    authority: member(parsed.authority, 'manifest.authority', new Set(FABRIC_AUTHORITIES)),
+    identityKinds: closedList(parsed.identityKinds, 'manifest.identityKinds', INFORMATION_CLASSES, 'information identity class'),
+    representations: closedList(parsed.representations, 'manifest.representations', FABRIC_REPRESENTATIONS, 'physical representation'),
+    provenanceRequired: true,
+    knownAtRequired: true,
+  };
+}
+
+function base(input, action, fields, optional = []) {
+  const parsed = exactKeys(input, 'command', ['requestId', 'actorId', 'submittedAt', 'expectedRevision', 'action', ...fields], optional);
   if (parsed.action !== action) throw invalid(`command.action must be ${action}.`);
   return {
     requestId: identifier(parsed.requestId, 'requestId'),
@@ -172,6 +245,7 @@ export const SUPPORTED_ACTIONS = Object.freeze([
   'record_security_posture',
   'request_capability',
   'resolve_coordination',
+  'register_fabric_sync',
 ]);
 
 export function parseCommand(input) {
@@ -198,14 +272,27 @@ export function parseCommand(input) {
       return { ...parsed, nodeId: identifier(parsed.raw.nodeId, 'nodeId'), health: member(parsed.raw.health, 'health', HEALTH), observedAt: instant(parsed.raw.observedAt, 'observedAt'), source: member(parsed.raw.source, 'source', OBSERVATION_SOURCES), detail: string(parsed.raw.detail, 'detail', 600) };
     }
     case 'record_security_posture': {
-      const parsed = base(top, action, ['nodeId', 'attestedAt', 'method', 'signals']);
-      return {
+      const parsed = base(top, action, ['nodeId', 'attestedAt', 'method', 'signals'], ['signerId', 'signature']);
+      const out = {
         ...parsed,
         nodeId: identifier(parsed.raw.nodeId, 'nodeId'),
         attestedAt: instant(parsed.raw.attestedAt, 'attestedAt'),
         method: member(parsed.raw.method, 'method', ATTESTATION_METHODS),
         signals: parseSignals(parsed.raw.signals),
       };
+      // An independent signature names its signer, and a signer without a signature is a
+      // claim — so the two are declared together or not at all. The signature itself is
+      // checked by shape here and by the key in the plane; it does not pass through
+      // `string()`, whose credential-shape heuristic cannot tell 86 characters of public
+      // signature from 86 characters of secret, and a signature is not a secret.
+      const signed = parsed.raw.signerId !== undefined || parsed.raw.signature !== undefined;
+      if (signed) {
+        if (parsed.raw.signerId === undefined || parsed.raw.signature === undefined) throw invalid('signerId and signature are declared together: a signature names its signer, and a signer without a signature is a claim.');
+        out.signerId = identifier(parsed.raw.signerId, 'signerId');
+        if (typeof parsed.raw.signature !== 'string' || !SIGNATURE.test(parsed.raw.signature)) throw invalid('signature must be a base64url Ed25519 signature: 86 characters, no padding.');
+        out.signature = parsed.raw.signature;
+      }
+      return out;
     }
     case 'request_capability': {
       const parsed = base(top, action, ['coordinationId', 'requesterNodeId', 'targetNodeId', 'capabilityId', 'requestedMode', 'purpose']);
@@ -216,6 +303,10 @@ export function parseCommand(input) {
       const decision = string(parsed.raw.decision, 'decision', 20);
       if (decision !== 'approved' && decision !== 'rejected') throw invalid('decision must be approved or rejected.');
       return { ...parsed, coordinationId: identifier(parsed.raw.coordinationId, 'coordinationId'), decision, note: string(parsed.raw.note, 'note', 1_200) };
+    }
+    case 'register_fabric_sync': {
+      const parsed = base(top, action, ['manifest']);
+      return { ...parsed, manifest: fabricManifest(parsed.raw.manifest) };
     }
     default:
       throw invalid(`command.action ${action} is not supported.`);

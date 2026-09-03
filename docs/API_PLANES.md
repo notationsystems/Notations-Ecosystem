@@ -184,7 +184,9 @@ about a repository nobody here reads would be manufacture rather than descriptio
   | `GET /v1/snapshot?at=<eventId>` | referenced | The state as of that record — the twin's time axis — referenced at **that record's** hash, not the head. One fold, served by the plane; a client replaying events itself would eventually disagree with it |
   | `GET /v1/events` | referenced | The same, plus the cursor the page was read at |
   | `GET /v1/security/status` | observation | This process's configuration and counters, and three limitations including that they reset on restart |
-  | `POST /v1/commands` | referenced | The record hash the write landed at, so a caller can point at exactly the history their command produced |
+  | `POST /v1/commands` | referenced | The record hash the write landed at, so a caller can point at exactly the history their command produced. A retry is `200` with `outcome: duplicate`, recognised by command hash and never by receipt time |
+  | `GET /v1/index` | observation | The operational index: rebuildable from the snapshot at `sourceRevision`, judged by thresholds it states, and carrying no coordination purpose text and no signature bytes |
+  | `GET /v1/contracts/result-manifest` | observation | The result-manifest contract — COR-003 and COR-004 as a JSON Schema — versioned with the plane's release rather than the journal; the plane holds no result |
   | Every refusal | observation | That it makes no claim about canonical state, and that nothing was written |
 
   An unsigned chain is still hash-linked and still a root, so `proofRoot` names the chain

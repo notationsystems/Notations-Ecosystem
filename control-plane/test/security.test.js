@@ -9,7 +9,7 @@
 
 import assert from 'node:assert/strict';
 import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { randomBytes } from 'node:crypto';
+import { generateKeyPairSync, randomBytes, sign } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,7 @@ import { ControlPlane, defaultKeystorePath } from '../src/control-plane.js';
 import { checkApiZero, observed } from '../src/api/response.js';
 import { KeyStore } from '../src/security/crypto/signing.js';
 import { KeyEncryptionKey, open, seal, rewrap } from '../src/security/crypto/envelope.js';
+import { postureStatement } from '../src/security/attestation.js';
 import { parseUri, assertClass, isAuthorityIdentity, isInformationIdentity, nodeUri, resolve as resolveUri, uri } from '../src/identity/uri.js';
 
 const REGISTRY_SCHEMA = 'notations.control-plane.principals.v1';
@@ -1165,7 +1166,7 @@ test('SEC-CONTRACT the published contract names every code the plane can emit', 
   assert.match(text, /The plane authorises; it never dispatches\./);
 
   // Every route the server answers is documented with the statuses it can return.
-  assert.deepEqual(Object.keys(responses).sort(), ['/health', '/v1/commands', '/v1/events', '/v1/security/status', '/v1/snapshot']);
+  assert.deepEqual(Object.keys(responses).sort(), ['/health', '/v1/commands', '/v1/contracts/result-manifest', '/v1/events', '/v1/index', '/v1/security/status', '/v1/snapshot']);
   assert.ok(responses['/v1/commands'].post.includes('500'), 'even the internal error is documented, since its text is fixed');
 });
 
@@ -1405,6 +1406,109 @@ test('TWIN-001 the state at any cursor is served by the plane, referenced at tha
     assert.equal(unknown.status, 409);
     assert.equal(unknown.body.error, 'CURSOR_UNKNOWN');
     assert.equal(unknown.body.apiResponse, 'operational_observation');
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-044 an independent signature is verified against public keys the plane holds, and a forged one is refused', async () => {
+  // The redaction boundary keeps material out of a posture statement; it does not say who
+  // made the statement beyond the principal that submitted it. A collector's own signature
+  // does, and it is checked against public keys only — the plane can verify a collector
+  // and can never impersonate one.
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  const x = publicKey.export({ format: 'jwk' }).x;
+  const h = await harness({ config: { attesters: JSON.stringify({ 'collector:ci': x }) } });
+  try {
+    const token = h.tokens['operator:alice'];
+    await h.command(token, { actorId: 'operator:alice', ...h.node('signed-node', OBSERVE) });
+    const attestedAt = new Date().toISOString();
+    const signals = [{ dimension: 'identity', state: 'strong', coverage: 1, summary: 'Every credential is bound to one actor.' }];
+    const signature = sign(null, postureStatement({ nodeId: 'signed-node', attestedAt, method: 'automated_scan', signals, signerId: 'collector:ci' }), privateKey).toString('base64url');
+    const posture = over => ({ actorId: 'attestor:ci', action: 'record_security_posture', nodeId: 'signed-node', attestedAt, method: 'automated_scan', signals, signerId: 'collector:ci', signature, ...over });
+
+    const accepted = await h.command(h.tokens['attestor:ci'], posture());
+    assert.equal(accepted.status, 201);
+    assert.deepEqual(accepted.body.snapshot.nodes.find(n => n.nodeId === 'signed-node').security.signer.signerId, 'collector:ci');
+
+    // Holding security.attest does not extend to forging a collector's signature.
+    const forged = await h.command(h.tokens['attestor:ci'], posture({ signals: [{ ...signals[0], state: 'weak' }] }));
+    assert.equal(forged.status, 422);
+    assert.equal(forged.body.error, 'SECURITY_ATTESTATION_INVALID');
+    const stranger = await h.command(h.tokens['attestor:ci'], posture({ signerId: 'collector:stranger' }));
+    assert.equal(stranger.status, 403);
+    assert.equal(stranger.body.error, 'SECURITY_ATTESTER_UNTRUSTED');
+
+    // The plane reports how many collectors it can verify, and never their keys.
+    const status = await h.call('GET', '/v1/security/status', { token });
+    assert.equal(status.body.attestation.trustedSigners, 1);
+    assert.equal(JSON.stringify(status.body).includes(x), false);
+    assert.equal(JSON.stringify(accepted.body).includes(x), false);
+  } finally {
+    await h.close();
+  }
+  // A malformed allowlist refuses to start, rather than starting and trusting nobody.
+  await assert.rejects(harness({ config: { attesters: '{"collector:ci":"short"}' } }), /NOTATIONS_SECURITY_ATTESTERS/);
+});
+
+test('SEC-045 an operator-local action is refused over every plane, admin included, and accepted at the host', async () => {
+  const h = await harness({
+    principals: [
+      { principalId: 'operator:alice', roles: ['operator', 'registrar'], actors: ['operator:alice'] },
+      { principalId: 'admin:root', roles: ['admin'], actors: ['admin:root'] },
+    ],
+  });
+  try {
+    const token = h.tokens['admin:root'];
+    await h.command(token, { actorId: 'admin:root', action: 'register_node', node: { ...h.node('platform', OBSERVE).node, metadata: { fabric_layers: 'evidence canonical projection compute', corpus_role: 'hold' } } });
+    await h.command(token, { actorId: 'admin:root', action: 'register_node', node: { ...h.node('ledger', OBSERVE).node, metadata: { corpus_role: 'coordinate' } } });
+    const manifest = { schema: 'notations.fabric-sync-manifest.v1', syncId: 'ledger-canonical', systemNodeId: 'ledger', systemIdentity: 'notation://node/notationsystems/ledger', fabricNodeId: 'platform', mode: 'append_only', authority: 'canonical_state', identityKinds: ['decision', 'node'], representations: ['sql'], provenanceRequired: true, knownAtRequired: true };
+
+    // Admin holds fabric.register. It is still refused over the wire, by a code that says why.
+    const overWire = await h.command(token, { actorId: 'admin:root', action: 'register_fabric_sync', manifest });
+    assert.equal(overWire.status, 403);
+    assert.equal(overWire.body.error, 'ACTION_OPERATOR_LOCAL');
+    assert.equal((await h.call('GET', '/v1/snapshot', { token })).body.fabric.syncs.length, 0);
+
+    // The same command at the host, on the same journal, is the operator's to make.
+    const local = await h.runtime.controlPlane.command({ requestId: 'bind-ledger', actorId: 'operator:host', submittedAt: new Date().toISOString(), expectedRevision: await h.revision(token), action: 'register_fabric_sync', manifest });
+    assert.equal(local.outcome, 'appended');
+    assert.equal((await h.call('GET', '/v1/snapshot', { token })).body.fabric.syncs[0].syncId, 'ledger-canonical');
+
+    // And the policy says so about itself.
+    const status = await h.call('GET', '/v1/security/status', { token });
+    assert.deepEqual(status.body.authorization.operatorLocal, ['register_fabric_sync']);
+  } finally {
+    await h.close();
+  }
+});
+
+test('SEC-046 a projection never binds to the fabric as canonical state', async () => {
+  // PLAT-004 holds it as a missing grant in the database; COR-009 holds it as doctrine.
+  // Here it is held at the coordination layer, where a sync is declared: the authority a
+  // manifest claims must be one the system's corpus role entitles it to.
+  const h = await harness();
+  try {
+    const plane = h.runtime.controlPlane;
+    const token = h.tokens['operator:alice'];
+    await h.command(token, { actorId: 'operator:alice', action: 'register_node', node: { ...h.node('platform', OBSERVE).node, metadata: { fabric_layers: 'evidence canonical projection compute', corpus_role: 'hold', corpus_owner_of: 'platform' } } });
+    await h.command(token, { actorId: 'operator:alice', action: 'register_node', node: { ...h.node('globe', OBSERVE).node, metadata: { corpus_role: 'project' } } });
+    await h.command(token, { actorId: 'operator:alice', action: 'register_node', node: { ...h.node('feed', OBSERVE).node, metadata: { corpus_role: 'feed' } } });
+    const bind = async (syncId, systemNodeId, authority, over = {}) => plane.command({
+      requestId: `bind-${syncId}`, actorId: 'operator:host', submittedAt: new Date().toISOString(), expectedRevision: (await plane.snapshot()).revision, action: 'register_fabric_sync',
+      manifest: { schema: 'notations.fabric-sync-manifest.v1', syncId, systemNodeId, systemIdentity: `notation://node/notationsystems/${systemNodeId}`, fabricNodeId: 'platform', mode: 'snapshot', authority, identityKinds: ['entity'], representations: ['spatial'], provenanceRequired: true, knownAtRequired: true, ...over },
+    });
+    const refusedAs = expected => error => error.code === expected;
+    await assert.rejects(bind('globe-canonical', 'globe', 'canonical_state'), refusedAs('FABRIC_AUTHORITY_MISMATCH'));
+    await assert.rejects(bind('feed-canonical', 'feed', 'canonical_state'), refusedAs('FABRIC_AUTHORITY_MISMATCH'));
+    await assert.rejects(bind('feed-compute', 'feed', 'derived_compute'), refusedAs('FABRIC_AUTHORITY_MISMATCH'));
+    assert.equal((await bind('globe-projection', 'globe', 'projection')).outcome, 'appended');
+    assert.equal((await bind('feed-evidence', 'feed', 'evidence_source')).outcome, 'appended');
+    // No manifest may relax provenance or knowledge time (COR-003, COR-004).
+    await assert.rejects(bind('feed-relaxed', 'feed', 'evidence_source', { provenanceRequired: false }), refusedAs('CONTROL_PLANE_COMMAND_INVALID'));
+    // What was recorded is what the dock will draw: two syncs, each under its authority.
+    const fabric = (await h.call('GET', '/v1/snapshot', { token })).body.fabric;
+    assert.deepEqual(fabric.syncs.map(s => [s.systemNodeId, s.authority]), [['feed', 'evidence_source'], ['globe', 'projection']]);
   } finally {
     await h.close();
   }

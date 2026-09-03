@@ -131,3 +131,16 @@ export const SECURITY_STATUS_LIMITATIONS = Object.freeze([
   'Counters and the recent-event window are in memory and reset when the process restarts.',
   'Carries states, coverage and counts only. No advisory identifier, package version, address or evidence path crosses this boundary.',
 ]);
+
+/** A published contract: the plane's own release artifact, not journal state. */
+export const CONTRACT_LIMITATIONS = Object.freeze([
+  'A contract shipped with this release of the plane, not a read of the journal: it has a version, not a proof root.',
+  'The plane validates result manifests it is shown; it holds no results and no evidence, and a manifest is never journal state.',
+]);
+
+/** The operational index: a rebuildable projection over a snapshot, judged by this process's thresholds. */
+export const INDEX_LIMITATIONS = Object.freeze([
+  'A projection rebuilt from the snapshot at sourceRevision. Discard and rebuild it rather than reconcile it; the snapshot it was built from is the referenced read.',
+  'Staleness is judged by this process\'s thresholds — stated in `thresholds` — not by anything the estate declared.',
+  'Indexes declared topology, health and bounded posture only. Coordination purpose text and signature bytes are deliberately absent, so a broad search cannot surface them.',
+]);

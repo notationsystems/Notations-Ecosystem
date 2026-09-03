@@ -5,7 +5,8 @@ import { parseCommand } from './validation.js';
 import { buildConstellation } from './security/evidence.js';
 import { decisionUri, nodeUri, tryUri } from './identity/uri.js';
 import { LOCAL_PRINCIPAL } from './security/identity.js';
-import { permissionForAction, requireActorBinding, requireNodeBinding, requirePermission, requireSeparationOfDuties } from './security/policy.js';
+import { permissionForAction, requireActorBinding, requireNodeBinding, requireOperatorLocal, requirePermission, requireSeparationOfDuties } from './security/policy.js';
+import { parseAttesters, postureStatement, verifyPostureSignature } from './security/attestation.js';
 
 const SCHEMA = 'notations.control-plane.snapshot.v1';
 
@@ -35,12 +36,76 @@ function frozen(value) {
   return Object.freeze(value);
 }
 
+/** The identity grammar every fabric sync names its system in (docs/SUBSTRATE.md). */
+const IDENTITY_SCHEME = 'notation://<class>/<namespace>/<local-id>[@<version>]';
+
+/**
+ * Records written by the plane this one was merged with (codex/control-plane-backend)
+ * recorded posture per category with four statuses. Read onto this plane's dimensions and
+ * five states, so a journal either plane wrote is one journal. A category nothing maps is
+ * kept under its own name, where `buildConstellation` counts it as unrecognised rather
+ * than dropping it: a record cannot be withdrawn, and a fold that skips one silently is
+ * how two readers of one history come to disagree.
+ */
+const LEGACY_CATEGORY = Object.freeze({ identity: 'identity', cryptography: 'key_lifecycle', exposure: 'exposure', supply_chain: 'dependency_risk', resilience: 'backup', control_plane_integrity: 'control_plane_integrity' });
+const LEGACY_STATUS = Object.freeze({ healthy: 'strong', degraded: 'weak', critical: 'failing', unknown: 'unknown' });
+
+function foldLegacyAttestation(posture, event) {
+  const attestation = event.attestation ?? {};
+  if (typeof attestation.subjectNodeId !== 'string') return;
+  const dimension = LEGACY_CATEGORY[attestation.category] ?? String(attestation.category);
+  const signal = {
+    dimension,
+    state: LEGACY_STATUS[attestation.status] ?? 'unknown',
+    ...(typeof attestation.summary === 'string' ? { summary: attestation.summary.slice(0, 280) } : {}),
+    ...(attestation.expiresAt ? { expiresAt: attestation.expiresAt } : {}),
+  };
+  const prior = posture.get(attestation.subjectNodeId);
+  const signals = [...(prior?.signals ?? []).filter(existing => existing.dimension !== dimension), signal];
+  posture.set(attestation.subjectNodeId, frozen({
+    nodeId: attestation.subjectNodeId,
+    attestedAt: attestation.observedAt ?? event.recordedAt,
+    attestedBy: event.verification?.signerId ?? attestation.signerId ?? 'unknown',
+    // Produced and signed outside this plane's principal model: external to it by definition.
+    method: 'external_audit',
+    signals: frozen(signals.map(frozen)),
+    signer: event.verification ? frozen({ signerId: event.verification.signerId, verifiedAt: event.verification.verifiedAt }) : null,
+  }));
+}
+
+/**
+ * The fabric, at the coordination layer.
+ *
+ * `FABRIC_AUTHORITY_LAYER` is which layer of the platform (docs/PLATFORM.md) each
+ * authority lands in; the anchor node must declare that it provides it. `FABRIC_AUTHORITY_BY_ROLE`
+ * is what a node's corpus role (docs/CORPUS.md) entitles it to be, and the asymmetry is
+ * the doctrine: a projection never writes canonical truth (COR-009, PLAT-004), a feed
+ * supplies evidence and nothing else, a transform returns derived state that is a
+ * proposal until admitted (COR-006), and canonical state has one owner per domain
+ * (COR-002) — so a hold binds as canonical state only when it owns a domain.
+ */
+const FABRIC_AUTHORITY_LAYER = Object.freeze({ evidence_source: 'evidence', canonical_state: 'canonical', projection: 'projection', derived_compute: 'compute' });
+const FABRIC_AUTHORITY_BY_ROLE = Object.freeze({
+  hold: Object.freeze(['canonical_state', 'evidence_source']),
+  feed: Object.freeze(['evidence_source']),
+  transform: Object.freeze(['derived_compute']),
+  project: Object.freeze(['projection']),
+  coordinate: Object.freeze(['canonical_state']),
+});
+const FABRIC_AUTHORITY_REMEDY = Object.freeze({
+  canonical_state: 'Only a hold that owns a domain (corpus_owner_of), or the coordination journal itself, binds as canonical state. A projection never writes canonical truth (COR-009, PLAT-004).',
+  evidence_source: 'Only a hold or a feed supplies evidence into the fabric.',
+  projection: 'Only a project node binds as a projection; a projection is rebuildable by definition and owns nothing.',
+  derived_compute: 'Only a transform binds as derived compute; what it returns is a proposal until admitted (COR-006).',
+});
+
 function derive(records) {
   const nodes = new Map();
   const relations = new Map();
   const observations = new Map();
   const coordination = new Map();
   const posture = new Map();
+  const fabric = new Map();
 
   for (const { event } of records) {
     switch (event.kind) {
@@ -72,11 +137,24 @@ function derive(records) {
         }
         break;
       }
+      case 'fabric_sync_registered':
+        // Written by this plane, or by the one it was merged with (no registeredBy then).
+        fabric.set(event.manifest.syncId, frozen({ ...event.manifest, registeredBy: event.registeredBy ?? null, registeredAt: event.registeredAt ?? event.recordedAt }));
+        break;
+      // The two kinds below were written only by the merged plane. A fold over an
+      // append-only history must be total over everything that history can hold.
+      case 'profile_applied':
+        for (const node of event.nodes ?? []) nodes.set(node.nodeId, node);
+        for (const relation of event.relations ?? []) relations.set(relation.relationId, relation);
+        break;
+      case 'security_attested':
+        foldLegacyAttestation(posture, event);
+        break;
       default:
         throw new ControlPlaneError(503, 'JOURNAL_CORRUPT', `Journal contains unsupported event kind ${event.kind}.`, 'Restore a journal produced by a compatible control-plane release.');
     }
   }
-  return { nodes, relations, observations, coordination, posture };
+  return { nodes, relations, observations, coordination, posture, fabric };
 }
 
 function makeSnapshot(records, durability, generatedAt) {
@@ -100,7 +178,10 @@ function makeSnapshot(records, durability, generatedAt) {
         health: observed?.health ?? 'unknown',
         lastObservedAt: observed?.observedAt ?? null,
         lastObservation: observed ? { source: observed.source, detail: observed.detail } : null,
-        security: posture ? frozen({ attestedAt: posture.attestedAt, method: posture.method, attestedBy: posture.attestedBy, signals: posture.signals }) : null,
+        // `signer` is who vouched beyond the submitting principal: an independent collector
+        // whose signature the plane verified, or null when the statement rests on the
+        // principal's authority alone. Both are honest; the snapshot says which.
+        security: posture ? frozen({ attestedAt: posture.attestedAt, method: posture.method, attestedBy: posture.attestedBy, signals: posture.signals, signer: posture.signer ?? null }) : null,
       });
     })
     .sort((left, right) => left.nodeId.localeCompare(right.nodeId));
@@ -117,6 +198,12 @@ function makeSnapshot(records, durability, generatedAt) {
       .map(record => frozen({ ...record, uri: tryUri(decisionUri, record.coordinationId) }))
       .sort((left, right) => left.coordinationId.localeCompare(right.coordinationId)),
     constellation: buildConstellation(Object.fromEntries(state.posture), { now: Date.parse(generatedAt) || Date.now() }),
+    // Which systems participate in the canonical fabric, under which authority. Names and
+    // closed vocabularies only: the fabric's bytes stay where the platform holds them.
+    fabric: frozen({
+      identityScheme: IDENTITY_SCHEME,
+      syncs: [...state.fabric.values()].sort((left, right) => left.syncId.localeCompare(right.syncId)),
+    }),
   });
 }
 
@@ -132,7 +219,7 @@ function eventBase(command, recordedAt) {
   };
 }
 
-function actionEvent(command, state, recordedAt) {
+function actionEvent(command, state, recordedAt, { attesters = null } = {}) {
   const base = eventBase(command, recordedAt);
 
   switch (command.action) {
@@ -176,6 +263,18 @@ function actionEvent(command, state, recordedAt) {
     }
     case 'record_security_posture': {
       if (!state.nodes.has(command.nodeId)) throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Node ${command.nodeId} is not registered.`, 'Register the node before attesting its security posture.');
+      // An independent signature, when one is offered, is verified before anything is
+      // written, against public keys only. A statement the plane cannot verify is
+      // refused; it is never recorded as "signed by someone".
+      const signer = command.signature
+        ? verifyPostureSignature({
+          attesters,
+          statement: postureStatement({ nodeId: command.nodeId, attestedAt: command.attestedAt, method: command.method, signals: command.signals, signerId: command.signerId }),
+          signerId: command.signerId,
+          signature: command.signature,
+          clock: () => recordedAt,
+        })
+        : null;
       return {
         ...base,
         kind: 'security_posture_recorded',
@@ -185,7 +284,37 @@ function actionEvent(command, state, recordedAt) {
           attestedBy: command.actorId,
           method: command.method,
           signals: frozen(command.signals.map(frozen)),
+          ...(signer ? { signer } : {}),
         }),
+      };
+    }
+    case 'register_fabric_sync': {
+      const { manifest } = command;
+      const system = state.nodes.get(manifest.systemNodeId);
+      if (!system) throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Fabric sync names system ${manifest.systemNodeId}, which is not registered.`, 'Register the system before binding it to the fabric.');
+      const anchor = state.nodes.get(manifest.fabricNodeId);
+      if (!anchor) throw new ControlPlaneError(404, 'NODE_NOT_FOUND', `Fabric sync names anchor ${manifest.fabricNodeId}, which is not registered.`, 'Register the platform node before binding systems to it.');
+
+      const layer = FABRIC_AUTHORITY_LAYER[manifest.authority];
+      const layers = String(anchor.metadata?.fabric_layers ?? '').split(/\s+/).filter(Boolean);
+      if (!layers.includes(layer)) {
+        throw new ControlPlaneError(422, 'FABRIC_ANCHOR_INVALID', `${anchor.nodeId} does not provide the ${layer} layer of the fabric${layers.length ? ` (it declares: ${layers.join(', ')})` : ' (it declares no fabric_layers)'}.`, 'Bind the system to a node whose metadata.fabric_layers names this layer. The platform node declares the layers platform/sql actually builds.');
+      }
+
+      const role = system.metadata?.corpus_role;
+      const allowed = FABRIC_AUTHORITY_BY_ROLE[role];
+      if (!allowed) throw new ControlPlaneError(422, 'FABRIC_AUTHORITY_MISMATCH', `${system.nodeId} declares no corpus role, so its authority over the fabric cannot be checked.`, 'Declare reference.corpus.role in the catalog and re-seed. Silence is not assent.');
+      const ownsDomain = typeof system.metadata?.corpus_owner_of === 'string' && system.metadata.corpus_owner_of.trim().length > 0;
+      if (!allowed.includes(manifest.authority) || (manifest.authority === 'canonical_state' && role === 'hold' && !ownsDomain)) {
+        throw new ControlPlaneError(422, 'FABRIC_AUTHORITY_MISMATCH', `${system.nodeId} is a ${role} node${role === 'hold' && !ownsDomain ? ' that owns no domain' : ''} and may not bind to the fabric as ${manifest.authority}.`, FABRIC_AUTHORITY_REMEDY[manifest.authority]);
+      }
+
+      return {
+        ...base,
+        kind: 'fabric_sync_registered',
+        manifest: frozen({ ...manifest, identityKinds: frozen([...manifest.identityKinds]), representations: frozen([...manifest.representations]) }),
+        registeredBy: command.actorId,
+        registeredAt: recordedAt,
       };
     }
     case 'request_capability': {
@@ -256,16 +385,20 @@ function subjectNode(command) {
       return command.nodeId;
     case 'request_capability':
       return command.requesterNodeId;
+    case 'register_fabric_sync':
+      return command.manifest.systemNodeId;
     default:
       return null;
   }
 }
 
 export class ControlPlane {
-  constructor(journal, clock = () => new Date().toISOString(), { maxCommandAgeSeconds = DEFAULT_MAX_COMMAND_AGE_SECONDS } = {}) {
+  constructor(journal, clock = () => new Date().toISOString(), { maxCommandAgeSeconds = DEFAULT_MAX_COMMAND_AGE_SECONDS, attesters = null } = {}) {
     this.journal = journal;
     this.clock = clock;
     this.maxCommandAgeSeconds = maxCommandAgeSeconds;
+    /** Trusted collectors' public keys, or null when posture rests on principals alone. */
+    this.attesters = attesters;
   }
 
   static fromPath(path, clock, options = {}) {
@@ -308,6 +441,7 @@ export class ControlPlane {
       keyStore,
       requireSignatures: ['1', 'true', 'yes', 'on'].includes(String(environment.CONTROL_PLANE_REQUIRE_SIGNATURES ?? '').toLowerCase()),
       maxCommandAgeSeconds: Number.parseInt(environment.CONTROL_PLANE_MAX_COMMAND_AGE_S ?? '', 10) || undefined,
+      attesters: parseAttesters(environment.NOTATIONS_SECURITY_ATTESTERS),
     });
   }
 
@@ -369,6 +503,7 @@ export class ControlPlane {
     // permission is refused, and an actor identity that is not bound to the
     // credential cannot be written into history.
     requirePermission(principal, permissionForAction(command.action));
+    requireOperatorLocal(principal, command.action, LOCAL_PRINCIPAL);
     requireActorBinding(principal, command.actorId);
     const subject = subjectNode(command);
     if (subject) requireNodeBinding(principal, subject);
@@ -384,7 +519,7 @@ export class ControlPlane {
     }
 
     const records = await this.journal.read();
-    const event = actionEvent(command, derive(records), recordedAt);
+    const event = actionEvent(command, derive(records), recordedAt, { attesters: this.attesters });
     const append = await this.journal.append(event, command.expectedRevision);
     const current = await this.journal.read();
     return frozen({

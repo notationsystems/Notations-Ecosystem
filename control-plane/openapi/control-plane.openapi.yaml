@@ -177,6 +177,11 @@ paths:
                       authorization: { type: object }
                       transport: { type: object }
                       keyLifecycle: { type: object }
+                      attestation:
+                        type: object
+                        description: How many independent collectors this plane can verify. Never their keys.
+                        properties:
+                          trustedSigners: { type: integer, minimum: 0 }
                       auditIntegrity: { type: object }
                       abuse: { type: object }
                       events: { type: object }
@@ -188,6 +193,104 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '403':
           description: The principal does not hold security.status.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: CONTROL_PLANE_RATE_LIMITED or CONTROL_PLANE_LOCKED_OUT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/index:
+    get:
+      summary: The operational index — what needs attention, rebuilt from the snapshot
+      description: >-
+        A rebuildable projection over the snapshot the caller could read itself, built by
+        the plane so there is one derivation of "stale", "unattested" and "unbound" rather
+        than one per client. Names the snapshot revision it was built from and the
+        thresholds it judged by. Coordination purpose text and signature bytes are
+        deliberately absent. Requires snapshot.read.
+      responses:
+        '200':
+          description: >-
+            The index. An operational observation under API-000: rebuildable, judged by this
+            process's thresholds, and pointing at the referenced snapshot it came from.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Observation'
+                  - type: object
+                    required: [schema, sourceRevision, sourceEventCursor, builtAt, thresholds, fabric, nodes, relations, capabilities, facets, signals]
+                    properties:
+                      schema: { const: notations.control-plane.operational-index.v1 }
+                      sourceRevision: { oneOf: [{ type: string }, { type: 'null' }] }
+                      sourceEventCursor: { oneOf: [{ type: string }, { type: 'null' }] }
+                      builtAt: { type: string, format: date-time }
+                      thresholds: { type: object }
+                      fabric: { type: object }
+                      nodes: { type: array, items: { type: object } }
+                      relations: { type: array, items: { type: object } }
+                      capabilities: { type: array, items: { type: object } }
+                      facets: { type: object }
+                      signals:
+                        type: object
+                        description: >-
+                          Node ids by what they need: unobserved, stale, unavailable, failing or
+                          stale posture, unattested, unsigned posture, unbound to the fabric; and
+                          the approval queue without its purpose text.
+        '401':
+          description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: The principal does not hold snapshot.read, or the Origin is not allowed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '429':
+          description: CONTROL_PLANE_RATE_LIMITED or CONTROL_PLANE_LOCKED_OUT.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: JOURNAL_CORRUPT, JOURNAL_ROLLBACK or CONTROL_PLANE_NOT_CONFIGURED.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /v1/contracts/result-manifest:
+    get:
+      summary: The result-manifest contract — the sidecar every corpus answer should carry
+      description: >-
+        JSON Schema for `notations.result-manifest.v1`: corpus build, methodology version,
+        knowledge time, the canonical identities of the entities, assertions and evidence
+        used, the transforms run, uncertainty, contradictions and verification state. It is
+        COR-003 and COR-004 made machine-readable. The plane publishes the schema and
+        validates manifests it is shown; it holds no result and no evidence. Versioned with
+        the plane's release, not with the journal. Requires snapshot.read.
+      responses:
+        '200':
+          description: The contract, as an operational observation — it has a version, not a proof root.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Observation'
+                  - type: object
+                    required: [schema, contract, version, jsonSchema]
+                    properties:
+                      schema: { const: notations.control-plane.contract.v1 }
+                      contract: { const: result-manifest }
+                      version: { type: string }
+                      jsonSchema: { type: object }
+        '401':
+          description: No credential, or an invalid one (CONTROL_PLANE_UNAUTHORIZED).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          description: The principal does not hold snapshot.read, or the Origin is not allowed.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -211,12 +314,23 @@ paths:
                 - $ref: '#/components/schemas/SecurityPostureCommand'
                 - $ref: '#/components/schemas/CapabilityRequestCommand'
                 - $ref: '#/components/schemas/ResolveCoordinationCommand'
+                - $ref: '#/components/schemas/FabricSyncCommand'
       responses:
+        '200':
+          description: >-
+            The command was a retry of one already in the journal (`outcome: duplicate`).
+            Nothing was created; the response carries the original event and the current
+            snapshot. A retry is recognised by its command hash, never by its receipt time.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Referenced'
+                  - $ref: '#/components/schemas/CommandResult'
         '201':
           description: >-
-            Command appended, or recognised as a duplicate of one already in the
-            journal. Either way the response carries the resulting snapshot, so a
-            client never needs a second round trip to learn the new revision.
+            Command appended. The response carries the resulting snapshot, so a client
+            never needs a second round trip to learn the new revision.
           content:
             application/json:
               schema:
@@ -237,7 +351,7 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '403':
           description: >-
-            CONTROL_PLANE_FORBIDDEN: the principal lacks the permission for this action, may not claim the supplied actorId, is not scoped to the subject node, or is resolving a coordination it proposed (separation of duties). ORIGIN_NOT_ALLOWED: the browser Origin is not in the allow-list.
+            CONTROL_PLANE_FORBIDDEN: the principal lacks the permission for this action, may not claim the supplied actorId, is not scoped to the subject node, or is resolving a coordination it proposed (separation of duties). ACTION_OPERATOR_LOCAL: the action is run at the host against the journal and is refused over every plane, admin included (register_fabric_sync). SECURITY_ATTESTER_UNTRUSTED: a signed posture names a collector the plane holds no key for. ORIGIN_NOT_ALLOWED: the browser Origin is not in the allow-list.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -267,7 +381,7 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '422':
           description: >-
-            CONTROL_PLANE_COMMAND_INVALID: unknown action, unsafe text, unbounded structure, a credential-shaped value, or refused security material. COMMAND_STALE: submittedAt is outside the freshness window. CAPABILITY_MODE_MISMATCH: the requested mode is not the one the capability declares.
+            CONTROL_PLANE_COMMAND_INVALID: unknown action, unsafe text, unbounded structure, a credential-shaped value, or refused security material. COMMAND_STALE: submittedAt is outside the freshness window. CAPABILITY_MODE_MISMATCH: the requested mode is not the one the capability declares. SECURITY_ATTESTATION_INVALID: a signed posture's signature does not verify. FABRIC_AUTHORITY_MISMATCH: a system's corpus role does not entitle it to the authority a fabric sync claims — a projection never writes canonical truth. FABRIC_ANCHOR_INVALID: the anchor node does not provide the fabric layer the sync lands in.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -285,7 +399,7 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '503':
           description: >-
-            JOURNAL_CORRUPT, JOURNAL_ROLLBACK or CONTROL_PLANE_NOT_CONFIGURED. Integrity failures fail closed: the plane refuses to serve a history it cannot verify.
+            JOURNAL_CORRUPT, JOURNAL_ROLLBACK or CONTROL_PLANE_NOT_CONFIGURED. Integrity failures fail closed: the plane refuses to serve a history it cannot verify. SECURITY_ATTESTERS_NOT_CONFIGURED: a signed posture was offered to a plane that holds no attester keys.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -404,6 +518,9 @@ components:
         - SECURITY_ATTESTATION_INVALID
         - SECURITY_ATTESTERS_NOT_CONFIGURED
         - SECURITY_ATTESTER_UNTRUSTED
+        - ACTION_OPERATOR_LOCAL
+        - FABRIC_ANCHOR_INVALID
+        - FABRIC_AUTHORITY_MISMATCH
     SnapshotNode:
       allOf:
         - $ref: '#/components/schemas/Node'
@@ -412,7 +529,7 @@ components:
           properties:
             registeredAt: { type: string, format: date-time }
             updatedAt: { type: string, format: date-time }
-            health: { type: string, enum: [unknown, healthy, degraded, offline] }
+            health: { type: string, enum: [unknown, healthy, degraded, critical, offline] }
             lastObservedAt: { oneOf: [{ type: string, format: date-time }, { type: 'null' }] }
             lastObservation:
               oneOf:
@@ -425,7 +542,7 @@ components:
               oneOf:
                 - type: 'null'
                 - type: object
-                  required: [attestedAt, method, attestedBy, signals]
+                  required: [attestedAt, method, attestedBy, signals, signer]
                   properties:
                     attestedAt: { type: string, format: date-time }
                     method: { type: string, enum: [automated_scan, operator_review, external_audit, self_declared] }
@@ -433,6 +550,18 @@ components:
                     signals:
                       type: array
                       items: { $ref: '#/components/schemas/PostureSignal' }
+                    signer:
+                      description: >-
+                        Who vouched beyond the submitting principal: an independent collector
+                        whose Ed25519 signature over the statement the plane verified, or null
+                        when the statement rests on the principal's authority alone.
+                      oneOf:
+                        - type: 'null'
+                        - type: object
+                          required: [signerId, verifiedAt]
+                          properties:
+                            signerId: { type: string }
+                            verifiedAt: { type: string, format: date-time }
     Relation:
       type: object
       required: [relationId, sourceNodeId, targetNodeId, kind, description, declaredAt]
@@ -490,7 +619,13 @@ components:
             eventId: { type: string }
             recordedAt: { type: string, format: date-time }
             commandHash: { type: string, pattern: '^[a-f0-9]{64}$' }
-            kind: { type: string, enum: [node_registered, relation_declared, observation_recorded, security_posture_recorded, coordination_requested, coordination_resolved] }
+            kind:
+              type: string
+              enum: [node_registered, relation_declared, observation_recorded, security_posture_recorded, coordination_requested, coordination_resolved, fabric_sync_registered, profile_applied, security_attested]
+              description: >-
+                The last two are never written by this plane; they were written by the plane
+                it was merged with, and a journal either wrote is one journal, so a reader may
+                meet them and the fold reads them.
             actorId: { type: string }
         previousHash: { oneOf: [{ type: string, pattern: '^[a-f0-9]{64}$' }, { type: 'null' }] }
         recordHash: { type: string, pattern: '^[a-f0-9]{64}$' }
@@ -547,6 +682,15 @@ components:
           { type: string }
         mode: { type: string, enum: [observe, propose, execute] }
         approval: { type: string, enum: [automatic, operator] }
+        maturity:
+          type: string
+          enum: [production, beta, experimental, research, planned]
+          description: >-
+            Declared, never defaulted. Absent means undeclared: a plane that knows no estate
+            cannot write a maturity onto code it has never seen.
+        methodologyVersion:
+          type: string
+          description: The versioned methodology this capability's answers are produced under, e.g. `payload-methodology/0.1.0`.
     Node:
       type: object
       required: [nodeId, name, kind, description, capabilities]
@@ -607,7 +751,7 @@ components:
           properties:
             action: { const: record_observation }
             nodeId: { type: string }
-            health: { type: string, enum: [unknown, healthy, degraded, offline] }
+            health: { type: string, enum: [unknown, healthy, degraded, critical, offline] }
             observedAt: { type: string, format: date-time }
             source: { type: string, enum: [operator, health_check, webhook] }
             detail: { type: string }
@@ -671,6 +815,18 @@ components:
               minItems: 1
               maxItems: 12
               items: { $ref: '#/components/schemas/PostureSignal' }
+            signerId:
+              type: string
+              description: >-
+                With `signature`: the independent collector that signed this statement. Both
+                or neither. The plane verifies against NOTATIONS_SECURITY_ATTESTERS (public
+                keys only) and records who vouched; it never holds the private half.
+            signature:
+              type: string
+              pattern: '^[A-Za-z0-9_-]{86}$'
+              description: >-
+                Base64url Ed25519 signature over the canonicalized statement
+                `{ nodeId, attestedAt, method, signals, signerId }` — nothing the plane adds is covered.
     ResolveCoordinationCommand:
       allOf:
         - $ref: '#/components/schemas/CommandBase'
@@ -681,9 +837,75 @@ components:
             coordinationId: { type: string }
             decision: { type: string, enum: [approved, rejected] }
             note: { type: string }
+    FabricSyncManifest:
+      type: object
+      required: [schema, syncId, systemNodeId, systemIdentity, fabricNodeId, mode, authority, identityKinds, representations, provenanceRequired, knownAtRequired]
+      description: >-
+        How one system's data participates in the canonical fabric (docs/SUBSTRATE.md,
+        docs/PLATFORM.md): under which authority, carrying which identity classes, in
+        which physical representations. Names and closed vocabularies only — never a
+        provider URL, a record, a document, a credential or an object byte.
+      properties:
+        schema: { const: notations.fabric-sync-manifest.v1 }
+        syncId: { type: string }
+        systemNodeId: { type: string }
+        systemIdentity:
+          type: string
+          pattern: '^notation://node/'
+          description: The plane's own name for systemNodeId. One system, one spelling.
+        fabricNodeId:
+          type: string
+          description: The anchor node, whose `metadata.fabric_layers` must name the layer this authority lands in.
+        mode: { type: string, enum: [append_only, snapshot, event_stream] }
+        authority:
+          type: string
+          enum: [evidence_source, canonical_state, projection, derived_compute]
+          description: >-
+            What the system is to the fabric. Checked against its corpus role: a projection
+            never writes canonical truth, a feed supplies evidence only, a transform returns
+            derived state, and only a hold that owns a domain is canonical state.
+        identityKinds:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [source, artifact, observation, claim, entity, dataset, model, state, transform, computation, proof, decision, node] }
+        representations:
+          type: array
+          minItems: 1
+          items: { type: string, enum: [object, graph, spatial, vector, sql, rdf, lakehouse, compute] }
+        provenanceRequired: { const: true }
+        knownAtRequired: { const: true }
+    FabricSyncCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [manifest]
+          description: >-
+            Operator-local: run at the host against the journal (`node ecosystem/fabric.mjs
+            --journal …`), and refused over every plane with ACTION_OPERATOR_LOCAL, the admin
+            role included. Listed here so the contract is complete, not because a client can
+            send it.
+          properties:
+            action: { const: register_fabric_sync }
+            manifest: { $ref: '#/components/schemas/FabricSyncManifest' }
+    FabricSync:
+      allOf:
+        - $ref: '#/components/schemas/FabricSyncManifest'
+        - type: object
+          required: [registeredBy, registeredAt]
+          properties:
+            registeredBy: { oneOf: [{ type: string }, { type: 'null' }] }
+            registeredAt: { type: string, format: date-time }
+    Fabric:
+      type: object
+      required: [identityScheme, syncs]
+      properties:
+        identityScheme: { const: 'notation://<class>/<namespace>/<local-id>[@<version>]' }
+        syncs:
+          type: array
+          items: { $ref: '#/components/schemas/FabricSync' }
     Snapshot:
       type: object
-      required: [schema, revision, eventCursor, durability, generatedAt, nodes, relations, coordination]
+      required: [schema, revision, eventCursor, durability, generatedAt, nodes, relations, coordination, fabric]
       properties:
         schema: { const: notations.control-plane.snapshot.v1 }
         revision: { oneOf: [{ type: string }, { type: 'null' }] }
@@ -702,3 +924,6 @@ components:
         constellation:
           type: object
           description: Ecosystem-wide security posture folded across every attested node, weakest-link per dimension.
+        fabric:
+          $ref: '#/components/schemas/Fabric'
+          description: Which systems participate in the canonical fabric, under which authority. The fabric's bytes stay where the platform holds them.

@@ -9,13 +9,14 @@
  *   node src/security/cli.js keys show
  *   node src/security/cli.js keys rotate
  *   node src/security/cli.js kek generate
+ *   node src/security/cli.js attester generate --id collector:ci --out ~/keys/collector-ci.pem
  *
  * The credential secret is printed once, to stdout, and never stored: the registry
  * keeps a SHA-256 digest. If it is lost, issue another and disable the old one.
  */
 
 import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
-import { randomBytes } from 'node:crypto';
+import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { defaultKeystorePath } from '../control-plane.js';
 import { issueCredential, validatePrincipalRecord } from './identity.js';
@@ -225,6 +226,36 @@ async function cmdVerify(args) {
   }
 }
 
+/**
+ * A collector's signing identity for posture statements (SEC-044).
+ *
+ * The private key is written to a file the collector owns, mode 0600, never overwriting
+ * one that exists, and never printed. What is printed is the one line an operator adds to
+ * the plane's environment: the public half. The plane only ever sees that line, so it can
+ * verify the collector and can never impersonate it. Write the key outside the
+ * repository; the secret scanner holds a private key in a working tree as a finding.
+ */
+async function cmdAttester(args) {
+  const [verb, ...rest] = args;
+  if (verb !== 'generate') throw new Error('usage: attester generate --id <signerId> --out <private-key.pem>');
+  const signerId = option(rest, 'id');
+  const out = option(rest, 'out');
+  if (!signerId || !out) throw new Error('attester generate requires --id <signerId> and --out <private-key.pem>.');
+  const target = resolve(out);
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519');
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600, flag: 'wx' });
+  await chmod(target, 0o600).catch(() => undefined);
+  const x = publicKey.export({ format: 'jwk' }).x;
+  process.stdout.write([
+    `Private key written to ${target} (mode 0600). It stays with the collector; the plane never reads it.`,
+    'Add the public half to the plane\'s environment:',
+    `  NOTATIONS_SECURITY_ATTESTERS='${JSON.stringify({ [signerId]: x })}'`,
+    `Sign posture with: node security/attest.mjs --signer ${signerId} --key ${out} --journal <path>`,
+    '',
+  ].join('\n'));
+}
+
 const USAGE = `notations control-plane security tool
 
   issue    --principal <id> [--roles a,b] [--actors a,b] [--nodes a,b] [--expires <iso>] [--kind human|service|agent]
@@ -233,6 +264,7 @@ const USAGE = `notations control-plane security tool
   keys     show | rotate [--at-record <n>]
   kek      generate
   verify   [journal path]      verify a journal offline: chain, signatures, rollback anchor
+  attester generate --id <signerId> --out <pem>   a collector's Ed25519 signing key; prints only the public half
 
 Environment:
   CONTROL_PLANE_PRINCIPALS_FILE  credential registry (default data/principals.json)
@@ -249,6 +281,7 @@ export async function run(argv) {
     case 'keys': return cmdKeys(args);
     case 'kek': return cmdKek(args);
     case 'verify': return cmdVerify(args);
+    case 'attester': return cmdAttester(args);
     default:
       process.stdout.write(USAGE);
       if (command && command !== 'help' && command !== '--help') process.exitCode = 2;

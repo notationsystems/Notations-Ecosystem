@@ -11,8 +11,10 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
-    "check": "node --check src/errors.js && node --check src/validation.js && node --check src/journal.js && node --check src/control-plane.js && node --check src/server.js && node --check src/security/text.js && node --check src/security/identity.js && node --check src/security/policy.js && node --check src/security/ratelimit.js && node --check src/security/audit.js && node --check src/security/headers.js && node --check src/security/evidence.js && node --check src/security/anchor.js && node --check src/security/cli.js && node --check src/security/crypto/envelope.js && node --check src/security/crypto/signing.js && node --check src/identity/uri.js",
+    "check": "node --check src/errors.js && node --check src/validation.js && node --check src/journal.js && node --check src/control-plane.js && node --check src/server.js && node --check src/security/text.js && node --check src/security/identity.js && node --check src/security/policy.js && node --check src/security/ratelimit.js && node --check src/security/audit.js && node --check src/security/headers.js && node --check src/security/evidence.js && node --check src/security/anchor.js && node --check src/security/cli.js && node --check src/security/crypto/envelope.js && node --check src/security/crypto/signing.js && node --check src/identity/uri.js && node --check src/api/response.js && node --check src/openapi.js && node --check src/security/attestation.js && node --check src/governance/maturity.js && node --check src/governance/result-manifest.js && node --check src/indexing/operational-index.js && node --check scripts/rebuild-internal-index.js && node --check scripts/query-internal-index.js",
     "security": "node src/security/cli.js",
-    "scan-secrets": "node ../security/scan-secrets.mjs"
+    "scan-secrets": "node ../security/scan-secrets.mjs",
+    "index:rebuild": "node scripts/rebuild-internal-index.js",
+    "index:query": "node scripts/query-internal-index.js"
   }
 }

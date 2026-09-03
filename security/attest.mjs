@@ -18,14 +18,21 @@
  *   node security/attest.mjs --journal control-plane/data/control-plane.jsonl
  *   node security/attest.mjs --url http://127.0.0.1:8787 --token "$TOKEN" --node control-plane
  *   node security/attest.mjs --print            # show what would be sent, send nothing
+ *   node security/attest.mjs --journal … --signer collector:ci --key ~/keys/collector-ci.pem
+ *
+ * With --signer and --key the statement carries the collector's own Ed25519 signature
+ * (SEC-044). The plane verifies it against the public half in NOTATIONS_SECURITY_ATTESTERS
+ * and records who vouched; the private key is read here and goes nowhere.
  */
 
 import { execFile } from 'node:child_process';
+import { createPrivateKey, sign } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { MAX_SIGNALS_PER_ATTESTATION, POSTURE_DIMENSIONS, parseSignals } from '../control-plane/src/security/evidence.js';
+import { postureStatement } from '../control-plane/src/security/attestation.js';
 import { HttpControlPlane } from '../control-plane/src/client.js';
 
 const run = promisify(execFile);
@@ -390,7 +397,7 @@ export async function collectPosture({ environment = process.env, journalPath, p
   return assertProducerOutputIsEvidence(signals);
 }
 
-export async function attest(plane, { nodeId, actorId = 'attestor:local', signals, method = 'automated_scan', now = () => new Date().toISOString() }) {
+export async function attest(plane, { nodeId, actorId = 'attestor:local', signals, method = 'automated_scan', signer = null, now = () => new Date().toISOString() }) {
   const snapshot = await plane.snapshot();
   if (!snapshot.nodes.some(node => node.nodeId === nodeId)) {
     throw new Error(`Node ${nodeId} is not registered in the control plane; seed the catalog before attesting.`);
@@ -416,18 +423,26 @@ export async function attest(plane, { nodeId, actorId = 'attestor:local', signal
       'Narrow the producer, or attest the extra dimensions against a different node.',
     );
   }
+  const attestedAt = now();
+  // The collector's own signature over exactly the statement the plane will verify: the
+  // same attestedAt, the same signals, the signer named inside. The private key is used
+  // here and nowhere else; the plane holds the public half and records who vouched.
+  const signed = signer
+    ? { signerId: signer.signerId, signature: sign(null, postureStatement({ nodeId, attestedAt, method, signals, signerId: signer.signerId }), signer.privateKey).toString('base64url') }
+    : {};
   const result = await plane.command({
-    requestId: `attest:${nodeId}:${now()}`,
+    requestId: `attest:${nodeId}:${attestedAt}`,
     actorId,
     submittedAt: now(),
     expectedRevision: snapshot.revision,
     action: 'record_security_posture',
     nodeId,
-    attestedAt: now(),
+    attestedAt,
     method,
     signals,
+    ...signed,
   });
-  return { signals: signals.length, revision: result.snapshot.revision };
+  return { signals: signals.length, revision: result.snapshot.revision, signer: signer?.signerId ?? null };
 }
 
 async function main() {
@@ -438,6 +453,10 @@ async function main() {
   };
   const nodeId = option('node') ?? 'control-plane';
   const journalPath = option('journal') ? path.resolve(option('journal')) : undefined;
+  const signerId = option('signer');
+  const keyPath = option('key');
+  if (Boolean(signerId) !== Boolean(keyPath)) throw new Error('--signer <id> and --key <private-key.pem> go together: a signature names its signer.');
+  const signer = signerId ? { signerId, privateKey: createPrivateKey(await readFile(path.resolve(keyPath), 'utf8')) } : null;
   const signals = await collectPosture({ journalPath, skipTests: args.includes('--skip-tests') });
 
   if (args.includes('--print') || (!option('url') && !journalPath)) {
@@ -455,8 +474,8 @@ async function main() {
     const { ControlPlane } = await import('../control-plane/src/control-plane.js');
     plane = await ControlPlane.fromEnvironment(journalPath);
   }
-  const result = await attest(plane, { nodeId, actorId: option('actor') ?? 'attestor:local', signals });
-  process.stdout.write(`Attested ${result.signals} signals for ${nodeId} in one attestation; revision ${result.revision}\n`);
+  const result = await attest(plane, { nodeId, actorId: option('actor') ?? 'attestor:local', signals, signer });
+  process.stdout.write(`Attested ${result.signals} signals for ${nodeId} in one attestation${result.signer ? `, signed as ${result.signer}` : ''}; revision ${result.revision}\n`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

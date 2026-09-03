@@ -32,6 +32,7 @@ export const PERMISSIONS = sealedTable({
   CAPABILITY_REQUEST: 'capability.request',
   COORDINATION_RESOLVE: 'coordination.resolve',
   SECURITY_STATUS_READ: 'security.status.read',
+  FABRIC_REGISTER: 'fabric.register',
 });
 
 const P = PERMISSIONS;
@@ -43,7 +44,7 @@ const P = PERMISSIONS;
  */
 export const ROLES = sealedTable({
   reader: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ]),
-  registrar: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ, P.NODE_REGISTER, P.RELATION_DECLARE]),
+  registrar: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ, P.NODE_REGISTER, P.RELATION_DECLARE, P.FABRIC_REGISTER]),
   monitor: Object.freeze([P.SNAPSHOT_READ, P.OBSERVATION_RECORD]),
   attestor: Object.freeze([P.SNAPSHOT_READ, P.SECURITY_ATTEST]),
   requester: Object.freeze([P.SNAPSHOT_READ, P.EVENTS_READ, P.CAPABILITY_REQUEST]),
@@ -59,7 +60,28 @@ export const ACTION_PERMISSIONS = sealedTable({
   record_security_posture: P.SECURITY_ATTEST,
   request_capability: P.CAPABILITY_REQUEST,
   resolve_coordination: P.COORDINATION_RESOLVE,
+  register_fabric_sync: P.FABRIC_REGISTER,
 });
+
+/**
+ * Actions reached from the host and never over a plane — `api_exposure: operator_local`
+ * in docs/API_PLANES.md, made a property of the plane rather than of the catalog.
+ *
+ * Binding a system to the canonical fabric is a declaration about data authority. The
+ * plane this one was merged with kept it off HTTP deliberately, and so does this one:
+ * the check is on the principal, not on a route, so there is no second path to widen.
+ * The in-process caller is the operator at the host; every authenticated caller — the
+ * admin role included — is not, and holding the permission does not change that.
+ */
+export const OPERATOR_LOCAL_ACTIONS = Object.freeze(['register_fabric_sync']);
+
+export function requireOperatorLocal(principal, action, localPrincipal) {
+  if (!OPERATOR_LOCAL_ACTIONS.includes(action)) return true;
+  if (principal !== localPrincipal) {
+    throw new ControlPlaneError(403, 'ACTION_OPERATOR_LOCAL', `${action} is an operator-local action: it is run at the host against the journal, never over a plane.`, 'Run the operator tool directly: node ecosystem/fabric.mjs --journal <path>.');
+  }
+  return true;
+}
 
 /** Expand a set of role names into the permissions they grant. */
 export function rolesOf(roles) {
@@ -136,6 +158,7 @@ export function describePolicy() {
     permissions: Object.values(PERMISSIONS),
     roles: Object.fromEntries(Object.entries(ROLES).map(([role, permissions]) => [role, [...permissions]])),
     actions: { ...ACTION_PERMISSIONS },
+    operatorLocal: [...OPERATOR_LOCAL_ACTIONS],
     separationOfDuties: 'resolve_coordination requires an actor other than the one that requested it',
   };
 }
