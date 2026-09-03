@@ -63,7 +63,7 @@ Credentials: issue one per principal rather than sharing a token — see
 Checks: `cd control-plane && npm test` (48, of which 43 are named security
 invariants), `node ecosystem/validate.mjs` (30 nodes, 634 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (50),
+`cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (59),
 `node platform/migrate.mjs --reset && node --test platform/test/` (9 invariants, 9 proofs, against a live PostgreSQL).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`

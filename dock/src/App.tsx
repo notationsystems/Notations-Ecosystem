@@ -10,17 +10,18 @@ import { LedgerLens } from './lenses/LedgerLens';
 import { MapLens } from './lenses/MapLens';
 import { OperatorLens } from './lenses/OperatorLens';
 import { SecurityLens } from './lenses/SecurityLens';
+import { SolarLens } from './lenses/SolarLens';
 import { TimelineLens } from './lenses/TimelineLens';
 import { applyFilters, type Filters } from './lenses/types';
 import { domainSummary, snapshotStats } from './model/graph';
 import { KIND_COLOR, KIND_LABEL, NODE_KINDS, RELATION_COLOR, RELATION_KINDS, RELATION_LABEL, type NodeKind, type RelationKind } from './model/types';
 
-type LensId = 'operator' | 'security' | 'corpus' | 'api' | 'map' | 'graph' | 'ledger' | 'timeline' | 'console';
+type LensId = 'operator' | 'security' | 'corpus' | 'api' | 'solar' | 'map' | 'graph' | 'ledger' | 'timeline' | 'console';
 const LENSES: Array<{ id: LensId; label: string }> = [
-  { id: 'operator', label: 'Operator' }, { id: 'security', label: 'Security' }, { id: 'corpus', label: 'Corpus' }, { id: 'api', label: 'Api' }, { id: 'map', label: 'Map' }, { id: 'graph', label: 'Graph' }, { id: 'ledger', label: 'Ledger' }, { id: 'timeline', label: 'Timeline' }, { id: 'console', label: 'Console' },
+  { id: 'operator', label: 'Operator' }, { id: 'security', label: 'Security' }, { id: 'corpus', label: 'Corpus' }, { id: 'api', label: 'Api' }, { id: 'solar', label: 'Solar' }, { id: 'map', label: 'Map' }, { id: 'graph', label: 'Graph' }, { id: 'ledger', label: 'Ledger' }, { id: 'timeline', label: 'Timeline' }, { id: 'console', label: 'Console' },
 ];
 
-export interface ConsoleIntent { action: 'request_capability' | 'record_observation' | 'resolve_coordination'; nodeId?: string; capabilityId?: string; coordinationId?: string }
+export interface ConsoleIntent { action: 'request_capability' | 'record_observation' | 'resolve_coordination' | 'record_security_posture' | 'register_node'; nodeId?: string; capabilityId?: string; coordinationId?: string }
 
 export function App() {
   const dock = useControlPlane();
@@ -77,6 +78,7 @@ export function App() {
             case 'security': return <SecurityLens {...props} />;
             case 'corpus': return <CorpusLens {...props} />;
             case 'api': return <ApiLens {...props} />;
+            case 'solar': return <SolarLens {...props} onIntent={goConsole} />;
             case 'map': return <MapLens {...props} />;
             case 'graph': return <GraphLens {...props} />;
             case 'ledger': return <LedgerLens {...props} onResolve={(coordinationId) => goConsole({ action: 'resolve_coordination', coordinationId })} />;

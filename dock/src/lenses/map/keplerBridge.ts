@@ -29,8 +29,18 @@ export interface PickedInfo {
   layer?: { id?: string; props?: { id?: string; idx?: number } } | null;
 }
 
-/** Map a Kepler click back to a node id. Arcs resolve to their source node. */
-export function resolveClickedNodeId(instance: KeplerInstanceState | undefined, clicked: PickedInfo | null): string | null {
+/**
+ * Map a Kepler click back to a node id.
+ *
+ * `fieldFor` names, per dataset id, the column that carries the node to select; the
+ * default is the universe map's (arcs resolve to their source, everything else to
+ * `node_id`). The solar system passes its own, where a moon selects the body it orbits.
+ */
+export function resolveClickedNodeId(
+  instance: KeplerInstanceState | undefined,
+  clicked: PickedInfo | null,
+  fieldFor: (dataId: string) => string = (dataId) => (dataId === RELATIONS_DATASET_ID ? 'source' : 'node_id'),
+): string | null {
   if (!instance || !clicked || clicked.picked === false) return null;
   const deckId = clicked.layer?.props?.id ?? clicked.layer?.id;
   const layers = instance.visState.layers;
@@ -42,7 +52,7 @@ export function resolveClickedNodeId(instance: KeplerInstanceState | undefined, 
   if (!dataset) return null;
   const row = clicked.object?.index ?? clicked.index;
   if (typeof row !== 'number' || row < 0 || row >= dataset.dataContainer.numRows()) return null;
-  const fieldName = layer.config.dataId === RELATIONS_DATASET_ID ? 'source' : 'node_id';
+  const fieldName = fieldFor(layer.config.dataId);
   const col = dataset.fields.findIndex((f) => f.name === fieldName);
   if (col < 0) return null;
   const value = dataset.dataContainer.valueAt(row, col);

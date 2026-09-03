@@ -80,6 +80,34 @@ export function applyIntent(drafts: Drafts, intent: ConsoleIntent, snapshot: Sna
     }
     case 'resolve_coordination':
       return { action: 'resolve_coordination', drafts: { ...drafts, resolve: { ...drafts.resolve, coordinationId: intent.coordinationId ?? drafts.resolve.coordinationId } } };
+    case 'record_security_posture':
+      return { action: 'record_security_posture', drafts: { ...drafts, posture: { ...drafts.posture, nodeId: intent.nodeId ?? drafts.posture.nodeId } } };
+    case 'register_node': {
+      // "Edit" in this estate is re-registration: the plane treats a register_node for an
+      // existing id as a revision and journals it, so nothing is overwritten in place and
+      // there is no separate edit command to reach for. With no nodeId this is "add", and
+      // the blank draft stands.
+      const existing = intent.nodeId ? snapshot.nodes.find((n) => n.nodeId === intent.nodeId) : undefined;
+      if (!existing) return { action: 'register_node', drafts };
+      return {
+        action: 'register_node',
+        drafts: {
+          ...drafts,
+          register: {
+            nodeId: existing.nodeId, name: existing.name, kind: existing.kind, description: existing.description,
+            capabilities: existing.capabilities.map((c) => ({ capabilityId: c.capabilityId, label: c.label, description: c.description, mode: c.mode, approval: c.approval })),
+            // Derived fields are not the operator's to type: the seed writes corpus_*, api_*,
+            // data_domains and surfaces from the catalog, and a hand edit of one would be a
+            // written-down derivation. They are dropped here and recomputed on the next seed.
+            metadata: Object.entries(existing.metadata)
+              .filter(([k]) => !/^(corpus_|api_|data_domains$|surfaces$)/.test(k))
+              .map(([key, value]) => ({ key, value: typeof value === 'string' ? value : String(value) })),
+            latitude: existing.location ? String(existing.location.latitude) : '',
+            longitude: existing.location ? String(existing.location.longitude) : '',
+          },
+        },
+      };
+    }
   }
 }
 
