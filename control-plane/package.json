@@ -1,0 +1,16 @@
+{
+  "name": "notations-ecosystem",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Notation Systems ecosystem control plane.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "check": "node --check src/errors.js && node --check src/validation.js && node --check src/journal.js && node --check src/control-plane.js && node --check src/server.js"
+  }
+}

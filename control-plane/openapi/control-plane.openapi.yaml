@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: Notations Ecosystem Control Plane
+  version: 0.1.0
+  description: >-
+    A private, append-only capability graph and coordination ledger. It records
+    intent and approval but never stores provider credentials or dispatches an
+    external API call.
+servers:
+  - url: http://127.0.0.1:8787
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Liveness and journal summary
+      responses:
+        '200':
+          description: Service is able to read a verified journal.
+  /v1/snapshot:
+    get:
+      summary: Get the current ecosystem graph
+      responses:
+        '200':
+          description: Current graph, health state, coordination records, and revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Snapshot'
+  /v1/events:
+    get:
+      summary: Read events after a known event cursor
+      parameters:
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Append-only events after the supplied cursor.
+        '409':
+          description: Cursor no longer belongs to the retained journal; refresh the snapshot.
+  /v1/commands:
+    post:
+      summary: Append one coordination command with optimistic concurrency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/RegisterNodeCommand'
+                - $ref: '#/components/schemas/DeclareRelationCommand'
+                - $ref: '#/components/schemas/ObservationCommand'
+                - $ref: '#/components/schemas/CapabilityRequestCommand'
+                - $ref: '#/components/schemas/ResolveCoordinationCommand'
+      responses:
+        '201':
+          description: Command appended.
+        '409':
+          description: Revision, event-id, or coordination conflict.
+        '422':
+          description: Command violates the capability or safety contract.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    CommandBase:
+      type: object
+      required: [requestId, actorId, submittedAt, expectedRevision, action]
+      properties:
+        requestId: { type: string }
+        actorId: { type: string }
+        submittedAt: { type: string, format: date-time }
+        expectedRevision:
+          oneOf: [{ type: string, pattern: '^[a-f0-9]{64}$' }, { type: 'null' }]
+        action: { type: string }
+    Capability:
+      type: object
+      required: [capabilityId, label, description, mode, approval]
+      properties:
+        capabilityId: { type: string }
+        label: { type: string }
+        description: { type: string }
+        mode: { type: string, enum: [observe, propose, execute] }
+        approval: { type: string, enum: [automatic, operator] }
+    Node:
+      type: object
+      required: [nodeId, name, kind, description, capabilities]
+      properties:
+        nodeId: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [api, world_model, information_library, reasoning_engine, visual_dock, operator_surface] }
+        description: { type: string }
+        capabilities:
+          type: array
+          items: { $ref: '#/components/schemas/Capability' }
+        metadata:
+          type: object
+          additionalProperties: { oneOf: [{ type: string }, { type: number }, { type: boolean }] }
+        location:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [longitude, latitude]
+              properties:
+                longitude: { type: number, minimum: -180, maximum: 180 }
+                latitude: { type: number, minimum: -90, maximum: 90 }
+    RegisterNodeCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [node]
+          properties:
+            action: { const: register_node }
+            node: { $ref: '#/components/schemas/Node' }
+    DeclareRelationCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [relationId, sourceNodeId, targetNodeId, kind, description]
+          properties:
+            action: { const: declare_relation }
+            relationId: { type: string }
+            sourceNodeId: { type: string }
+            targetNodeId: { type: string }
+            kind: { type: string, enum: [supplies_context_to, coordinates, visualizes, governs, depends_on] }
+            description: { type: string }
+    ObservationCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [nodeId, health, observedAt, source, detail]
+          properties:
+            action: { const: record_observation }
+            nodeId: { type: string }
+            health: { type: string, enum: [unknown, healthy, degraded, offline] }
+            observedAt: { type: string, format: date-time }
+            source: { type: string, enum: [operator, health_check, webhook] }
+            detail: { type: string }
+    CapabilityRequestCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [coordinationId, requesterNodeId, targetNodeId, capabilityId, requestedMode, purpose]
+          properties:
+            action: { const: request_capability }
+            coordinationId: { type: string }
+            requesterNodeId: { type: string }
+            targetNodeId: { type: string }
+            capabilityId: { type: string }
+            requestedMode: { type: string, enum: [observe, propose, execute] }
+            purpose: { type: string }
+    ResolveCoordinationCommand:
+      allOf:
+        - $ref: '#/components/schemas/CommandBase'
+        - type: object
+          required: [coordinationId, decision, note]
+          properties:
+            action: { const: resolve_coordination }
+            coordinationId: { type: string }
+            decision: { type: string, enum: [approved, rejected] }
+            note: { type: string }
+    Snapshot:
+      type: object
+      required: [schema, revision, eventCursor, durability, generatedAt, nodes, relations, coordination]
+      properties:
+        schema: { const: notations.control-plane.snapshot.v1 }
+        revision: { oneOf: [{ type: string }, { type: 'null' }] }
+        eventCursor: { oneOf: [{ type: string }, { type: 'null' }] }
+        durability: { const: local_jsonl_single_writer }
+        generatedAt: { type: string, format: date-time }
+        nodes: { type: array }
+        relations: { type: array }
+        coordination: { type: array }
