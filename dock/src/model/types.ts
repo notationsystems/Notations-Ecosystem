@@ -142,6 +142,8 @@ export interface CorpusStanding {
   grade: CorpusGrade;
   coverage: number | null;
   fails: string[];
+  /** Invariants not yet assessed. Silence is not assent, so these count against a node. */
+  unknown: string[];
   /** Domains whose canonical state this node owns. Holding a corpus is not owning one. */
   ownerOf: string[];
 }
@@ -159,6 +161,7 @@ export function corpusStanding(node: SnapshotNode): CorpusStanding | null {
     grade: grade as CorpusGrade,
     coverage: typeof coverage === 'number' ? coverage : null,
     fails: words(fails),
+    unknown: words(node.metadata.corpus_unknown),
     ownerOf: words(ownerOf),
   };
 }

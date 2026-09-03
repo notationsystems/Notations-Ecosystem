@@ -832,8 +832,8 @@
           "note": "A source catalog and repeatable plans name what may be acquired and what was."
         },
         "COR-002": {
-          "standing": "exempt",
-          "note": "The acquisition entry, not a state holder: STE promotes, and DAQ must never write canonical state directly."
+          "standing": "fails",
+          "note": "Two holdings, one exemption. As the scientific acquisition entry it holds no canonical state — STE promotes, and DAQ must never write directly. But commerce/ also holds the Notation Physical Commerce ledger: commerce.cli.commit is the only command that writes it, commerce.tender.issue is the single function that binds the firm to a counterparty, and commerce.outbound.send is the wire boundary. That is a second freight-commitment record, in a domain payload-terminal declares it owns, inside a node whose declared domain is scientific. It is parked here while Sea Dog Terminal is frozen, and until it moves the single-owner invariant does not hold."
         },
         "COR-003": {
           "standing": "holds",

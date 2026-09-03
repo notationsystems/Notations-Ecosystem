@@ -111,6 +111,14 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
           <b>{mean === null ? '—' : `${mean}%`}</b>
         </div>
         <div className="kpi">
+          <span>declared failures</span>
+          <b>{graded.reduce((sum, entry) => sum + entry.standing.fails.length, 0)}</b>
+        </div>
+        <div className="kpi">
+          <span>unassessed</span>
+          <b>{graded.reduce((sum, entry) => sum + entry.standing.unknown.length, 0)}</b>
+        </div>
+        <div className="kpi">
           <span>unsound</span>
           <b style={{ color: unsound.length ? CORPUS_GRADE_COLOR.unsound : undefined }}>{unsound.length}</b>
         </div>
@@ -157,16 +165,21 @@ export function CorpusLens({ filtered, selected, onSelect }: LensProps) {
             <span className="sec-meta">
               <Coverage value={standing.coverage} />
             </span>
-            {standing.fails.length ? (
-              <span className="sec-findings" title="Invariants this node declares it does not hold. Declaring a failure by name is the point; silence would be worse.">
+            {standing.fails.length || standing.unknown.length ? (
+              <span className="sec-findings">
                 {standing.fails.map((id) => (
-                  <span key={id} className="sec-count high">
+                  <span key={id} className="sec-count high" title="Declared not held. Naming a failure is the point; silence would be worse.">
                     {id}
+                  </span>
+                ))}
+                {standing.unknown.map((id) => (
+                  <span key={id} className="sec-count medium" title="Not yet assessed. Counts against the node — silence is not assent.">
+                    {id}?
                   </span>
                 ))}
               </span>
             ) : (
-              <span className="sec-findings none">no declared failures</span>
+              <span className="sec-findings none">every applicable invariant held</span>
             )}
           </button>
         ))}

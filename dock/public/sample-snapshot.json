@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "b22564663a7b5b8cf515761f70eb1ad15b588e44e2adcaaaee5aa2a91add90b2",
+  "revision": "42ad4e17769e03439c351731e343d1b1393da68441d123892c51982e10af633e",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -304,7 +304,8 @@
         "data_domains": "carrier-identity disruptions fleet-assets freight-rates logistics service-levels shipments tracking-events trade-documents trade-lanes",
         "corpus_role": "feed",
         "corpus_grade": "bare",
-        "corpus_coverage": 0.43
+        "corpus_coverage": 0.43,
+        "corpus_unknown": "COR-003 COR-004 COR-005 COR-007"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -587,7 +588,8 @@
         "capability_count": 1,
         "corpus_role": "hold",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-002 COR-003 COR-004 COR-005 COR-006 COR-007 COR-008 COR-009 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -625,7 +627,8 @@
         "capability_count": 1,
         "corpus_role": "hold",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-002 COR-003 COR-004 COR-005 COR-006 COR-007 COR-008 COR-009 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -1245,8 +1248,9 @@
         "mcp_server": false,
         "data_domains": "acquisition-plans architecture-invariants automation carrier-identity chromatography disruptions evidence-pool facilities freight-rates logistics numerical-kernels public-procurement scientific-literature sec-filings seismic tidal-water-level trade-lanes",
         "corpus_role": "feed",
-        "corpus_grade": "sound",
-        "corpus_coverage": 1
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.89,
+        "corpus_fails": "COR-002"
       },
       "location": {
         "longitude": -79.3832,
@@ -1475,7 +1479,8 @@
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.43,
-        "corpus_fails": "COR-007"
+        "corpus_fails": "COR-007",
+        "corpus_unknown": "COR-001 COR-003 COR-005"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -1599,7 +1604,8 @@
         "data_domains": "camera-trajectory evaluation gaussian-splat mesh novel-view-synthesis synthetic-scenes visualisation",
         "corpus_role": "feed",
         "corpus_grade": "bare",
-        "corpus_coverage": 0.43
+        "corpus_coverage": 0.43,
+        "corpus_unknown": "COR-001 COR-004 COR-006 COR-007"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2209,7 +2215,8 @@
         "data_domains": "mesh model-weights rgbd-depth visualisation",
         "corpus_role": "feed",
         "corpus_grade": "bare",
-        "corpus_coverage": 0.43
+        "corpus_coverage": 0.43,
+        "corpus_unknown": "COR-001 COR-004 COR-006 COR-007"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2327,7 +2334,8 @@
         "data_domains": "camera-trajectory gaussian-splat model-weights panorama pipeline-artifacts",
         "corpus_role": "transform",
         "corpus_grade": "developing",
-        "corpus_coverage": 0.75
+        "corpus_coverage": 0.75,
+        "corpus_unknown": "COR-004"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2365,7 +2373,8 @@
         "capability_count": 1,
         "corpus_role": "feed",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-003 COR-004 COR-005 COR-006 COR-007 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2482,7 +2491,8 @@
         "capability_count": 1,
         "corpus_role": "feed",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-003 COR-004 COR-005 COR-006 COR-007 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -2808,7 +2818,8 @@
         "capability_count": 1,
         "corpus_role": "coordinate",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-008 COR-009 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -3444,7 +3455,8 @@
         "corpus_role": "feed",
         "corpus_grade": "bare",
         "corpus_coverage": 0.29,
-        "corpus_fails": "COR-004 COR-005 COR-007 COR-010"
+        "corpus_fails": "COR-004 COR-005 COR-007 COR-010",
+        "corpus_unknown": "COR-006"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -3482,7 +3494,8 @@
         "capability_count": 1,
         "corpus_role": "hold",
         "corpus_grade": "unbuilt",
-        "corpus_coverage": 0
+        "corpus_coverage": 0,
+        "corpus_unknown": "COR-001 COR-002 COR-003 COR-004 COR-005 COR-006 COR-007 COR-008 COR-009 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -4704,7 +4717,8 @@
         "corpus_role": "transform",
         "corpus_grade": "developing",
         "corpus_coverage": 0.5,
-        "corpus_fails": "COR-003 COR-005"
+        "corpus_fails": "COR-003 COR-005",
+        "corpus_unknown": "COR-004"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -4952,7 +4966,8 @@
         "data_domains": "architecture-invariants automation evaluation execution-trace molecular-dynamics numerical-kernels",
         "corpus_role": "transform",
         "corpus_grade": "developing",
-        "corpus_coverage": 0.8
+        "corpus_coverage": 0.8,
+        "corpus_unknown": "COR-004"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -5713,7 +5728,8 @@
         "graph_model": "RDF 1.2 / OWL hypergraph as N-Quads with named graphs",
         "corpus_role": "feed",
         "corpus_grade": "developing",
-        "corpus_coverage": 0.57
+        "corpus_coverage": 0.57,
+        "corpus_unknown": "COR-004 COR-005 COR-007"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",

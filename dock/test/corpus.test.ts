@@ -11,7 +11,7 @@ const node = (metadata: Record<string, string | number | boolean>): SnapshotNode
 describe('corpus standing', () => {
   it('reads the derived metadata the seed writes, and nothing else', () => {
     const standing = corpusStanding(node({ corpus_role: 'hold', corpus_grade: 'sound', corpus_coverage: 1 }));
-    expect(standing).toEqual({ role: 'hold', grade: 'sound', coverage: 1, fails: [], ownerOf: [] });
+    expect(standing).toEqual({ role: 'hold', grade: 'sound', coverage: 1, fails: [], unknown: [], ownerOf: [] });
   });
 
   it('splits declared failures so each names an invariant', () => {
@@ -28,6 +28,14 @@ describe('corpus standing', () => {
     const standing = corpusStanding(node({ corpus_role: 'sovereign', corpus_grade: 'sound' }));
     expect(standing?.role).toBeNull();
     expect(standing?.grade).toBe('sound');
+  });
+
+  it('keeps unassessed invariants distinct from held ones', () => {
+    // Without this a node with no declared failures reads as one that holds everything,
+    // and "not assessed" becomes "passed".
+    const standing = corpusStanding(node({ corpus_role: 'feed', corpus_grade: 'bare', corpus_coverage: 0.43, corpus_unknown: 'COR-003 COR-004' }));
+    expect(standing?.unknown).toEqual(['COR-003', 'COR-004']);
+    expect(standing?.fails).toEqual([]);
   });
 
   it('never treats a missing coverage as zero', () => {

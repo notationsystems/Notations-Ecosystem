@@ -48,6 +48,14 @@ from that system's catalog entry and the evidence path it cites.
 | COR-009 | **Outward-only projection.** A projection never writes back to the state it renders. | A globe, a dock, an SVG that hold nothing | A viewer with an edit button wired to the store |
 | COR-010 | **Declared refusal to hold.** The system names what it must never hold or become, and enforces it. | "must never become a person-intelligence tool", gated in CI | Silence, and therefore drift |
 
+**On COR-010's evidence.** A refusal recorded only in this catalog is weaker than one
+enforced in the system it is about, and the evidence path should say which it is. Where
+the system enforces its own refusal — the terminal's CI gate over every route, the OCR
+agent's `docs/BOUNDARIES.md` with tests auditing the source tree — cite that. Where the
+only record is `ecosystem/catalog/<node>.json`, the refusal is this estate's policy about
+a system rather than the system's own guarantee, and it is worth knowing which nodes are
+in that position: today, most of the upstream mirrors.
+
 ### Why ten, and why these
 
 Each one already appears somewhere in this estate as a property some system was built to
@@ -76,6 +84,27 @@ are not failures, and keeping them distinct is what makes the instrument honest.
 **`exempt` is not a hiding place.** It must carry a reason, and the reason must be
 structural rather than circumstantial: a dock is exempt from COR-006 because it admits
 nothing, not because admission has not been built yet. "Not built yet" is `fails`.
+
+**An exemption must account for every holding the node names, not its principal one.**
+This is the failure mode worth stating, because it happened here. The Data Acquisition
+Channel declared COR-002 `exempt` on the ground that "STE promotes, and DAQ must never
+write canonical state directly" — true of the scientific vertical it was written about,
+and silent about the second half of its own holding sentence: the Notation Physical
+Commerce ledger, whose `commerce.cli.commit` is the only command that writes it,
+`commerce.tender.issue` is "the single function that binds the firm to a counterparty",
+and `commerce.outbound.send` is the wire boundary. That is a freight-commitment record in
+a domain `payload-terminal` declares it owns, inside a node whose declared domain is
+scientific. An exemption argued about one holding concealed a violation in another, and
+the grader could not see it because the exemption removed the invariant from the count.
+DAQ now declares COR-002 `fails` and says why.
+
+The general form: read the exemption back against the `holding` sentence. If the sentence
+names something the exemption does not mention, the exemption is incomplete.
+
+The instrument reports **domains with no declared owner** for the same reason. COR-002
+says at most one owner; it does not say every domain has one, and an unowned domain is
+exactly where a second owner turns up unannounced. Five of the estate's eight are
+currently unowned.
 
 The distinction matters most for the two node types that hold no domain material:
 

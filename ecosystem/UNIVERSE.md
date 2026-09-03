@@ -25,9 +25,13 @@ applicable, where a role structurally exempts the invariants it cannot be about.
 | unbuilt (an empty repository) | `building-information-corpus`, `building-information-graph`, `network-scout-signal-miner`, `notations-archival-swarm`, `notations-energy-modulator`, `payload-corpus-graph` |
 | unsound | none |
 
-Mean coverage across graded nodes is 0.56. Eight nodes hold a corpus; three own a domain's
-canonical state (`payload-terminal` → physical-economy, `scientific-transformer-engine` →
-scientific, `bim-state-transformer-engine` → built-environment), which is COR-002 holding.
+Mean coverage across graded nodes is 0.55, and twenty invariants are declared failed by
+name. Eight nodes hold a corpus; three own a domain's canonical state
+(`payload-terminal` → physical-economy, `scientific-transformer-engine` → scientific,
+`bim-state-transformer-engine` → built-environment). Five of the eight domains —
+intelligence, perception-3d, geospatial, archive, platform — have no declared owner, and
+`node ecosystem/corpus.mjs` reports that, because an unowned domain is where a second
+owner appears unannounced.
 
 What the grading makes visible that prose did not:
 
@@ -47,6 +51,15 @@ What the grading makes visible that prose did not:
   person-profiling services and still serve the routes.
 - **Six planned repositories are graded `unbuilt` rather than omitted**, so the distance
   between the intended estate and the built one is a number.
+- **The physical economy has two commitment records.** `data-acquisition-channel` declares
+  COR-002 failed: `commerce/` holds the Notation Physical Commerce ledger, whose
+  `commerce.tender.issue` is "the single function that binds the firm to a counterparty"
+  and whose `commerce.outbound.send` is the wire boundary, inside a node whose declared
+  domain is scientific and in a domain `payload-terminal` declares it owns. It is parked
+  there while Sea Dog Terminal is frozen. The declaration was originally `exempt`,
+  argued entirely about the scientific vertical, and the exemption concealed the
+  violation — which is why the doctrine now requires an exemption to account for every
+  holding a node names.
 
 ## 3. Domains
 
@@ -187,6 +200,17 @@ Operations, exposure and durability
 - The data archive is replicated GitHub-to-GitHub, not backed up off-provider; only one capture day (2026-08-27) is mirrored; the test suite has been observed writing new Comtrade captures (2026-08-31); five captures are 11-byte empty bodies of unknown meaning.
 - DAQ Phase 0 (one real transaction) is undischarged; QCMobile, ORS, load-board terms, AIS and LME are blocked on a person.
 - The SCL CUDA backend has never executed on a GPU; STE's EvidencePool, VersionStore and OperationTrace are in-memory only.
+
+Corpus ownership
+- Where does the Notation Physical Commerce ledger belong once Sea Dog Terminal unfreezes:
+  into `payload-terminal` as part of the physical-economy canonical state, or into a node
+  of its own that owns freight commitments? Until it moves, COR-002 does not hold for the
+  physical economy.
+- Five domains have no declared canonical-state owner. `intelligence` and `geospatial`
+  contain only mirrors and projections, which may be the right answer; `archive` and
+  `perception-3d` each contain a node that holds material (`information-systems-archive`,
+  `geometry-grounded-gaussian-splatting`) without claiming to own the domain's state.
+  `platform` is owned by nothing because the coordination journal is not a domain state.
 
 Policy
 - `osiris-intel` still resolves natural persons and returns RIPE abuse contacts as person nodes; `osiris-dashboard` still serves person-targeting routes; `osint-war-room` hardcodes an AIS key and pins scraping libraries no route uses. The universe-level collection policy should be declared once and applied to the forks.

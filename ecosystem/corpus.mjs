@@ -190,6 +190,9 @@ export function checkCorpus(entry) {
   return { errors, warnings };
 }
 
+/** The estate's domains. A domain nobody owns is where a second owner appears unnoticed. */
+export const ESTATE_DOMAINS = Object.freeze(['physical-economy', 'intelligence', 'scientific', 'built-environment', 'perception-3d', 'geospatial', 'archive', 'platform']);
+
 /** Ecosystem-level figures. Owners are checked for the single-owner invariant itself. */
 export function gradeEcosystem(entries) {
   const nodes = entries.map(({ entry }) => gradeNode(entry));
@@ -199,6 +202,10 @@ export function gradeEcosystem(entries) {
     owners.get(domain).push(node.nodeId);
   }
   const contested = [...owners].filter(([, ids]) => ids.length > 1).map(([domain, ids]) => ({ domain, nodeIds: ids }));
+  // COR-002 says at most one owner. It does not say every domain has one, and the
+  // domains that have none are exactly where a second owner turns up unannounced —
+  // as the Notation Physical Commerce ledger did, inside a node declared `feed`.
+  const unowned = ESTATE_DOMAINS.filter(domain => !owners.has(domain));
   const byGrade = {};
   for (const node of nodes) byGrade[node.grade] = (byGrade[node.grade] ?? 0) + 1;
   const graded = nodes.filter(n => typeof n.coverage === 'number');
@@ -208,6 +215,7 @@ export function gradeEcosystem(entries) {
     byRole: ROLE_IDS.reduce((acc, role) => ({ ...acc, [role]: nodes.filter(n => n.role === role).length }), {}),
     owners: Object.fromEntries(owners),
     contested,
+    unowned,
     meanCoverage: graded.length ? Math.round((graded.reduce((sum, n) => sum + n.coverage, 0) / graded.length) * 100) / 100 : null,
   };
 }
@@ -229,6 +237,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (report.contested.length) {
       for (const { domain, nodeIds } of report.contested) process.stdout.write(`COR-002 violated: ${domain} is claimed by ${nodeIds.join(' and ')}\n`);
     }
+    if (report.unowned.length) {
+      process.stdout.write(`no declared canonical-state owner: ${report.unowned.join(', ')}\n`);
+    }
+    const declaredFailures = report.nodes.flatMap(node => node.fails.map(id => `${node.nodeId} ${id}`));
+    if (declaredFailures.length) process.stdout.write(`declared failures (${declaredFailures.length}): ${declaredFailures.join(', ')}\n`);
   }
   process.exit(report.contested.length ? 1 : 0);
 }
