@@ -9,6 +9,7 @@
     "validate": "node validate.mjs",
     "seed:journal": "node seed.mjs --journal ../control-plane/data/control-plane.jsonl",
     "sample": "node sample-snapshot.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "twin": "node twin/build.mjs"
   }
 }

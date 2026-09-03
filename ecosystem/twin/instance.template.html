@@ -1,0 +1,776 @@
+<title>Notations Control Universe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #070B14; --sky: #0B1020; --panel: #0F1626; --panel-2: #141D31; --line: #22304A; --line-soft: #182339;
+    --text: #E6EAF2; --muted: #8D99B1; --faint: #5F6B82;
+    --accent: #F5B942; --accent-ink: #0B1020;
+    --cyan: #39C6D8; --green: #5AC77A; --violet: #8B7CF6; --red: #E8536A; --orange: #F0642F; --grey: #6B7280;
+    --sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --serif: "Instrument Serif", Georgia, serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #E9EDF3; --sky: #EEF2F8; --panel: #FFFFFF; --panel-2: #F3F6FA; --line: #C9D2E0; --line-soft: #DCE3EE;
+      --text: #121A2B; --muted: #56637A; --faint: #7B879B;
+      --accent: #9A6407; --accent-ink: #FFFFFF;
+      --cyan: #127E8C; --green: #2E8A4C; --violet: #5B4BC4; --red: #B92E45; --orange: #B8461C; --grey: #7D889C;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #E9EDF3; --sky: #EEF2F8; --panel: #FFFFFF; --panel-2: #F3F6FA; --line: #C9D2E0; --line-soft: #DCE3EE;
+    --text: #121A2B; --muted: #56637A; --faint: #7B879B;
+    --accent: #9A6407; --accent-ink: #FFFFFF;
+    --cyan: #127E8C; --green: #2E8A4C; --violet: #5B4BC4; --red: #B92E45; --orange: #B8461C; --grey: #7D889C;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.45; -webkit-font-smoothing: antialiased; overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .mono { font-family: var(--mono); font-size: 0.92em; }
+  .app { display: grid; grid-template-rows: 40px minmax(0, 1fr) auto; grid-template-columns: 236px 1fr 352px; height: 100vh; }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 0 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .brand { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .brand b { color: var(--accent); font-weight: 500; }
+  .chip { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); white-space: nowrap; }
+  .chip.warn { color: var(--accent); border-color: var(--accent); }
+  .chip.ok { color: var(--green); border-color: var(--green); }
+  .chip.bad { color: var(--red); border-color: var(--red); }
+  .counts { display: flex; gap: 14px; margin-left: auto; }
+  .counts div { text-align: right; line-height: 1.1; }
+  .counts .n { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .counts .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .search { width: 220px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; font-family: var(--mono); font-size: 12px; }
+  .search::placeholder { color: var(--faint); }
+  .rail { border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .lenses { display: grid; gap: 2px; }
+  .lens-btn { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 7px 10px; color: var(--muted); }
+  .lens-btn:hover { background: var(--panel-2); color: var(--text); }
+  .lens-btn.on { background: var(--panel-2); border-color: var(--line); color: var(--text); }
+  .lens-btn .k { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .lens-btn.on .k, .lens-btn .k.warn { color: var(--accent); }
+  .group h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .fchip { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; font-size: 11px; color: var(--muted); }
+  .fchip.on { color: var(--text); border-color: var(--muted); background: var(--panel-2); }
+  .fchip .c { font-family: var(--mono); color: var(--faint); margin-left: 4px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { background: transparent; border: none; padding: 4px 9px; font-size: 11px; color: var(--muted); border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: none; }
+  .seg button.on { background: var(--panel-2); color: var(--text); }
+  .legend { display: grid; gap: 4px; font-size: 11px; color: var(--muted); }
+  .legend div { display: flex; align-items: center; gap: 6px; }
+  .sw { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .sw.line { width: 14px; height: 2px; border-radius: 0; }
+  .sw.ring { background: transparent !important; border: 2px solid; width: 9px; height: 9px; }
+  .layers label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); padding: 2px 0; }
+  .stage { position: relative; background: var(--sky); overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
+  .stage .view { position: absolute; inset: 0; overflow: auto; padding: 18px 22px 24px; display: none; background: var(--sky); }
+  .stage .view.on { display: block; }
+  .tooltip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 6px 9px; font-size: 12px; max-width: 320px; box-shadow: 0 6px 24px rgba(0,0,0,.25); display: none; z-index: 5; }
+  .tooltip b { display: block; }
+  .tooltip .d { color: var(--muted); }
+  .skyhud { position: absolute; top: 10px; left: 12px; display: flex; gap: 6px; z-index: 4; }
+  .skyhud button { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 9px; font-size: 11px; color: var(--muted); }
+  .skyhud button:hover { color: var(--text); }
+  .skynote { position: absolute; bottom: 10px; left: 12px; font-size: 11px; color: var(--faint); z-index: 4; font-family: var(--mono); }
+  h2.lens-title { font-family: var(--serif); font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+  .lens-sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; max-width: 78ch; }
+  .tower { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 10px 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card h3 .n { font-family: var(--mono); font-weight: 500; }
+  .card h3 .n.warn { color: var(--accent); } .card h3 .n.bad { color: var(--red); } .card h3 .n.ok { color: var(--green); }
+  .card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
+  .card li { display: flex; justify-content: space-between; gap: 8px; }
+  button.link { background: none; border: none; padding: 0; color: var(--text); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; font-family: var(--mono); font-size: 12px; text-align: left; }
+  button.link:hover { text-decoration-color: var(--accent); }
+  .card li .d { color: var(--muted); text-align: right; white-space: nowrap; }
+  .card p.empty { color: var(--faint); margin: 0; font-size: 12px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line-soft); }
+  th { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--panel-2); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr.row-click { cursor: pointer; } tr.row-click:hover td { background: var(--panel-2); }
+  .badge { display: inline-block; font-family: var(--mono); font-size: 10.5px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); white-space: nowrap; margin-right: 4px; }
+  .badge.c { color: var(--x); border-color: var(--x); }
+  .side { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .side > * { flex: none; }
+  .side > .insp { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .cmdbar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+  .cmdbar span { font-family: var(--mono); color: var(--accent); }
+  .cmdbar input { flex: 1; background: transparent; border: none; font-family: var(--mono); font-size: 12px; }
+  .cmdout { padding: 6px 10px; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: pre-wrap; max-height: 110px; overflow-y: auto; }
+  .cmdout .bad { color: var(--red); } .cmdout .ok { color: var(--green); }
+  .insp { padding: 12px 12px 16px; display: grid; gap: 10px; align-content: start; }
+  .insp h2 { font-family: var(--serif); font-weight: 400; font-size: 22px; margin: 0; line-height: 1.1; }
+  .insp .sub { color: var(--muted); font-size: 12px; }
+  .insp p.desc { margin: 0; font-size: 12px; color: var(--muted); max-height: 5.8em; overflow: hidden; }
+  .insp p.desc.open { max-height: none; }
+  .more { background: none; border: none; padding: 0; color: var(--cyan); font-size: 11px; }
+  .facets { display: grid; gap: 3px; font-size: 12px; }
+  .facets div { display: grid; grid-template-columns: 72px 1fr; gap: 8px; }
+  .facets span:first-child { color: var(--faint); font-size: 11px; padding-top: 1px; }
+  .verbs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+  .btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; font-size: 12px; color: var(--text); }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.small { padding: 2px 7px; font-size: 11px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .insp h3 { margin: 6px 0 0; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  .caps { display: grid; gap: 4px; }
+  .cap { border: 1px solid var(--line-soft); border-radius: 4px; padding: 6px 8px; font-size: 12px; }
+  .cap .row { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+  .cap .id { font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cap .lbl { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .links a { display: block; font-size: 12px; color: var(--text); text-decoration: none; padding: 2px 0; }
+  .links a span { color: var(--muted); }
+  .links a:hover { color: var(--accent); }
+  .sig { display: grid; gap: 4px; }
+  .sig div { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; }
+  .sig .s { font-family: var(--mono); font-size: 11px; }
+  .drafter { border-top: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; background: var(--panel-2); }
+  .drafter h3 { margin: 0; font-size: 12px; display: flex; justify-content: space-between; }
+  .drafter label { display: grid; gap: 3px; font-size: 11px; color: var(--muted); }
+  .drafter input, .drafter select, .drafter textarea { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; font-size: 12px; width: 100%; }
+  .drafter textarea { min-height: 64px; font-family: var(--mono); font-size: 11.5px; resize: vertical; }
+  .drafter .sigrow { display: grid; grid-template-columns: 1.3fr 1fr 60px; gap: 4px; }
+  .drafter .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .refusal { border-left: 3px solid var(--red); padding: 4px 8px; font-size: 12px; color: var(--muted); background: var(--panel); }
+  .refusal b { color: var(--red); font-family: var(--mono); font-size: 11px; display: block; }
+  .accepted { border-left: 3px solid var(--green); padding: 4px 8px; font-size: 12px; color: var(--muted); background: var(--panel); }
+  .strip { grid-column: 1 / -1; border-top: 1px solid var(--line); background: var(--panel); display: grid; grid-template-columns: 1.4fr 1fr 1.3fr 0.9fr; gap: 0; }
+  .strip > div { padding: 10px 14px; max-height: 30vh; overflow-y: auto; border-right: 1px solid var(--line-soft); min-width: 0; }
+  .strip > div:last-child { border-right: none; }
+  .strip h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+  .strip h4 span { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--muted); }
+  input[type=range] { width: 100%; accent-color: var(--cyan); margin: 6px 0 2px; }
+  input[type=range].past { accent-color: var(--accent); }
+  .axis-info { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .axis-info b { color: var(--text); font-weight: 500; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px 8px; }
+  .stats .n { font-family: var(--serif); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stats .n.warn { color: var(--accent); } .stats .n.bad { color: var(--red); }
+  .stats .l { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .note { font-size: 11px; color: var(--faint); margin-top: 6px; }
+  .drafts { display: grid; gap: 6px; }
+  .drafts .n { font-family: var(--serif); font-size: 24px; line-height: 1; }
+  .drafts .l { font-size: 10.5px; color: var(--muted); }
+  .modal { position: fixed; inset: 0; background: rgba(4,8,16,.6); display: none; align-items: center; justify-content: center; z-index: 20; }
+  .modal.on { display: flex; }
+  .modal .box { width: min(760px, 92vw); max-height: 84vh; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: grid; gap: 10px; grid-template-rows: auto 1fr auto; }
+  .modal textarea { width: 100%; height: 52vh; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; font-family: var(--mono); font-size: 11.5px; padding: 8px; color: var(--text); }
+  @media (max-width: 1100px) { .app { grid-template-columns: 200px 1fr 300px; } .counts .l { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>Notations</b> · Control Universe</div>
+    <span class="chip warn" id="mode-chip" title="This instance folds an exported journal itself, because there is no control plane here. A live twin asks the plane for every fold.">offline instance · sample fold</span>
+    <span class="chip mono" id="rev-chip" title="The record hash the sky is drawn at — the plane's own, from the exported journal">—</span>
+    <span class="chip" id="fold-chip" title="Whether this page's fold of the journal at its head matches the snapshot the plane exported">fold: checking</span>
+    <div class="counts" id="counts"></div>
+    <input class="search" id="search" placeholder="/ search bodies, capabilities, subjects" aria-label="Search">
+  </header>
+
+  <nav class="rail">
+    <div class="lenses" id="lenses"></div>
+    <div class="group"><h4>colour moons by</h4><div class="seg" id="moonsby"><button data-v="mode" class="on">mode</button><button data-v="maturity">maturity</button><button data-v="approval">approval</button></div></div>
+    <div class="group"><h4>layers</h4><div class="layers" id="layers"></div></div>
+    <div class="group"><h4>domains · orbits</h4><div class="chips" id="domains"></div></div>
+    <div class="group"><h4>kinds</h4><div class="chips" id="kinds"></div></div>
+    <div class="group"><h4>what the sky means</h4><div class="legend" id="legend"></div></div>
+  </nav>
+
+  <main class="stage" id="stage">
+    <canvas id="sky" aria-label="The estate as a solar system"></canvas>
+    <div class="skyhud"><button id="fit">fit</button><button id="focus-sun">sun</button><button id="back-now" hidden>back to now</button></div>
+    <div class="skynote">nothing here is a place · positions are domain and registration order · drag to pan, wheel to zoom, double-click to focus</div>
+    <div class="tooltip" id="tip"></div>
+    <div class="view" id="view-tower"></div>
+    <div class="view" id="view-ledger"></div>
+    <div class="view" id="view-fabric"></div>
+    <div class="view" id="view-posture"></div>
+    <div class="view" id="view-journal"></div>
+  </main>
+
+  <aside class="side">
+    <div class="cmdbar"><span>›</span><input id="cmd" placeholder="type help — observe, secure, request, approve, asof, find, goto" aria-label="Command"></div>
+    <div class="cmdout" id="cmdout">Typed commands draft governed writes for a control plane. Nothing here dispatches, and nothing is written: every draft is a command the plane accepts, held for you to submit.</div>
+    <div class="insp" id="insp"></div>
+    <div class="drafter" id="drafter" hidden></div>
+  </aside>
+
+  <footer class="strip">
+    <div>
+      <h4>time · knowledge as of record <span id="axis-pos"></span></h4>
+      <input type="range" id="axis" min="0" max="0" value="0" aria-label="Scrub the journal">
+      <div class="axis-info"><span id="axis-kind"></span><span id="axis-at"></span></div>
+      <div class="note" id="axis-note"></div>
+    </div>
+    <div><h4>what this twin knows</h4><div class="stats" id="fidelity"></div><div class="note" id="fidelity-note"></div></div>
+    <div><h4>needs attention <span>exception-first</span></h4><div class="stats" id="signals"></div><div class="note">Stale is judged at 24 h for an observation and 7 d for an attestation, against the time of the record the sky is drawn at.</div></div>
+    <div><h4>drafts <span id="drift-chip"></span></h4><div class="drafts" id="drafts"></div></div>
+  </footer>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Drafted commands">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><b id="modal-title">Drafted commands</b><span class="mono" style="color:var(--muted);font-size:11px">POST /v1/commands, one at a time, each with the then-current revision</span></div>
+    <textarea id="modal-text" readonly></textarea>
+    <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn" id="modal-copy">copy</button><button class="btn" id="modal-clear">clear drafts</button><button class="btn primary" id="modal-close">close</button></div>
+  </div>
+</div>
+
+<script type="application/json" id="twin-data">__DATA__</script>
+<script>
+(() => {
+'use strict';
+const DATA = JSON.parse(document.getElementById('twin-data').textContent);
+const RECORDS = DATA.events;
+const HEAD = DATA.snapshot;
+
+const ORBIT_ORDER = ['platform','physical-economy','scientific','built-environment','intelligence','geospatial','perception-3d','archive'];
+const HEALTHS = ['unknown','healthy','degraded','critical','offline'];
+const NODE_KINDS = ['api','world_model','information_library','reasoning_engine','visual_dock','operator_surface'];
+const KIND_LABEL = { api:'API', world_model:'World model', information_library:'Information library', reasoning_engine:'Reasoning engine', visual_dock:'Visual dock', operator_surface:'Operator surface' };
+const RELATION_LABEL = { supplies_context_to:'supplies context to', coordinates:'coordinates', visualizes:'visualizes', governs:'governs', depends_on:'depends on' };
+const MODES = ['observe','propose','execute'];
+const APPROVALS = ['automatic','operator'];
+const MATURITIES = ['production','beta','experimental','research','planned'];
+const SOURCES = ['operator','health_check','webhook'];
+const METHODS = ['automated_scan','operator_review','external_audit','self_declared'];
+const DIMENSIONS = ['identity','authorization','encryption_in_transit','encryption_at_rest','key_lifecycle','dependency_risk','exposure','audit_integrity','backup','incident','control_plane_integrity'];
+const STATES = ['strong','adequate','weak','failing','unknown'];
+const WORST_FIRST = ['failing','weak','unknown','adequate','strong'];
+const AUTHORITIES = ['evidence_source','canonical_state','projection','derived_compute'];
+const AUTH_LABEL = { evidence_source:'supplies evidence', canonical_state:'is canonical state', projection:'projects', derived_compute:'returns derived compute' };
+const FABRIC_ROLES = new Set(['hold','feed','transform','project']);
+
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const C = () => ({ text: css('--text'), muted: css('--muted'), faint: css('--faint'), line: css('--line'), accent: css('--accent'), cyan: css('--cyan'), green: css('--green'), violet: css('--violet'), red: css('--red'), orange: css('--orange'), grey: css('--grey'), sky: css('--sky'), panel: css('--panel') });
+const HEALTH_COLOR = (c) => ({ healthy: c.green, degraded: c.accent, critical: c.orange, offline: c.red, unknown: c.grey });
+const STATE_COLOR = (c) => ({ strong: c.green, adequate: c.cyan, weak: c.accent, failing: c.red, unknown: c.grey });
+const RELATION_COLOR = (c) => ({ supplies_context_to: c.cyan, coordinates: c.accent, visualizes: c.green, governs: c.red, depends_on: c.violet });
+const AUTH_COLOR = (c) => ({ evidence_source: c.cyan, canonical_state: c.accent, projection: c.green, derived_compute: c.violet });
+const MODE_COLOR = (c) => ({ observe: c.cyan, propose: c.violet, execute: c.accent });
+const APPROVAL_COLOR = (c) => ({ automatic: c.cyan, operator: c.accent });
+const MATURITY_COLOR = (c) => ({ production: c.green, beta: c.cyan, experimental: c.violet, research: c.accent, planned: c.grey, undeclared: c.faint });
+const STATUS_COLOR = (c) => ({ approval_required: c.accent, approved: c.green, ready: c.cyan, rejected: c.red });
+const GRADE_COLOR = (c) => ({ sound: c.green, developing: c.accent, bare: c.orange, unsound: c.red, unbuilt: c.grey, 'n/a': c.grey, undeclared: c.grey });
+
+// The fold, ported from the plane. A twin should ask the plane for every fold, because two
+// folds eventually disagree. This page has no plane to ask, so it folds the exported
+// journal itself, checks itself against the plane's head fold once at load, and says so.
+function derive(records) {
+  const nodes = new Map(), relations = new Map(), observations = new Map(), posture = new Map(), coordination = new Map(), fabric = new Map();
+  let unrecognised = 0;
+  for (const r of records) {
+    const e = r.event;
+    switch (e.kind) {
+      case 'node_registered': nodes.set(e.node.nodeId, e.node); break;
+      case 'relation_declared': relations.set(e.relation.relationId, e.relation); break;
+      case 'observation_recorded': observations.set(e.observation.nodeId, e.observation); break;
+      case 'security_posture_recorded': posture.set(e.posture.nodeId, e.posture); break;
+      case 'coordination_requested': coordination.set(e.request.coordinationId, e.request); break;
+      case 'coordination_resolved': { const q = coordination.get(e.coordinationId); if (q) coordination.set(e.coordinationId, { ...q, status: e.decision, resolvedAt: e.resolvedAt, resolvedBy: e.resolvedBy, resolutionNote: e.note }); break; }
+      case 'fabric_sync_registered': fabric.set(e.manifest.syncId, { ...e.manifest, registeredBy: e.registeredBy ?? null, registeredAt: e.registeredAt ?? e.recordedAt }); break;
+      case 'profile_applied': for (const n of e.nodes ?? []) nodes.set(n.nodeId, n); for (const rel of e.relations ?? []) relations.set(rel.relationId, rel); break;
+      default: unrecognised += 1;
+    }
+  }
+  return { nodes, relations, observations, posture, coordination, fabric, unrecognised };
+}
+function fold(records) {
+  const st = derive(records);
+  const last = records[records.length - 1];
+  const nodes = [...st.nodes.values()].map(n => {
+    const o = st.observations.get(n.nodeId), p = st.posture.get(n.nodeId);
+    return { ...n, health: o?.health ?? 'unknown', lastObservedAt: o?.observedAt ?? null, lastObservation: o ? { source: o.source, detail: o.detail } : null,
+      security: p ? { attestedAt: p.attestedAt, method: p.method, attestedBy: p.attestedBy, signals: p.signals, signer: p.signer ?? null } : null };
+  }).sort((a, b) => a.nodeId.localeCompare(b.nodeId));
+  return {
+    revision: last?.recordHash ?? null, eventCursor: last?.eventId ?? null, generatedAt: last?.recordedAt ?? null, records: records.length,
+    nodes, relations: [...st.relations.values()].sort((a, b) => a.relationId.localeCompare(b.relationId)),
+    coordination: [...st.coordination.values()].sort((a, b) => a.coordinationId.localeCompare(b.coordinationId)),
+    fabric: { syncs: [...st.fabric.values()].sort((a, b) => a.syncId.localeCompare(b.syncId)) }, unrecognised: st.unrecognised,
+  };
+}
+const folds = new Array(RECORDS.length + 1);
+const foldAt = (k) => folds[k] ??= fold(RECORDS.slice(0, k));
+const headFold = foldAt(RECORDS.length);
+const FOLD_AGREES = headFold.revision === HEAD.revision
+  && JSON.stringify(headFold.nodes.map(n => [n.nodeId, n.health, n.security ? n.security.signals.length : 0])) === JSON.stringify(HEAD.nodes.map(n => [n.nodeId, n.health, n.security ? n.security.signals.length : 0]))
+  && JSON.stringify(headFold.coordination.map(c => [c.coordinationId, c.status])) === JSON.stringify(HEAD.coordination.map(c => [c.coordinationId, c.status]))
+  && JSON.stringify(headFold.fabric.syncs.map(s => s.syncId)) === JSON.stringify(HEAD.fabric.syncs.map(s => s.syncId));
+
+// Layout, ported from the dock.
+const INNER_RADIUS = 4, RING_STEP = 2.6, MOON_RADIUS = 0.62;
+const domainOf = (n) => typeof n.metadata?.domain === 'string' ? n.metadata.domain : 'unassigned';
+const orbitIndex = (d) => { const i = ORBIT_ORDER.indexOf(d); return i < 0 ? ORBIT_ORDER.length : i; };
+function sunOf(snap) {
+  const deg = new Map();
+  for (const r of snap.relations) { deg.set(r.sourceNodeId, (deg.get(r.sourceNodeId) ?? 0) + 1); deg.set(r.targetNodeId, (deg.get(r.targetNodeId) ?? 0) + 1); }
+  const c = snap.nodes.filter(n => n.metadata?.corpus_role === 'coordinate');
+  return c.slice().sort((a, b) => (deg.get(b.nodeId) ?? 0) - (deg.get(a.nodeId) ?? 0) || a.nodeId.localeCompare(b.nodeId))[0] ?? null;
+}
+function layoutOf(snap) {
+  const sun = sunOf(snap);
+  const others = snap.nodes.filter(n => n.nodeId !== sun?.nodeId).slice().sort((a, b) => a.nodeId.localeCompare(b.nodeId));
+  const byOrbit = new Map();
+  for (const n of others) { const i = orbitIndex(domainOf(n)); byOrbit.set(i, [...(byOrbit.get(i) ?? []), n]); }
+  const bodies = [], orbits = [];
+  if (sun) bodies.push({ node: sun, lon: 0, lat: 0, orbit: -1, domain: domainOf(sun), isSun: true });
+  for (const [i, ns] of [...byOrbit.entries()].sort((a, b) => a[0] - b[0])) {
+    const radius = INNER_RADIUS + RING_STEP * i, phase = (i * Math.PI) / 7;
+    ns.forEach((n, j) => { const t = phase + (2 * Math.PI * j) / ns.length; bodies.push({ node: n, lon: radius * Math.cos(t), lat: radius * Math.sin(t), orbit: i, domain: domainOf(n), isSun: false }); });
+    orbits.push({ index: i, domain: ns[0] ? domainOf(ns[0]) : ORBIT_ORDER[i] ?? 'unassigned', radius, bodies: ns.length });
+  }
+  const moons = [];
+  for (const b of bodies) {
+    const caps = b.node.capabilities, r = b.isSun ? MOON_RADIUS * 2.2 : MOON_RADIUS;
+    caps.forEach((c, i) => { const t = Math.PI / 2 + (2 * Math.PI * i) / caps.length; moons.push({ body: b, cap: c, lon: b.lon + r * Math.cos(t), lat: b.lat + r * Math.sin(t) }); });
+  }
+  const fabric = new Map();
+  for (const s of snap.fabric.syncs) fabric.set(s.systemNodeId, [...(fabric.get(s.systemNodeId) ?? []), s.authority]);
+  const outer = orbits.reduce((m, o) => Math.max(m, o.radius), INNER_RADIUS) + RING_STEP * 0.9;
+  return { sun, bodies, moons, orbits, fabric, outer, at: new Map(bodies.map(b => [b.node.nodeId, b])) };
+}
+const weakest = (n) => { if (!n.security || !n.security.signals.length) return null; const p = new Set(n.security.signals.map(s => s.state)); return WORST_FIRST.find(s => p.has(s)) ?? null; };
+const words = (v) => typeof v === 'string' && v.trim() ? v.trim().split(/\s+/) : [];
+
+function fidelityOf(snap) {
+  return { observed: snap.nodes.filter(n => n.lastObservedAt).length, attested: snap.nodes.filter(n => n.security).length, signed: snap.nodes.filter(n => n.security?.signer).length,
+    bound: new Set(snap.fabric.syncs.map(s => s.systemNodeId)).size, blind: snap.nodes.filter(n => !n.lastObservedAt && !n.security).length, total: snap.nodes.length };
+}
+const OBS_STALE = 24 * 3600e3, ATT_STALE = 7 * 86400e3;
+function signalsOf(snap) {
+  const now = Date.parse(snap.generatedAt ?? '') || Date.now();
+  const bound = new Set(snap.fabric.syncs.map(s => s.systemNodeId));
+  const obsState = n => !n.lastObservedAt ? 'unobserved' : now - Date.parse(n.lastObservedAt) > OBS_STALE ? 'stale' : 'current';
+  const postState = n => !n.security ? 'unattested' : (now - Date.parse(n.security.attestedAt) > ATT_STALE || n.security.signals.some(s => s.expiresAt && Date.parse(s.expiresAt) <= now)) ? 'stale' : 'current';
+  return {
+    unobserved: snap.nodes.filter(n => obsState(n) === 'unobserved').map(n => n.nodeId),
+    stale: snap.nodes.filter(n => obsState(n) === 'stale' || postState(n) === 'stale').map(n => n.nodeId),
+    unavailable: snap.nodes.filter(n => n.health === 'offline' || n.health === 'critical').map(n => n.nodeId),
+    failing: snap.nodes.filter(n => weakest(n) === 'failing').map(n => n.nodeId),
+    unsigned: snap.nodes.filter(n => n.security && !n.security.signer).map(n => n.nodeId),
+    unattested: snap.nodes.filter(n => !n.security).map(n => n.nodeId),
+    unbound: snap.nodes.filter(n => FABRIC_ROLES.has(n.metadata?.corpus_role) && !bound.has(n.nodeId)).map(n => n.nodeId),
+    pending: snap.coordination.filter(c => c.status === 'approval_required'),
+    blocked: blockedOf(snap),
+  };
+}
+function blockedOf(snap) {
+  const dependents = new Map();
+  for (const r of snap.relations) if (r.kind === 'depends_on' || r.kind === 'supplies_context_to') { const from = r.kind === 'depends_on' ? r.targetNodeId : r.sourceNodeId, to = r.kind === 'depends_on' ? r.sourceNodeId : r.targetNodeId; dependents.set(from, [...(dependents.get(from) ?? []), to]); }
+  return snap.nodes.filter(n => ['offline','degraded','critical'].includes(n.health)).map(n => ({ nodeId: n.nodeId, health: n.health, blocking: [...new Set(dependents.get(n.nodeId) ?? [])] }));
+}
+function driftOf(blueprint, live) {
+  const p = new Set(blueprint.nodes.map(n => n.nodeId)), a = new Set(live.nodes.map(n => n.nodeId));
+  const key = r => `${r.sourceNodeId}|${r.kind}|${r.targetNodeId}`, skey = s => `${s.systemNodeId}|${s.authority}|${s.fabricNodeId}`;
+  const pr = new Set(blueprint.relations.map(key)), ar = new Set(live.relations.map(key)), ps = new Set(blueprint.fabric.syncs.map(skey)), as = new Set(live.fabric.syncs.map(skey));
+  const missing = [...p].filter(x => !a.has(x)), unplanned = [...a].filter(x => !p.has(x));
+  return { missing, unplanned, relationsMissing: [...pr].filter(x => !ar.has(x)).length, syncsMissing: [...ps].filter(x => !as.has(x)).length, clean: !missing.length && !unplanned.length && pr.size === ar.size && ps.size === as.size };
+}
+
+// Validation, ported from the plane: the same refusals, before a draft is held.
+const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+const UNSAFE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/;
+const SENSITIVE_KEY = /(token|secret|password|credential|authorization|cookie|email|phone|contact)/i;
+const REFUSED = [
+  ['credential-material', /\b(?:ncp\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/],
+  ['network-topology', /\b(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?\b|\b(?:[a-z0-9-]+\.)+[a-z]{2,}:\d{2,5}\b|\b[a-z0-9-]+\.(?:internal|intranet|local|lan|corp|svc|cluster\.local)\b|\b(?:listens?|listening|bound|exposed|open)\s+on\s+(?:port\s+)?\d{1,5}\b/i],
+  ['vulnerability-detail', /\bCVE[\s._-]?\d{4}[\s._-]\d{4,7}\b|\bGHSA[\s._-]?[a-z0-9]{4}[\s._-][a-z0-9]{4}[\s._-][a-z0-9]{4}\b|\b(?:exploitable|remote code execution|rce|proof[- ]of[- ]concept|0-?day|zero-?day)\b/i],
+  ['offensive-capability', /\b(?:metasploit|msfvenom|sqlmap|mimikatz|cobalt\s*strike|hashcat|impacket)\b|\bnmap\s+-|\b(?:reverse|bind)\s+shell\b|\bcurl\b[^|]{0,120}\|\s*(?:ba)?sh\b/i],
+  ['pointer-to-raw-material', /\b[a-z][a-z0-9+.-]*:\/\/\S+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}\/\S+|(?:^|\s)(?:\/(?:etc|root|home|var|srv|opt|proc|Users)\/|[A-Za-z]:\\)\S*/i],
+  ['key-material-location', /\b\S*(?:id_rsa|id_ed25519|\.pem|\.pfx|\.p12|\.jks|\.kdbx|\.env)\b/i],
+];
+const UNIVERSAL = [REFUSED[0], REFUSED[3], REFUSED[5]];
+class Refusal extends Error { constructor(code, detail, remedy) { super(detail); this.code = code; this.remedy = remedy; } }
+const invalid = (d, r) => new Refusal('CONTROL_PLANE_COMMAND_INVALID', d, r ?? 'Use the published control-plane contract.');
+function safeText(v, path, max = 1200) {
+  if (typeof v !== 'string') throw invalid(`${path} must be a non-empty string no longer than ${max} characters.`);
+  if (UNSAFE_TEXT.test(v)) throw invalid(`${path} carries control or bidirectional characters, which the ledger refuses.`);
+  const t = v.trim();
+  if (!t || t.length > max) throw invalid(`${path} must be a non-empty string no longer than ${max} characters.`);
+  for (const [cls, re] of UNIVERSAL) if (re.test(t)) throw invalid(`${path} contains ${cls} and is refused.`, cls === 'credential-material' ? 'The control plane never holds credentials or key material, in any field.' : 'Name the control, not the means to attack it or the file that holds the key.');
+  return t;
+}
+function evidenceOnly(v, path) { for (const [cls, re] of REFUSED) if (re.test(v)) throw invalid(`${path} contains ${cls} and is refused.`, 'Re-attest with a state, a coverage fraction and counts by severity, and keep the detail in the system that produced it.'); return v; }
+const identifier = (v, p) => { const t = safeText(v, p, 180); if (!IDENTIFIER.test(t)) throw invalid(`${p} must use letters, numbers, colon, underscore, period, slash, or hyphen.`); return t; };
+const member = (v, p, set) => { const t = safeText(v, p, 80); if (!set.includes(t)) throw invalid(`${p} is not an allowed value.`, `Use one of: ${set.join(', ')}.`); return t; };
+const instant = (v, p) => { const t = safeText(v, p, 80); if (!ISO_INSTANT.test(t) || !Number.isFinite(Date.parse(t))) throw invalid(`${p} must be an ISO date-time with an explicit offset.`); return t; };
+function validateCommand(cmd, snap) {
+  for (const k of ['requestId','actorId','submittedAt','expectedRevision','action']) if (!(k in cmd)) throw invalid(`command.${k} is required.`);
+  identifier(cmd.requestId, 'requestId'); identifier(cmd.actorId, 'actorId'); instant(cmd.submittedAt, 'submittedAt');
+  if (cmd.expectedRevision !== null && !/^[a-f0-9]{64}$/.test(cmd.expectedRevision)) throw invalid('expectedRevision must be null or a 64-character SHA-256 revision.');
+  const has = id => snap.nodes.some(n => n.nodeId === id);
+  switch (cmd.action) {
+    case 'register_node': {
+      const n = cmd.node; if (!n || typeof n !== 'object') throw invalid('node must be an object.');
+      identifier(n.nodeId, 'node.nodeId'); safeText(n.name, 'node.name', 160); member(n.kind, 'node.kind', NODE_KINDS); safeText(n.description, 'node.description', 1200);
+      if (!Array.isArray(n.capabilities) || n.capabilities.length < 1 || n.capabilities.length > 100) throw invalid('node.capabilities must contain between one and 100 capabilities.');
+      const seen = new Set();
+      n.capabilities.forEach((c, i) => {
+        const p = `node.capabilities[${i}]`; for (const k of Object.keys(c)) if (!['capabilityId','label','description','mode','approval','maturity','methodologyVersion'].includes(k)) throw invalid(`${p}.${k} is not part of the control-plane contract.`);
+        identifier(c.capabilityId, `${p}.capabilityId`); safeText(c.label, `${p}.label`, 120); safeText(c.description, `${p}.description`, 600);
+        const mode = member(c.mode, `${p}.mode`, MODES), approval = member(c.approval, `${p}.approval`, APPROVALS);
+        if (mode === 'execute' && approval !== 'operator') throw invalid(`${p}.approval must be "operator" for an execute capability.`);
+        if (c.maturity !== undefined) member(c.maturity, `${p}.maturity`, MATURITIES);
+        if (seen.has(c.capabilityId)) throw invalid(`node.capabilities contains duplicate capability id ${c.capabilityId}.`); seen.add(c.capabilityId);
+      });
+      const md = n.metadata ?? {}; if (Object.keys(md).length > 40) throw invalid('node.metadata may not carry more than 40 keys.');
+      for (const [k, v] of Object.entries(md)) { if (!/^[a-z][a-z0-9_.-]{0,80}$/.test(k)) throw invalid(`node.metadata.${k} is not a valid metadata key.`); if (SENSITIVE_KEY.test(k)) throw invalid(`node.metadata.${k} is prohibited; credentials and contact data never enter the control plane.`); if (!['string','number','boolean'].includes(typeof v)) throw invalid(`node.metadata.${k} must be a string, finite number, or boolean.`); if (typeof v === 'string') safeText(v, `node.metadata.${k}`, 500); }
+      return;
+    }
+    case 'record_observation':
+      identifier(cmd.nodeId, 'nodeId'); if (!has(cmd.nodeId)) throw new Refusal('NODE_NOT_FOUND', `Node ${cmd.nodeId} is not registered.`, 'Register the node before recording its health.');
+      member(cmd.health, 'health', HEALTHS); instant(cmd.observedAt, 'observedAt'); member(cmd.source, 'source', SOURCES); safeText(cmd.detail, 'detail', 600); return;
+    case 'record_security_posture': {
+      identifier(cmd.nodeId, 'nodeId'); if (!has(cmd.nodeId)) throw new Refusal('NODE_NOT_FOUND', `Node ${cmd.nodeId} is not registered.`, 'Register the node before attesting its security posture.');
+      instant(cmd.attestedAt, 'attestedAt'); member(cmd.method, 'method', METHODS);
+      if (!Array.isArray(cmd.signals) || cmd.signals.length < 1 || cmd.signals.length > 12) throw invalid('signals must contain between 1 and 12 posture signals.');
+      const seen = new Set();
+      cmd.signals.forEach((s, i) => { const p = `signals[${i}]`; member(s.dimension, `${p}.dimension`, DIMENSIONS); member(s.state, `${p}.state`, STATES); if (seen.has(s.dimension)) throw invalid(`signals contains ${s.dimension} more than once.`); seen.add(s.dimension);
+        if (s.coverage !== undefined && (typeof s.coverage !== 'number' || Number.isNaN(s.coverage) || s.coverage < 0 || s.coverage > 1)) throw invalid(`${p}.coverage must be between 0 and 1.`);
+        if (s.summary !== undefined) { const t = safeText(s.summary, `${p}.summary`, 280); evidenceOnly(t, `${p}.summary`); } });
+      if ((cmd.signerId === undefined) !== (cmd.signature === undefined)) throw invalid('signerId and signature are declared together: a signature names its signer, and a signer without a signature is a claim.');
+      return;
+    }
+    case 'request_capability': {
+      identifier(cmd.coordinationId, 'coordinationId'); identifier(cmd.requesterNodeId, 'requesterNodeId'); identifier(cmd.targetNodeId, 'targetNodeId'); identifier(cmd.capabilityId, 'capabilityId'); const mode = member(cmd.requestedMode, 'requestedMode', MODES); safeText(cmd.purpose, 'purpose', 1200);
+      const t = snap.nodes.find(n => n.nodeId === cmd.targetNodeId); if (!has(cmd.requesterNodeId) || !t) throw new Refusal('NODE_NOT_FOUND', 'Capability requests require both a registered requester and target node.', 'Register both nodes before coordinating work between them.');
+      const c = t.capabilities.find(x => x.capabilityId === cmd.capabilityId); if (!c) throw new Refusal('CAPABILITY_NOT_FOUND', `Node ${t.nodeId} does not declare capability ${cmd.capabilityId}.`, 'Request a capability listed in the current snapshot.');
+      if (c.mode !== mode) throw new Refusal('CAPABILITY_MODE_MISMATCH', `Capability ${c.capabilityId} is declared for ${c.mode}, not ${mode}.`, 'Request the mode declared by the target; widening a capability requires an explicit node revision.');
+      if (snap.coordination.some(x => x.coordinationId === cmd.coordinationId)) throw new Refusal('COORDINATION_EXISTS', `Coordination id ${cmd.coordinationId} already exists.`, 'Allocate a new coordination id for a new intent.');
+      return;
+    }
+    case 'resolve_coordination': {
+      identifier(cmd.coordinationId, 'coordinationId'); if (!['approved','rejected'].includes(cmd.decision)) throw invalid('decision must be approved or rejected.'); safeText(cmd.note, 'note', 1200);
+      const q = snap.coordination.find(x => x.coordinationId === cmd.coordinationId); if (!q) throw new Refusal('COORDINATION_NOT_FOUND', `Coordination id ${cmd.coordinationId} is not registered.`, 'Request the capability before resolving it.');
+      if (q.status !== 'approval_required') throw new Refusal('COORDINATION_NOT_PENDING', `Coordination id ${cmd.coordinationId} is ${q.status}, not awaiting operator approval.`, 'Only an execution intent awaiting approval can be resolved.');
+      if (q.requestedBy === cmd.actorId) throw new Refusal('CONTROL_PLANE_FORBIDDEN', `Actor ${cmd.actorId} requested this coordination and may not also resolve it.`, 'An execution intent must be approved by a different actor than the one that proposed it.');
+      return;
+    }
+    case 'register_fabric_sync': throw new Refusal('ACTION_OPERATOR_LOCAL', 'register_fabric_sync is an operator-local action: it is run at the host against the journal, never over a plane.', 'Run node ecosystem/fabric.mjs --journal <path> at the host.');
+    default: throw invalid(`command.action ${cmd.action} is not supported.`);
+  }
+}
+
+const state = { cursor: RECORDS.length, lens: 'sky', selected: null, hover: null, moonsBy: 'mode', search: '', domains: new Set(), kinds: new Set(NODE_KINDS),
+  layers: { relations: true, fabric: true, coordination: true, halos: true, moons: true, labels: true }, drafts: [], refusals: [], cam: { x: 0, y: 0, scale: 1 }, fitted: false, seq: 1 };
+const snapAt = () => foldAt(state.cursor);
+let snap = snapAt(), layout = layoutOf(snap);
+for (const n of snap.nodes) state.domains.add(domainOf(n));
+const nodeById = id => snap.nodes.find(n => n.nodeId === id) ?? null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const short = (h) => h ? h.slice(0, 12) : '—';
+const fmt = (iso) => iso ? new Date(iso).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, 'Z') : '—';
+
+function visibleIds() {
+  const q = state.search.trim().toLowerCase();
+  return new Set(snap.nodes.filter(n => {
+    if (!state.kinds.has(n.kind)) return false;
+    if (!state.domains.has(domainOf(n))) return false;
+    if (q) { const hay = `${n.nodeId} ${n.name} ${n.description} ${n.metadata?.data_domains ?? ''} ${n.metadata?.surfaces ?? ''} ${n.capabilities.map(c => c.capabilityId + ' ' + c.label).join(' ')}`.toLowerCase(); if (!hay.includes(q)) return false; }
+    return true;
+  }).map(n => n.nodeId));
+}
+
+// The sky, on Canvas 2D.
+const canvas = $('sky'), ctx = canvas.getContext('2d');
+let W = 0, H = 0, dpr = 1;
+const toScreen = (lon, lat) => [W / 2 + (lon - state.cam.x) * state.cam.scale, H / 2 - (lat - state.cam.y) * state.cam.scale];
+const toWorld = (x, y) => [(x - W / 2) / state.cam.scale + state.cam.x, -(y - H / 2) / state.cam.scale + state.cam.y];
+function resize() { const r = canvas.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; W = Math.round(r.width); H = Math.round(r.height); canvas.width = W * dpr; canvas.height = H * dpr; if (!state.fitted && W && H) { fit(); state.fitted = true; } draw(); }
+function fit() { const o = layout.outer; state.cam = { x: 0, y: 0, scale: Math.min(W / (o * 2.5), H / (o * 2.05)) }; draw(); }
+function focusBody(id) { const b = layout.at.get(id); if (!b) return; state.cam = { x: b.lon, y: b.lat, scale: Math.max(state.cam.scale, Math.min(W, H) / (b.isSun ? 9 : 6)) }; draw(); }
+const stars = Array.from({ length: 160 }, (_, i) => { const a = Math.sin(i * 12.9898) * 43758.5453, b = Math.sin(i * 78.233) * 12345.6789; return [a - Math.floor(a), b - Math.floor(b), 0.4 + ((i * 7) % 5) / 8]; });
+function arc(x1, y1, x2, y2, bow = 0.12) { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(mx - dy * bow, my + dx * bow, x2, y2); ctx.stroke(); }
+function bodyRadius(b) { return Math.max(5, Math.min(22, 3 + Math.sqrt(b.node.capabilities.length) * 2.4)) * (b.isSun ? 1.35 : 1); }
+function draw() {
+  if (!W || !H) return;
+  const c = C(), vis = visibleIds(), dim = vis.size < snap.nodes.length;
+  const HC = HEALTH_COLOR(c), SC = STATE_COLOR(c), RC = RELATION_COLOR(c), AC = AUTH_COLOR(c), moonMap = { mode: MODE_COLOR(c), maturity: MATURITY_COLOR(c), approval: APPROVAL_COLOR(c) }[state.moonsBy], STC = STATUS_COLOR(c);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, Math.max(W, H) * 0.75); g.addColorStop(0, c.sky); g.addColorStop(1, css('--ground')); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = c.faint; for (const [sx, sy, a] of stars) { ctx.globalAlpha = a * 0.35; ctx.fillRect(sx * W, sy * H, 1, 1); } ctx.globalAlpha = 1;
+  ctx.strokeStyle = c.line; ctx.lineWidth = 1;
+  const taken = [];
+  const claim = (x, y, w, h) => { for (const p of taken) { if (x < p.b && x + w > p.a && y < p.d && y + h > p.c) return false; } taken.push({ a: x, b: x + w, c: y, d: y + h }); return true; };
+  const label = (text, x, y, force) => { const w = ctx.measureText(text).width, bx = x - w / 2 - 2, by = y - 9; if (!claim(bx, by, w + 4, 12) && !force) return; if (force) { taken.push({ a: bx, b: bx + w + 4, c: by, d: by + 12 }); } ctx.fillText(text, x, y); };
+  layout.orbits.forEach((o, oi) => { const [x, y] = toScreen(0, 0); const la = -Math.PI / 3 + oi * 0.42; ctx.beginPath(); ctx.arc(x, y, o.radius * state.cam.scale, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = c.faint; ctx.font = `10px ${css('--mono')}`; ctx.textAlign = 'left'; const lr = o.radius * state.cam.scale; ctx.textAlign = 'center'; label(o.domain, x + Math.cos(la) * lr, y + Math.sin(la) * lr - 4, false); ctx.textAlign = 'left'; });
+  const alphaFor = (id) => (dim && !vis.has(id)) ? 0.12 : 1;
+  if (state.layers.relations) { ctx.lineWidth = 1.1; for (const r of snap.relations) { const s = layout.at.get(r.sourceNodeId), t = layout.at.get(r.targetNodeId); if (!s || !t) continue; ctx.globalAlpha = 0.45 * Math.min(alphaFor(r.sourceNodeId), alphaFor(r.targetNodeId)); ctx.strokeStyle = RC[r.kind] ?? c.muted; const [x1, y1] = toScreen(s.lon, s.lat), [x2, y2] = toScreen(t.lon, t.lat); arc(x1, y1, x2, y2); } ctx.globalAlpha = 1; }
+  if (state.layers.fabric) { ctx.lineWidth = 2; ctx.setLineDash([6, 5]); for (const s of snap.fabric.syncs) { const a = layout.at.get(s.systemNodeId), b = layout.at.get(s.fabricNodeId); if (!a || !b) continue; ctx.globalAlpha = 0.8 * alphaFor(s.systemNodeId); ctx.strokeStyle = AC[s.authority]; const [x1, y1] = toScreen(a.lon, a.lat), [x2, y2] = toScreen(b.lon, b.lat); arc(x1, y1, x2, y2, -0.1); } ctx.setLineDash([]); ctx.globalAlpha = 1; }
+  if (state.layers.coordination) { ctx.lineWidth = 3; for (const q of snap.coordination) { const a = layout.at.get(q.requesterNodeId), b = layout.at.get(q.targetNodeId); if (!a || !b) continue; ctx.globalAlpha = 0.9; ctx.strokeStyle = STC[q.status] ?? c.muted; const [x1, y1] = toScreen(a.lon, a.lat), [x2, y2] = toScreen(b.lon, b.lat); arc(x1, y1, x2, y2, 0.2); } ctx.globalAlpha = 1; }
+  if (state.layers.halos) { ctx.lineWidth = 2.5; for (const b of layout.bodies) { const w = weakest(b.node); if (!w) continue; ctx.globalAlpha = alphaFor(b.node.nodeId); ctx.strokeStyle = SC[w]; const [x, y] = toScreen(b.lon, b.lat); ctx.beginPath(); ctx.arc(x, y, bodyRadius(b) + 8, 0, Math.PI * 2); ctx.stroke(); } ctx.globalAlpha = 1; }
+  if (state.layers.moons && state.cam.scale > 18) { for (const m of layout.moons) { ctx.globalAlpha = 0.9 * alphaFor(m.body.node.nodeId); const key = state.moonsBy === 'mode' ? m.cap.mode : state.moonsBy === 'approval' ? m.cap.approval : (m.cap.maturity ?? 'undeclared'); ctx.fillStyle = moonMap[key] ?? c.muted; const [x, y] = toScreen(m.lon, m.lat); ctx.beginPath(); ctx.arc(x, y, Math.min(3.2, 1.2 + state.cam.scale / 40), 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; }
+  ctx.font = `11px ${css('--sans')}`; ctx.textAlign = 'center';
+  const tags = [];
+  for (const b of layout.bodies) {
+    const [x, y] = toScreen(b.lon, b.lat), r = bodyRadius(b); ctx.globalAlpha = alphaFor(b.node.nodeId);
+    ctx.fillStyle = HC[b.node.health] ?? c.grey; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = css('--ground'); ctx.lineWidth = 2; ctx.stroke();
+    if (b.isSun) { ctx.strokeStyle = c.accent; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2); ctx.stroke(); }
+    if (state.selected === b.node.nodeId) { ctx.strokeStyle = c.accent; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, r + 14, 0, Math.PI * 2); ctx.stroke(); }
+    if (state.layers.labels) tags.push({ b, x, y, r, near: b.isSun || state.selected === b.node.nodeId || state.hover === b.node.nodeId });
+  }
+  tags.sort((p, q) => (q.near ? 1 : 0) - (p.near ? 1 : 0) || q.r - p.r);
+  for (const t of tags) {
+    ctx.globalAlpha = alphaFor(t.b.node.nodeId);
+    if (t.near || state.cam.scale > 26) { ctx.font = `11px ${css('--sans')}`; ctx.fillStyle = c.text; label(t.b.node.name.length > 30 ? t.b.node.name.slice(0, 29) + '…' : t.b.node.name, t.x, t.y + t.r + 14, t.near); }
+    else if (state.cam.scale > 7) { ctx.font = `10px ${css('--mono')}`; ctx.fillStyle = c.muted; label(t.b.node.nodeId.length > 22 ? t.b.node.nodeId.slice(0, 21) + '…' : t.b.node.nodeId, t.x, t.y + t.r + 12, false); }
+  }
+  ctx.globalAlpha = 1;
+}
+function hit(px, py) {
+  let best = null, bd = 1e9;
+  for (const b of layout.bodies) { const [x, y] = toScreen(b.lon, b.lat); const d = Math.hypot(px - x, py - y); if (d <= bodyRadius(b) + 6 && d < bd) { best = { kind: 'body', body: b }; bd = d; } }
+  if (best) return best;
+  if (state.layers.moons && state.cam.scale > 18) for (const m of layout.moons) { const [x, y] = toScreen(m.lon, m.lat); const d = Math.hypot(px - x, py - y); if (d <= 6 && d < bd) { best = { kind: 'moon', moon: m }; bd = d; } }
+  return best;
+}
+let dragging = null;
+canvas.addEventListener('pointerdown', e => { dragging = { x: e.clientX, y: e.clientY, cx: state.cam.x, cy: state.cam.y, moved: false }; canvas.classList.add('grabbing'); canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+  if (dragging) { const dx = e.clientX - dragging.x, dy = e.clientY - dragging.y; if (Math.abs(dx) + Math.abs(dy) > 3) dragging.moved = true; state.cam.x = dragging.cx - dx / state.cam.scale; state.cam.y = dragging.cy + dy / state.cam.scale; draw(); return; }
+  const h = hit(px, py); const tip = $('tip');
+  if (!h) { tip.style.display = 'none'; if (state.hover) { state.hover = null; draw(); } return; }
+  const c = C();
+  if (h.kind === 'body') { const n = h.body.node; state.hover = n.nodeId; const auth = layout.fabric.get(n.nodeId); tip.innerHTML = `<b>${esc(n.name)}</b><span class="d mono">${esc(n.nodeId)}</span><div>${esc(KIND_LABEL[n.kind] ?? n.kind)} · ${esc(domainOf(n))} · <span style="color:${HEALTH_COLOR(c)[n.health]}">${esc(n.health)}</span></div><div class="d">${n.capabilities.length} capabilities · corpus ${esc(n.metadata?.corpus_grade ?? 'undeclared')} · ${auth ? auth.map(a => AUTH_LABEL[a]).join(', ') : 'unbound'}</div>`; }
+  else { const m = h.moon; state.hover = m.body.node.nodeId; tip.innerHTML = `<b class="mono">${esc(m.cap.capabilityId)}</b><div>${esc(m.cap.label)}</div><div class="d">${esc(m.cap.mode)} · ${esc(m.cap.approval)} · ${esc(m.cap.maturity ?? 'undeclared')}${m.cap.methodologyVersion ? ' · ' + esc(m.cap.methodologyVersion) : ''}</div>`; }
+  tip.style.display = 'block'; tip.style.left = Math.min(px + 14, W - 330) + 'px'; tip.style.top = (py + 14) + 'px'; draw();
+});
+canvas.addEventListener('pointerup', e => { const r = canvas.getBoundingClientRect(); if (dragging && !dragging.moved) { const h = hit(e.clientX - r.left, e.clientY - r.top); select(h ? (h.kind === 'body' ? h.body.node.nodeId : h.moon.body.node.nodeId) : null); } dragging = null; canvas.classList.remove('grabbing'); });
+canvas.addEventListener('pointerleave', () => { $('tip').style.display = 'none'; });
+canvas.addEventListener('wheel', e => { e.preventDefault(); const r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top; const [wx, wy] = toWorld(px, py); const f = Math.exp(-e.deltaY * 0.0015); state.cam.scale = Math.max(8, Math.min(400, state.cam.scale * f)); const [nx, ny] = toWorld(px, py); state.cam.x += wx - nx; state.cam.y += wy - ny; draw(); }, { passive: false });
+canvas.addEventListener('dblclick', e => { const r = canvas.getBoundingClientRect(); const h = hit(e.clientX - r.left, e.clientY - r.top); if (h) focusBody(h.kind === 'body' ? h.body.node.nodeId : h.moon.body.node.nodeId); });
+new ResizeObserver(resize).observe($('stage'));
+$('fit').onclick = fit; $('focus-sun').onclick = () => { if (layout.sun) { select(layout.sun.nodeId); focusBody(layout.sun.nodeId); } };
+$('back-now').onclick = () => setCursor(RECORDS.length);
+
+const LENSES = [['sky','Sky'],['tower','Control tower'],['ledger','Ledger'],['fabric','Fabric'],['posture','Posture'],['journal','Journal']];
+function renderRail() {
+  const sg = signalsOf(snap);
+  const k = { sky: `${snap.nodes.length}`, tower: `${sg.pending.length + sg.unavailable.length + sg.failing.length}`, ledger: `${snap.coordination.length}`, fabric: `${snap.fabric.syncs.length}`, posture: `${snap.nodes.filter(n => n.security).length}`, journal: `${state.cursor}/${RECORDS.length}` };
+  $('lenses').innerHTML = LENSES.map(([id, label]) => `<button class="lens-btn ${state.lens === id ? 'on' : ''}" data-lens="${id}"><span>${label}</span><span class="k ${id === 'tower' && k.tower !== '0' ? 'warn' : ''}">${k[id]}</span></button>`).join('');
+  $('lenses').querySelectorAll('button').forEach(b => b.onclick = () => setLens(b.dataset.lens));
+  $('moonsby').querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === state.moonsBy); b.onclick = () => { state.moonsBy = b.dataset.v; renderRail(); draw(); }; });
+  $('layers').innerHTML = Object.keys(state.layers).map(l => `<label><input type="checkbox" data-l="${l}" ${state.layers[l] ? 'checked' : ''}> ${l}</label>`).join('');
+  $('layers').querySelectorAll('input').forEach(i => i.onchange = () => { state.layers[i.dataset.l] = i.checked; draw(); });
+  const doms = [...new Set(snap.nodes.map(domainOf))].sort((a, b) => orbitIndex(a) - orbitIndex(b));
+  $('domains').innerHTML = doms.map(d => `<button class="fchip ${state.domains.has(d) ? 'on' : ''}" data-d="${d}">${d}<span class="c">${snap.nodes.filter(n => domainOf(n) === d).length}</span></button>`).join('');
+  $('domains').querySelectorAll('button').forEach(b => b.onclick = () => { const d = b.dataset.d; if (state.domains.has(d)) state.domains.delete(d); else state.domains.add(d); renderAll(); });
+  $('kinds').innerHTML = NODE_KINDS.map(kd => `<button class="fchip ${state.kinds.has(kd) ? 'on' : ''}" data-k="${kd}">${KIND_LABEL[kd]}<span class="c">${snap.nodes.filter(n => n.kind === kd).length}</span></button>`).join('');
+  $('kinds').querySelectorAll('button').forEach(b => b.onclick = () => { const kd = b.dataset.k; if (state.kinds.has(kd)) state.kinds.delete(kd); else state.kinds.add(kd); renderAll(); });
+  const c = C(), HC = HEALTH_COLOR(c), AC = AUTH_COLOR(c), moonMap = { mode: MODE_COLOR(c), maturity: MATURITY_COLOR(c), approval: APPROVAL_COLOR(c) }[state.moonsBy], SC = STATE_COLOR(c);
+  $('legend').innerHTML = [
+    `<div><span class="sw" style="background:${c.accent}"></span>sun · the coordinating node with the most relations</div>`,
+    ...HEALTHS.map(h => `<div><span class="sw" style="background:${HC[h]}"></span>body · ${h}</div>`),
+    ...Object.entries(moonMap).map(([k, v]) => `<div><span class="sw" style="background:${v};width:7px;height:7px"></span>moon · ${k}</div>`),
+    ...AUTHORITIES.map(a => `<div><span class="sw line" style="background:${AC[a]}"></span>fabric · ${AUTH_LABEL[a]} (dashed: declared, not synced)</div>`),
+    ...WORST_FIRST.map(s => `<div><span class="sw ring" style="border-color:${SC[s]}"></span>halo · weakest posture ${s}</div>`),
+    `<div><span class="sw line" style="background:${c.green};height:3px"></span>coordination · approved, never dispatched</div>`,
+  ].join('');
+}
+function setLens(id) { state.lens = id; document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === `view-${id}`)); canvas.style.visibility = id === 'sky' ? 'visible' : 'hidden'; document.querySelector('.skyhud').style.display = id === 'sky' ? 'flex' : 'none'; document.querySelector('.skynote').style.display = id === 'sky' ? 'block' : 'none'; renderRail(); renderView(); }
+
+const nodeLink = (id) => `<button class="link" data-goto="${esc(id)}">${esc(id)}</button>`;
+function bindGoto(root) { root.querySelectorAll('[data-goto]').forEach(b => b.onclick = (e) => { e.preventDefault(); select(b.dataset.goto); if (state.lens !== 'sky') setLens('sky'); focusBody(b.dataset.goto); }); root.querySelectorAll('[data-cursor]').forEach(b => b.onclick = () => setCursor(Number(b.dataset.cursor))); root.querySelectorAll('[data-verb]').forEach(b => b.onclick = () => openDrafter(b.dataset.verb, b.dataset.arg)); }
+function renderView() {
+  const c = C(), sg = signalsOf(snap), asOf = state.cursor < RECORDS.length ? ` · as of record ${state.cursor}` : '';
+  if (state.lens === 'tower') {
+    const card = (title, n, cls, body) => `<div class="card"><h3><span>${title}</span><span class="n ${cls}">${n}</span></h3>${body}</div>`;
+    const list = (ids, d) => ids.length ? `<ul>${ids.map(id => `<li>${nodeLink(id)}<span class="d">${d ? esc(d(id)) : ''}</span></li>`).join('')}</ul>` : '<p class="empty">none</p>';
+    $('view-tower').innerHTML = `<h2 class="lens-title">Control tower${asOf}</h2><p class="lens-sub">Exception-first, the way Payload's operations tower reads its journals: what is blocked, what waits on a decision, what nobody has looked at. Every figure is counted from the fold at this record; nothing is a score.</p><div class="tower">`
+      + card('Blocked', sg.blocked.length, sg.blocked.length ? 'bad' : 'ok', sg.blocked.length ? `<ul>${sg.blocked.map(b => `<li>${nodeLink(b.nodeId)}<span class="d">${esc(b.health)}${b.blocking.length ? ` · blocks ${b.blocking.length}` : ''}</span></li>`).join('')}</ul>` : '<p class="empty">no body is offline, critical or degraded</p>')
+      + card('Awaiting decision', sg.pending.length, sg.pending.length ? 'warn' : '', sg.pending.length ? `<ul>${sg.pending.map(q => `<li><span class="mono">${esc(q.coordinationId)}</span><span class="d"><button class="btn small" data-verb="approve" data-arg="${esc(q.coordinationId)}">decide</button></span></li>`).join('')}</ul>` : '<p class="empty">nothing waits on an operator</p>')
+      + card('Failing posture', sg.failing.length, sg.failing.length ? 'bad' : 'ok', list(sg.failing, () => 'weakest dimension failing'))
+      + card('Unsigned posture', sg.unsigned.length, sg.unsigned.length ? 'warn' : '', list(sg.unsigned, id => `by ${nodeById(id)?.security?.attestedBy ?? ''}`))
+      + card('Unobserved', sg.unobserved.length, sg.unobserved.length ? 'warn' : 'ok', list(sg.unobserved.slice(0, 40)) + (sg.unobserved.length > 40 ? `<p class="empty">and ${sg.unobserved.length - 40} more</p>` : ''))
+      + card('Stale', sg.stale.length, sg.stale.length ? 'warn' : 'ok', list(sg.stale))
+      + card('Unbound systems', sg.unbound.length, sg.unbound.length ? 'warn' : 'ok', list(sg.unbound, id => nodeById(id)?.metadata?.corpus_role ?? ''))
+      + card('Refusals digest', state.refusals.length, state.refusals.length ? 'warn' : '', state.refusals.length ? `<ul>${state.refusals.slice(-8).reverse().map(r => `<li><span class="mono" style="color:${c.red}">${esc(r.code)}</span><span class="d" style="white-space:normal;text-align:left">${esc(r.detail)}</span></li>`).join('')}</ul>` : '<p class="empty">everything the twin declined to draft this session lands here, the way Payload records what it refused to answer</p>')
+      + `</div>`;
+  }
+  if (state.lens === 'ledger') {
+    $('view-ledger').innerHTML = `<h2 class="lens-title">Ledger${asOf}</h2><p class="lens-sub">Every coordination record: what one system asked of another, and what an operator decided. Approval is not execution — every record reads <span class="mono">not_dispatched</span>, and an approved one still means only that a separate adapter may act.</p>`
+      + (snap.coordination.length ? `<div class="tablewrap"><table><thead><tr><th>id</th><th>requester</th><th>capability</th><th>target</th><th>status</th><th>dispatch</th><th>requested</th><th></th></tr></thead><tbody>${snap.coordination.map(q => `<tr><td class="mono">${esc(q.coordinationId)}</td><td>${nodeLink(q.requesterNodeId)}</td><td class="mono">${esc(q.capabilityId)} <span class="badge">${esc(q.requestedMode)}</span></td><td>${nodeLink(q.targetNodeId)}</td><td><span class="badge c" style="--x:${STATUS_COLOR(c)[q.status]}">${esc(q.status)}</span>${q.resolvedBy ? `<div style="color:var(--muted)">${esc(q.resolvedBy)} · ${esc(q.resolutionNote ?? '')}</div>` : ''}</td><td><span class="badge">${esc(q.dispatch)}</span></td><td class="mono">${fmt(q.requestedAt)}<div style="color:var(--muted)">${esc(q.requestedBy)}</div></td><td>${q.status === 'approval_required' ? `<button class="btn small" data-verb="approve" data-arg="${esc(q.coordinationId)}">decide</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="lens-sub">No coordination records at this point in the journal.</p>');
+  }
+  if (state.lens === 'fabric') {
+    const AC = AUTH_COLOR(c);
+    $('view-fabric').innerHTML = `<h2 class="lens-title">Fabric${asOf}</h2><p class="lens-sub">Which systems participate in the data platform, under which authority. A binding is a contract the plane checked against the system's corpus role — a projection never binds as canonical state — and not a record that bytes moved. None have: the platform is real SQL and is not deployed. Registration is operator-local; this twin cannot draft it, and says so if asked.</p>`
+      + `<div class="tablewrap"><table><thead><tr><th>system</th><th>role</th><th>authority</th><th>mode</th><th>identity classes</th><th>representations</th><th>anchor</th><th>registered</th></tr></thead><tbody>${snap.fabric.syncs.map(s => `<tr><td>${nodeLink(s.systemNodeId)}</td><td>${esc(nodeById(s.systemNodeId)?.metadata?.corpus_role ?? '')}${nodeById(s.systemNodeId)?.metadata?.corpus_owner_of ? `<div style="color:var(--muted)">owns ${esc(nodeById(s.systemNodeId).metadata.corpus_owner_of)}</div>` : ''}</td><td><span class="badge c" style="--x:${AC[s.authority]}">${esc(s.authority)}</span></td><td class="mono">${esc(s.mode)}</td><td style="color:var(--muted)">${esc(s.identityKinds.join(' '))}</td><td style="color:var(--muted)">${esc(s.representations.join(' '))}</td><td>${nodeLink(s.fabricNodeId)}</td><td class="mono">${fmt(s.registeredAt)}<div style="color:var(--muted)">${esc(s.registeredBy ?? '—')}</div></td></tr>`).join('')}</tbody></table></div>`
+      + `<h3 style="margin:18px 0 6px;font-size:12px">Unbound systems whose role admits a binding · ${sg.unbound.length}</h3><p class="lens-sub">${sg.unbound.length ? sg.unbound.map(id => nodeLink(id) + ` <span style="color:var(--muted)">(${esc(nodeById(id)?.metadata?.corpus_role)})</span>`).join(' · ') : 'none'}</p>`
+      + `<div class="tablewrap" style="max-width:720px"><table><thead><tr><th>corpus role</th><th>may bind as</th><th>why</th></tr></thead><tbody><tr><td>hold, owning a domain</td><td>canonical_state · evidence_source</td><td>one owner per domain (COR-002)</td></tr><tr><td>hold, owning none</td><td>evidence_source</td><td>it holds evidence, not the state</td></tr><tr><td>feed</td><td>evidence_source</td><td>a feed supplies evidence and nothing else</td></tr><tr><td>transform</td><td>derived_compute</td><td>a proposal until admitted (COR-006)</td></tr><tr><td>project</td><td>projection</td><td>a projection never writes canonical truth (COR-009, PLAT-004)</td></tr><tr><td>coordinate</td><td>canonical_state</td><td>the journal is its own canonical state</td></tr></tbody></table></div>`;
+  }
+  if (state.lens === 'posture') {
+    const SC = STATE_COLOR(c), attested = snap.nodes.filter(n => n.security);
+    const cell = (dim) => { const states = {}; for (const n of attested) for (const s of n.security.signals) if (s.dimension === dim) states[s.state] = (states[s.state] ?? 0) + 1; const worst = WORST_FIRST.find(s => states[s]); return `<tr><td>${esc(dim.replace(/_/g, ' '))}</td>${WORST_FIRST.map(s => `<td class="mono" style="text-align:right;color:${states[s] ? SC[s] : 'var(--faint)'}">${states[s] ?? '·'}</td>`).join('')}<td>${worst ? `<span class="badge c" style="--x:${SC[worst]}">${worst}</span>` : '<span class="badge">unattested</span>'}</td></tr>`; };
+    $('view-posture').innerHTML = `<h2 class="lens-title">Posture${asOf}</h2><p class="lens-sub">The constellation: eleven dimensions folded across every attested body, weakest link per dimension. Evidence only — states, coverage and counts — and beside each attestation, who vouched: an independent collector's signature, or the submitting principal's word alone.</p>`
+      + `<div class="tablewrap" style="max-width:820px"><table><thead><tr><th>dimension</th>${WORST_FIRST.map(s => `<th style="text-align:right">${s}</th>`).join('')}<th>worst</th></tr></thead><tbody>${DIMENSIONS.map(cell).join('')}</tbody></table></div>`
+      + `<h3 style="margin:18px 0 6px;font-size:12px">Attested bodies · ${attested.length} of ${snap.nodes.length}</h3>`
+      + (attested.length ? `<div class="tablewrap"><table><thead><tr><th>body</th><th>weakest</th><th>signals</th><th>method</th><th>attested</th><th>vouched by</th></tr></thead><tbody>${attested.map(n => `<tr><td>${nodeLink(n.nodeId)}</td><td><span class="badge c" style="--x:${SC[weakest(n)]}">${esc(weakest(n))}</span></td><td class="mono">${n.security.signals.length}</td><td>${esc(n.security.method.replace(/_/g, ' '))}</td><td class="mono">${fmt(n.security.attestedAt)}</td><td>${n.security.signer ? `<span class="mono">${esc(n.security.signer.signerId)}</span> · signed` : `<span style="color:var(--accent)">unsigned</span> · ${esc(n.security.attestedBy)}`}</td></tr>`).join('')}</tbody></table></div>` : '<p class="lens-sub">Nothing attested at this record.</p>');
+  }
+  if (state.lens === 'journal') {
+    $('view-journal').innerHTML = `<h2 class="lens-title">Journal</h2><p class="lens-sub">The plane's append-only chain, oldest first, with the record hash each entry landed at. Click a record to draw the sky as it stood when that record was the head — knowledge as of then, not now.</p>`
+      + `<div class="tablewrap"><table><thead><tr><th>#</th><th>recorded</th><th>kind</th><th>subject</th><th>actor</th><th>record hash</th></tr></thead><tbody>${RECORDS.map((r, i) => { const e = r.event; const subject = e.node?.nodeId ?? e.relation?.relationId ?? e.observation?.nodeId ?? e.posture?.nodeId ?? e.request?.coordinationId ?? e.coordinationId ?? e.manifest?.syncId ?? ''; const actor = e.observation?.source ?? e.posture?.attestedBy ?? e.request?.requestedBy ?? e.resolvedBy ?? e.registeredBy ?? ''; return `<tr class="row-click" data-cursor="${i + 1}" style="${i + 1 === state.cursor ? 'outline:1px solid var(--accent)' : ''}"><td class="mono">${i + 1}</td><td class="mono">${fmt(e.recordedAt)}</td><td class="mono">${esc(e.kind)}</td><td class="mono">${esc(subject)}</td><td style="color:var(--muted)">${esc(actor)}</td><td class="mono" style="color:var(--muted)">${short(r.recordHash)}…</td></tr>`; }).join('')}</tbody></table></div>`;
+  }
+  bindGoto($('stage'));
+}
+
+function select(id) { state.selected = id; renderInspector(); draw(); }
+function renderInspector() {
+  const el = $('insp'); const n = state.selected ? nodeById(state.selected) : null; const c = C();
+  if (!n) { el.innerHTML = `<h2>${esc(HEAD.nodes.length)} bodies, one sun</h2><div class="sub">Click a body on the sky, or a name anywhere, to inspect it and act on it. Every verb here is a governed command the control plane accepts, or a read the twin already holds. There is no delete — history is append-only — and nothing dispatches.</div>${state.selected ? `<div class="refusal"><b>NOT AT THIS RECORD</b>${esc(state.selected)} is not registered as of record ${state.cursor}. <button class="more" id="ins-now">back to now</button></div>` : ''}`; const b = $('ins-now'); if (b) b.onclick = () => setCursor(RECORDS.length); return; }
+  const md = n.metadata ?? {}, HC = HEALTH_COLOR(c), MC = MATURITY_COLOR(c), SC = STATE_COLOR(c), AC = AUTH_COLOR(c), GC = GRADE_COLOR(c);
+  const bindings = snap.fabric.syncs.filter(s => s.systemNodeId === n.nodeId), anchored = snap.fabric.syncs.filter(s => s.fabricNodeId === n.nodeId);
+  const out = snap.relations.filter(r => r.sourceNodeId === n.nodeId), inc = snap.relations.filter(r => r.targetNodeId === n.nodeId), coord = snap.coordination.filter(q => q.requesterNodeId === n.nodeId || q.targetNodeId === n.nodeId);
+  const w = weakest(n), isSun = layout.sun?.nodeId === n.nodeId;
+  const fails = words(md.corpus_fails), planes = md.api_planes ?? '';
+  el.innerHTML = `
+    <div><div class="sub mono" style="color:var(--accent)">${isSun ? 'sun' : 'body'} · ${esc(domainOf(n))}</div><h2>${esc(n.name)}</h2><div class="sub mono">${esc(n.nodeId)}</div></div>
+    <div><span class="badge">${esc(KIND_LABEL[n.kind] ?? n.kind)}</span><span class="badge c" style="--x:${HC[n.health]}">${esc(n.health)}</span>${md.maturity ? `<span class="badge">${esc(md.maturity)}</span>` : ''}${n.uri ? `<span class="badge mono" title="A name in the canonical identity space, never an address">${esc(n.uri)}</span>` : ''}</div>
+    <p class="desc" id="desc">${esc(n.description)}</p><button class="more" id="desc-more">more</button>
+    <div class="facets">
+      <div><span>corpus</span><span><span class="badge c" style="--x:${GC[md.corpus_grade] ?? c.grey}">${esc(md.corpus_grade ?? 'undeclared')}</span>${esc(md.corpus_role ?? '')}${md.corpus_owner_of ? ` · owns ${esc(md.corpus_owner_of)}` : ''}${fails.length ? ` · <span style="color:var(--accent)">fails ${esc(fails.join(' '))}</span>` : ''}</span></div>
+      ${planes ? `<div><span>planes</span><span>${esc(planes)}${md.api_writes ? ` · ${md.api_writes} writes` : ''}${md.api_operator_only ? ` · ${md.api_operator_only} operator-local` : ''}</span></div>` : ''}
+      ${md.person_data ? `<div><span>people</span><span>${esc(md.person_data)}${md.person_data_exception ? ` · ${esc(md.person_data_exception)}` : ''}</span></div>` : ''}
+      ${md.methodology ? `<div><span>method</span><span class="mono">${esc(md.methodology)} · ${esc(md.methodology_status ?? '')}</span></div>` : ''}
+      <div><span>fabric</span><span>${bindings.length ? bindings.map(b => `<span class="badge c" style="--x:${AC[b.authority]}">${AUTH_LABEL[b.authority]}</span>`).join('') + '<span style="color:var(--muted)">declared, not synced</span>' : anchored.length ? `anchor for ${anchored.length} systems${md.fabric_layers ? ` · provides ${esc(md.fabric_layers)}` : ''}` : '<span style="color:var(--muted)">unbound</span>'}</span></div>
+      <div><span>posture</span><span>${w ? `<span style="color:${SC[w]}">${w}</span> at weakest · ${n.security.signer ? `signed by <span class="mono">${esc(n.security.signer.signerId)}</span>` : '<span style="color:var(--accent)">unsigned</span>, the principal’s word'}` : '<span style="color:var(--muted)">never attested</span>'}</span></div>
+      ${n.lastObservation ? `<div><span>observed</span><span>${fmt(n.lastObservedAt)} · ${esc(n.lastObservation.source)} · <span style="color:var(--muted)">${esc(n.lastObservation.detail)}</span></span></div>` : ''}
+      ${md.data_domains ? `<div><span>subjects</span><span style="color:var(--muted)">${esc(md.data_domains)}</span></div>` : ''}
+    </div>
+    <h3>act · governed commands, drafted</h3>
+    <div class="verbs">
+      <button class="btn" data-v="navigate" title="Fly the sky to this body">navigate</button>
+      <button class="btn" data-v="observe" title="record_observation">observe</button>
+      <button class="btn" data-v="secure" title="record_security_posture — evidence only">secure</button>
+      <button class="btn" data-v="edit" title="register_node: a revision, nothing overwritten">edit</button>
+      <button class="btn" data-v="retire" title="There is no delete. Retiring is a revision with maturity archived.">retire</button>
+      <button class="btn" data-v="download" title="This body, its relations, bindings and coordination, as JSON">export</button>
+    </div>
+    <h3>capabilities · ${n.capabilities.length}</h3>
+    <div class="caps">${n.capabilities.slice(0, 60).map(cp => `<div class="cap"><div class="row"><span class="id" title="${esc(cp.description)}">${esc(cp.capabilityId)}</span><span><span class="badge c" style="--x:${MODE_COLOR(c)[cp.mode]}">${cp.mode}</span><span class="badge ${cp.approval === 'operator' ? 'c' : ''}" style="--x:${c.accent}">${cp.approval}</span><span class="badge c" style="--x:${MC[cp.maturity ?? 'undeclared']}">${cp.maturity ?? 'undeclared'}</span></span></div><div class="lbl">${esc(cp.label)}${cp.methodologyVersion ? ` · <span class="mono">${esc(cp.methodologyVersion)}</span>` : ''}${cp.mode !== 'observe' ? ` · <button class="more" data-req="${esc(cp.capabilityId)}">request ${cp.mode}</button>` : ''}</div></div>`).join('')}${n.capabilities.length > 60 ? `<div class="sub">and ${n.capabilities.length - 60} more</div>` : ''}</div>
+    <h3>relations · ${out.length + inc.length}</h3>
+    <div class="links">${out.map(r => `<a href="#" data-goto="${esc(r.targetNodeId)}"><span>${esc(RELATION_LABEL[r.kind])} →</span> ${esc(r.targetNodeId)}</a>`).join('')}${inc.map(r => `<a href="#" data-goto="${esc(r.sourceNodeId)}">${esc(r.sourceNodeId)} <span>→ ${esc(RELATION_LABEL[r.kind])}</span></a>`).join('')}${!out.length && !inc.length ? '<div class="sub">no declared relations</div>' : ''}</div>
+    ${coord.length ? `<h3>coordination · ${coord.length}</h3><div class="sig">${coord.map(q => `<div><span class="mono">${esc(q.coordinationId)}</span><span><span class="badge c" style="--x:${STATUS_COLOR(c)[q.status]}">${q.status}</span><span class="badge">${q.dispatch}</span></span></div>`).join('')}</div>` : ''}
+    ${n.security ? `<h3>posture · ${n.security.signals.length} signals</h3><div class="sig">${n.security.signals.map(s => `<div title="${esc(s.summary ?? '')}"><span>${esc(s.dimension.replace(/_/g, ' '))}</span><span class="s" style="color:${SC[s.state]}">${s.state}${s.coverage !== undefined ? ` · ${Math.round(s.coverage * 100)}%` : ''}</span></div>`).join('')}</div>` : ''}
+    <h3>metadata</h3>
+    <div class="facets">${Object.entries(md).filter(([k]) => !/^(corpus_|api_|data_domains|surfaces|methodology|person_data|fabric_layers)/.test(k)).map(([k, v]) => `<div><span>${esc(k)}</span><span style="word-break:break-word">${esc(String(v))}</span></div>`).join('')}</div>`;
+  $('desc-more').onclick = () => { $('desc').classList.toggle('open'); $('desc-more').textContent = $('desc').classList.contains('open') ? 'less' : 'more'; };
+  el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { const v = b.dataset.v; if (v === 'navigate') { if (state.lens !== 'sky') setLens('sky'); focusBody(n.nodeId); } else if (v === 'download') exportBody(n); else openDrafter(v, n.nodeId); });
+  el.querySelectorAll('[data-req]').forEach(b => b.onclick = () => openDrafter('request', `${n.nodeId}|${b.dataset.req}`));
+  el.querySelectorAll('[data-goto]').forEach(a => a.onclick = (e) => { e.preventDefault(); select(a.dataset.goto); focusBody(a.dataset.goto); });
+}
+function exportBody(n) { showModal(JSON.stringify({ schema: 'notations.twin.export.body.v1', asOfRecord: state.cursor, revision: snap.revision, node: n, relations: snap.relations.filter(r => r.sourceNodeId === n.nodeId || r.targetNodeId === n.nodeId), fabric: snap.fabric.syncs.filter(s => s.systemNodeId === n.nodeId || s.fabricNodeId === n.nodeId), coordination: snap.coordination.filter(q => q.requesterNodeId === n.nodeId || q.targetNodeId === n.nodeId) }, null, 2), 'Export'); }
+
+const now = () => new Date().toISOString();
+const draftBase = (action) => ({ requestId: `twin:${action}:${state.seq++}:${Date.now().toString(36)}`, actorId: 'operator:twin', submittedAt: now(), expectedRevision: headFold.revision, action });
+function openDrafter(verb, arg) {
+  const d = $('drafter'); d.hidden = false;
+  const field = (name, label, control) => `<label>${label}${control}</label>`;
+  const sel = (name, opts, v) => `<select name="${name}">${opts.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  const bodies = snap.nodes.map(n => n.nodeId);
+  let title = '', body = '', build = null;
+  if (verb === 'observe') { title = `observe · record_observation · ${arg}`; body = field('health', 'health', sel('health', HEALTHS, 'healthy')) + field('source', 'source', sel('source', SOURCES, 'operator')) + field('detail', 'detail · ≤600 characters, no addresses, no links', `<textarea name="detail" placeholder="What was seen, in a sentence."></textarea>`);
+    build = f => ({ ...draftBase('record_observation'), nodeId: arg, health: f.health, observedAt: now(), source: f.source, detail: f.detail }); }
+  if (verb === 'secure') { title = `secure · record_security_posture · ${arg}`; body = field('method', 'method', sel('method', METHODS, 'operator_review')) + `<div class="sub" style="font-size:11px">Signals: a state, a coverage fraction and one sentence per dimension. Credentials, addresses, advisories, versions, paths and links are refused at the boundary.</div>` + [0,1,2].map(i => `<div class="sigrow">${sel(`dim${i}`, ['—', ...DIMENSIONS], i === 0 ? 'identity' : '—')}${sel(`st${i}`, STATES, 'adequate')}<input name="cov${i}" type="number" min="0" max="1" step="0.05" placeholder="cov"></div><input name="sum${i}" placeholder="summary, one sentence">`).join('') + `<div class="sub" style="font-size:11px">An independent signature is made with a collector's key the twin does not hold; this draft rests on the principal that submits it.</div>`;
+    build = f => ({ ...draftBase('record_security_posture'), nodeId: arg, attestedAt: now(), method: f.method, signals: [0,1,2].filter(i => f[`dim${i}`] && f[`dim${i}`] !== '—').map(i => ({ dimension: f[`dim${i}`], state: f[`st${i}`], ...(f[`cov${i}`] !== '' ? { coverage: Number(f[`cov${i}`]) } : {}), ...(f[`sum${i}`] ? { summary: f[`sum${i}`] } : {}) })) }); }
+  if (verb === 'edit' || verb === 'retire' || verb === 'add') {
+    const n = verb === 'add' ? null : nodeById(arg); title = verb === 'add' ? 'add · register_node' : `${verb} · register_node · ${arg} (a revision; nothing is overwritten)`;
+    const meta = n ? { ...n.metadata, ...(verb === 'retire' ? { maturity: 'archived' } : {}) } : { domain: 'platform', maturity: 'prototype', person_data: 'refused' };
+    body = field('nodeId', 'nodeId', `<input name="nodeId" value="${esc(n?.nodeId ?? '')}" ${n ? 'readonly' : ''}>`) + field('name', 'name', `<input name="name" value="${esc(n?.name ?? '')}">`) + field('kind', 'kind', sel('kind', NODE_KINDS, n?.kind ?? 'api')) + field('description', 'description', `<textarea name="description">${esc(n?.description ?? '')}</textarea>`) + field('metadata', 'metadata · JSON, flat; keys that read as credentials or contact data are refused', `<textarea name="metadata">${esc(JSON.stringify(meta, null, 1))}</textarea>`) + field('capabilities', 'capabilities · JSON array of { capabilityId, label, description, mode, approval, maturity? }', `<textarea name="capabilities" style="min-height:90px">${esc(JSON.stringify(n ? n.capabilities : [{ capabilityId: 'example.read', label: 'Read a projection', description: 'Returns a published projection.', mode: 'observe', approval: 'automatic' }], null, 1))}</textarea>`) + (verb === 'retire' ? `<div class="sub" style="font-size:11px">There is no delete: retiring a body is a revision with <span class="mono">maturity: archived</span>, and every earlier state stays in the journal.</div>` : '');
+    build = f => { let metadata, capabilities; try { metadata = JSON.parse(f.metadata); } catch { throw invalid('metadata is not valid JSON.'); } try { capabilities = JSON.parse(f.capabilities); } catch { throw invalid('capabilities is not valid JSON.'); } return { ...draftBase('register_node'), node: { nodeId: f.nodeId, name: f.name, kind: f.kind, description: f.description, capabilities, metadata, location: n?.location ?? null } }; }; }
+  if (verb === 'request') { const [target, cap] = String(arg).split('|'); const t = nodeById(target); const caps = t ? t.capabilities.filter(cp => cp.mode !== 'observe') : []; title = `request · request_capability · ${target}`;
+    body = field('requester', 'requester', sel('requester', bodies.filter(b => b !== target), bodies.find(b => b !== target))) + field('capability', 'capability · propose or execute', sel('capability', caps.map(cp => cp.capabilityId), cap)) + field('purpose', 'purpose', `<textarea name="purpose" placeholder="Why this system should act, in a sentence an operator can decide on."></textarea>`) + `<div class="sub" style="font-size:11px">An execute capability lands as <span class="mono">approval_required</span>; a propose as <span class="mono">ready</span>. Either way <span class="mono">dispatch: not_dispatched</span>.</div>`;
+    build = f => { const cp = caps.find(x => x.capabilityId === f.capability); return { ...draftBase('request_capability'), coordinationId: `coord-twin-${state.seq}`, requesterNodeId: f.requester, targetNodeId: target, capabilityId: f.capability, requestedMode: cp?.mode ?? 'execute', purpose: f.purpose }; }; }
+  if (verb === 'approve') { const q = snap.coordination.find(x => x.coordinationId === arg); title = `decide · resolve_coordination · ${arg}`; body = `<div class="sub" style="font-size:11px">${q ? `${esc(q.requesterNodeId)} asked ${esc(q.targetNodeId)} for <span class="mono">${esc(q.capabilityId)}</span> (${esc(q.requestedMode)}): ${esc(q.purpose)}` : ''}</div>` + field('decision', 'decision', sel('decision', ['approved', 'rejected'], 'approved')) + field('note', 'note', `<textarea name="note" placeholder="The reason, for the record."></textarea>`) + `<div class="sub" style="font-size:11px">Separation of duties: the actor that requested this may not resolve it. Approval is not execution.</div>`;
+    build = f => ({ ...draftBase('resolve_coordination'), coordinationId: arg, decision: f.decision, note: f.note }); }
+  if (!build) { d.hidden = true; return; }
+  d.innerHTML = `<h3><span>${esc(title)}</span><button class="more" id="dr-close">close</button></h3>${body}<div class="actions"><button class="btn" id="dr-cancel">cancel</button><button class="btn primary" id="dr-draft">draft</button></div><div id="dr-out"></div>`;
+  $('dr-close').onclick = $('dr-cancel').onclick = () => { d.hidden = true; };
+  $('dr-draft').onclick = () => { const f = {}; d.querySelectorAll('[name]').forEach(i => f[i.name] = i.value); try { const cmd = build(f); validateCommand(cmd, snap); state.drafts.push(cmd); $('dr-out').innerHTML = `<div class="accepted">Drafted <span class="mono">${esc(cmd.action)}</span> as <span class="mono">${esc(cmd.requestId)}</span>, against revision <span class="mono">${short(cmd.expectedRevision)}</span>. Held, not sent.</div>`; renderStrip(); } catch (e) { refuse(e); $('dr-out').innerHTML = `<div class="refusal"><b>${esc(e.code ?? 'REFUSED')}</b>${esc(e.message)}<div>${esc(e.remedy ?? '')}</div></div>`; } };
+  d.scrollIntoView({ block: 'nearest' });
+}
+function refuse(e) { state.refusals.push({ code: e.code ?? 'REFUSED', detail: e.message, remedy: e.remedy ?? '', at: now() }); if (state.lens === 'tower') renderView(); renderStrip(); }
+
+function tokens(s) { const out = []; const re = /"([^"]*)"|'([^']*)'|(\S+)/g; let m; while ((m = re.exec(s))) out.push(m[1] ?? m[2] ?? m[3]); return out; }
+function say(text, cls) { const o = $('cmdout'); o.innerHTML = `<span class="${cls ?? ''}">${esc(text)}</span>`; }
+function runCommand(line) {
+  const t = tokens(line); if (!t.length) return; const [verb, ...rest] = t;
+  const need = (n, usage) => { if (rest.length < n) throw invalid(`usage: ${usage}`); };
+  try {
+    switch (verb) {
+      case 'help': say(['help', 'goto <nodeId>', 'find <text> · find clear', 'asof <record#> · asof now', 'fit · sun', 'colour mode|maturity|approval', 'observe <nodeId> <health> "<detail>" [source]', 'secure <nodeId> <dimension>=<state>[,<dimension>=<state>…] "<summary>" [method]', 'request <requester> <target> <capabilityId> "<purpose>"', 'approve|reject <coordinationId> "<note>"', 'drafts · drafts clear', 'lens sky|tower|ledger|fabric|posture|journal'].join('\n')); return;
+      case 'goto': need(1, 'goto <nodeId>'); if (!nodeById(rest[0])) throw new Refusal('NODE_NOT_FOUND', `${rest[0]} is not registered as of record ${state.cursor}.`, 'Try find, or scrub to now.'); select(rest[0]); if (state.lens !== 'sky') setLens('sky'); focusBody(rest[0]); say(`→ ${rest[0]}`, 'ok'); return;
+      case 'find': state.search = rest[0] === 'clear' ? '' : rest.join(' '); $('search').value = state.search; renderAll(); say(state.search ? `${visibleIds().size} bodies match "${state.search}"` : 'search cleared', 'ok'); return;
+      case 'asof': need(1, 'asof <record#>|now'); setCursor(rest[0] === 'now' ? RECORDS.length : Math.max(0, Math.min(RECORDS.length, Number(rest[0]) || 0))); say(`knowledge as of record ${state.cursor} · ${short(snap.revision)}`, 'ok'); return;
+      case 'fit': fit(); return;
+      case 'sun': if (layout.sun) { select(layout.sun.nodeId); focusBody(layout.sun.nodeId); } return;
+      case 'colour': case 'color': need(1, 'colour mode|maturity|approval'); if (!['mode','maturity','approval'].includes(rest[0])) throw invalid('colour mode|maturity|approval'); state.moonsBy = rest[0]; renderRail(); draw(); say(`moons coloured by ${rest[0]}`, 'ok'); return;
+      case 'lens': need(1, 'lens sky|tower|ledger|fabric|posture|journal'); if (!LENSES.some(([id]) => id === rest[0])) throw invalid('lens sky|tower|ledger|fabric|posture|journal'); setLens(rest[0]); return;
+      case 'drafts': if (rest[0] === 'clear') { state.drafts = []; renderStrip(); say('drafts cleared', 'ok'); } else showDrafts(); return;
+      case 'observe': { need(3, 'observe <nodeId> <health> "<detail>" [source]'); const cmd = { ...draftBase('record_observation'), nodeId: rest[0], health: rest[1], observedAt: now(), source: rest[3] ?? 'operator', detail: rest[2] }; validateCommand(cmd, snap); state.drafts.push(cmd); renderStrip(); say(`drafted record_observation ${rest[0]} ${rest[1]} · held, not sent`, 'ok'); return; }
+      case 'secure': { need(3, 'secure <nodeId> <dim>=<state>[,…] "<summary>" [method]'); const signals = rest[1].split(',').map(p => { const [dimension, s] = p.split('='); return { dimension, state: s, summary: rest[2] }; }); const cmd = { ...draftBase('record_security_posture'), nodeId: rest[0], attestedAt: now(), method: rest[3] ?? 'operator_review', signals }; validateCommand(cmd, snap); state.drafts.push(cmd); renderStrip(); say(`drafted record_security_posture ${rest[0]} · ${signals.length} signal(s) · unsigned, the principal's word`, 'ok'); return; }
+      case 'request': { need(4, 'request <requester> <target> <capabilityId> "<purpose>"'); const t = nodeById(rest[1]); const cp = t?.capabilities.find(x => x.capabilityId === rest[2]); const cmd = { ...draftBase('request_capability'), coordinationId: `coord-twin-${state.seq}`, requesterNodeId: rest[0], targetNodeId: rest[1], capabilityId: rest[2], requestedMode: cp?.mode ?? 'execute', purpose: rest[3] }; validateCommand(cmd, snap); state.drafts.push(cmd); renderStrip(); say(`drafted request_capability ${cmd.coordinationId} → ${cp.mode === 'execute' ? 'approval_required' : 'ready'} · not_dispatched`, 'ok'); return; }
+      case 'approve': case 'reject': { need(2, `${verb} <coordinationId> "<note>"`); const cmd = { ...draftBase('resolve_coordination'), coordinationId: rest[0], decision: verb === 'approve' ? 'approved' : 'rejected', note: rest[1] }; validateCommand(cmd, snap); state.drafts.push(cmd); renderStrip(); say(`drafted resolve_coordination ${rest[0]} ${cmd.decision} · approval is not execution`, 'ok'); return; }
+      case 'bind': case 'register_fabric_sync': throw new Refusal('ACTION_OPERATOR_LOCAL', 'Binding a system to the fabric is operator-local: run at the host against the journal, never over a plane.', 'node ecosystem/fabric.mjs --journal <path>');
+      case 'delete': case 'remove': throw new Refusal('CONTROL_PLANE_COMMAND_INVALID', 'There is no delete. History is append-only.', 'Retire a body with a revision: edit it and set maturity to archived.');
+      default: throw invalid(`${verb} is not a verb the twin knows.`, 'Type help.');
+    }
+  } catch (e) { refuse(e); say(`${e.code ?? 'REFUSED'} · ${e.message}${e.remedy ? '\n' + e.remedy : ''}`, 'bad'); }
+}
+$('cmd').addEventListener('keydown', e => { if (e.key === 'Enter') { runCommand(e.target.value); e.target.value = ''; } });
+
+function setCursor(k) { state.cursor = k; snap = snapAt(); layout = layoutOf(snap); renderAll(); }
+function showDrafts() { showModal(JSON.stringify({ schema: 'notations.twin.drafts.v1', draftedAgainstRevision: headFold.revision, note: 'Submit one at a time to POST /v1/commands, each with the then-current revision; the plane refuses a stale one with REVISION_CONFLICT. Nothing here was sent.', commands: state.drafts }, null, 2), 'Drafted commands'); }
+function showModal(text, title) { $('modal').classList.add('on'); $('modal-text').value = text; $('modal-title').textContent = title; }
+$('modal-close').onclick = () => $('modal').classList.remove('on'); $('modal-clear').onclick = () => { state.drafts = []; renderStrip(); $('modal').classList.remove('on'); };
+$('modal-copy').onclick = async () => { try { await navigator.clipboard.writeText($('modal-text').value); $('modal-copy').textContent = 'copied'; } catch { $('modal-text').select(); $('modal-copy').textContent = 'select all, then copy'; } setTimeout(() => { $('modal-copy').textContent = 'copy'; }, 1800); };
+function renderStrip() {
+  const f = fidelityOf(snap), sg = signalsOf(snap), past = state.cursor < RECORDS.length, r = RECORDS[state.cursor - 1];
+  $('axis').max = RECORDS.length; $('axis').value = state.cursor; $('axis').classList.toggle('past', past); $('back-now').hidden = !past;
+  $('axis-pos').textContent = `${state.cursor} of ${RECORDS.length}${past ? ' · as known then' : ' · now'}`;
+  $('axis-kind').innerHTML = r ? `<b>${esc(r.event.kind)}</b> · ${esc(r.event.node?.nodeId ?? r.event.relation?.relationId ?? r.event.observation?.nodeId ?? r.event.posture?.nodeId ?? r.event.request?.coordinationId ?? r.event.coordinationId ?? r.event.manifest?.syncId ?? '')}` : 'before the first record: an empty journal';
+  $('axis-at').textContent = r ? fmt(r.event.recordedAt) : '';
+  $('axis-note').textContent = past ? 'The sky is drawn from the journal prefix ending at this record, at that record’s own hash. Drafts still act on now.' : 'Scrub left to see the estate as it was known at any record. A live twin asks the plane for each fold; this instance folds the exported journal itself.';
+  $('rev-chip').textContent = `${past ? 'as of' : 'head'} · ${short(snap.revision)}`;
+  $('fidelity').innerHTML = [['observed', f.observed], ['attested', f.attested], ['signed', f.signed, f.attested && !f.signed ? 'warn' : ''], ['bound', f.bound], ['blind', f.blind, f.blind ? 'warn' : ''], ['total', f.total]].map(([l, n, cls]) => `<div><div class="n ${cls ?? ''}">${n}</div><div class="l">${l}</div></div>`).join('');
+  $('fidelity-note').textContent = f.blind ? `${f.blind} of ${f.total} bodies have never been observed or attested: the twin knows they exist and nothing else.${f.attested && !f.signed ? ' No attestation carries an independent signature.' : ''}` : 'Every body has been observed or attested at least once.';
+  $('signals').innerHTML = [['unobserved', sg.unobserved.length, 'warn'], ['stale', sg.stale.length, 'warn'], ['unavailable', sg.unavailable.length, 'bad'], ['failing', sg.failing.length, 'bad'], ['unsigned', sg.unsigned.length, 'warn'], ['unbound', sg.unbound.length, 'warn'], ['deciding', sg.pending.length, 'warn']].map(([l, n, cls]) => `<div><div class="n ${n ? cls : ''}">${n}</div><div class="l">${l}</div></div>`).join('');
+  const d = driftOf(HEAD, snap);
+  $('drift-chip').textContent = past ? `drift from now: ${d.missing.length} missing · ${d.syncsMissing} bindings` : (d.clean ? 'this sky is the plane’s head' : 'drift from head');
+  $('drafts').innerHTML = `<div><div class="n">${state.drafts.length}</div><div class="l">commands drafted, none sent</div></div><div style="display:flex;gap:6px"><button class="btn small" id="dr-show" ${state.drafts.length ? '' : 'disabled'}>show</button><button class="btn small" id="dr-add">+ body</button></div><div class="l">${state.refusals.length} refused this session · in the control tower</div>`;
+  $('dr-show').onclick = showDrafts; $('dr-add').onclick = () => openDrafter('add');
+  $('counts').innerHTML = [['bodies', snap.nodes.length], ['moons', snap.nodes.reduce((n, x) => n + x.capabilities.length, 0)], ['arcs', snap.relations.length], ['bindings', snap.fabric.syncs.length], ['deciding', sg.pending.length]].map(([l, n]) => `<div><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+}
+$('axis').addEventListener('input', e => setCursor(Number(e.target.value)));
+$('search').addEventListener('input', e => { state.search = e.target.value; renderAll(); });
+document.addEventListener('keydown', e => { const tag = document.activeElement?.tagName; if (['INPUT','TEXTAREA','SELECT'].includes(tag)) { if (e.key === 'Escape') document.activeElement.blur(); return; } if (e.key === '/') { e.preventDefault(); $('search').focus(); } else if (e.key === ':') { e.preventDefault(); $('cmd').focus(); } else if (e.key === 'f') fit(); else if (e.key === 'Escape') select(null); else if (e.key === '[') setCursor(Math.max(0, state.cursor - 1)); else if (e.key === ']') setCursor(Math.min(RECORDS.length, state.cursor + 1)); });
+const mq = window.matchMedia('(prefers-color-scheme: light)'); if (mq.addEventListener) mq.addEventListener('change', () => renderAll());
+new MutationObserver(() => renderAll()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+function renderAll() { renderRail(); renderStrip(); renderInspector(); renderView(); draw(); }
+$('fold-chip').textContent = FOLD_AGREES ? 'fold agrees with the plane at head' : 'fold DISAGREES with the plane at head'; $('fold-chip').classList.add(FOLD_AGREES ? 'ok' : 'bad');
+$('fold-chip').title = FOLD_AGREES ? `This page folded the ${RECORDS.length}-record journal itself and reached the plane's head: same revision, same bodies and health, same decisions, same bindings.` : 'The local fold and the plane’s exported snapshot differ; trust the plane.';
+setLens('sky'); if (layout.sun) select(layout.sun.nodeId); renderAll(); resize();
+})();
+</script>
