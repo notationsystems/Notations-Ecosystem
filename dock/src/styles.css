@@ -150,3 +150,16 @@ table.grid th { color: var(--muted); font-weight: 500; font-size: 11px; text-tra
 /* Corpus lens: role filters above the standing grid. */
 .corpus-roles { display: flex; gap: 6px; flex-wrap: wrap; }
 .corpus-roles .tab { text-transform: none; letter-spacing: 0; }
+
+/* Evidence state — API-001. A non-success is styled as one: never green, never a value. */
+.truth { font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px; letter-spacing: 0.03em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.truth-verified { color: var(--green, #3f8f5f); }
+.truth-observed { color: var(--cyan, #2f8fa8); }
+.truth-unknown { color: var(--muted, #7b8794); border-style: dashed; }
+.truth-conflict { color: var(--red, #c2413a); }
+.evidenced { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.evidenced .why { color: var(--muted, #7b8794); font-size: 11px; }
+.evidenced .why-detail { color: var(--faint, #9aa5b1); font-size: 11px; }
+.evidenced .lbl { color: var(--faint, #9aa5b1); font-size: 11px; }
+.frame { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--line, #d8dde3); border-radius: 4px; }
+.frame-field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: baseline; font-size: 12px; }

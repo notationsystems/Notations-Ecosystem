@@ -1,0 +1,106 @@
+{
+  "schema": "notations.ecosystem.truth-classes.v1",
+  "description": "The closed set of truth-response classifications a Payload OS API response may carry, and what a frontend must render for each. API-000 requires every response to say which of two shapes it is; this refines that into seven named classes, three of which are successes and four of which are typed non-successes. The point of the four is that they must survive to the screen: a non-success rendered as a zero, a blank that looks complete, or green health is the exact failure API-000 exists to prevent.",
+
+  "invariant": {
+    "id": "API-001",
+    "statement": "A frontend renders the truth class it was given. It never upgrades a class, never substitutes a value for a typed non-success, and never styles an observation as a verified fact.",
+    "why": "The response already says what it is worth. Everything after that is a rendering decision, and the only rendering decision that can destroy the guarantee is one that makes an unknown look like a known.",
+    "checked_by": "dock/test/truth.test.ts, against this file"
+  },
+
+  "classes": {
+    "CANONICAL_PROOF": {
+      "outcome": "success",
+      "means": "The answer is canonical state, addressable by a canonical reference and checkable against the proof root that carries it.",
+      "must_render": ["canonical_reference", "proof_root", "valid_time", "knowledge_time", "release"],
+      "must_not": ["Present the proof root as evidence that the underlying empirical source content is true. It is a provenance and caching key: it proves what was recorded, not that what was recorded is so."],
+      "tone": "verified"
+    },
+    "VERIFIED_DERIVATION": {
+      "outcome": "success",
+      "means": "The answer is derived, and the derivation is itself verifiable: the inputs, the transformation and the envelope root are available for inspection.",
+      "must_render": ["canonical_reference", "proof_root", "derivation_path", "valid_time", "knowledge_time", "release"],
+      "must_not": ["Render as canonical state. A derivation is only as good as the inputs it names, and the frontend must let a reader reach them."],
+      "tone": "verified"
+    },
+    "OPERATIONAL_OBSERVATION": {
+      "outcome": "success",
+      "means": "One process's opinion of itself or of something it reached, at a moment. Not canonical state.",
+      "must_render": ["observed_at", "limitations", "source"],
+      "must_not": ["Style as a verified fact.", "Show without its observation time.", "Show with an empty limitations list — an observation with no stated limits is not an observation, it is an unsupported claim."],
+      "tone": "observed"
+    },
+    "UNOBSERVED": {
+      "outcome": "non_success",
+      "means": "Nothing has looked. The subject exists and no observation of it has been recorded.",
+      "must_render": ["subject", "why_unknown"],
+      "must_not": ["Render as zero, empty, healthy, or as a dash that reads as none.", "Be omitted from a count of what is known."],
+      "tone": "unknown"
+    },
+    "UNRESOLVED": {
+      "outcome": "non_success",
+      "means": "The identity could not be resolved to a single subject with the evidence available.",
+      "must_render": ["candidates_considered", "why_unknown"],
+      "must_not": ["Pick a candidate for the reader.", "Render as a single resolved identity with a confidence adornment."],
+      "tone": "unknown"
+    },
+    "CONFLICTING": {
+      "outcome": "non_success",
+      "means": "Two or more evidenced answers disagree, and nothing in the corpus settles which is right.",
+      "must_render": ["positions", "each_position_evidence", "why_unknown"],
+      "must_not": ["Show the most recent, the most common, or the highest-scoring as the answer.", "Average, merge or reconcile the positions."],
+      "tone": "conflict"
+    },
+    "NOT_EVIDENCED": {
+      "outcome": "non_success",
+      "means": "The question is answerable in principle but no admitted evidence bears on it.",
+      "must_render": ["question", "why_unknown"],
+      "must_not": ["Answer from an unadmitted source.", "Render as a negative finding — no evidence of a thing is not evidence of no thing."],
+      "tone": "unknown"
+    }
+  },
+
+  "frame": {
+    "description": "The release-first frame every consequential view carries, so that a reader knows what they are looking at before they read what it says.",
+    "fields": ["release", "valid_time", "knowledge_time", "coverage", "result", "provenance_path"],
+    "note": "Coverage is the evidence state of the slice, not a score. Provenance path is bounded: a drill-down requests a separately authorized view and is never derived from an artifact id or digest alone."
+  },
+
+  "frontend_boundary": {
+    "description": "What a browser client of Payload OS may do, and what it may never be given. This restates the estate's existing boundaries at the frontend, rather than inventing a second security model.",
+    "may_call": ["tenant_read", "verification", "governance"],
+    "may_never_call": ["internal_operator"],
+    "may_never_do": [
+      "canonical writes",
+      "release activation",
+      "signing",
+      "source acquisition",
+      "storage or scheduling control",
+      "provider control"
+    ],
+    "may_never_receive": [
+      "raw evidence",
+      "private keys",
+      "credentials",
+      "tenant selectors",
+      "host or network topology",
+      "protected resolvers",
+      "deployment controls"
+    ],
+    "cross_line_views": {
+      "rule": "A view spanning two lines is labelled a governed mapping.",
+      "must_not": [
+        "Merge identities across lines.",
+        "Suggest causal or commercial authority between lines.",
+        "Infer market price from movement, delivery from market data, or land entitlement from either."
+      ]
+    },
+    "control_plane_visual": {
+      "rule": "The control-plane visual model is logical topology only.",
+      "must_not": ["Add coordinates that were not supplied.", "Present a logical layout as geography."],
+      "geographic_requires": "separately authorized WGS84 spatial data",
+      "deltas": "Chronological verified transitions only; a missing snapshot is a gap, never a synthesized state."
+    }
+  }
+}

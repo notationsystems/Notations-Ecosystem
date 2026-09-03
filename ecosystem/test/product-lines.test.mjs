@@ -8,15 +8,15 @@ const only = (result, invariant) => result.errors.filter((e) => e.startsWith(`${
 test('the partition holds as written', async () => {
   const { errors, warnings, building } = await report();
   assert.deepEqual(errors, [], 'the declared partition must satisfy every LINE invariant');
-  assert.equal(building, 'payload', 'PAYLOAD is the line being built');
+  assert.equal(building, 'caravan', 'PAYLOAD is the line being built');
   // The one open decision is surfaced, not hidden and not invented.
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /^LINE-007: payload is building with an unbounded v1/);
+  assert.match(warnings[0], /^LINE-007: caravan is building with an unbounded v1/);
 });
 
 test('LINE-001 refuses a second owner for a spine type', async () => {
   const doc = clone(await loadProductLines());
-  doc.lines.payload.spine.owns.push('commodity');
+  doc.lines.caravan.spine.owns.push('commodity');
   const r = checkProductLines(doc);
   assert.ok(only(r, 'LINE-001').some((e) => /claims to own "commodity", but the spine gives it to tradewind/.test(e)));
 });
@@ -30,9 +30,9 @@ test('LINE-001 refuses an owner that owns nothing it was given', async () => {
 
 test('LINE-002 refuses a line that carries another line\'s key without declaring the reference', async () => {
   const doc = clone(await loadProductLines());
-  doc.lines.payload.spine.references = doc.lines.payload.spine.references.filter((t) => t !== 'site');
+  doc.lines.caravan.spine.references = doc.lines.caravan.spine.references.filter((t) => t !== 'site');
   const r = checkProductLines(doc);
-  assert.ok(only(r, 'LINE-002').some((e) => /payload carries a key of "site" .* does not declare it as a reference/.test(e)));
+  assert.ok(only(r, 'LINE-002').some((e) => /caravan carries a key of "site" .* does not declare it as a reference/.test(e)));
 });
 
 test('LINE-002 refuses a reference shape that cannot be resolved', async () => {
@@ -65,7 +65,7 @@ test('LINE-005 refuses a join whose key is not on the target class', async () =>
 
 test('LINE-005 refuses a join that never leaves one line', async () => {
   const doc = clone(await loadProductLines());
-  doc.join.path[1].to = { line: 'payload', class: 'node' };
+  doc.join.path[1].to = { line: 'caravan', class: 'node' };
   const r = checkProductLines(doc);
   assert.ok(r.warnings.some((w) => /does not cross a line/.test(w)));
 });
@@ -74,12 +74,12 @@ test('LINE-006 refuses two lines building at once', async () => {
   const doc = clone(await loadProductLines());
   doc.lines.tradewind.stage = 'building';
   const r = checkProductLines(doc);
-  assert.ok(only(r, 'LINE-006').some((e) => /payload and tradewind are both building/.test(e)));
+  assert.ok(only(r, 'LINE-006').some((e) => /caravan and tradewind are both building/.test(e)));
 });
 
 test('LINE-008 refuses a source admitted without a rights profile', async () => {
   const doc = clone(await loadProductLines());
-  delete doc.lines.payload.source_classes[0].rights;
+  delete doc.lines.caravan.source_classes[0].rights;
   const r = checkProductLines(doc);
   assert.equal(only(r, 'LINE-008').length, 2, 'both the profile and its reason are required');
 });
@@ -94,7 +94,7 @@ test('LINE-009 refuses a venue adapter with no tie to an owned object', async ()
 
 test('LINE-010 refuses a data subject outside the closed vocabulary', async () => {
   const doc = clone(await loadProductLines());
-  doc.lines.payload.data_subjects.push('truck-vibes');
+  doc.lines.caravan.data_subjects.push('truck-vibes');
   const r = checkProductLines(doc, { subjects: new Set(['shipments']) });
   assert.ok(only(r, 'LINE-010').some((e) => /"truck-vibes", which is not in the closed vocabulary/.test(e)));
 });
@@ -103,7 +103,7 @@ test('a line may not be implemented by a node another line already implements', 
   const doc = clone(await loadProductLines());
   doc.lines.tradewind.implemented_by = ['payload-terminal'];
   const r = checkProductLines(doc, { catalogNodeIds: new Set(['payload-terminal', 'payload-corpus-graph', 'payload-ocr-agent', 'payload-render-engine', 'atlas-mcp']) });
-  assert.ok(r.errors.some((e) => /claimed as an implementation by both payload and tradewind/.test(e)));
+  assert.ok(r.errors.some((e) => /claimed as an implementation by both caravan and tradewind/.test(e)));
 });
 
 test('the sequence begins with the spine and every step names its gate', async () => {

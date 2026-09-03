@@ -12,7 +12,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA = 'notations.ecosystem.product-lines.v1';
 const STAGES = new Set(['building', 'defined', 'retired']);
 const RIGHTS = new Set(['own_material', 'public_record', 'licensed_derived_only', 'unverified']);
-const OS_OWNER = 'notationos';
+const OS_OWNER = 'payload_os';
 const UNDECIDED = 'to_decide';
 
 export async function loadProductLines() {

@@ -1,6 +1,8 @@
 import type { Snapshot, SnapshotNode } from '../model/types';
 import { CORPUS_GRADE_COLOR, CORPUS_ROLE_LABEL, FABRIC_AUTHORITY_COLOR, FABRIC_AUTHORITY_LABEL, KIND_LABEL, MATURITY_COLOR, PERSON_DATA_COLOR, PERSON_DATA_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL, collectionStanding, corpusStanding } from '../model/types';
 import { githubRepoUrl } from '../model/links';
+import { healthTruth, postureTruth } from '../model/truth';
+import { Evidenced } from './Evidence';
 
 export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
   snapshot: Snapshot;
@@ -113,7 +115,14 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
           </div>
         </div>
       )}
-      {node.lastObservation && <div className="kv" style={{ marginBottom: 10 }}><span>last observed</span><b>{node.lastObservedAt ? new Date(node.lastObservedAt).toLocaleString() : '—'} · {node.lastObservation.source}</b><span>detail</span><b>{node.lastObservation.detail}</b></div>}
+      {/* API-001: health is an observation, and a node nothing has looked at is UNOBSERVED — not healthy,
+          and not a dash that reads as none. Both are rendered as the class they are. */}
+      <div className="kv" style={{ marginBottom: 10 }}>
+        <span>health</span>
+        <b><Evidenced truth={healthTruth(node)} render={(v) => <span>{v}</span>} /></b>
+        <span>posture</span>
+        <b><Evidenced truth={postureTruth(node)} render={(v) => <span>{v}</span>} /></b>
+      </div>
       {onObserve && <div style={{ marginBottom: 12 }}><button className="btn small" onClick={() => onObserve(node)}>Record observation</button></div>}
 
       <h3>Capabilities · {node.capabilities.length}</h3>
