@@ -1,0 +1,20 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "scientific-compute-layer--derived_compute",
+  "systemNodeId": "scientific-compute-layer",
+  "systemIdentity": "notation://node/notationsystems/scientific-compute-layer",
+  "fabricNodeId": "notations-platform",
+  "mode": "event_stream",
+  "authority": "derived_compute",
+  "identityKinds": [
+    "computation",
+    "proof",
+    "state"
+  ],
+  "representations": [
+    "compute",
+    "object"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

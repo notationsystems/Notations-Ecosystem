@@ -1,0 +1,233 @@
+{
+  "nodeId": "notations-platform",
+  "name": "Notations Data Platform",
+  "kind": "information_library",
+  "description": "The data platform beneath the estate (docs/PLATFORM.md): one canonical PostgreSQL layer — bitemporal, append-only, tenant-isolated by row security that is enabled and forced — an evidence index that describes objects and never holds their bytes, a transactional outbox, and rebuildable projections that hold no write grant on canonical truth. It is the fabric's anchor: a system binds to it under an authority its corpus role entitles it to, and the control plane refuses a projection that claims canonical state. It is real SQL in platform/sql and nine invariants checked against a running database, not a diagram; it is not yet deployed, and no tenant data lives in this repository. Model outputs and proofs land in object storage as evidence, which is where derived compute binds until a compute store is built.",
+  "capabilities": [
+    {
+      "capabilityId": "canonical.append",
+      "label": "Append a canonical fact",
+      "description": "INSERT into canonical.entity, entity_alias, observation, assertion or relationship as the application role, under the caller's tenant. Every row is bitemporal and carries its admission or basis; an entity names the evidence object it was admitted from.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "tcp",
+      "path": "canonical.entity | canonical.observation | canonical.assertion | canonical.relationship",
+      "evidence": "platform/sql/003_canonical.sql",
+      "data_domain": "canonical-state",
+      "provenance": "the caller's own admission, under forced row security; checked live by PLAT-005 and PLAT-006",
+      "module_family": "acquisition",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "canonical.supersede",
+      "label": "Close a fact's knowledge time",
+      "description": "UPDATE of superseded_at only: the one column the application may change on a canonical row. Nothing is deleted and nothing else is rewritten; a superseded fact stays readable as of the time it was believed.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "tcp",
+      "path": "canonical.*.superseded_at",
+      "evidence": "platform/sql/003_canonical.sql",
+      "data_domain": "canonical-state",
+      "provenance": "the caller's own supersession; the trigger refuses any other column",
+      "module_family": "acquisition",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "evidence.index",
+      "label": "Index an evidence object",
+      "description": "INSERT into evidence.object: content hash, zone, rights, retention class, access scope, source system and retrieval time, all required. The bytes stay in object storage; the row describes them.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "tcp",
+      "path": "evidence.object",
+      "evidence": "platform/sql/002_evidence.sql",
+      "data_domain": "evidence-pool",
+      "provenance": "the caller's own capture, hashed before it is parsed; checked live by PLAT-007 and PLAT-009",
+      "module_family": "acquisition",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "evidence.quarantine",
+      "label": "Quarantine an evidence object",
+      "description": "Place an object in the quarantined zone with a recorded reason; the consistency trigger refuses a quarantine without a reason and a reason without a quarantine.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "tcp",
+      "path": "evidence.object.zone = quarantined",
+      "evidence": "platform/sql/002_evidence.sql",
+      "data_domain": "evidence-pool",
+      "provenance": "the caller's own decision, with its reason",
+      "module_family": "acquisition",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "outbox.claim",
+      "label": "Claim outbox rows",
+      "description": "canonical.claim_outbox(batch_size): lease the next unpublished change rows FOR UPDATE SKIP LOCKED, so two relays never publish the same change and neither scans history to find the next batch.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "tcp",
+      "path": "canonical.claim_outbox(batch_size)",
+      "evidence": "platform/sql/005_outbox.sql",
+      "data_domain": "pipeline-artifacts",
+      "provenance": "the outbox rows committed in the same transaction as the change they describe; checked live by PLAT-008",
+      "module_family": "operations",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "outbox.mark_published",
+      "label": "Mark outbox rows published",
+      "description": "canonical.mark_published(ids): idempotent acknowledgement that a relay delivered the claimed rows. The publish boundary of controlled change; a broker is a second system and is not built.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "tcp",
+      "path": "canonical.mark_published(ids)",
+      "evidence": "platform/sql/005_outbox.sql",
+      "data_domain": "pipeline-artifacts",
+      "provenance": "the relay's own acknowledgement of rows it claimed",
+      "module_family": "federation",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "projection.build",
+      "label": "Record a projection build",
+      "description": "INSERT into projection.build: what was built, from which canonical revision, and the command that rebuilds it. A projection that cannot say this is not a projection.",
+      "mode": "propose",
+      "approval": "automatic",
+      "surface": "tcp",
+      "path": "projection.build",
+      "evidence": "platform/sql/007_projections.sql",
+      "data_domain": "pipeline-artifacts",
+      "provenance": "the builder's own record; the projection role holds no write grant on canonical or evidence (PLAT-004)",
+      "module_family": "operations",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "projection.reachable",
+      "label": "Traverse relationships",
+      "description": "projection.reachable(from_entity, kinds, max_depth): the graph projection as a recursive CTE, depth-capped and cycle-guarded, returning each reachable entity once at its shortest depth. A graph database is admitted on a measured limit this cannot meet, never on its absence.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "tcp",
+      "path": "projection.reachable(from_entity, kinds, max_depth)",
+      "evidence": "platform/sql/007_projections.sql",
+      "data_domain": "canonical-state",
+      "provenance": "canonical.relationship rows live at query time, under the caller's tenant",
+      "module_family": "projection",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "projection.entity_current",
+      "label": "Read current entities",
+      "description": "projection.entity_current: a materialized view of every live, unsuperseded entity, rebuilt from canonical state and rebuildable at any time.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "tcp",
+      "path": "projection.entity_current",
+      "evidence": "platform/sql/007_projections.sql",
+      "data_domain": "canonical-state",
+      "provenance": "canonical.entity, folded at the last refresh; the view records nothing of its own",
+      "module_family": "projection",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "platform.check",
+      "label": "Check the nine invariants live",
+      "description": "node platform/check.mjs: PLAT-001 through PLAT-009 against a running database — forced row security, no bypass role, a policy on every guarded table, no projection write grant, append-only canonical and evidence, bitemporal facts, complete evidence rows, the outbox and its backlog index, no bytes in evidence rows. Skips with a stated reason when no database is reachable; never passes by default.",
+      "mode": "observe",
+      "approval": "automatic",
+      "surface": "cli",
+      "evidence": "platform/check.mjs",
+      "data_domain": "architecture-invariants",
+      "provenance": "the live catalog of the connected PostgreSQL, not the migration files",
+      "module_family": "kernel",
+      "response_kind": "operational_observation",
+      "maturity": "experimental"
+    },
+    {
+      "capabilityId": "platform.migrate",
+      "label": "Apply the schema",
+      "description": "node platform/migrate.mjs [--reset]: apply platform/sql/*.sql in order to the configured database, then run the invariant checks. --reset drops the schemas first and is for development databases only.",
+      "mode": "execute",
+      "approval": "operator",
+      "surface": "cli",
+      "evidence": "platform/migrate.mjs",
+      "data_domain": "architecture-invariants",
+      "provenance": "the SQL files in this repository, applied by the operator at the host",
+      "module_family": "infrastructure",
+      "api_exposure": "operator_local",
+      "maturity": "experimental"
+    }
+  ],
+  "metadata": {
+    "repo": "notationsystems/Notations-Ecosystem",
+    "domain": "platform",
+    "maturity": "v0",
+    "language": "SQL, JavaScript",
+    "framework": "PostgreSQL 16; PostGIS declared for the spatial projection",
+    "exposure": "local-only",
+    "upstream": "",
+    "visibility": "public",
+    "last_pushed_at": "2026-09-03T01:40:38Z",
+    "durability": "managed PostgreSQL when deployed; a development cluster today",
+    "default_port": 5433,
+    "fabric_layers": "evidence canonical projection compute",
+    "person_data": "refused"
+  },
+  "location": null,
+  "relations": [],
+  "reference": {
+    "runtime": {
+      "entrypoints": ["platform/migrate.mjs", "platform/check.mjs"],
+      "run": [
+        "export NOTATIONS_PLATFORM_DSN='postgresql://…'",
+        "node platform/migrate.mjs --reset",
+        "node platform/check.mjs",
+        "node --test platform/test/"
+      ],
+      "ports": [5433],
+      "container": false
+    },
+    "contracts": [
+      { "name": "platform doctrine", "path": "ecosystem/platform.json", "summary": "Six tiers in build order, the lean first footprint, what is deferred and the evidence that would admit it, and the nine invariants." },
+      { "name": "canonical schema", "path": "platform/sql/003_canonical.sql", "summary": "entities, aliases, observations, assertions and relationships, bitemporal and append-only, with the notation:// URI as a domain." },
+      { "name": "evidence index", "path": "platform/sql/002_evidence.sql", "summary": "Every object carries content hash, rights, retention, access scope and source; the bytes never enter the database." },
+      { "name": "row security", "path": "platform/sql/006_rls.sql", "summary": "Enabled and forced on every tenant table; application roles NOBYPASSRLS; the projection role holds no write grant on canonical or evidence." }
+    ],
+    "resources": [
+      { "name": "canonical database", "classification": "sensitive", "durability": "unreconstructable", "description": "The canonical layer for every tenant when deployed. Losing it loses admissions and decisions that the evidence alone does not replay. Nothing of it is in this repository." },
+      { "name": "evidence object store", "classification": "internal", "durability": "unreconstructable", "description": "S3-compatible zones raw, quarantined, canonical_export and published_build. Indexed here, held there; the raw zone holds the class of capture that cannot be refetched." },
+      { "name": "projection schema", "classification": "internal", "durability": "reconstructable", "description": "Rebuildable by definition (PLAT-004): if losing it would lose information, it is in the wrong schema." }
+    ],
+    "external_services": [],
+    "environment": [
+      { "name": "NOTATIONS_PLATFORM_DSN", "kind": "credential", "purpose": "The PostgreSQL connection string the migration, the checker and the tests use. It may embed a password, so it is a standing grant to the canonical database and is treated as one." }
+    ],
+    "health": { "method": "cli", "endpoint": "node platform/check.mjs" },
+    "spatial": "PostGIS is declared for the spatial projection; the development image carries no PostGIS extension and the checker reports the tier as declared, not installed.",
+    "temporal": "Every canonical fact is bitemporal: valid_from and valid_to are event time, recorded_at and superseded_at are knowledge time (PLAT-006).",
+    "open_questions": [
+      "Where is the managed PostgreSQL deployed, and who holds NOTATIONS_PLATFORM_DSN? Nothing in this repository stands the platform up.",
+      "The audit log is append-only by trigger and grant but neither hash-linked nor signed (COR-008 fails): should the control plane's journal discipline move down into it, or should the plane's journal move onto it?",
+      "Temporal is declared for durable workflows and not yet run; the first workflow to need resume-after-failure is the one that admits it.",
+      "Derived compute binds to the evidence zones today because model outputs and proofs are objects; a compute store is admitted when a workload needs one."
+    ],
+    "corpus": {
+      "role": "hold",
+      "owner_of": [],
+      "holding": "The canonical PostgreSQL schema for every tenant — entities, aliases, observations, assertions, relationships, permissions, audit log and outbox — and the evidence index beside it, with the nine invariants that hold them. Schema and checks only: no tenant data lives in this repository.",
+      "standing": {
+        "COR-001": { "standing": "holds", "evidence": "platform/sql/003_canonical.sql", "note": "The holding is the canonical schema and its extent is every table in canonical and evidence, named." },
+        "COR-002": { "standing": "exempt", "note": "structural: the platform holds canonical state on behalf of the systems that own it. Ownership is declared by the system that binds to it under canonical_state, and the control plane refuses a second owner; the store itself owns no domain." },
+        "COR-003": { "standing": "holds", "evidence": "platform/sql/003_canonical.sql", "note": "An observation carries its basis and value kind; an assertion its stance and what supports it; an entity the evidence object it was admitted from." },
+        "COR-004": { "standing": "holds", "evidence": "platform/sql/003_canonical.sql", "note": "valid_from/valid_to beside recorded_at/superseded_at on every fact, checked live by PLAT-006." },
+        "COR-005": { "standing": "exempt", "note": "structural: the platform answers no questions. It refuses writes by constraint with a named error; a typed refusal to an unanswerable question belongs to the system that answers from it." },
+        "COR-006": { "standing": "holds", "evidence": "platform/sql/002_evidence.sql", "note": "The quarantined zone with a required reason, and an entity's admitted_from, are the door; a serving projection has no write grant to walk around it." },
+        "COR-007": { "standing": "holds", "evidence": "platform/sql/002_evidence.sql", "note": "content_hash is required on every evidence object and checked to be a sha256; the row exists before anything parses the bytes." },
+        "COR-008": { "standing": "fails", "note": "Append-only by grant and trigger, and audited, but the audit log is neither hash-linked nor signed: a consistent rewrite by a superuser would not be detectable." },
+        "COR-009": { "standing": "holds", "evidence": "platform/sql/006_rls.sql", "note": "The projection role holds no INSERT, UPDATE, DELETE or TRUNCATE on canonical or evidence — the absence of a grant, checked live by PLAT-004." },
+        "COR-010": { "standing": "holds", "evidence": "platform/sql/002_evidence.sql", "note": "Evidence rows never hold bytes (PLAT-009), and no table carries a column for a person: the platform refuses to become the bucket or the profile." }
+      }
+    }
+  }
+}

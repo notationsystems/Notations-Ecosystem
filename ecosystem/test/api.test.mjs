@@ -126,7 +126,8 @@ test('every first-party capability is placed, and an empty repository serves not
   }
 
   const surface = gradeApiSurface(entries);
-  assert.equal(surface.placed, 628);
+  // 628 before the data platform was catalogued; its eleven capabilities are all placed.
+  assert.equal(surface.placed, 639);
   assert.equal(surface.unplaced.length, 6);
   for (const u of surface.unplaced) assert.equal(u.maturity, 'empty');
 });

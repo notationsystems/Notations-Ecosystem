@@ -1,0 +1,19 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "control-plane--canonical_state",
+  "systemNodeId": "control-plane",
+  "systemIdentity": "notation://node/notationsystems/control-plane",
+  "fabricNodeId": "notations-platform",
+  "mode": "append_only",
+  "authority": "canonical_state",
+  "identityKinds": [
+    "node",
+    "observation",
+    "decision"
+  ],
+  "representations": [
+    "sql"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "payload-render-engine--projection",
+  "systemNodeId": "payload-render-engine",
+  "systemIdentity": "notation://node/notationsystems/payload-render-engine",
+  "fabricNodeId": "notations-platform",
+  "mode": "snapshot",
+  "authority": "projection",
+  "identityKinds": [
+    "state"
+  ],
+  "representations": [
+    "spatial"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

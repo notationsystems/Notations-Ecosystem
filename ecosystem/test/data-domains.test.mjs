@@ -185,10 +185,11 @@ test('every environment variable says what it is, and a credential nothing reads
   // Required on every node, empty or not: "this system reads no environment" is an
   // answer, and it is a different answer from nobody having looked.
   for (const { entry } of entries) assert.ok(Array.isArray(entry.reference.environment), `${entry.nodeId}: no environment block`);
-  assert.equal(env.length, 90);
+  // 90 before the data platform was catalogued; its DSN is the ninety-first, and a credential.
+  assert.equal(env.length, 91);
 
   const credentials = env.filter((item) => item.kind === 'credential');
-  assert.equal(credentials.length, 62);
+  assert.equal(credentials.length, 63);
   assert.equal(env.filter((item) => item.kind === 'configuration').length, 28);
 
   // The whole point of the split: a port, a path and a region are no longer secrets, and

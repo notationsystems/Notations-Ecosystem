@@ -1,0 +1,19 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "data-acquisition-channel--evidence_source",
+  "systemNodeId": "data-acquisition-channel",
+  "systemIdentity": "notation://node/notationsystems/data-acquisition-channel",
+  "fabricNodeId": "notations-platform",
+  "mode": "append_only",
+  "authority": "evidence_source",
+  "identityKinds": [
+    "source",
+    "artifact",
+    "observation"
+  ],
+  "representations": [
+    "object"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

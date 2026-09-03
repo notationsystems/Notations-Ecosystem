@@ -1,6 +1,6 @@
 # The Notations Universe
 
-Synthesised from `ecosystem/catalog/*.json` (30 nodes, 634 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=10, every warning an ungraded invariant or an unrecorded mirror licence), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
+Synthesised from `ecosystem/catalog/*.json` (31 nodes, 645 capabilities, 46 relations; `node ecosystem/validate.mjs` → errors=0 warnings=12, every warning an ungraded invariant or an unrecorded mirror licence), the control-plane contract, and the cross-cutting repository documents (Payload architecture ledger and exposure options, STE frozen specification, SCL architecture, DAQ standing plan, OCR agent README). The catalog is discovery and seed material; once seeded, the control-plane journal is authoritative.
 
 ## 1. How the ecosystem fits together
 
@@ -20,13 +20,13 @@ applicable, where a role structurally exempts the invariants it cannot be about.
 | Grade | Nodes |
 |---|---|
 | sound (coverage 1.0) | `control-plane`, `gods-eye-view`, `notations-dock`, `payload-ocr-agent`, `payload-render-engine`, `payload-terminal`, `scientific-compute-layer` |
-| developing (0.5–0.9) | `bim-state-transformer-engine`, `data-acquisition-channel`, `information-systems-archive`, `lichtfeld-studio`, `matrix-3d`, `notations-corpus-graph`, `osiris-dashboard`, `pythia-oracle-engine`, `scientific-transformer-engine`, `trustgraph` |
+| developing (0.5–0.9) | `bim-state-transformer-engine`, `data-acquisition-channel`, `information-systems-archive`, `lichtfeld-studio`, `matrix-3d`, `notations-corpus-graph`, `notations-platform`, `osiris-dashboard`, `pythia-oracle-engine`, `scientific-transformer-engine`, `trustgraph` |
 | bare (< 0.5) | `atlas-mcp`, `geoagent`, `geometry-grounded-gaussian-splatting`, `lingbot-depth`, `notation-systems-web`, `osint-war-room`, `osiris-intel` |
 | unbuilt (an empty repository) | `building-information-corpus`, `building-information-graph`, `network-scout-signal-miner`, `notations-archival-swarm`, `notations-energy-modulator`, `payload-corpus-graph` |
 | unsound | none |
 
-Mean coverage across graded nodes is 0.56, and twenty-one invariants are declared failed by
-name. Eight nodes hold a corpus; three own a domain's canonical state
+Mean coverage across graded nodes is 0.57, and twenty-two invariants are declared failed by
+name. Nine nodes hold a corpus; three own a domain's canonical state
 (`payload-terminal` → physical-economy, `scientific-transformer-engine` → scientific,
 `bim-state-transformer-engine` → built-environment). Five of the eight domains —
 intelligence, perception-3d, geospatial, archive, platform — have no declared owner, and
@@ -49,6 +49,14 @@ What the grading makes visible that prose did not:
 - **The person-data problem is now a grade, not a paragraph.** `osiris-intel` (0.29) and
   `osiris-dashboard` both declare COR-010 failed by name: they state a refusal to become
   person-profiling services and still serve the routes.
+- **The platform beneath the estate is a node, and it grades `developing`.** `notations-platform`
+  is the canonical PostgreSQL layer, evidence index, outbox and projections of
+  [docs/PLATFORM.md](../docs/PLATFORM.md), catalogued as one system because it is one
+  repository. It holds every invariant a store can hold and declares COR-008 failed by
+  name: its audit log is append-only by grant and trigger but neither hash-linked nor
+  signed, so a consistent rewrite by a superuser would not be detectable. It owns no
+  domain — the store holds canonical state on behalf of the systems that bind to it — and
+  it is the anchor those bindings name (§4a).
 - **Six planned repositories are graded `unbuilt` rather than omitted**, so the distance
   between the intended estate and the built one is a number.
 - **The physical economy has two commitment records.** `data-acquisition-channel` declares
@@ -72,7 +80,7 @@ What the grading makes visible that prose did not:
 | perception-3d | `geometry-grounded-gaussian-splatting`, `lichtfeld-studio`, `lingbot-depth`, `matrix-3d` |
 | geospatial | `geoagent`, `gods-eye-view` |
 | archive | `information-systems-archive`, `notations-archival-swarm`, `notations-energy-modulator`, `trustgraph` |
-| platform | `control-plane`, `notations-dock`, `notation-systems-web` |
+| platform | `control-plane`, `notations-dock`, `notation-systems-web`, `notations-platform` |
 
 Canonical-state owners: `payload-terminal` (physical economy), `scientific-transformer-engine` (scientific), `bim-state-transformer-engine` (built environment), `control-plane` (the coordination journal itself). Every other node observes, proposes, supplies evidence or renders.
 
@@ -133,6 +141,36 @@ Relations added or changed in this pass (4): `control-plane--governs--notations-
 
 Lineages deliberately **not** modelled as relations (they are code ancestry or design studies, not data, control or contract flows): `osiris-dashboard` is the structural ancestor of `payload-terminal` (same `intel/`, `engine/`, `src/` layout); the Payload ledger records OSINT-War-Room as a curated study whose coalescing and degradation-ladder patterns were adapted into the terminal's route layer.
 
+### 4a. Declared fabric bindings
+
+The control plane records which systems participate in the canonical fabric
+([docs/SUBSTRATE.md](../docs/SUBSTRATE.md)), under which authority, carrying which identity
+classes in which physical representations. The manifests are `ecosystem/fabric/*.json`, the
+anchor is `notations-platform`, and the plane checks each authority against the system's
+corpus role: a projection never binds as canonical state, a feed supplies evidence only, a
+transform is derived compute, and a hold is canonical state only when it owns a domain.
+Registration is operator-local — refused over every plane, the admin role included.
+
+A binding is a **contract, not an observation**. It says how a system participates; it does
+not say bytes have moved, and none have: the platform is real SQL and is not deployed.
+
+| System | Authority | Mode | Identity classes | Representations |
+|---|---|---|---|---|
+| `payload-terminal` | canonical_state | snapshot | source, artifact, observation, entity, claim, state | object, sql, spatial |
+| `scientific-transformer-engine` | canonical_state | event_stream | entity, observation, claim, transform, state, proof | sql, graph |
+| `bim-state-transformer-engine` | canonical_state | snapshot | artifact, observation, state, proof | spatial, compute |
+| `control-plane` | canonical_state | append_only | node, observation, decision | sql |
+| `information-systems-archive` | evidence_source | append_only | source, artifact | object |
+| `data-acquisition-channel` | evidence_source | append_only | source, artifact, observation | object |
+| `payload-ocr-agent` | evidence_source | event_stream | artifact, observation, claim | object |
+| `payload-render-engine` | projection | snapshot | state | spatial |
+| `scientific-compute-layer` | derived_compute | event_stream | computation, proof, state | compute, object |
+
+Nine bindings follow from the roles the catalog already declares. The systems not bound are
+the upstream mirrors, the empty repositories, the dock, and the nodes whose role admits a
+binding nobody has yet declared (`notations-corpus-graph`, `osiris-intel`, `pythia-oracle-engine`,
+`matrix-3d`); their absence is visible in the twin and in `GET /v1/index` as `unboundSystemNodeIds`.
+
 ## 5. Located nodes
 
 | Node id | Longitude, latitude | Label |
@@ -145,7 +183,7 @@ Lineages deliberately **not** modelled as relations (they are code ancestry or d
 | `osint-war-room` | 30.5234, 50.4501 | Kyiv (Ukraine air-raid alarm focus and default region preset) |
 | `gods-eye-view` | -97.7431, 30.2672 | Austin, TX (default CCTV mesh and first-run missions) |
 
-The other 23 nodes are unlocated: they are either services without a native geography (control plane, STE, SCL, BIM, corpus graphs, intel), upstream mirrors, or empty repositories. Location labels are catalog-only and stripped before seeding.
+The other 24 nodes are unlocated: they are either services without a native geography (control plane, STE, SCL, BIM, corpus graphs, intel), upstream mirrors, or empty repositories. Location labels are catalog-only and stripped before seeding.
 
 ## 6. Flows worth a map layer
 
@@ -182,6 +220,7 @@ Graph shape
 - `bim-state-transformer-engine--depends_on--building-information-corpus` overstates the kind: GAT runs on demo IFC today. Reconsider once the corpus has content.
 - Code ancestry (`osiris-dashboard` → `payload-terminal`, OSINT-War-Room design study) is not expressible with the five relation kinds; it is recorded here, not in the journal.
 - `scientific-transformer-engine.evidence.trust_graph.build` vs the `trustgraph` node is a naming collision, not a relation.
+- `notations-platform` has no relations: nothing in the estate calls it yet, and a relation nobody's code confirms would be the aspirational kind this table flags on GAT. Its arcs are the nine fabric bindings (§4a), which are contracts rather than call paths, and the dock draws them as such.
 
 Identity and naming
 - Is Sea Dog Terminal (frozen at `5a6def1`) exactly `Payload-Terminal-V0`? The archive README names Sea-Dog-OSIRIS-Terminal-V0; the terminal's health route exposes a `seaDogTerminal` block; DAQ's `commerce/` is parked pending that freeze.

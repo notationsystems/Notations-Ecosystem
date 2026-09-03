@@ -1,0 +1,23 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "scientific-transformer-engine--canonical_state",
+  "systemNodeId": "scientific-transformer-engine",
+  "systemIdentity": "notation://node/notationsystems/scientific-transformer-engine",
+  "fabricNodeId": "notations-platform",
+  "mode": "event_stream",
+  "authority": "canonical_state",
+  "identityKinds": [
+    "entity",
+    "observation",
+    "claim",
+    "transform",
+    "state",
+    "proof"
+  ],
+  "representations": [
+    "sql",
+    "graph"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

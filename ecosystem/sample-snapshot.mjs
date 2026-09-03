@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { ControlPlane } from '../control-plane/src/control-plane.js';
 import { loadCatalog } from './validate.mjs';
 import { seed } from './seed.mjs';
+import { loadManifests, registerFabricSyncs } from './fabric.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLE_NOW = '2026-09-03T00:00:00.000Z';
@@ -18,6 +19,9 @@ export async function buildSampleSnapshot(entries, clock = () => SAMPLE_NOW) {
   try {
     const plane = ControlPlane.fromPath(path.join(dir, 'journal.jsonl'), clock);
     await seed(plane, entries, { now: clock });
+    // The declared fabric bindings, so the twin can draw them offline. Contracts, not
+    // observations: nothing has synced, and the manifests' README says so.
+    await registerFabricSyncs(plane, await loadManifests(), { now: clock });
     // A few health observations so the sample shows every health colour honestly labelled as sample data.
     const snapshot = await plane.snapshot();
     const sampleHealth = [['control-plane', 'healthy', 'health_check', 'Sample: the control plane answered /health.'], ['notations-dock', 'healthy', 'operator', 'Sample: dock rendered the snapshot.']];

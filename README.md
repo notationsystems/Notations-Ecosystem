@@ -61,9 +61,9 @@ Credentials: issue one per principal rather than sharing a token — see
 `NOTATIONS_CONTROL_PLANE_TOKEN`, which holds every role, and warns at boot.
 
 Checks: `cd control-plane && npm test` (59, of which 46 are named security
-invariants), `node ecosystem/validate.mjs` (30 nodes, 634 capabilities, 46 relations),
+invariants), `node ecosystem/validate.mjs` (31 nodes, 645 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (57), `cd dock && npm run check && npm test && npm run build` (69),
+`cd ecosystem && npm test` (61), `cd dock && npm run check && npm test && npm run build` (69),
 `node platform/migrate.mjs --reset && node --test platform/test/` (9 invariants, 9 proofs, against a live PostgreSQL).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`

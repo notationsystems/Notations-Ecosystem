@@ -1,0 +1,18 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "information-systems-archive--evidence_source",
+  "systemNodeId": "information-systems-archive",
+  "systemIdentity": "notation://node/notationsystems/information-systems-archive",
+  "fabricNodeId": "notations-platform",
+  "mode": "append_only",
+  "authority": "evidence_source",
+  "identityKinds": [
+    "source",
+    "artifact"
+  ],
+  "representations": [
+    "object"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

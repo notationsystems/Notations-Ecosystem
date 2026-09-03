@@ -1,0 +1,24 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "payload-terminal--canonical_state",
+  "systemNodeId": "payload-terminal",
+  "systemIdentity": "notation://node/notationsystems/payload-terminal",
+  "fabricNodeId": "notations-platform",
+  "mode": "snapshot",
+  "authority": "canonical_state",
+  "identityKinds": [
+    "source",
+    "artifact",
+    "observation",
+    "entity",
+    "claim",
+    "state"
+  ],
+  "representations": [
+    "object",
+    "sql",
+    "spatial"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

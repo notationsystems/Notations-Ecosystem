@@ -1,0 +1,19 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "payload-ocr-agent--evidence_source",
+  "systemNodeId": "payload-ocr-agent",
+  "systemIdentity": "notation://node/notationsystems/payload-ocr-agent",
+  "fabricNodeId": "notations-platform",
+  "mode": "event_stream",
+  "authority": "evidence_source",
+  "identityKinds": [
+    "artifact",
+    "observation",
+    "claim"
+  ],
+  "representations": [
+    "object"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

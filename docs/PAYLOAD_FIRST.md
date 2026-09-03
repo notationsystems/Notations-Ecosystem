@@ -32,6 +32,14 @@ it lives in that node's `reference.external_services` — 112 of them across 21 
 node is something that can hold, feed, transform, project or coordinate
 ([CORPUS.md](CORPUS.md)); nothing else earns one.
 
+The control plane this repository was merged with (`codex/control-plane-backend`) carried
+exactly that earlier shape as a profile hardcoded into the plane — `payload-corpus`,
+`payload-spatial-world`, `payload-mcp`, `payload-operations`, and four public sources as
+nodes of their own. It is not seeded here, for the reason above and for one more: the
+plane knows no estate. What that profile carried that the catalog lacked — a versioned
+methodology naming the conclusions Payload refuses to draw — now lives where a
+methodology belongs, in `payload-terminal`'s `reference.methodology` (§2a).
+
 ## 2. Capability-level controls
 
 Each capability declares `mode` and `approval` (the control plane enforces `execute ⇒ operator`).
@@ -43,6 +51,21 @@ capabilities with invented ones. Where a figure is stated it should carry its ba
 ("~3.7 ms native at N=2000"), and where it is not known the field is absent. Health is a
 node-level observation (`healthy | degraded | offline | unknown`) recorded by the probe adapter
 or an operator.
+
+### 2a. Methodology
+
+`payload-terminal` declares `reference.methodology`: `payload-methodology/0.1.0`, status
+`research`, with its source classes, temporal semantics, how contradiction and uncertainty
+are represented, known limitations, a changelog, and the five conclusions it refuses to
+draw — supplier relationships from proximity alone, modeled capacity as reported capacity,
+parent ownership as operational control, a missing observation as zero, and a research
+capability as a production feature. The status is the honest one until validation evidence
+says otherwise, and it is why the last exclusion exists. The name and status cross into the
+snapshot as `metadata.methodology` and `metadata.methodology_status`, and every capability
+of the terminal carries `methodologyVersion` derived from it; the text stays in the
+catalog, where it can be read, and never in the plane, which knows no estate. The result
+manifest a Payload answer should travel with is the plane's published contract,
+`GET /v1/contracts/result-manifest`.
 
 ## 3. Event timeline
 

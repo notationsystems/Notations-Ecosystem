@@ -6,7 +6,7 @@ import test from 'node:test';
 import { ControlPlane } from '../../control-plane/src/control-plane.js';
 import { loadCatalog } from '../validate.mjs';
 import { seed } from '../seed.mjs';
-import { TARGETS, evaluatePayloadHealth, probeTarget, recordObservations } from '../payload/probe.mjs';
+import { MAX_HEALTH_BYTES, TARGETS, configuredBase, evaluatePayloadHealth, probeTarget, recordObservations } from '../payload/probe.mjs';
 
 const NOW = '2026-09-03T00:00:00.000Z';
 const json = (status, body) => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }));
@@ -24,9 +24,29 @@ test('probeTarget reports unreachable hosts as offline without throwing', async 
   const o = await probeTarget(target, 'http://127.0.0.1:1', () => Promise.reject(new Error('ECONNREFUSED')));
   assert.equal(o.health, 'offline');
   assert.match(o.detail, /unreachable/);
-  const ok = await probeTarget(target, 'http://payload.local', () => json(200, { status: 'operational' }));
+  const ok = await probeTarget(target, 'https://payload.local', () => json(200, { status: 'operational' }));
   assert.equal(ok.health, 'healthy');
   assert.match(ok.detail, /status=operational/);
+});
+
+test('the probe holds its origin to the adapter\'s rules: HTTPS outside loopback, a bare origin, no redirects, a bounded body', async () => {
+  assert.equal(configuredBase('http://127.0.0.1:3000/'), 'http://127.0.0.1:3000');
+  assert.equal(configuredBase('https://payload.example'), 'https://payload.example');
+  assert.throws(() => configuredBase('http://payload.example'), /HTTPS outside loopback/);
+  assert.throws(() => configuredBase('https://user:secret@payload.example'), /bare origin/);
+  assert.throws(() => configuredBase('https://payload.example/?probe=1'), /bare origin/);
+  assert.throws(() => configuredBase('not a url'), /absolute URL/);
+  // A misconfigured origin is thrown, never recorded as the target being offline.
+  const target = TARGETS.find((t) => t.nodeId === 'payload-terminal');
+  await assert.rejects(probeTarget(target, 'http://payload.example', () => json(200, {})), /HTTPS/);
+  // Redirects are not followed, and the fetch is told so.
+  let init = null;
+  await probeTarget(target, 'https://payload.example', (_url, options) => { init = options; return json(200, { status: 'operational' }); });
+  assert.equal(init.redirect, 'error');
+  // A body past the cap is not parsed and not forwarded; the verdict says it was ignored.
+  const huge = await probeTarget(target, 'https://payload.example', () => Promise.resolve(new Response('x'.repeat(MAX_HEALTH_BYTES + 1), { status: 200 })));
+  assert.match(huge.detail, /exceeded 64 KiB/);
+  assert.equal(huge.detail.length <= 600, true);
 });
 
 test('observations land in the journal and derive node health in the snapshot', async () => {

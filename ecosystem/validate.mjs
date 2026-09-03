@@ -6,6 +6,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseCommand } from '../control-plane/src/validation.js';
+import { CAPABILITY_MATURITIES } from '../control-plane/src/governance/maturity.js';
 import { checkCorpus, gradeNode } from './corpus.mjs';
 import { apiOf, checkNodeApi, gradeApiSurface } from './api.mjs';
 
@@ -33,7 +34,21 @@ const ENV_KINDS = new Set(['credential', 'configuration']);
 /** A name that reads as a credential is treated as one; the kind may not be used to duck that. */
 const CREDENTIAL_SHAPED = /(^|_)(KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|CREDENTIALS|PASSWD|APIKEY)$|PASSWORD|SECRET/;
 const ENV_FIELDS = new Set(['name', 'kind', 'purpose', 'client_exposed', 'unused']);
-const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow', 'module_family', 'response_kind', 'api_exposure', 'api_deviation']);
+const CAPABILITY_EXTRA = new Set(['surface', 'method', 'path', 'evidence', 'side_effects', 'cost', 'latency', 'provenance', 'data_domain', 'workflow', 'module_family', 'response_kind', 'api_exposure', 'api_deviation', 'maturity', 'methodology_version']);
+
+/**
+ * A corpus methodology (`reference.methodology`): the versioned, inspectable statement of
+ * how a corpus owner produces its answers — source classes, temporal semantics, how
+ * contradiction and uncertainty are represented, and the conclusions it refuses to draw.
+ * It lives in the owner's catalog entry, not in the control plane: the plane knows no
+ * estate, and a methodology hardcoded into it would be the plane having an opinion about
+ * what Payload can do. What crosses into the journal is the derived name and status.
+ */
+const METHODOLOGY_SCHEMA = 'notations.corpus-methodology.v1';
+const METHODOLOGY_FIELDS = new Set(['schema', 'methodology_id', 'version', 'status', 'effective_at', 'scope', 'source_classes', 'temporal_semantics', 'evidence_model', 'contradiction_handling', 'uncertainty', 'exclusions', 'known_limitations', 'changelog']);
+const METHODOLOGY_REQUIRED = ['schema', 'methodology_id', 'version', 'status', 'effective_at', 'scope', 'temporal_semantics', 'exclusions', 'changelog'];
+const METHODOLOGY_STATUS = new Set(['research', 'beta', 'production']);
+const SEMVER = /^\d+\.\d+\.\d+$/;
 
 /**
  * The closed vocabulary a capability's `data_domain` must use.
@@ -81,17 +96,37 @@ const NOW = '2026-01-01T00:00:00.000Z';
  * declared, so a grade can never be written down more flatteringly than it is earned.
  */
 export function toNode(entry) {
+  const methodology = methodologyVersionOf(entry);
   const capabilities = (entry.capabilities ?? []).map((c) => ({
     capabilityId: c.capabilityId, label: c.label, description: c.description, mode: c.mode, approval: c.approval,
+    // Declared maturity crosses as declared. An empty repository's capabilities are
+    // `planned` by construction — there is no code — so that one is derived, and a written
+    // copy of it is refused below. Nothing else is defaulted: a plane that knows no estate
+    // cannot write `research` onto code nobody here has assessed.
+    ...(entry.metadata?.maturity === 'empty' ? { maturity: 'planned' } : c.maturity !== undefined ? { maturity: c.maturity } : {}),
+    // A capability answers under its owner's methodology unless it names another.
+    ...(c.methodology_version !== undefined ? { methodologyVersion: c.methodology_version } : methodology ? { methodologyVersion: methodology } : {}),
   }));
   const location = entry.location ? { longitude: entry.location.longitude, latitude: entry.location.latitude } : null;
   return { nodeId: entry.nodeId, name: entry.name, kind: entry.kind, description: entry.description, capabilities, metadata: withCorpusMetadata(entry), location };
+}
+
+/** `<methodology_id>/<version>` for a node that declares a methodology, else null. */
+export function methodologyVersionOf(entry) {
+  const m = entry.reference?.methodology;
+  return m && typeof m.methodology_id === 'string' && typeof m.version === 'string' ? `${m.methodology_id}/${m.version}` : null;
 }
 
 /** The derived corpus fields, added to a node's metadata for the journal. */
 export function withCorpusMetadata(entry) {
   const metadata = { ...(entry.metadata ?? {}) };
   if (!entry.reference?.corpus) return metadata;
+  // The methodology's name and status cross; its text stays here, where it can be read.
+  const methodology = methodologyVersionOf(entry);
+  if (methodology) {
+    metadata.methodology = methodology;
+    metadata.methodology_status = entry.reference.methodology.status;
+  }
   const graded = gradeNode(entry);
   const subjects = subjectsOf(entry);
   if (subjects) metadata.data_domains = subjects;
@@ -197,13 +232,59 @@ export function checkEntry(entry, file, known = new Set()) {
   }
   const ids = new Set();
   for (const r of entry.relations ?? []) { if (ids.has(r.relationId)) errors.push(`duplicate relationId ${r.relationId}`); ids.add(r.relationId); }
+  const md = entry.metadata ?? {};
   for (const c of entry.capabilities ?? []) {
     for (const k of Object.keys(c)) if (!['capabilityId', 'label', 'description', 'mode', 'approval'].includes(k) && !CAPABILITY_EXTRA.has(k)) warnings.push(`capability ${c.capabilityId}: unknown field "${k}"`);
     if (!c.evidence) warnings.push(`capability ${c.capabilityId}: no evidence path`);
     checkVocabulary(errors, c.capabilityId, 'data_domain', c.data_domain, DATA_DOMAIN_VOCABULARY);
     checkVocabulary(errors, c.capabilityId, 'surface', c.surface, SURFACE_VOCABULARY);
+    // Maturity is a closed vocabulary, and on an empty repository it is derived: every
+    // capability there is `planned` because there is no code, so writing it down is the
+    // same drift as `capability_count`.
+    if (c.maturity !== undefined) {
+      if (md.maturity === 'empty') errors.push(`capability ${c.capabilityId}: maturity is derived on an empty repository (planned by construction); remove "${c.maturity}"`);
+      else if (!CAPABILITY_MATURITIES.includes(c.maturity)) errors.push(`capability ${c.capabilityId}: maturity "${c.maturity}" is not one of ${CAPABILITY_MATURITIES.join(', ')}`);
+    }
+    if (c.methodology_version !== undefined && (typeof c.methodology_version !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,79}$/.test(c.methodology_version))) {
+      errors.push(`capability ${c.capabilityId}: methodology_version must be <methodology_id>/<version>`);
+    }
   }
-  const md = entry.metadata ?? {};
+
+  // A methodology is the corpus owner's statement of how its answers are produced. Only a
+  // node that produces answers may declare one, and the statement must at least say what
+  // it refuses to conclude — a methodology with no negative boundary is a description of
+  // a wish.
+  const methodology = (entry.reference ?? {}).methodology;
+  if (methodology !== undefined) {
+    const role = entry.reference?.corpus?.role;
+    if (!methodology || typeof methodology !== 'object' || Array.isArray(methodology)) {
+      errors.push('reference.methodology must be an object');
+    } else {
+      for (const key of Object.keys(methodology)) if (!METHODOLOGY_FIELDS.has(key)) errors.push(`reference.methodology: unknown field "${key}"`);
+      for (const key of METHODOLOGY_REQUIRED) if (methodology[key] === undefined) errors.push(`reference.methodology.${key} is required`);
+      if (methodology.schema !== undefined && methodology.schema !== METHODOLOGY_SCHEMA) errors.push(`reference.methodology.schema must be ${METHODOLOGY_SCHEMA}`);
+      if (typeof methodology.methodology_id !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(methodology.methodology_id)) errors.push('reference.methodology.methodology_id must be a lower-case identifier');
+      if (typeof methodology.version !== 'string' || !SEMVER.test(methodology.version)) errors.push('reference.methodology.version must be semantic (major.minor.patch)');
+      if (!METHODOLOGY_STATUS.has(methodology.status)) errors.push(`reference.methodology.status must be one of ${[...METHODOLOGY_STATUS].join(', ')}`);
+      if (!['hold', 'transform'].includes(role)) errors.push(`reference.methodology is declared on a "${role}" node; only a hold or a transform produces answers under a methodology`);
+      if (!Array.isArray(methodology.exclusions) || !methodology.exclusions.length || !methodology.exclusions.every((e) => typeof e === 'string' && e.trim().length >= 25)) {
+        errors.push('reference.methodology.exclusions must name, in sentences, the conclusions the corpus refuses to draw');
+      }
+      for (const field of ['source_classes', 'known_limitations']) {
+        if (methodology[field] !== undefined && (!Array.isArray(methodology[field]) || !methodology[field].every((e) => typeof e === 'string' && e.trim()))) errors.push(`reference.methodology.${field} must be an array of strings`);
+      }
+      if (!Array.isArray(methodology.changelog) || !methodology.changelog.length) {
+        errors.push('reference.methodology.changelog must record at least the current version');
+      } else {
+        for (const [i, change] of methodology.changelog.entries()) {
+          if (!change || typeof change !== 'object' || typeof change.version !== 'string' || typeof change.changed_at !== 'string' || typeof change.summary !== 'string') errors.push(`reference.methodology.changelog[${i}] needs version, changed_at and summary`);
+        }
+        const latest = methodology.changelog[methodology.changelog.length - 1];
+        if (latest?.version !== methodology.version) errors.push(`reference.methodology.version "${methodology.version}" is not the last changelog entry ("${latest?.version}"); a version nobody logged is a version nobody can date`);
+      }
+      if (md.maturity === 'empty' || md.maturity === 'upstream-mirror') errors.push(`reference.methodology is declared on a ${md.maturity} node; a methodology is the owner's own statement about code that exists`);
+    }
+  }
   if (!DOMAINS.has(md.domain)) errors.push(`metadata.domain "${md.domain}" is not one of ${[...DOMAINS].join(', ')}`);
   if (md.maturity !== undefined && !MATURITIES.has(md.maturity)) errors.push(`metadata.maturity "${md.maturity}" is not allowed`);
   if (!md.repo) warnings.push('metadata.repo is missing');

@@ -1137,6 +1137,45 @@
       "The Polybolos SDK ingest/stream store is in-memory per process and SDK_INGEST_KEY is a single shared secret with no per-caller identity; is this surface meant to stay, or is it upstream residue like the four unused OSIRIS credentials this node's environment block now names?",
       "Freight operating policy (30/120 min, 24 h) is fixed in code pending a per-customer configuration ledger."
     ],
+    "methodology": {
+      "schema": "notations.corpus-methodology.v1",
+      "methodology_id": "payload-methodology",
+      "version": "0.1.0",
+      "status": "research",
+      "effective_at": "2026-09-02T00:00:00.000Z",
+      "scope": "Evidence-bearing physical-economy entities, facilities, materials, processes, networks, markets and flows: copper and aluminium figures, freight loads, lanes, carriers and commitments.",
+      "source_classes": [
+        "public_statistical_source",
+        "public_regulatory_source",
+        "public_trade_source",
+        "licensed_organisational_source",
+        "operator_authorised_private_source"
+      ],
+      "temporal_semantics": "observedAt is the source's observation time; knownAt is when the corpus could use the information; valid time is distinct when supplied. Every projection accepts asOf with knowledge=best_known|as_known_then.",
+      "evidence_model": "Original artifacts are immutable and content-addressed before observations are recorded; claims, observations, transformations and derived state keep canonical identities and upstream artifact lineage.",
+      "contradiction_handling": "Conflicting supported evidence stays visible as disagreement; it is never averaged into an unsupported synthetic fact.",
+      "uncertainty": "Represented to match the object: disagreement, interval, candidate probabilities, significance, geometric uncertainty, or insufficient evidence. An unanswerable question is a typed refusal, never a zero.",
+      "exclusions": [
+        "Payload does not infer supplier relationships solely from geographic proximity.",
+        "Payload does not treat modeled capacity as reported capacity.",
+        "Payload does not equate corporate parent ownership with operational control.",
+        "Payload does not interpret a missing observation as zero.",
+        "Payload does not present planned or research capabilities as deployed production features."
+      ],
+      "known_limitations": [
+        "Coverage and refresh cadence vary by source class and jurisdiction.",
+        "Entity resolution can remain ambiguous when evidence lacks discriminating attributes.",
+        "Observed flows may be incomplete or delayed relative to physical activity.",
+        "Several Comtrade vintages cannot yet coexist under asOf: the country-to-facility allocation model is not built."
+      ],
+      "changelog": [
+        {
+          "version": "0.1.0",
+          "changed_at": "2026-09-02T00:00:00.000Z",
+          "summary": "Initial research methodology with explicit negative boundaries, brought from the merged control plane's hardcoded payload-methodology into the corpus owner's own catalog entry."
+        }
+      ]
+    },
     "corpus": {
       "role": "hold",
       "owner_of": [

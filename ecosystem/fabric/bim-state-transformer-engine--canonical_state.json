@@ -1,0 +1,21 @@
+{
+  "schema": "notations.fabric-sync-manifest.v1",
+  "syncId": "bim-state-transformer-engine--canonical_state",
+  "systemNodeId": "bim-state-transformer-engine",
+  "systemIdentity": "notation://node/notationsystems/bim-state-transformer-engine",
+  "fabricNodeId": "notations-platform",
+  "mode": "snapshot",
+  "authority": "canonical_state",
+  "identityKinds": [
+    "artifact",
+    "observation",
+    "state",
+    "proof"
+  ],
+  "representations": [
+    "spatial",
+    "compute"
+  ],
+  "provenanceRequired": true,
+  "knownAtRequired": true
+}

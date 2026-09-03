@@ -116,7 +116,9 @@ resolve(anything)                  // always throws: this layer is not a resolve
 | Projection | `dock/` | Reads snapshots and events; holds no store of its own |
 | Catalog of nodes | `ecosystem/catalog/` | 30 systems, seeded into the ledger |
 | Spatial representation | `ecosystem/payload/layers/` | Projections for the map lens, provenance per row |
-| Evidence about the estate's security | `security/attest.mjs` → posture | Counts and states; the material stays at the source |
+| Evidence about the estate's security | `security/attest.mjs` → posture | Counts and states; the material stays at the source, and a collector may sign the statement with its own key so the plane's word is not the only word |
+| The platform beneath | `platform/sql/`, catalogued as `notations-platform` | One repository, one system: the canonical layer, evidence index, outbox and projections as a node of the universe, so the fabric has an anchor a binding can name |
+| Fabric bindings | `ecosystem/fabric/*.json` → `register_fabric_sync` → `snapshot.fabric` | Contracts, not observations: which system participates under which authority, checked against its corpus role — a projection never binds as canonical state. Operator-local; the plane refuses it over every plane |
 
 The Evidence Lake, State Stores, Compute Stores and Representation Plane live in the
 systems the catalog describes — Payload Terminal, the Scientific Transformer Engine, the

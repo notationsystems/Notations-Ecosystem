@@ -96,8 +96,10 @@ test('COR-002 only a hold may own canonical state', () => {
 });
 
 test('the catalog grades without contested ownership', async () => {
-  const report = gradeEcosystem(await loadCatalog());
-  assert.equal(report.nodes.length, 30);
+  const entries = await loadCatalog();
+  const report = gradeEcosystem(entries);
+  assert.equal(report.nodes.length, entries.length);
+  assert.ok(report.nodes.length >= 31);
   assert.deepEqual(report.contested, [], `contested canonical state: ${JSON.stringify(report.contested)}`);
 });
 
@@ -182,7 +184,7 @@ test('UNIVERSE.md states the estate as it is, not as it was', async () => {
   assert.match(prose, new RegExp(`${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five'][fails] ?? fails} invariants are declared failed`));
 
   // Eight hold a corpus, three own a domain's canonical state, five domains have none.
-  assert.match(prose, new RegExp(`${['zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'][estate.byRole.hold]} nodes hold a corpus`, 'i'));
+  assert.match(prose, new RegExp(`${['zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'][estate.byRole.hold]} nodes hold a corpus`, 'i'));
   assert.equal(Object.keys(estate.owners).length, 3);
   for (const [domain, ids] of Object.entries(estate.owners)) assert.match(prose, new RegExp(`\`${ids[0]}\` → ${domain}`));
   for (const domain of estate.unowned) assert.ok(prose.includes(domain), `UNIVERSE.md does not name the unowned domain ${domain}`);

@@ -173,6 +173,38 @@ Checked live by `node platform/check.mjs`; proved by `node --test platform/test/
 | PLAT-008 | The transactional outbox exists with a partial backlog index | The relay must not scan history to find the next batch |
 | PLAT-009 | Evidence rows describe objects and never hold their bytes | Bytes in the database are bytes in every backup |
 
+## The platform as a node, and the fabric registry
+
+The platform is catalogued as `notations-platform` — domain `platform`, corpus role `hold`,
+grade `developing`, with COR-008 declared failed by name because the audit log is
+append-only by grant and trigger but neither hash-linked nor signed. One repository is one
+system, so the seven layers a second plane once registered as seven nodes are one node here
+with `metadata.fabric_layers: "evidence canonical projection compute"` — the layers this
+SQL actually builds, with model outputs and proofs landing in object storage as evidence
+until a compute store is admitted.
+
+Systems bind to it through fabric sync manifests (`ecosystem/fabric/*.json`), recorded by
+the control plane as `register_fabric_sync` and served in `snapshot.fabric`. A manifest names
+the system, its identity, the platform node, a mode, an authority, the identity classes it
+carries and the representations they land in — never a URL, a record or a byte — and
+provenance and knowledge time are required and cannot be relaxed. The authority is checked
+against the corpus role:
+
+| Corpus role | May bind as |
+| --- | --- |
+| hold, owning a domain | canonical_state, evidence_source |
+| hold, owning none | evidence_source |
+| feed | evidence_source |
+| transform | derived_compute |
+| project | projection |
+| coordinate | canonical_state |
+
+That table is PLAT-004 stated one layer up: the database refuses a projection's write by
+withholding the grant, and the coordination layer refuses a projection's *claim* to be
+canonical before anything is written (SEC-046). Registration is operator-local
+(SEC-045). A binding is a contract, not an observation: nine are declared today and no
+bytes have moved, because nothing here is deployed.
+
 ## Running it
 
 ```sh

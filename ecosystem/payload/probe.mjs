@@ -4,9 +4,36 @@
 //   PAYLOAD_URL=... OSIRIS_INTEL_URL=http://localhost:4000 node ecosystem/payload/probe.mjs --url http://127.0.0.1:8787 --token ...
 //   add --loop 60 to keep probing every 60 s.
 // The probe never forwards response bodies into the journal: only a health verdict and a ≤600-char detail.
+//
+// The origin it probes is configuration, never a request parameter, and it is held to the
+// same rules the merged plane's in-process adapter held its target to: HTTPS outside
+// loopback, no credentials, query or fragment in the URL, no redirects followed, and a
+// 64 KiB cap on what is read. The difference is where this runs — outside the plane, which
+// fetches nothing (docs/SUBSTRATE.md) — not what it refuses.
 import path from 'node:path';
 import { HttpControlPlane } from '../../control-plane/src/client.js';
 import { fileURLToPath } from 'node:url';
+
+export const MAX_HEALTH_BYTES = 64 * 1024;
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+/**
+ * The trusted origin a target may be probed at. Refuses anything but a bare origin: a
+ * credential in the URL would be sent to whatever answers; a query or fragment is not part
+ * of an origin; plaintext to a non-loopback host is a verdict fetched from a network the
+ * probe does not control. Thrown, not recorded — a misconfigured probe is not "offline".
+ */
+export function configuredBase(value, name = 'PAYLOAD_URL') {
+  let url;
+  try {
+    url = new URL(String(value));
+  } catch {
+    throw new Error(`${name} must be an absolute URL: the trusted service origin.`);
+  }
+  if (url.username || url.password || url.search || url.hash) throw new Error(`${name} must be a bare origin, with no credentials, query or fragment.`);
+  if (url.protocol !== 'https:' && !LOOPBACK.has(url.hostname)) throw new Error(`${name} must use HTTPS outside loopback; a health verdict fetched in plaintext from a network the probe does not control is not a verdict.`);
+  return url.origin;
+}
 
 export const TARGETS = [
   { nodeId: 'payload-terminal', env: 'PAYLOAD_URL', path: '/api/health', evaluate: evaluatePayloadHealth },
@@ -36,14 +63,21 @@ export function evaluateGenericHealth(status, body) {
 }
 
 export async function probeTarget(target, base, fetchImpl = fetch, timeoutMs = 5000) {
-  const url = `${base.replace(/\/$/, '')}${target.path}`;
+  const url = `${configuredBase(base, target.env)}${target.path}`;
   const started = Date.now();
   try {
-    const res = await fetchImpl(url, { headers: { accept: 'application/json', 'x-machine-client': 'notations-control-plane-probe' }, signal: AbortSignal.timeout(timeoutMs) });
+    // No redirects: a health route that answers 3xx is a route that has moved, and following
+    // it would probe whatever it points at.
+    const res = await fetchImpl(url, { headers: { accept: 'application/json', 'x-machine-client': 'notations-control-plane-probe' }, redirect: 'error', signal: AbortSignal.timeout(timeoutMs) });
     let body = null;
-    try { body = await res.json(); } catch { body = null; }
+    let oversized = false;
+    try {
+      const text = await res.text();
+      if (text.length > MAX_HEALTH_BYTES) oversized = true;
+      else body = JSON.parse(text);
+    } catch { body = null; }
     const { health, detail } = target.evaluate(res.status, body);
-    return { nodeId: target.nodeId, health, detail: `${detail} (${Date.now() - started} ms)`.slice(0, 600), observedAt: new Date().toISOString() };
+    return { nodeId: target.nodeId, health, detail: `${detail}${oversized ? '; health body exceeded 64 KiB and was ignored' : ''} (${Date.now() - started} ms)`.slice(0, 600), observedAt: new Date().toISOString() };
   } catch (e) {
     return { nodeId: target.nodeId, health: 'offline', detail: `${url} unreachable: ${(e && e.message) || e}`.slice(0, 600), observedAt: new Date().toISOString() };
   }
@@ -78,6 +112,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   else { console.error('usage: node ecosystem/payload/probe.mjs --journal <path> | --url <base> [--token <token>] [--actor <actorId>] [--loop <seconds>]'); process.exit(2); }
   const configured = TARGETS.filter((t) => process.env[t.env]);
   if (!configured.length) { console.error(`no targets configured; set ${TARGETS.map((t) => t.env).join(' and/or ')}`); process.exit(2); }
+  // Refuse a bad origin before the first probe, not as an "offline" observation after it.
+  for (const t of configured) configuredBase(process.env[t.env], t.env);
   const once = async () => {
     const observations = await Promise.all(configured.map((t) => probeTarget(t, process.env[t.env])));
     await recordObservations(plane, observations, { actorId, log: (l) => console.log(`${new Date().toISOString()} ${l}`) });

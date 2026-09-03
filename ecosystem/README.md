@@ -7,12 +7,16 @@ model (see `CATALOG_FORMAT.md`). `UNIVERSE.md` is the prose account and relation
 node validate.mjs                                        # the control plane's own validator over every node
 node seed.mjs --journal ../control-plane/data/control-plane.jsonl   # register nodes + relations (idempotent)
 node seed.mjs --url http://127.0.0.1:8787 --token "$NOTATIONS_CONTROL_PLANE_TOKEN"
+node fabric.mjs --journal ../control-plane/data/control-plane.jsonl              # bind systems to the platform; operator-local, no --url
 node sample-snapshot.mjs                                 # dock/public/sample-snapshot.json for offline rendering
 npm test
 ```
 
 `payload/` is the Payload adapter: health probe, layer extractors, the layer manifest and the
-one row-provenance shape every extracted row uses.
+one row-provenance shape every extracted row uses. `fabric/` holds one sync manifest per
+system bound to the data platform — contracts, not observations — and `fabric.mjs` registers
+them; the plane checks each authority against the system's corpus role and refuses the
+action over every plane.
 
 Two closed vocabularies keep the catalog queryable across systems: `surfaces.json` (how a
 capability is reached) and `data-domains.json` (what subject it touches). Both record every

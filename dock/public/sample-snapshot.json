@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "415f164519f2562653647f4f55cb6591638a6a06406124e35778e3e0864cf177",
+  "revision": "fddfd694b10f34d7bd6f62d57dcb893ede08ba41ca5127e85d4b70163979dfc9",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -583,7 +583,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -624,7 +625,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -884,7 +886,8 @@
             "coverage": 1,
             "summary": "Sample: the control-plane invariant suite passes."
           }
-        ]
+        ],
+        "signer": null
       }
     },
     {
@@ -2437,7 +2440,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -2563,7 +2567,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -2901,7 +2906,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -2926,6 +2932,135 @@
       "registeredAt": "2026-09-03T00:00:00.000Z",
       "updatedAt": "2026-09-03T00:00:00.000Z",
       "uri": "notation://node/notationsystems/notations-energy-modulator",
+      "health": "unknown",
+      "lastObservedAt": null,
+      "lastObservation": null,
+      "security": null
+    },
+    {
+      "nodeId": "notations-platform",
+      "name": "Notations Data Platform",
+      "kind": "information_library",
+      "description": "The data platform beneath the estate (docs/PLATFORM.md): one canonical PostgreSQL layer — bitemporal, append-only, tenant-isolated by row security that is enabled and forced — an evidence index that describes objects and never holds their bytes, a transactional outbox, and rebuildable projections that hold no write grant on canonical truth. It is the fabric's anchor: a system binds to it under an authority its corpus role entitles it to, and the control plane refuses a projection that claims canonical state. It is real SQL in platform/sql and nine invariants checked against a running database, not a diagram; it is not yet deployed, and no tenant data lives in this repository. Model outputs and proofs land in object storage as evidence, which is where derived compute binds until a compute store is built.",
+      "capabilities": [
+        {
+          "capabilityId": "canonical.append",
+          "label": "Append a canonical fact",
+          "description": "INSERT into canonical.entity, entity_alias, observation, assertion or relationship as the application role, under the caller's tenant. Every row is bitemporal and carries its admission or basis; an entity names the evidence object it was admitted from.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "canonical.supersede",
+          "label": "Close a fact's knowledge time",
+          "description": "UPDATE of superseded_at only: the one column the application may change on a canonical row. Nothing is deleted and nothing else is rewritten; a superseded fact stays readable as of the time it was believed.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "evidence.index",
+          "label": "Index an evidence object",
+          "description": "INSERT into evidence.object: content hash, zone, rights, retention class, access scope, source system and retrieval time, all required. The bytes stay in object storage; the row describes them.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "evidence.quarantine",
+          "label": "Quarantine an evidence object",
+          "description": "Place an object in the quarantined zone with a recorded reason; the consistency trigger refuses a quarantine without a reason and a reason without a quarantine.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "outbox.claim",
+          "label": "Claim outbox rows",
+          "description": "canonical.claim_outbox(batch_size): lease the next unpublished change rows FOR UPDATE SKIP LOCKED, so two relays never publish the same change and neither scans history to find the next batch.",
+          "mode": "propose",
+          "approval": "automatic",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "outbox.mark_published",
+          "label": "Mark outbox rows published",
+          "description": "canonical.mark_published(ids): idempotent acknowledgement that a relay delivered the claimed rows. The publish boundary of controlled change; a broker is a second system and is not built.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "projection.build",
+          "label": "Record a projection build",
+          "description": "INSERT into projection.build: what was built, from which canonical revision, and the command that rebuilds it. A projection that cannot say this is not a projection.",
+          "mode": "propose",
+          "approval": "automatic",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "projection.reachable",
+          "label": "Traverse relationships",
+          "description": "projection.reachable(from_entity, kinds, max_depth): the graph projection as a recursive CTE, depth-capped and cycle-guarded, returning each reachable entity once at its shortest depth. A graph database is admitted on a measured limit this cannot meet, never on its absence.",
+          "mode": "observe",
+          "approval": "automatic",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "projection.entity_current",
+          "label": "Read current entities",
+          "description": "projection.entity_current: a materialized view of every live, unsuperseded entity, rebuilt from canonical state and rebuildable at any time.",
+          "mode": "observe",
+          "approval": "automatic",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "platform.check",
+          "label": "Check the nine invariants live",
+          "description": "node platform/check.mjs: PLAT-001 through PLAT-009 against a running database — forced row security, no bypass role, a policy on every guarded table, no projection write grant, append-only canonical and evidence, bitemporal facts, complete evidence rows, the outbox and its backlog index, no bytes in evidence rows. Skips with a stated reason when no database is reachable; never passes by default.",
+          "mode": "observe",
+          "approval": "automatic",
+          "maturity": "experimental"
+        },
+        {
+          "capabilityId": "platform.migrate",
+          "label": "Apply the schema",
+          "description": "node platform/migrate.mjs [--reset]: apply platform/sql/*.sql in order to the configured database, then run the invariant checks. --reset drops the schemas first and is for development databases only.",
+          "mode": "execute",
+          "approval": "operator",
+          "maturity": "experimental"
+        }
+      ],
+      "metadata": {
+        "repo": "notationsystems/Notations-Ecosystem",
+        "domain": "platform",
+        "maturity": "v0",
+        "language": "SQL, JavaScript",
+        "framework": "PostgreSQL 16; PostGIS declared for the spatial projection",
+        "exposure": "local-only",
+        "upstream": "",
+        "visibility": "public",
+        "last_pushed_at": "2026-09-03T01:40:38Z",
+        "durability": "managed PostgreSQL when deployed; a development cluster today",
+        "default_port": 5433,
+        "fabric_layers": "evidence canonical projection compute",
+        "person_data": "refused",
+        "data_domains": "architecture-invariants canonical-state evidence-pool pipeline-artifacts",
+        "surfaces": "cli tcp",
+        "api_planes": "governance internal_operator tenant_read verification",
+        "api_writes": 5,
+        "api_operator_only": 1,
+        "corpus_role": "hold",
+        "corpus_grade": "developing",
+        "corpus_coverage": 0.88,
+        "corpus_applicable": 8,
+        "corpus_fails": "COR-008"
+      },
+      "location": null,
+      "registeredAt": "2026-09-03T00:00:00.000Z",
+      "updatedAt": "2026-09-03T00:00:00.000Z",
+      "uri": "notation://node/notationsystems/notations-platform",
       "health": "unknown",
       "lastObservedAt": null,
       "lastObservation": null,
@@ -3595,7 +3730,8 @@
           "label": "Repository placeholder",
           "description": "No code yet. The only observable is the repository's existence, name and position in the ecosystem; capabilities will be declared with the first commit.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "maturity": "planned"
         }
       ],
       "metadata": {
@@ -4183,413 +4319,472 @@
           "label": "Physical-economy projections (map/analytics/timeline/graph/state)",
           "description": "GET /api/economy?commodity=copper|aluminium&view=map|analytics|timeline|graph|state. map: entities and flows with disruption flags at the evaluation date; analytics: concentration (HHI with partition), centrality, bottlenecks, anomalies, propagation, corpusHealth, sources; timeline: playback range; graph: force-graph projection; state: full canonical state. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf). Unanswerable questions return typed refusals (value null + refusalType + remedy), never a zero.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.entity.read",
           "label": "Entity inspector",
           "description": "GET /api/economy/entity?commodity=&id=ent:... returns one entity's canonical state: observations with unit/basis/valueKind/source/knownAt, capacities, flows in/out, events, and resolved upstream/downstream chains so a client never owns graph logic. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.search",
           "label": "Entity and evidence search",
           "description": "GET /api/economy/search?q= searches the canonical register (mines, smelters, refineries, ports, companies, countries) by name, operator, country or kind; the index IS the register. Queries whose first token names an epistemic state (refused[:type], stale[:type], contested[:class], vintage) search the evidence layer instead. A true miss names registered-but-unbuilt sources (registryGaps). Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.table.read",
           "label": "Corpus table and period x edition grid",
           "description": "GET /api/economy/table?commodity=[&metric=&subject=&format=json|md] renders the corpus as rows carrying record_id, the five axes, source, period, known_at, attestation and a server-rendered claim sentence; refused subjects are null-valued rows with a remedy. view=grid&subject=&metric= returns the period x edition grid (null cell = not covered, never zero). GET-only by design; CSV/XLSX refused. Exports are logged to data-archive/export-log.jsonl. Accepts asOf=YYYY-MM-DD and knowledge=best_known|as_known_then (as_known_then withholds and counts records not knowable at asOf).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.refusals.read",
           "label": "Refusals digest and session telemetry",
           "description": "GET /api/economy/refusals?commodity=[&asOf=&knowledge=] returns everything the instrument declined to answer, grouped by refusal type with the type's shared remedy, most-blocking mechanism first: a work queue. ?view=session returns the session telemetry digest (queries, misses, withheld, exports) with no query strings and no personal data.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.guards.read",
           "label": "Runtime guard evaluation and build identity",
           "description": "GET /api/economy/guards[?now=YYYY-MM-DD] evaluates the validWhile guards of every deferred ledger decision against the state this instance is actually serving (not CI's verdict on the repository) and reports version.commit / commit_source (unstamped-build when PAYLOAD_BUILD_SHA is absent). Used as the S-6 session baseline capture.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.validate",
           "label": "Claim validator as a service",
           "description": "GET /api/economy/validate?claim=...&records=obs:a,obs:b[&commodity=&asOf=&knowledge=] judges the support relation between a natural-language claim (from any model) and the records it cites. Verdicts: supported, partially_supported, unsupported, overstated, inadmissible (rests on representative-attested input). Never recomputes analytics, never supplies uncited evidence; the claim text is never logged.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "economy.scenario",
           "label": "Counterfactual scenario injection",
           "description": "POST /api/economy/scenario {commodity?, asOf?, knowledge?, label, events[]} runs the propagation engine twice on the same frame (reconstruction and with hypothetical events injected) and returns both plus the delta on an explicit counterfactual frame. Nothing is written; the scenario exists only in the response.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "entity.expand",
           "label": "Entity expansion via the OSIRIS intel layer",
           "description": "GET /api/entity/expand?type=aircraft|vessel|company|person|ip|country&id=[&registration&model&icao24] validates the request and forwards it to the osiris-intel service (INTEL_URL, default http://payload-intel:4000 in production) returning its {nodes, links} ontology graph. Rate-limited 30/min per client IP; response cached 1h.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.operations.read",
           "label": "Read load-operation projections",
           "description": "GET /api/freight/operations[?operationId=] lists or reads the replayable load-operation projections (opportunity intake, alternatives, authorization, assignment, dispatch, outcome) derived from the append-only hash-chained operations journal (PAYLOAD_OPERATIONS_LOG). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.operations.command",
           "label": "Advance a load operation (typed commands)",
           "description": "POST /api/freight/operations {command, payload} appends to the operations journal. Commands: register_opportunity, register_alternative, authorize_alternative, open_episode, record_assignment, explore_assignment, dispatch, capture_outcome, capture_settlement. 201 on append, 200 on idempotent replay, 409 on phase/id conflicts, 422 on typed refusals, 413 above 1 MB (raw documents do not belong in the journal). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.control_tower.read",
           "label": "Control-tower read model",
           "description": "GET /api/freight/control-tower joins the operations and carrier-communication journals into an exception-first desk queue: load/carrier/lane/episode identity, authorization through settlement state, pickup/delivery commitments, tracking freshness, quoted cost, invoice, margin. Every item names an issue, severity, deadline, evidence count and operator remedy; no composite score. Journal corruption makes the whole view refuse rather than show an empty desk. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.communications.read",
           "label": "Read carrier-communication projections",
           "description": "GET /api/freight/communications[?operationId=] exposes tender delivery attempts, receipts and carrier-event projections from the carrier-communications journal (PAYLOAD_CARRIER_COMMUNICATIONS_LOG). Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.communications.send_dispatch",
           "label": "Deliver a tender to the carrier adapter",
           "description": "POST /api/freight/communications {command:\"send_dispatch\", payload} delivers the journal-derived tender to the configured outbound carrier adapter (PAYLOAD_CARRIER_DISPATCH_URL, bearer PAYLOAD_CARRIER_DISPATCH_TOKEN) with a stable Idempotency-Key, at-least-once across a crash. The carrier receives only the selected rate and sanitized load facts, never the shipper target rate. 503 carrier_gateway_not_configured when the adapter is unset. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.carrier_events.webhook",
           "label": "Inbound carrier acknowledgement/tracking webhook",
           "description": "POST /api/freight/carrier-events records carrier acknowledgements and tracking updates into the communications journal. Authenticated by x-payload-timestamp and x-payload-signature = sha256=HMAC-SHA256(timestamp + \".\" + rawBody) under PAYLOAD_CARRIER_WEBHOOK_SECRET (>= 32 bytes; 300 s skew; 256 KB cap). Events bind to immutable dispatch identities; orphan or mismatched histories are refused.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.sources.pull",
           "label": "Authoritative carrier and diesel evidence pull-through",
           "description": "GET /api/freight/sources?usdot=&carrierId=[&includeDiesel=1] pulls FMCSA QCMobile identity/authority/out-of-service evidence and the fixed EIA weekly U.S. diesel benchmark (FMCSA_WEB_KEY, EIA_API_KEY). Returns a gate-ready authorizationCarrier with insurance expiry and cargo cover deliberately null; excludes carrier address/telephone; partial upstream failure is a typed source refusal, never a stale value or inferred pass. Requires Authorization: Bearer PAYLOAD_OPERATIONS_TOKEN; fail-closed (503) when the token is unset.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.demo.run",
           "label": "End-to-end freight run over the simulated backend",
           "description": "GET /api/freight/demo[?format=text&now=ISO] runs nine hand-built loads through the notary, lifecycle engine and spatial abstraction and pins every refusal. The clock is a query parameter defaulted to the fixture instant so two responses can be diffed.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "freight.world.run",
           "label": "Detector discrimination run over a generated freight world",
           "description": "GET /api/freight/world?now=ISO&seed=int generates a ~520-load population with planted signals and reports whether each detector (lane residuals, carrier vetting, exception queue) found what the world manifest says it planted. Same seed, byte-identical world.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.whois",
           "label": "WHOIS/RDAP domain attribution",
           "description": "GET /api/osint/whois resolves a domain's registrant organisation via RDAP and cross-checks registrant/org names against the OFAC SDN list (OpenSanctions mirror), surfacing an inline alert. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.dns",
           "label": "DNS lookup (DoH)",
           "description": "GET /api/osint/dns resolves records for a domain via Google DNS-over-HTTPS. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.ip",
           "label": "IP geolocation, ASN and OFAC screening of the announcing org",
           "description": "GET /api/osint/ip returns geolocation, reputation and ASN owner for an address block and screens the ASN owner against the OFAC SDN list. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.certs",
           "label": "Certificate-transparency lookup",
           "description": "GET /api/osint/certs lists certificates issued for a domain via crt.sh. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.bgp",
           "label": "BGP/ASN lookup",
           "description": "GET /api/osint/bgp attributes an autonomous system or prefix to its operating organisation via ip-api.com and RIPE Stat. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.mac",
           "label": "MAC OUI vendor lookup",
           "description": "GET /api/osint/mac returns the hardware vendor that registered a MAC prefix; the subject is a vendor, never a device owner. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.threats",
           "label": "Threat-indicator feed",
           "description": "GET /api/osint/threats serves AlienVault OTX public pulses and Tor exit-node indicators for infrastructure attribution. CONDITIONAL under the collection policy: organisational infrastructure attribution only; never used to profile, locate or identify a natural person, and the constraint is stated in the route source.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "osint.sanctions",
           "label": "Counterparty sanctions screening (organisations, vessels, aircraft)",
           "description": "GET /api/osint/sanctions screens carriers, brokers, shippers, consignees, vessels and aircraft against the OFAC SDN list (OpenSanctions us_ofac_sdn mirror) with substring and alias matching, schema-filterable. The Person schema is not addressable and is filtered out of every result set, not merely omitted from the allowlist.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "geo.directions",
           "label": "Turn-by-turn routing",
           "description": "GET /api/directions returns normalised routes with narrative maneuvers from Valhalla (auto/bicycle/pedestrian costing, avoid options) with OSRM as driving-only fallback; both keyless OSM services, one response shape.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "geo.search",
           "label": "Location search and geocoding",
           "description": "GET /api/geosearch merges Photon (prefix/fuzzy autocomplete) with Nominatim into one ranked result list for the route planner. Companion routes: GET /api/geo (client IP geolocation with provider cascade) and GET /api/arcgis (search public ArcGIS feature services or spatially query one by bbox, returning GeoJSON).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "feeds.maritime",
           "label": "Ports, chokepoints and AIS vessels",
           "description": "GET /api/maritime returns a static global port and chokepoint reference (top container ports with TEU volumes) plus live AIS vessel positions via aisstream.io when AIS_API_KEY is set.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "feeds.environment",
           "label": "Severe weather and air quality",
           "description": "GET /api/weather aggregates NASA EONET events, NOAA/NWS alerts (U.S.) and GDACS cyclones/floods/droughts into one severity-and-coordinate shape for transit risk; GET /api/air-quality returns OpenAQ PM2.5 latest measurements. Both keyless.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "feeds.infrastructure",
           "label": "Critical infrastructure reference",
           "description": "GET /api/infrastructure serves a curated static list of nuclear power facilities worldwide (id, coordinates, status, reactors, capacity, owner).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "feeds.markets",
           "label": "Market quotes and price history",
           "description": "GET /api/markets returns grouped quotes (indices, rates, FX, energy, commodities incl. COMEX copper, crypto) from Yahoo v8 chart with a month of closes for sparklines and session-open state; GET /api/markets/history?symbol=&range= returns OHLC candles at a range-appropriate interval (case-sensitive ranges: 1m vs 1M).",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "feeds.signals",
           "label": "News wire and daily chain-threat brief",
           "description": "GET /api/news fetches Telegram OSINT channels with RSS fallbacks (BBC, Al Jazeera) as disruption signals against lanes; GET /api/chain/daily?days= aggregates DefiLlama exploits, NVD blockchain CVEs and newly designated OFAC wallets into a dated digest whose sections degrade independently and say why.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ops.health",
           "label": "Health and boot report",
           "description": "GET /api/health returns liveness plus the seaDogTerminal block: build identity, boot report (archive path writable, commodities ready), runtime guard verdict (reported as warming while state assembles so a liveness probe never hangs), process report, outbound rate stats and spend-governor tally.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ops.stats",
           "label": "Aggregate counters",
           "description": "GET /api/stats serves small counters (weather events, nuclear facilities) and names retired feeds in not_collected instead of reporting zero; null where a feed exists but did not answer.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ops.tiles.proxy",
           "label": "Basemap tile proxy",
           "description": "GET /api/proxy-tiles?url= proxies CARTO basemap tiles (cartocdn.com only) so no tile key reaches the client; per-IP throttle (240/min) and a credit governor whose budget is registered by deployment, with governance stated in response headers.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ops.retired_routes",
           "label": "Retired-route contract (503 route_retired)",
           "description": "Any method on a retired general-purpose route (flights, satellites, cctv, gdelt, conflicts, ai/*, etc.) hits the catch-all and returns the same 503 route_retired payload the routes had before their handlers were deleted. The live/retired disposition is one map in src/lib/routeGate.ts and is enforced by routeSurfacePolicy.test.ts.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ops.github_webhook",
           "label": "GitHub webhook relay",
           "description": "POST /api/github-webhook verifies x-hub-signature-256 against GITHUB_WEBHOOK_SECRET and forwards the raw payload to GITHUB_WEBHOOK_FORWARD_URL; fail-closed 503 when either is unset.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "sdk.ingest",
           "label": "Polybolos SDK entity ingest",
           "description": "POST /api/sdk/ingest {source, apiKey, entities[]} accepts Polybolos-format entities (id, position.lat/lng, domain, entityType, threat, classification) from external platforms and merges them into the in-memory common operating picture shared with the SSE stream. Fail-closed 503 when SDK_INGEST_KEY is unset; 401 on key mismatch. Store is per-process and not persisted.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "sdk.ingest.status",
           "label": "SDK ingest status",
           "description": "GET /api/sdk/ingest returns sdk name/version, current entity count and the last ten ingestions.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "sdk.stream",
           "label": "SDK entity SSE stream",
           "description": "GET /api/sdk/stream opens a text/event-stream that emits a status event, a heartbeat every 15 s and entity_update batches (up to 500 entities) every 5 s when the ingest store changed.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.bottlenecks",
           "label": "MCP tool: bottlenecks - Ranked candidate chokepoints",
           "description": "Candidate chokepoints in the flow graph ranked by contained metal routed, utilization, modeled alternatives and dependents. Triage signals, not validated risk; an empty list arrives with empty_because. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.search_entities",
           "label": "MCP tool: search_entities - Search the canonical entity register",
           "description": "Search mines, smelters, refineries, ports, companies and countries by name, operator, country or kind; withheld entities under as_known_then are counted. Reads /api/economy/search. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.search_evidence",
           "label": "MCP tool: search_evidence - Search the epistemic state",
           "description": "Search refused (by type), stale, contested and vintage records; zero items returns a note saying which zero it is. Reads /api/economy/search with an evidence-kind token. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.get_entity",
           "label": "MCP tool: get_entity - Full canonical state of one entity",
           "description": "Observations with unit/basis/valueKind/source/knownAt, capacities, flows, events and upstream/downstream chains; a missing axis is null and flagged. Reads /api/economy/entity. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.get_observations",
           "label": "MCP tool: get_observations - Corpus rows or the period x edition grid",
           "description": "The corpus table as rows (record_id, subject, metric, value, axes, claim) or as a grid with view=grid; withheld rows counted in the header. Reads /api/economy/table. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.concentration",
           "label": "MCP tool: concentration - Concentration indices",
           "description": "HHI by country, facility and operator (control and economic-interest bases) with partition, completeness and rendered claim; null HHI is a refusal over zero attributed tonnage. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.propagate",
           "label": "MCP tool: propagate - Observed disruption propagation",
           "description": "How recorded disruption events propagate through the flow graph: tonnage touched, downstream reach, alternatives with spare capacity; null disruptedKtPerYear means not statable at this date. Reads /api/economy?view=analytics. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.scenario",
           "label": "MCP tool: scenario - Counterfactual event injection",
           "description": "Hypothetical events run through the same propagation engine on an explicit counterfactual frame; under as_known_then this backtests the analytical layer. Nothing is written. Calls POST /api/economy/scenario. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.refusals_digest",
           "label": "MCP tool: refusals_digest - Everything currently refused, as a work queue",
           "description": "Refusals grouped by type with each type's shared remedy, most-blocking first; do not fill from external knowledge. Reads /api/economy/refusals. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.corpus_health",
           "label": "MCP tool: corpus_health - The instrument watching its own blindness",
           "description": "Sources past cadence, degradation-ladder position, plausibility-suspect sources, aging topology; an empty array is the healthy state. Reads /api/economy?view=analytics corpusHealth. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.source_registry",
           "label": "MCP tool: source_registry - Every known source, built or not",
           "description": "Built adapters with owner and maintenance cadence plus registered-but-unbuilt sources (adapter null) ranked by miss-log demand; also carries each source's redistribution posture. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "mcp.validate_claim",
           "label": "MCP tool: validate_claim - Validate a claim against cited records",
           "description": "Verdict (supported, partially_supported, unsupported, overstated, inadmissible) from the substrate for a claim any model produced; judges only the support relation. Calls /api/economy/validate. Requires asOf and mode (best_known|as_known_then) on every call; refusals are successful returns with null values, refusalType and remedy; every quantitative return carries record_ids and server-rendered claim sentences. Sources whose redistribution posture is internal_only or unresolved (Westmetall, Yahoo) are withheld from machine clients as typed refusals.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ui.terminal",
           "label": "Terminal map and research panels",
           "description": "The principal view at /: GPU-rendered MapLibre globe with physical-economy layers (production, smelting/refining, ports and logistics, material flows as great-circle arcs, bottleneck candidates), evidence panels, refusals, vintages and temporal playback scrubber.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ui.operations",
           "label": "Operations control tower workspace",
           "description": "The /operations workspace where a human operator supplies PAYLOAD_OPERATIONS_TOKEN (kept only in tab memory), reads GET /api/freight/control-tower every 30 s and works the exception-first queue with explicit remedies. Fixed policy: 30 min to acknowledge a tender, 120 min before in-motion tracking is stale, 24 h after delivery before settlement is high priority.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "ui.docs",
           "label": "Documentation and API reference",
           "description": "The /docs page renders the hand-maintained machine-readable API catalog (src/app/docs/apiCatalog.ts) with endpoint cards, params, sample URLs and a command palette.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "cli.smoke",
           "label": "Post-deploy smoke check",
           "description": "node scripts/smoke.mjs [base-url] (npm run smoke) hits the real endpoints of a running instance and asserts the instrument answers; exit 0 only when every check holds. The rule: never deploy under a researcher without running it against a staging copy first.",
           "mode": "observe",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "cli.archive_manifest",
           "label": "Regenerate the data-archive manifest",
           "description": "node scripts/archive-manifest.mjs rewrites data-archive/MANIFEST.json with sha256 and a durability class (unreconstructable, refetchable_at_risk, refetchable, documentation) for every archive file; the suite verifies tree and manifest in both directions and refuses unclassified files.",
           "mode": "execute",
-          "approval": "operator"
+          "approval": "operator",
+          "methodologyVersion": "payload-methodology/0.1.0"
         },
         {
           "capabilityId": "contract.ocr_candidate_intake",
           "label": "OCR candidate intake boundary (EvidencePool)",
           "description": "Typed contract for candidates arriving from the OCR agent: only a canonical_state_candidate with adjudication pending, complete ObservationBundle identity (bundle id, artifact content hash, execution key), a temporal frame (documentReceivedAt/knownAt/extractedAt) and per-field OBSERVED/EXTRACTED/INFERRED or typed absence. Intake stages evidence for resolution and validation; it is deliberately not a write to the freight book. Not yet exposed on an HTTP route.",
           "mode": "propose",
-          "approval": "automatic"
+          "approval": "automatic",
+          "methodologyVersion": "payload-methodology/0.1.0"
         }
       ],
       "metadata": {
@@ -4610,6 +4805,8 @@
         "derived_from": "simplifaisoul/osiris (MIT fork; recon capabilities removed)",
         "person_data": "incidental",
         "person_data_note": "WHOIS and RDAP records name registrants; the terminal reads them for domain attribution and indexes none of it by person.",
+        "methodology": "payload-methodology/0.1.0",
+        "methodology_status": "research",
         "data_domains": "architecture-invariants archive-integrity canonical-state commodity-markets coordination cyber financial-markets infrastructure local-context logistics maritime network-health network-recon ontology risk sanctions tracking-events trade-documents visualisation weather",
         "surfaces": "cli contract http mcp sse ui",
         "api_planes": "governance internal_operator tenant_read verification",
@@ -4719,7 +4916,8 @@
             "coverage": 1,
             "summary": "Sample: the control-plane invariant suite passes."
           }
-        ]
+        ],
+        "signer": null
       }
     },
     {
@@ -6464,6 +6662,209 @@
       }
     ],
     "boundary": "Posture is evidence only: states, coverage and counts. Credentials, key material, vulnerability detail, network topology, offensive capability and pointers to raw findings are refused at the command boundary."
+  },
+  "fabric": {
+    "identityScheme": "notation://<class>/<namespace>/<local-id>[@<version>]",
+    "syncs": [
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "bim-state-transformer-engine--canonical_state",
+        "systemNodeId": "bim-state-transformer-engine",
+        "systemIdentity": "notation://node/notationsystems/bim-state-transformer-engine",
+        "fabricNodeId": "notations-platform",
+        "mode": "snapshot",
+        "authority": "canonical_state",
+        "identityKinds": [
+          "artifact",
+          "observation",
+          "state",
+          "proof"
+        ],
+        "representations": [
+          "spatial",
+          "compute"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "control-plane--canonical_state",
+        "systemNodeId": "control-plane",
+        "systemIdentity": "notation://node/notationsystems/control-plane",
+        "fabricNodeId": "notations-platform",
+        "mode": "append_only",
+        "authority": "canonical_state",
+        "identityKinds": [
+          "node",
+          "observation",
+          "decision"
+        ],
+        "representations": [
+          "sql"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "data-acquisition-channel--evidence_source",
+        "systemNodeId": "data-acquisition-channel",
+        "systemIdentity": "notation://node/notationsystems/data-acquisition-channel",
+        "fabricNodeId": "notations-platform",
+        "mode": "append_only",
+        "authority": "evidence_source",
+        "identityKinds": [
+          "source",
+          "artifact",
+          "observation"
+        ],
+        "representations": [
+          "object"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "information-systems-archive--evidence_source",
+        "systemNodeId": "information-systems-archive",
+        "systemIdentity": "notation://node/notationsystems/information-systems-archive",
+        "fabricNodeId": "notations-platform",
+        "mode": "append_only",
+        "authority": "evidence_source",
+        "identityKinds": [
+          "source",
+          "artifact"
+        ],
+        "representations": [
+          "object"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "payload-ocr-agent--evidence_source",
+        "systemNodeId": "payload-ocr-agent",
+        "systemIdentity": "notation://node/notationsystems/payload-ocr-agent",
+        "fabricNodeId": "notations-platform",
+        "mode": "event_stream",
+        "authority": "evidence_source",
+        "identityKinds": [
+          "artifact",
+          "observation",
+          "claim"
+        ],
+        "representations": [
+          "object"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "payload-render-engine--projection",
+        "systemNodeId": "payload-render-engine",
+        "systemIdentity": "notation://node/notationsystems/payload-render-engine",
+        "fabricNodeId": "notations-platform",
+        "mode": "snapshot",
+        "authority": "projection",
+        "identityKinds": [
+          "state"
+        ],
+        "representations": [
+          "spatial"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "payload-terminal--canonical_state",
+        "systemNodeId": "payload-terminal",
+        "systemIdentity": "notation://node/notationsystems/payload-terminal",
+        "fabricNodeId": "notations-platform",
+        "mode": "snapshot",
+        "authority": "canonical_state",
+        "identityKinds": [
+          "source",
+          "artifact",
+          "observation",
+          "entity",
+          "claim",
+          "state"
+        ],
+        "representations": [
+          "object",
+          "sql",
+          "spatial"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "scientific-compute-layer--derived_compute",
+        "systemNodeId": "scientific-compute-layer",
+        "systemIdentity": "notation://node/notationsystems/scientific-compute-layer",
+        "fabricNodeId": "notations-platform",
+        "mode": "event_stream",
+        "authority": "derived_compute",
+        "identityKinds": [
+          "computation",
+          "proof",
+          "state"
+        ],
+        "representations": [
+          "compute",
+          "object"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      },
+      {
+        "schema": "notations.fabric-sync-manifest.v1",
+        "syncId": "scientific-transformer-engine--canonical_state",
+        "systemNodeId": "scientific-transformer-engine",
+        "systemIdentity": "notation://node/notationsystems/scientific-transformer-engine",
+        "fabricNodeId": "notations-platform",
+        "mode": "event_stream",
+        "authority": "canonical_state",
+        "identityKinds": [
+          "entity",
+          "observation",
+          "claim",
+          "transform",
+          "state",
+          "proof"
+        ],
+        "representations": [
+          "sql",
+          "graph"
+        ],
+        "provenanceRequired": true,
+        "knownAtRequired": true,
+        "registeredBy": "operator:host",
+        "registeredAt": "2026-09-03T00:00:00.000Z"
+      }
+    ]
   },
   "sample": true,
   "sampleNote": "Generated from ecosystem/catalog by ecosystem/sample-snapshot.mjs. Not live control-plane state."
