@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { datasetIdFor, layerConfig, rowsToDataset, type LayerManifest, type Row } from '../src/model/layers';
+import { datasetIdFor, layerConfig, rowsToDataset, withPayloadLayers, type LayerManifest, type Row } from '../src/model/layers';
+import type { KeplerDataset } from '../src/model/kepler';
 
 const root = path.resolve(__dirname, '../../ecosystem/payload');
 const manifest = JSON.parse(readFileSync(path.join(root, 'layers.json'), 'utf8')) as LayerManifest;
@@ -34,5 +35,55 @@ describe('payload layer manifest', () => {
     const real = manifest.layers.filter((l) => l.real).map((l) => l.id);
     expect(real).toEqual(expect.arrayContaining(['comtrade-flows', 'archive-coverage', 'submarine-cables', 'nuclear-facilities']));
     expect(manifest.layers.find((l) => l.id === 'earth-facilities')?.real).toBe(false);
+  });
+});
+
+describe('folding the Payload layers into the universe map', () => {
+  const manifest = JSON.parse(readFileSync(path.resolve(__dirname, '../../ecosystem/payload/layers.json'), 'utf8')) as LayerManifest;
+
+  type Bundle = {
+    datasets: KeplerDataset[];
+    config: { version: string; config: { visState: { layers: unknown[]; interactionConfig: { tooltip: { enabled: boolean; fieldsToShow: Record<string, unknown> } } } } };
+    located: number; arcs: number; unlocated: unknown[];
+  };
+  const universe = (): Bundle => ({
+    datasets: [{ info: { id: 'universe-nodes', label: 'Nodes' }, data: { fields: [], rows: [[1]] } }],
+    config: { version: 'v1', config: { visState: { layers: [{ id: 'universe-nodes-points' }], interactionConfig: { tooltip: { enabled: true, fieldsToShow: { 'universe-nodes': [] } } } } } },
+    located: 7, arcs: 5, unlocated: [],
+  });
+  const load = (layers: LayerManifest['layers']) => ({
+    manifest,
+    datasets: new Map<string, KeplerDataset>(layers.map((l) => [l.id, { info: { id: datasetIdFor(l), label: l.name }, data: { fields: [], rows: [[1], [2]] } }])),
+  });
+
+  it('adds one Kepler layer and one dataset per loaded manifest entry', () => {
+    const folded = withPayloadLayers(universe(), load(manifest.layers));
+    expect(folded.payloadLayers).toBe(manifest.layers.length);
+    expect(folded.payloadRows).toBe(manifest.layers.length * 2);
+    expect(folded.datasets).toHaveLength(1 + manifest.layers.length);
+    expect(folded.config.config.visState.layers).toHaveLength(1 + manifest.layers.length);
+  });
+
+  it('shows every layer its provenance in the tooltip, which is what makes "is this real?" a per-row query', () => {
+    const folded = withPayloadLayers(universe(), load(manifest.layers));
+    const shown = folded.config.config.visState.interactionConfig.tooltip.fieldsToShow as Record<string, Array<{ name: string }>>;
+    for (const layer of manifest.layers) {
+      const fields = shown[datasetIdFor(layer)]!.map((f) => f.name);
+      expect(fields).toContain('provenance');
+      if (layer.provenance_fields.includes('known_at')) expect(fields).toContain('known_at');
+    }
+  });
+
+  it('draws the universe unchanged when the layers are not there', () => {
+    const bare = withPayloadLayers(universe(), null);
+    expect(bare.payloadLayers).toBe(0);
+    expect(bare.datasets).toHaveLength(1);
+    expect(bare.config.config.visState.layers).toHaveLength(1);
+  });
+
+  it('skips a manifest entry whose file failed to load rather than drawing an empty layer', () => {
+    const folded = withPayloadLayers(universe(), load([manifest.layers[0]!]));
+    expect(folded.payloadLayers).toBe(1);
+    expect(folded.config.config.visState.layers).toHaveLength(2);
   });
 });

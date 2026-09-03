@@ -3,6 +3,8 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { KeplerGl } from '@kepler.gl/components';
 import { addDataToMap, fitBounds, removeDataset, wrapTo } from '@kepler.gl/actions';
 import { universeMapBundle } from '../model/kepler';
+import { loadPayloadLayers, withPayloadLayers, type LayerManifest } from '../model/layers';
+import type { KeplerDataset } from '../model/kepler';
 
 type MapConfig = Parameters<typeof addDataToMap>[0]['config'];
 import type { LensProps } from './types';
@@ -44,7 +46,19 @@ export function MapLens({ dock, filtered, selected, selectedNode, onSelect }: Le
     return () => ro.disconnect();
   }, []);
 
-  const bundle = useMemo(() => universeMapBundle(filtered), [filtered]);
+  // The Payload layers are fetched once from the dock's own public dir. Absent (a dev
+  // tree that has not run `npm run sync`) is not an error: the map draws the universe and
+  // the overlay says how many layers it has.
+  const [payload, setPayload] = useState<{ manifest: LayerManifest; datasets: Map<string, KeplerDataset> } | null>(null);
+  useEffect(() => {
+    let stopped = false;
+    void loadPayloadLayers()
+      .then((loaded) => { if (!stopped) setPayload({ manifest: loaded.manifest, datasets: loaded.datasets }); })
+      .catch(() => { if (!stopped) setPayload(null); });
+    return () => { stopped = true; };
+  }, []);
+
+  const bundle = useMemo(() => withPayloadLayers(universeMapBundle(filtered), payload), [filtered, payload]);
   const bounds = useMemo(() => locatedBounds(filtered.nodes), [filtered]);
   const fit = useCallback(() => { if (bounds) dispatch(wrapTo(MAP_ID, fitBounds(bounds))); }, [bounds, dispatch]);
 
@@ -113,6 +127,8 @@ export function MapLens({ dock, filtered, selected, selectedNode, onSelect }: Le
         located={bundle.located}
         unlocated={bundle.unlocated}
         arcs={bundle.arcs}
+        payloadLayers={bundle.payloadLayers}
+        payloadRows={bundle.payloadRows}
         mode={dock.mode}
         selected={selected}
         onSelect={onSelect}

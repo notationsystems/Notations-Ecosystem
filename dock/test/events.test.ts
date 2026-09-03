@@ -72,6 +72,6 @@ describe('reading the journal', () => {
       expect(record.event.commandHash).not.toBe('');
       expect(record.recordHash).toMatch(/^r\d+$/);
     }
-    expect(res.events.slice(1).every((r, i) => r.previousHash === res.events[i].recordHash)).toBe(true);
+    expect(res.events.slice(1).every((r, i) => r.previousHash === res.events[i]!.recordHash)).toBe(true);
   });
 });

@@ -4,10 +4,13 @@ import { KIND_COLOR, KIND_LABEL, type SnapshotNode } from '../../model/types';
 
 const num: React.CSSProperties = { fontVariantNumeric: 'tabular-nums', color: 'var(--text)', fontWeight: 600 };
 
-export function MapOverlay({ located, unlocated, arcs, mode, selected, onSelect, onFit, basemap }: {
+export function MapOverlay({ located, unlocated, arcs, payloadLayers, payloadRows, mode, selected, onSelect, onFit, basemap }: {
   located: number;
   unlocated: SnapshotNode[];
   arcs: number;
+  /** Payload layers folded into the map, and the rows they carry. */
+  payloadLayers: number;
+  payloadRows: number;
   mode: DockMode;
   selected: string | null;
   onSelect: (nodeId: string | null) => void;
@@ -27,6 +30,11 @@ export function MapOverlay({ located, unlocated, arcs, mode, selected, onSelect,
         <div><div style={num}>{arcs}</div><div style={{ color: 'var(--muted)' }}>arcs</div></div>
       </div>
       {arcs === 0 && located > 0 && <div style={{ color: 'var(--muted)', marginTop: 6 }}>Arcs need both ends located.</div>}
+      <div style={{ color: 'var(--muted)', marginTop: 6 }}>
+        {payloadLayers > 0
+          ? <>+ {payloadLayers} Payload layers · {payloadRows} rows, each carrying its own provenance</>
+          : <>No Payload layers loaded. Run <code>npm run sync</code> in <code>dock/</code>.</>}
+      </div>
       {unlocated.length > 0 && (
         <div style={{ marginTop: 8, borderTop: '1px solid var(--line)', paddingTop: 6 }}>
           <button className="btn small" style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--cyan)' }} onClick={() => setOpen((o) => !o)} aria-expanded={open}>

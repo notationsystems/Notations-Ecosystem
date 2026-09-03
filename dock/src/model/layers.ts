@@ -9,7 +9,15 @@ export interface LayerEntry {
   geometry: 'point' | 'arc' | 'path' | 'polygon';
   file: string;
   provenance: string;
+  /**
+   * What the rows rest on. `real` is derived from it — a layer is real when its basis is
+   * not `synthetic` — rather than asserted beside it, because a boolean forced curated
+   * data to claim to be a capture.
+   */
+  basis: 'capture' | 'manifest' | 'curated' | 'synthetic';
   real: boolean;
+  /** Which row provenance fields this layer's rows actually carry. */
+  provenance_fields: string[];
   default_visible: boolean;
   time_field?: string;
   kepler: {
@@ -111,4 +119,49 @@ export async function loadPayloadLayers(base = `${import.meta.env.BASE_URL}layer
     } catch (e) { errors.push(`${layer.id}: ${(e as Error).message}`); }
   }));
   return { manifest, datasets, errors };
+}
+
+/**
+ * Fold the Payload layers into a universe map bundle.
+ *
+ * The extractors have always produced these — 562 rows across nine layers, each carrying
+ * its own provenance — the sync script has always copied them into `public/layers/payload/`,
+ * and `loadPayloadLayers` has always been able to read them. Nothing called it. The Map
+ * lens drew nodes and relation arcs while three documents said it drew the Payload
+ * layers, so the estate's one worked example of per-row provenance was built, shipped and
+ * never seen.
+ *
+ * Every layer's tooltip carries `provenance`, and `known_at` where the rows have it, so
+ * "is this real?" and "when was it knowable?" are answerable by hovering a row rather
+ * than by reading a manifest.
+ */
+export function withPayloadLayers<T extends { datasets: KeplerDataset[]; config: { config: { visState: { layers: unknown[]; interactionConfig: { tooltip: { fieldsToShow: Record<string, unknown> } } } } } }>(
+  bundle: T,
+  loaded: { manifest: LayerManifest; datasets: Map<string, KeplerDataset> } | null,
+): T & { payloadLayers: number; payloadRows: number } {
+  if (!loaded || !loaded.datasets.size) return { ...bundle, payloadLayers: 0, payloadRows: 0 };
+  const present = loaded.manifest.layers.filter((layer) => loaded.datasets.has(layer.id));
+  const datasets = present.map((layer) => loaded.datasets.get(layer.id)!);
+  const fieldsToShow: Record<string, unknown> = { ...bundle.config.config.visState.interactionConfig.tooltip.fieldsToShow };
+  for (const layer of present) fieldsToShow[datasetIdFor(layer)] = tooltipFields(layer);
+  return {
+    ...bundle,
+    datasets: [...bundle.datasets, ...datasets],
+    config: {
+      ...bundle.config,
+      config: {
+        ...bundle.config.config,
+        visState: {
+          ...bundle.config.config.visState,
+          layers: [...bundle.config.config.visState.layers, ...present.map((layer) => layerConfig(layer))],
+          interactionConfig: {
+            ...bundle.config.config.visState.interactionConfig,
+            tooltip: { ...bundle.config.config.visState.interactionConfig.tooltip, fieldsToShow },
+          },
+        },
+      },
+    },
+    payloadLayers: present.length,
+    payloadRows: datasets.reduce((sum, d) => sum + d.data.rows.length, 0),
+  };
 }
