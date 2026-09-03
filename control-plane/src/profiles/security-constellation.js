@@ -3,7 +3,7 @@
  * self-authored green status inside the Control Plane itself.
  */
 
-const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic') => ({ capabilityId, label, description, mode, approval });
+const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic') => ({ capabilityId, label, description, mode, approval, maturity: 'research', methodologyVersion: null });
 const node = (nodeId, name, kind, description, capabilities, metadata) => ({ nodeId, name, kind, description, capabilities, metadata, location: null });
 
 export const SECURITY_CONSTELLATION_PROFILE = Object.freeze({

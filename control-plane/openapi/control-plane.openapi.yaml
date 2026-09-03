@@ -94,6 +94,26 @@ paths:
       responses:
         '200':
           description: A dock-ready Data Fabric profile with layers and detail panels.
+  /v1/methodologies/payload:
+    get:
+      summary: Get the current Payload corpus methodology
+      description: >-
+        A versioned, machine-readable description of source policy, temporal
+        semantics, uncertainty, verification, limitations, and deliberate
+        exclusions. Its status prevents research methodology from being
+        implied as a production capability.
+      responses:
+        '200':
+          description: Versioned Payload methodology and changelog.
+  /v1/contracts/result-manifest:
+    get:
+      summary: Get the Result Manifest JSON Schema
+      description: >-
+        The required provenance-and-methodology sidecar for a human-readable
+        corpus result. It contains no source artifact bytes or credentials.
+      responses:
+        '200':
+          description: JSON Schema for notations.result-manifest.v1.
   /v1/adapters/payload-terminal/observe:
     post:
       summary: Probe the one configured Payload Terminal health surface
@@ -129,13 +149,15 @@ components:
         action: { type: string }
     Capability:
       type: object
-      required: [capabilityId, label, description, mode, approval]
+      required: [capabilityId, label, description, mode, approval, maturity, methodologyVersion]
       properties:
         capabilityId: { type: string }
         label: { type: string }
         description: { type: string }
         mode: { type: string, enum: [observe, propose, execute] }
         approval: { type: string, enum: [automatic, operator] }
+        maturity: { type: string, enum: [production, beta, experimental, research, planned], default: research }
+        methodologyVersion: { oneOf: [{ type: string }, { type: 'null' }] }
     Node:
       type: object
       required: [nodeId, name, kind, description, capabilities]

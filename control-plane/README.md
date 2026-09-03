@@ -9,6 +9,22 @@ making a map itself into an execution authority.
 codebase. The frontend may live elsewhere in the repository and consume this
 service through its OpenAPI contract.
 
+## Methodology and result sidecars
+
+The dock is a rendering; a result manifest is its machine-readable contract.
+Every Payload result is designed to pair a human-readable answer with corpus
+build, methodology version, knowledge time, canonical entities/assertions,
+evidence, transforms, uncertainty, contradictions, and verification status.
+The contract is available at `GET /v1/contracts/result-manifest`.
+
+`GET /v1/methodologies/payload` returns the current versioned Payload
+methodology, including source policy, temporal semantics, evidence and
+contradiction handling, uncertainty rules, limitations, changelog, and
+explicit conclusions the corpus refuses to make. Every capability has an
+explicit maturity: `production`, `beta`, `experimental`, `research`, or
+`planned`. Unspecified capabilities are normalized to `research`—the honest
+state for this implementation until validation evidence says otherwise.
+
 ## Guarantees
 
 - An append-only, SHA-256 hash-linked journal records every change.

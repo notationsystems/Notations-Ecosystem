@@ -1,5 +1,6 @@
 import { invalid } from './errors.js';
 import { CANONICAL_KINDS, parseCanonicalURI } from './identity/canonical-uri.js';
+import { CAPABILITY_MATURITY_SET } from './governance/maturity.js';
 
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9:_./-]{0,179}$/;
 const HASH = /^[a-f0-9]{64}$/;
@@ -87,16 +88,19 @@ function location(value) {
 
 function capability(value, index) {
   const path = `node.capabilities[${index}]`;
-  const parsed = exactKeys(value, path, ['capabilityId', 'label', 'description', 'mode', 'approval']);
+  const parsed = exactKeys(value, path, ['capabilityId', 'label', 'description', 'mode', 'approval'], ['maturity', 'methodologyVersion']);
   const mode = member(parsed.mode, `${path}.mode`, CAPABILITY_MODES);
   const approval = member(parsed.approval, `${path}.approval`, APPROVALS);
   if (mode === 'execute' && approval !== 'operator') throw invalid(`${path}.approval must be "operator" for an execute capability.`);
+  const maturity = parsed.maturity === undefined ? 'research' : member(parsed.maturity, `${path}.maturity`, CAPABILITY_MATURITY_SET);
   return {
     capabilityId: identifier(parsed.capabilityId, `${path}.capabilityId`),
     label: string(parsed.label, `${path}.label`, 120),
     description: string(parsed.description, `${path}.description`, 600),
     mode,
     approval,
+    maturity,
+    methodologyVersion: parsed.methodologyVersion === undefined ? null : string(parsed.methodologyVersion, `${path}.methodologyVersion`, 80),
   };
 }
 

@@ -6,6 +6,8 @@ import { ControlPlaneError } from './errors.js';
 import { observePayloadTerminal } from './adapters/payload-terminal.js';
 import { payloadTerminalProfile } from './profiles/payload-terminal.js';
 import { notationDataFabricProfile } from './profiles/notation-data-fabric.js';
+import { payloadMethodology } from './governance/payload-methodology.js';
+import { RESULT_MANIFEST_SCHEMA } from './governance/result-manifest.js';
 import { parseProfileApplication } from './validation.js';
 
 const host = process.env.CONTROL_PLANE_HOST || '127.0.0.1';
@@ -67,7 +69,7 @@ export function createControlPlaneServer() {
       }
 
       const headers = originHeaders(request);
-      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands' || url.pathname === '/v1/profiles/payload-terminal' || url.pathname === '/v1/profiles/payload-terminal/apply' || url.pathname === '/v1/profiles/notation-data-fabric' || url.pathname === '/v1/adapters/payload-terminal/observe')) {
+      if (request.method === 'OPTIONS' && (url.pathname === '/v1/snapshot' || url.pathname === '/v1/events' || url.pathname === '/v1/commands' || url.pathname === '/v1/profiles/payload-terminal' || url.pathname === '/v1/profiles/payload-terminal/apply' || url.pathname === '/v1/profiles/notation-data-fabric' || url.pathname === '/v1/methodologies/payload' || url.pathname === '/v1/contracts/result-manifest' || url.pathname === '/v1/adapters/payload-terminal/observe')) {
         response.writeHead(204, headers);
         return response.end();
       }
@@ -81,6 +83,8 @@ export function createControlPlaneServer() {
       }
       if (request.method === 'GET' && url.pathname === '/v1/profiles/payload-terminal') return json(response, 200, payloadTerminalProfile(), { ...headers, 'cache-control': 'private, no-store' });
       if (request.method === 'GET' && url.pathname === '/v1/profiles/notation-data-fabric') return json(response, 200, notationDataFabricProfile(), { ...headers, 'cache-control': 'private, no-store' });
+      if (request.method === 'GET' && url.pathname === '/v1/methodologies/payload') return json(response, 200, payloadMethodology(), { ...headers, 'cache-control': 'private, no-store' });
+      if (request.method === 'GET' && url.pathname === '/v1/contracts/result-manifest') return json(response, 200, RESULT_MANIFEST_SCHEMA, { ...headers, 'cache-control': 'private, no-store' });
       if (request.method === 'POST' && url.pathname === '/v1/profiles/payload-terminal/apply') {
         const result = await controlPlane.applyProfile(await readJSON(request), payloadTerminalProfile());
         return json(response, result.outcome === 'appended' ? 201 : 200, result, { ...headers, 'cache-control': 'private, no-store' });

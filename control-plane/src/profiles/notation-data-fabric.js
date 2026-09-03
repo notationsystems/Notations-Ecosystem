@@ -1,6 +1,6 @@
 /** The logical substrate under Nodes: one identity/provenance authority, many stores. */
 
-const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic') => ({ capabilityId, label, description, mode, approval });
+const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic') => ({ capabilityId, label, description, mode, approval, maturity: 'research', methodologyVersion: null });
 const node = (nodeId, name, kind, description, capabilities, metadata) => ({ nodeId, name, kind, description, capabilities, metadata, location: null });
 
 export const NOTATION_DATA_FABRIC_PROFILE = Object.freeze({

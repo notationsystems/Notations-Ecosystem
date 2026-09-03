@@ -6,7 +6,7 @@
  * opaque source content. Health arrives independently through observations.
  */
 
-const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic') => ({ capabilityId, label, description, mode, approval });
+const capability = (capabilityId, label, description, mode = 'observe', approval = 'automatic', maturity = 'research') => ({ capabilityId, label, description, mode, approval, maturity, methodologyVersion: 'payload-methodology/0.1.0' });
 
 const node = (nodeId, name, kind, description, capabilities, metadata) => ({
   nodeId,
@@ -23,6 +23,15 @@ export const PAYLOAD_TERMINAL_PROFILE = Object.freeze({
   version: '1.0.0',
   title: 'Payload Terminal — physical economy intelligence',
   summary: 'An evidence-bearing physical-economy ecosystem whose answers carry provenance, basis, and knowledge time.',
+  governance: Object.freeze({
+    methodology: Object.freeze({ methodologyId: 'payload-methodology', version: '0.1.0', status: 'research' }),
+    exclusions: Object.freeze([
+      'Does not infer supplier relationships solely from geographic proximity.',
+      'Does not treat modeled capacity as reported capacity.',
+      'Does not equate corporate parent ownership with operational control.',
+      'Does not interpret a missing observation as zero.',
+    ]),
+  }),
   nodes: Object.freeze([
     node('payload-terminal', 'Payload Terminal', 'api', 'The human and machine query surface for the physical-economy corpus and operating workflows.', [
       capability('physical-economy.query', 'Query physical economy', 'Read provenance-bearing entities, observations, flows, dependencies, and market context.'),

@@ -11,6 +11,8 @@ import { payloadTerminalProfile } from '../src/profiles/payload-terminal.js';
 import { securityConstellationProfile } from '../src/profiles/security-constellation.js';
 import { notationDataFabricProfile } from '../src/profiles/notation-data-fabric.js';
 import { canonicalURI, parseCanonicalURI } from '../src/identity/canonical-uri.js';
+import { payloadMethodology } from '../src/governance/payload-methodology.js';
+import { parseResultManifest, RESULT_MANIFEST_SCHEMA } from '../src/governance/result-manifest.js';
 import { attestationPayload } from '../src/security/attestation.js';
 import { buildOperationalIndex, queryOperationalIndex } from '../src/indexing/operational-index.js';
 
@@ -228,4 +230,36 @@ test('binds an ecosystem to the canonical data fabric without copying its eviden
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('makes Payload methodology, capability maturity, and result sidecars inspectable', () => {
+  const methodology = payloadMethodology();
+  assert.equal(methodology.version, '0.1.0');
+  assert.equal(methodology.status, 'research');
+  assert.equal(methodology.exclusions.includes('Payload does not interpret a missing observation as zero.'), true);
+  assert.equal(RESULT_MANIFEST_SCHEMA.$id, 'https://notations.systems/contracts/result-manifest/v1');
+  assert.equal(payloadTerminalProfile().nodes.every(node => node.capabilities.every(capability => capability.maturity === 'research' && capability.methodologyVersion === 'payload-methodology/0.1.0')), true);
+
+  const manifest = parseResultManifest({
+    schema: 'notations.result-manifest.v1',
+    manifestId: 'result-freeport-capacity-1',
+    queryId: 'payload-capacity-query-1',
+    corpusBuild: { buildId: 'payload-corpus-2026.09.02', knownAt: NOW },
+    methodology: { methodologyId: 'payload-methodology', version: '0.1.0' },
+    knownAt: NOW,
+    result: { metric: 'capacity', value: 1200000, unit: 'tonnes_per_year' },
+    entitiesUsed: ['notation://entity/payload/dow-freeport'],
+    assertionsUsed: ['notation://observation/payload/freeport-capacity-2026-1'],
+    evidenceUsed: ['notation://artifact/payload/freeport-capacity-report-2026'],
+    computations: [{ transformId: 'notation://transform/payload/capacity-normalization-v1', outputIds: ['notation://state/payload/freeport-capacity-current'], deterministic: true, parametersSha256: null }],
+    uncertainties: [{ kind: 'source_disagreement', summary: 'One supporting report uses a different effective date.' }],
+    contradictions: ['notation://observation/payload/freeport-capacity-conflict-2026-1'],
+    verification: { status: 'partially_verified', checkedAt: NOW },
+  });
+  assert.equal(manifest.evidenceUsed[0], 'notation://artifact/payload/freeport-capacity-report-2026');
+  assert.equal(manifest.verification.status, 'partially_verified');
+  assert.throws(
+    () => parseResultManifest({ ...manifest, knownAt: '' }),
+    /knownAt must be a non-empty string/,
+  );
 });

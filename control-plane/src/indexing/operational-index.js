@@ -82,6 +82,8 @@ export function buildOperationalIndex(snapshot, builtAt = new Date().toISOString
       label: capability.label,
       mode: capability.mode,
       approval: capability.approval,
+      maturity: capability.maturity || 'research',
+      methodologyVersion: capability.methodologyVersion || null,
     })),
     searchTokens: [...new Set(tokens(searchText(node)))].sort(),
   })).sort((left, right) => left.nodeId.localeCompare(right.nodeId));
@@ -114,6 +116,7 @@ export function buildOperationalIndex(snapshot, builtAt = new Date().toISOString
       observation: valuesBy(nodes, node => node.observationState),
       security: valuesBy(nodes, node => node.securityOverall),
       capabilityMode: valuesBy(capabilities, capability => capability.mode),
+      capabilityMaturity: valuesBy(capabilities, capability => capability.maturity),
       fabricAuthority: valuesBy(fabricSyncs, sync => sync.authority),
     },
     signals: {
