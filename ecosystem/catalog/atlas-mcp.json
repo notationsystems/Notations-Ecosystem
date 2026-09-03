@@ -452,7 +452,6 @@
     "upstream": "cargofy/ATLAS",
     "visibility": "public",
     "last_pushed_at": "2026-03-06T10:45:29Z",
-    "capability_count": 39,
     "mcp_tools_stdio": 21,
     "mcp_tools_http": 12,
     "version": "1.0.0",

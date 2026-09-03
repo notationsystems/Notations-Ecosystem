@@ -306,7 +306,6 @@
     "upstream": "opengeos/GeoAgent",
     "visibility": "public",
     "last_pushed_at": "2026-05-13T15:57:08Z",
-    "capability_count": 27,
     "version": "1.8.0",
     "license": "MIT",
     "python": ">=3.11",

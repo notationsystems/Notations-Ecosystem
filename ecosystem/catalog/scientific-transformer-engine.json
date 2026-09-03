@@ -555,7 +555,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-08-29T23:52:25Z",
-    "capability_count": 45,
     "package_version": "1.0.0",
     "spec_version": "Deterministic State Architecture Frozen Specification v1.0.0",
     "core_version": "core@1.0.0",

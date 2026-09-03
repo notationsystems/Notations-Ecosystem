@@ -244,7 +244,6 @@
     "default_port": 8000,
     "license": "MIT",
     "state_store": "backend/database.json (flat file)",
-    "capability_count": 19,
     "person_data": "incidental",
     "person_data_note": "Telegram channel previews and conflict reporting carry names; nothing is indexed by person."
   },

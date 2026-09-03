@@ -180,7 +180,6 @@
     "last_pushed_at": "2026-09-03T01:40:38Z",
     "durability": "local_jsonl_single_writer",
     "default_port": 8787,
-    "capability_count": 12,
     "signing": "ed25519",
     "at_rest": "envelope-encrypted signing key",
     "auth": "per-principal bearer credentials",

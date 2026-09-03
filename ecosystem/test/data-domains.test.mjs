@@ -255,3 +255,31 @@ test('the validator refuses a manifest that hides what a variable is', async () 
   shrug.reference.environment.push({ name: 'LEGACY_TOKEN', kind: 'credential', purpose: 'Something the fork left behind and nobody has removed.', unused: 'residue' });
   assert.ok(checkEntry(shrug, file).errors.some((e) => /unused must say why/.test(e)));
 });
+
+test('a count of what is in the file may not also be asserted in it', async () => {
+  const entries = await loadCatalog();
+
+  // control-plane declared twelve capabilities while carrying fourteen, and nothing
+  // noticed because both numbers were in the same file and only one was checked.
+  for (const { entry } of entries) {
+    for (const field of ['capability_count', 'mcp_tool_count', 'mcp_tools']) {
+      assert.equal(entry.metadata[field], undefined, `${entry.nodeId}: metadata.${field} is derivable`);
+    }
+  }
+
+  const [{ entry, file }] = entries.filter((e) => e.entry.nodeId === 'payload-terminal');
+  const restated = structuredClone(entry);
+  restated.metadata.capability_count = entry.capabilities.length;
+  // Refused even when it is *right*: a correct copy today is a stale one after the next
+  // capability is added, and the failure is silent either way.
+  assert.ok(checkEntry(restated, file).errors.some((e) => /capability_count is derived, not declared/.test(e)));
+
+  const tools = structuredClone(entry);
+  tools.metadata.mcp_tool_count = 12;
+  assert.ok(checkEntry(tools, file).errors.some((e) => /mcp\.\* capabilities that are not transports/.test(e)));
+
+  // Counts about another system stay: nothing here can derive how many routes Osiris has.
+  const observed = entries.find((e) => e.entry.nodeId === 'osiris-dashboard');
+  assert.equal(typeof observed.entry.metadata.api_route_count, 'number');
+  assert.equal(checkEntry(observed.entry, observed.file).errors.length, 0);
+});

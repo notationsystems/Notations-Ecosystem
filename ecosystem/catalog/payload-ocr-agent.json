@@ -363,7 +363,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-08-31T22:09:31Z",
-    "capability_count": 29,
     "version": "0.1.0",
     "ocr_provider": "mistral (behind OCRModel seam); fixture provider for tests",
     "document_types": "RATE_CONFIRMATION, BILL_OF_LADING, PROOF_OF_DELIVERY, INVOICE (+10 classify-only types)",

@@ -592,7 +592,6 @@
     "intel_port": 4000,
     "license": "MIT",
     "api_route_count": 70,
-    "capability_count": 48,
     "person_data": "serves",
     "person_data_exception": "Keeps the full upstream person-targeting surface — username, phone, leaks, GitHub — that Payload Terminal removed when it forked the same code. It is a reference operator surface, not a deployed system. Ends when the recon toolkit is deleted from the fork, as it was from the terminal."
   },

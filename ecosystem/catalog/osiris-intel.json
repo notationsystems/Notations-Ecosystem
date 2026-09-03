@@ -103,7 +103,6 @@
     "default_port": 4000,
     "subdirectory": "intel/",
     "compose_service": "payload-intel",
-    "capability_count": 8,
     "derived_from": "simplifaisoul/osiris (MIT fork)",
     "person_data": "serves",
     "person_data_exception": "Serves intel.resolve.person and returns RIPE abuse contacts as person nodes. It is the ontology service Payload Terminal calls, so the terminal's own CI gate against person routes is routed around by its dependency. Ends when /resolve drops the person and abuse-contact paths, or when the terminal stops forwarding type=person to it."

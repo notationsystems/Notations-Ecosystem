@@ -307,7 +307,6 @@
     "license": "MIT (code only; data carve-outs in DATA_SOURCES.md)",
     "live_layer_count": 13,
     "node_engines": ">=24.14 <25 || >=26 <27",
-    "capability_count": 24,
     "person_data": "incidental",
     "person_data_note": "Public cameras and flight feeds incidentally show people and privately-owned aircraft. Nothing is stored beyond a cache."
   },

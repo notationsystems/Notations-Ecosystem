@@ -126,7 +126,6 @@
     "upstream": "Robbyant/lingbot-depth",
     "visibility": "public",
     "last_pushed_at": "2026-04-21T09:42:26Z",
-    "capability_count": 9,
     "license": "Apache-2.0",
     "gpu_required": true,
     "person_data": "refused"

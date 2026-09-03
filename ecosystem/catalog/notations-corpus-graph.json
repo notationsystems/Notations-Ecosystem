@@ -299,7 +299,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-08-30T22:07:59Z",
-    "capability_count": 24,
     "license": "Proprietary",
     "console_scripts": "ncg",
     "http_server": false,

@@ -294,7 +294,6 @@
     "upstream": "MrNeRF/LichtFeld-Studio",
     "visibility": "public",
     "last_pushed_at": "2026-05-13T20:47:41Z",
-    "capability_count": 24,
     "license": "GPL-3.0",
     "mcp_port": 45677,
     "gpu_required": true,

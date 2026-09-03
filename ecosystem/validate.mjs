@@ -216,6 +216,19 @@ export function checkEntry(entry, file, known = new Set()) {
   } else if (md.person_data === 'serves' && md.maturity !== 'upstream-mirror' && !md.person_data_exception) {
     errors.push('metadata.person_data is "serves" on a first-party node: declare metadata.person_data_exception saying what it serves and what would end it');
   }
+  // A count of things that are right there in the same object is a derivation written
+  // down, and a derivation written down drifts silently — `control-plane` said 12 while
+  // declaring 14. Nothing that can be counted from the file may also be asserted in it.
+  for (const [field, count, how] of [
+    ['capability_count', (entry.capabilities ?? []).length, 'capabilities.length'],
+    ['mcp_tool_count', (entry.capabilities ?? []).filter((c) => /^mcp\./.test(c.capabilityId) && !/^mcp\.transport\./.test(c.capabilityId)).length, 'the mcp.* capabilities that are not transports'],
+    ['mcp_tools', (entry.capabilities ?? []).filter((c) => /^mcp\./.test(c.capabilityId) && !/^mcp\.transport\./.test(c.capabilityId)).length, 'the mcp.* capabilities that are not transports'],
+  ]) {
+    if (md[field] !== undefined) {
+      errors.push(`metadata.${field} is derived, not declared: it is ${how} (${count} here). A written copy can only ever go stale`);
+    }
+  }
+
   if (md.person_data_exception && md.person_data !== 'serves') {
     errors.push('metadata.person_data_exception is set but person_data is not "serves"');
   }

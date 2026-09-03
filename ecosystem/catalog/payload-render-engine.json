@@ -435,7 +435,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-08-31T20:57:34Z",
-    "capability_count": 35,
     "version": "0.1.0",
     "license": "GPL-3.0",
     "data_provenance": "synthetic:demo",

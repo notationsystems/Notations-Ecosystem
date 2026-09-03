@@ -384,7 +384,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-08-29T23:21:01Z",
-    "capability_count": 30,
     "package_version": "0.1.0",
     "binary_version": "scl-cli/0.1.0",
     "operations": "lj_pairwise_energy_forces, fourier_transform_1d, least_squares, kalman_filter_linear",

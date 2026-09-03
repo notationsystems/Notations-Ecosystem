@@ -397,7 +397,6 @@
     "upstream": "",
     "visibility": "public",
     "last_pushed_at": "2026-09-02T06:02:55Z",
-    "capability_count": 29,
     "license": "MIT (engine); GPL-3.0-or-later (Blender extension)",
     "console_scripts": "gat, gat-headless, gat-ifc-audit",
     "http_server": false,

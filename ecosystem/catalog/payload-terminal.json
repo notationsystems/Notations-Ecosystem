@@ -694,9 +694,7 @@
     "image": "ghcr.io/notationsystems/sea-dog-payload-terminal-v0",
     "machine_client_header": "x-payload-client: machine",
     "mcp_transport": "stdio",
-    "mcp_tool_count": 12,
     "access_posture": "internal, operator-controlled; no public exposure decided",
-    "capability_count": 59,
     "derived_from": "simplifaisoul/osiris (MIT fork; recon capabilities removed)",
     "person_data": "incidental",
     "person_data_note": "WHOIS and RDAP records name registrants; the terminal reads them for domain attribution and indexes none of it by person."
