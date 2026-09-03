@@ -236,6 +236,10 @@
           "standing": "fails",
           "note": "A failed refresh silently keeps the stale copy rather than declaring staleness to the caller."
         },
+        "COR-006": {
+          "standing": "fails",
+          "note": "There is no admission boundary. The SDN CSV is parsed straight into the index on fetch and trusted, and a failed refresh keeps the stale copy without declaring staleness — the same root as the COR-005 and COR-007 failures. Nothing validates what enters, so nothing can refuse it."
+        },
         "COR-007": {
           "standing": "fails",
           "note": "The SDN CSV is parsed into memory on fetch; no capture is kept, so a revision upstream is unrecoverable."

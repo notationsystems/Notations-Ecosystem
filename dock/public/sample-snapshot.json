@@ -1,6 +1,6 @@
 {
   "schema": "notations.control-plane.snapshot.v1",
-  "revision": "d632309463ce6655c5924b217d65ac316454626419dfccac6c53cd5f22b1c5a8",
+  "revision": "1dbb5677b733c0d1d98010b9c494af79739b64da51fb6af5158299f8c8871711",
   "eventCursor": "control-plane:b47d357c46342d8cebfe1c6032b8876336201368df7603092c51cda46eed9a56",
   "durability": "local_jsonl_single_writer",
   "generatedAt": "2026-09-03T00:00:00.000Z",
@@ -3525,8 +3525,7 @@
         "corpus_grade": "bare",
         "corpus_coverage": 0.29,
         "corpus_applicable": 7,
-        "corpus_fails": "COR-004 COR-005 COR-007 COR-010",
-        "corpus_unknown": "COR-006"
+        "corpus_fails": "COR-004 COR-005 COR-006 COR-007 COR-010"
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",
@@ -5048,10 +5047,9 @@
         "data_domains": "architecture-invariants automation evaluation execution-trace molecular-dynamics numerical-kernels",
         "surfaces": "cli contract doc file python",
         "corpus_role": "transform",
-        "corpus_grade": "developing",
-        "corpus_coverage": 0.8,
-        "corpus_applicable": 5,
-        "corpus_unknown": "COR-004"
+        "corpus_grade": "sound",
+        "corpus_coverage": 1,
+        "corpus_applicable": 4
       },
       "location": null,
       "registeredAt": "2026-09-03T00:00:00.000Z",

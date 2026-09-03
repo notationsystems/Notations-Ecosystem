@@ -179,7 +179,7 @@ test('UNIVERSE.md states the estate as it is, not as it was', async () => {
   assert.equal(Number(mean[1]), estate.meanCoverage);
 
   const fails = estate.nodes.reduce((n, node) => n + node.fails.length, 0);
-  assert.match(prose, new RegExp(`${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'][fails] ?? fails} invariants are declared failed`));
+  assert.match(prose, new RegExp(`${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five'][fails] ?? fails} invariants are declared failed`));
 
   // Eight hold a corpus, three own a domain's canonical state, five domains have none.
   assert.match(prose, new RegExp(`${['zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'][estate.byRole.hold]} nodes hold a corpus`, 'i'));

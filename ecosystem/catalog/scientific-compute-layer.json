@@ -559,6 +559,10 @@
           "evidence": "python/scl/errors.py; docs/SCL_CONTRACT.md",
           "note": "Requests and results are content-addressed, so every result can be walked back to the request that produced it."
         },
+        "COR-004": {
+          "standing": "exempt",
+          "note": "Holds nothing about events. A request carries the inputs and the caller's own frame; the result is a computation over them, not an observation of a world with a time in it. This is the same structural fact as the COR-008 exemption — no clocks, no history — and it stops being true the moment the layer keeps a result rather than returning it."
+        },
         "COR-005": {
           "standing": "holds",
           "evidence": "python/scl/errors.py",
