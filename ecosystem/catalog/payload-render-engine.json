@@ -14,7 +14,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/app/app.ts; src/earth/globe.ts; src/layers/nodesLayer.ts; src/layers/routesLayer.ts; index.html",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.command_bar",
@@ -26,7 +27,8 @@
       "method": "command",
       "path": "/ (key '/')",
       "evidence": "src/app/commands.ts; src/ui/commandBar.ts; README.md#command-reference",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.layer_panel",
@@ -38,7 +40,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/ui/layerPanel.ts; src/layers/layerManager.ts; src/app/api.ts (LayerId)",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.inspector",
@@ -50,7 +53,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/ui/infoPanel.ts; src/ui/sparkline.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.timeline",
@@ -62,7 +66,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/ui/timeline.ts; src/core/time.ts; docs/ARCHITECTURE.md#8",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.status_bar",
@@ -74,7 +79,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/ui/statusBar.ts; src/app/api.ts (AppEvents.status)",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.country_summary",
@@ -86,7 +92,8 @@
       "method": "view",
       "path": "/",
       "evidence": "src/geo/countries.ts; src/app/api.ts (CountryInfo, countryInfo); src/data/store.ts (nodesInCountry, routesTouchingCountry)",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.compare_routes",
@@ -98,7 +105,8 @@
       "method": "command",
       "path": "compare <a> vs <b>",
       "evidence": "src/app/commands.ts (compare); docs/ARCHITECTURE.md#10",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "view.follow_the_load",
@@ -110,7 +118,8 @@
       "method": "command",
       "path": "follow the load",
       "evidence": "src/interaction/followTheLoad.ts; src/data/synthetic/world.ts (tags demo:follow-the-load)",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.fly_to",
@@ -122,7 +131,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[fly_to]",
       "evidence": "src/app/toolSurface.ts; src/main.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.find",
@@ -134,7 +144,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[find]",
       "evidence": "src/app/toolSurface.ts; src/data/store.ts (search)",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.select_entity",
@@ -146,7 +157,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[select_entity]",
       "evidence": "src/app/toolSurface.ts; src/interaction/selection.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.set_layer",
@@ -158,7 +170,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_layer]",
       "evidence": "src/app/toolSurface.ts; src/layers/layerManager.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.set_preset",
@@ -170,7 +183,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_preset]",
       "evidence": "src/app/toolSurface.ts; src/app/api.ts (ViewPreset)",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.set_flow_mode",
@@ -182,7 +196,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_flow_mode]",
       "evidence": "src/app/toolSurface.ts; src/layers/flowsLayer.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.set_time",
@@ -194,7 +209,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_time]",
       "evidence": "src/app/toolSurface.ts; src/core/time.ts (setFraction)",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.set_playing",
@@ -206,7 +222,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[set_playing]",
       "evidence": "src/app/toolSurface.ts; src/core/time.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.run_command",
@@ -218,7 +235,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[run_command]",
       "evidence": "src/app/toolSurface.ts; src/app/commands.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.get_state",
@@ -230,7 +248,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[get_state]",
       "evidence": "src/app/toolSurface.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "tool.follow_the_load",
@@ -242,7 +261,8 @@
       "method": "invokeTool",
       "path": "window.payloadEarth.tools[follow_the_load]",
       "evidence": "src/app/toolSurface.ts; src/interaction/followTheLoad.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "api.app_facade",
@@ -254,7 +274,8 @@
       "method": "ts-api",
       "path": "window.payloadEarth.api",
       "evidence": "src/app/api.ts; src/main.ts",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "api.world_store",
@@ -266,7 +287,8 @@
       "method": "class",
       "path": "src/data/store.ts#WorldStore",
       "evidence": "src/data/store.ts",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "events.app_bus",
@@ -278,7 +300,8 @@
       "method": "subscribe",
       "path": "api.events",
       "evidence": "src/core/events.ts; src/app/api.ts (AppEvents)",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.spatial_data_provider",
@@ -290,7 +313,8 @@
       "method": "interface",
       "path": "src/data/provider.ts#SpatialDataProvider",
       "evidence": "src/data/provider.ts; docs/ARCHITECTURE.md#the-provider-interface",
-      "data_domain": "facilities"
+      "data_domain": "facilities",
+      "provenance": "the ingress seam itself; no provider is wired, so nothing real arrives through it"
     },
     {
       "capabilityId": "contract.world_snapshot",
@@ -302,7 +326,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#WorldSnapshot",
       "evidence": "src/data/contracts.ts",
-      "data_domain": "facilities"
+      "data_domain": "facilities",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.node_ontology",
@@ -314,7 +339,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#Facility",
       "evidence": "src/data/contracts.ts",
-      "data_domain": "facilities"
+      "data_domain": "facilities",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.route_flow",
@@ -326,7 +352,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#Route",
       "evidence": "src/data/contracts.ts",
-      "data_domain": "trade-lanes"
+      "data_domain": "trade-lanes",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.provenance",
@@ -338,7 +365,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#Provenance",
       "evidence": "src/data/contracts.ts; scripts/validate-provenance.mjs",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.assertion_observation_deviation",
@@ -350,7 +378,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#Assertion",
       "evidence": "src/data/contracts.ts; src/data/store.ts (deviationsFor); docs/ARCHITECTURE.md#4",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.events_constraints",
@@ -362,7 +391,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#WorldEvent",
       "evidence": "src/data/contracts.ts; src/data/synthetic/world.ts (buildEvents)",
-      "data_domain": "disruptions"
+      "data_domain": "disruptions",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "contract.temporal_state",
@@ -374,7 +404,8 @@
       "method": "schema",
       "path": "src/data/contracts.ts#TemporalState",
       "evidence": "src/data/contracts.ts; src/core/time.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "data.synthetic_world",
@@ -386,7 +417,8 @@
       "method": "in-process",
       "path": "src/data/synthetic/world.ts#buildWorldSnapshot",
       "evidence": "src/data/synthetic/world.ts; src/data/synthetic/provider.ts",
-      "data_domain": "synthetic-scenes"
+      "data_domain": "synthetic-scenes",
+      "provenance": "synthetic:demo — Synthetic demo world v1, every entity labelled"
     },
     {
       "capabilityId": "data.basemap_topojson",
@@ -398,7 +430,8 @@
       "method": "GET",
       "path": "/data/land-50m.json, /data/countries-110m.json",
       "evidence": "public/data/land-50m.json; public/data/countries-110m.json; src/geo/texture.ts; src/geo/countries.ts",
-      "data_domain": "terrain"
+      "data_domain": "terrain",
+      "provenance": "world-atlas TopoJSON, a static public basemap"
     },
     {
       "capabilityId": "cli.check",
@@ -410,7 +443,8 @@
       "method": "npm",
       "path": "npm run check",
       "evidence": "package.json; scripts/check-seam.mjs; scripts/validate-provenance.mjs",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the repository under check; not world data"
     },
     {
       "capabilityId": "cli.dev_build",
@@ -422,7 +456,8 @@
       "method": "npm",
       "path": "npm run dev | build | preview",
       "evidence": "package.json; vite.config.ts",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the repository under build; not world data"
     }
   ],
   "metadata": {

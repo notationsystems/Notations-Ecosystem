@@ -12,7 +12,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/MapLens.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "GET /v1/snapshot, plus the Payload layer files this repository ships"
     },
     {
       "capabilityId": "graph.observe",
@@ -22,7 +23,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/GraphLens.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "GET /v1/snapshot"
     },
     {
       "capabilityId": "ledger.observe",
@@ -32,7 +34,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/LedgerLens.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "GET /v1/snapshot coordination records"
     },
     {
       "capabilityId": "events.observe",
@@ -42,7 +45,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/TimelineLens.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "GET /v1/events, polled; the dock stores nothing"
     },
     {
       "capabilityId": "command.compose",
@@ -52,7 +56,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/ConsoleLens.tsx",
-      "data_domain": "coordination"
+      "data_domain": "coordination",
+      "provenance": "the operator at the keyboard; validated client-side with the plane's own validator"
     },
     {
       "capabilityId": "security.observe",
@@ -62,7 +67,8 @@
       "approval": "automatic",
       "surface": "ui",
       "evidence": "dock/src/lenses/SecurityLens.tsx",
-      "data_domain": "security-posture"
+      "data_domain": "security-posture",
+      "provenance": "GET /v1/snapshot posture metadata; no evidence path crosses"
     }
   ],
   "metadata": {

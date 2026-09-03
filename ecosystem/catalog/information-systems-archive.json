@@ -29,7 +29,8 @@
       "cost": "free",
       "latency": "~100 ms",
       "workflow": "archive-restore",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "sha256 over the mirrored files, against data-archive/MANIFEST.json"
     },
     {
       "capabilityId": "comtrade.captures.read",
@@ -95,7 +96,8 @@
       "latency": "minutes",
       "side_effects": "overwrites data-archive/ and snapshots/ in the target checkout",
       "workflow": "archive-restore",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "the mirror's own files; the terminal is the destination, never the source"
     },
     {
       "capabilityId": "mirror.refresh",
@@ -109,7 +111,8 @@
       "latency": "minutes",
       "side_effects": "commits new capture files and MANIFEST.json to this repository",
       "workflow": "archive-refresh",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "a Payload/Sea Dog Terminal archival run"
     }
   ],
   "metadata": {

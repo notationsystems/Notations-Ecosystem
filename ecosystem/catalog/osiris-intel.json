@@ -14,7 +14,8 @@
       "method": "GET",
       "path": "/health",
       "evidence": "intel/server.js; intel/Dockerfile",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "this process: sanctions load time, Wikidata cache size and uptime"
     },
     {
       "capabilityId": "intel.resolve.aircraft",
@@ -26,7 +27,8 @@
       "method": "GET",
       "path": "/resolve?type=aircraft",
       "evidence": "intel/server.js",
-      "data_domain": "aviation"
+      "data_domain": "aviation",
+      "provenance": "Wikidata (P230 ICAO airline prefix), plus the OFAC SDN cross-reference"
     },
     {
       "capabilityId": "intel.resolve.vessel",
@@ -38,7 +40,8 @@
       "method": "GET",
       "path": "/resolve?type=vessel",
       "evidence": "intel/server.js",
-      "data_domain": "maritime"
+      "data_domain": "maritime",
+      "provenance": "Wikidata SPARQL by IMO (P458) or ship-subclass label; OFAC SDN"
     },
     {
       "capabilityId": "intel.resolve.company",
@@ -50,7 +53,8 @@
       "method": "GET",
       "path": "/resolve?type=company",
       "evidence": "intel/server.js",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "Wikidata entity search and SPARQL; OFAC SDN"
     },
     {
       "capabilityId": "intel.resolve.person",
@@ -62,7 +66,8 @@
       "method": "GET",
       "path": "/resolve?type=person",
       "evidence": "intel/server.js",
-      "data_domain": "person-intelligence"
+      "data_domain": "person-intelligence",
+      "provenance": "Wikidata search and SPARQL, and RIPE abuse contacts; OFAC SDN"
     },
     {
       "capabilityId": "intel.resolve.ip",
@@ -74,7 +79,8 @@
       "method": "GET",
       "path": "/resolve?type=ip",
       "evidence": "intel/server.js",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "ip-api.com geolocation, ISP, org and ASN"
     },
     {
       "capabilityId": "intel.resolve.country",
@@ -86,7 +92,8 @@
       "method": "GET",
       "path": "/resolve?type=country",
       "evidence": "intel/server.js",
-      "data_domain": "local-context"
+      "data_domain": "local-context",
+      "provenance": "Wikidata country properties and memberships"
     },
     {
       "capabilityId": "intel.graph.contract",
@@ -96,7 +103,8 @@
       "approval": "automatic",
       "surface": "contract",
       "evidence": "intel/server.js; src/app/api/entity/expand/route.ts",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "whichever resolver answered; every node keeps the source that produced it"
     }
   ],
   "metadata": {

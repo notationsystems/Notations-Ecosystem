@@ -14,7 +14,8 @@
       "method": "GET",
       "path": "/api/economy",
       "evidence": "src/app/api/economy/route.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "the canonical physical-economy corpus; propagation computed at the evaluation date"
     },
     {
       "capabilityId": "economy.entity.read",
@@ -26,7 +27,8 @@
       "method": "GET",
       "path": "/api/economy/entity",
       "evidence": "src/app/api/economy/entity/route.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "the canonical physical-economy corpus, per entity"
     },
     {
       "capabilityId": "economy.search",
@@ -38,7 +40,8 @@
       "method": "GET",
       "path": "/api/economy/search",
       "evidence": "src/app/api/economy/search/route.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "the canonical entity register, and the evidence layer for epistemic queries"
     },
     {
       "capabilityId": "economy.table.read",
@@ -50,7 +53,8 @@
       "method": "GET",
       "path": "/api/economy/table",
       "evidence": "src/app/api/economy/table/route.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "the canonical physical-economy corpus, as record-carrying rows"
     },
     {
       "capabilityId": "economy.refusals.read",
@@ -62,7 +66,8 @@
       "method": "GET",
       "path": "/api/economy/refusals",
       "evidence": "src/app/api/economy/refusals/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the instrument's own refusal ledger"
     },
     {
       "capabilityId": "economy.guards.read",
@@ -74,7 +79,8 @@
       "method": "GET",
       "path": "/api/economy/guards",
       "evidence": "src/app/api/economy/guards/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the deferred-decision ledger, evaluated against the state this instance serves"
     },
     {
       "capabilityId": "economy.validate",
@@ -86,7 +92,8 @@
       "method": "GET",
       "path": "/api/economy/validate",
       "evidence": "src/app/api/economy/validate/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the cited records only; the claim's own text is never evidence"
     },
     {
       "capabilityId": "economy.scenario",
@@ -98,7 +105,8 @@
       "method": "POST",
       "path": "/api/economy/scenario",
       "evidence": "src/app/api/economy/scenario/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "computation: the propagation engine on a counterfactual frame, not a measurement"
     },
     {
       "capabilityId": "entity.expand",
@@ -110,7 +118,8 @@
       "method": "GET",
       "path": "/api/entity/expand",
       "evidence": "src/app/api/entity/expand/route.ts",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "osiris-intel (INTEL_URL), and Wikidata and RIPE behind it"
     },
     {
       "capabilityId": "freight.operations.read",
@@ -122,7 +131,8 @@
       "method": "GET",
       "path": "/api/freight/operations",
       "evidence": "src/app/api/freight/operations/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "the append-only operations journal (PAYLOAD_OPERATIONS_LOG)"
     },
     {
       "capabilityId": "freight.operations.command",
@@ -134,7 +144,8 @@
       "method": "POST",
       "path": "/api/freight/operations",
       "evidence": "src/app/api/freight/operations/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "the append-only operations journal it also writes"
     },
     {
       "capabilityId": "freight.control_tower.read",
@@ -146,7 +157,8 @@
       "method": "GET",
       "path": "/api/freight/control-tower",
       "evidence": "src/app/api/freight/control-tower/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "the operations and carrier-communication journals, joined"
     },
     {
       "capabilityId": "freight.communications.read",
@@ -158,7 +170,8 @@
       "method": "GET",
       "path": "/api/freight/communications",
       "evidence": "src/app/api/freight/communications/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "the carrier-communications journal (PAYLOAD_CARRIER_COMMUNICATIONS_LOG)"
     },
     {
       "capabilityId": "freight.communications.send_dispatch",
@@ -170,7 +183,8 @@
       "method": "POST",
       "path": "/api/freight/communications",
       "evidence": "src/app/api/freight/communications/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "the journal-derived tender, and the carrier adapter's receipt"
     },
     {
       "capabilityId": "freight.carrier_events.webhook",
@@ -182,7 +196,8 @@
       "method": "POST",
       "path": "/api/freight/carrier-events",
       "evidence": "src/app/api/freight/carrier-events/route.ts",
-      "data_domain": "tracking-events"
+      "data_domain": "tracking-events",
+      "provenance": "carrier acknowledgements and tracking, HMAC-verified at the boundary"
     },
     {
       "capabilityId": "freight.sources.pull",
@@ -194,7 +209,8 @@
       "method": "GET",
       "path": "/api/freight/sources",
       "evidence": "src/app/api/freight/sources/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "FMCSA QCMobile authority evidence and the EIA weekly U.S. diesel benchmark"
     },
     {
       "capabilityId": "freight.demo.run",
@@ -206,7 +222,8 @@
       "method": "GET",
       "path": "/api/freight/demo",
       "evidence": "src/app/api/freight/demo/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "synthetic: nine hand-built loads on a query-parameter clock"
     },
     {
       "capabilityId": "freight.world.run",
@@ -218,7 +235,8 @@
       "method": "GET",
       "path": "/api/freight/world",
       "evidence": "src/app/api/freight/world/route.ts",
-      "data_domain": "logistics"
+      "data_domain": "logistics",
+      "provenance": "synthetic: a seeded ~520-load population with planted signals"
     },
     {
       "capabilityId": "osint.whois",
@@ -230,7 +248,8 @@
       "method": "GET",
       "path": "/api/osint/whois",
       "evidence": "src/app/api/osint/whois/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "RDAP registrant records, cross-checked against OpenSanctions us_ofac_sdn"
     },
     {
       "capabilityId": "osint.dns",
@@ -242,7 +261,8 @@
       "method": "GET",
       "path": "/api/osint/dns",
       "evidence": "src/app/api/osint/dns/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "Google DNS-over-HTTPS"
     },
     {
       "capabilityId": "osint.ip",
@@ -254,7 +274,8 @@
       "method": "GET",
       "path": "/api/osint/ip",
       "evidence": "src/app/api/osint/ip/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "ip-api.com geolocation and ASN owner; OpenSanctions us_ofac_sdn for the owner"
     },
     {
       "capabilityId": "osint.certs",
@@ -266,7 +287,8 @@
       "method": "GET",
       "path": "/api/osint/certs",
       "evidence": "src/app/api/osint/certs/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "crt.sh certificate transparency logs"
     },
     {
       "capabilityId": "osint.bgp",
@@ -278,7 +300,8 @@
       "method": "GET",
       "path": "/api/osint/bgp",
       "evidence": "src/app/api/osint/bgp/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "RIPE Stat and ip-api.com"
     },
     {
       "capabilityId": "osint.mac",
@@ -290,7 +313,8 @@
       "method": "GET",
       "path": "/api/osint/mac",
       "evidence": "src/app/api/osint/mac/route.ts",
-      "data_domain": "network-recon"
+      "data_domain": "network-recon",
+      "provenance": "the IEEE OUI vendor registry"
     },
     {
       "capabilityId": "osint.threats",
@@ -302,7 +326,8 @@
       "method": "GET",
       "path": "/api/osint/threats",
       "evidence": "src/app/api/osint/threats/route.ts",
-      "data_domain": "cyber"
+      "data_domain": "cyber",
+      "provenance": "AlienVault OTX public pulses and Tor exit-node indicators"
     },
     {
       "capabilityId": "osint.sanctions",
@@ -314,7 +339,8 @@
       "method": "GET",
       "path": "/api/osint/sanctions",
       "evidence": "src/app/api/osint/sanctions/route.ts",
-      "data_domain": "sanctions"
+      "data_domain": "sanctions",
+      "provenance": "OpenSanctions us_ofac_sdn"
     },
     {
       "capabilityId": "geo.directions",
@@ -326,7 +352,8 @@
       "method": "GET",
       "path": "/api/directions",
       "evidence": "src/app/api/directions/route.ts",
-      "data_domain": "local-context"
+      "data_domain": "local-context",
+      "provenance": "Valhalla, with OSRM as a driving-only fallback; both keyless OSM services"
     },
     {
       "capabilityId": "geo.search",
@@ -338,7 +365,8 @@
       "method": "GET",
       "path": "/api/geosearch",
       "evidence": "src/app/api/geosearch/route.ts; src/app/api/geo/route.ts; src/app/api/arcgis/route.ts",
-      "data_domain": "local-context"
+      "data_domain": "local-context",
+      "provenance": "Photon and Nominatim (OpenStreetMap)"
     },
     {
       "capabilityId": "feeds.maritime",
@@ -350,7 +378,8 @@
       "method": "GET",
       "path": "/api/maritime",
       "evidence": "src/app/api/maritime/route.ts",
-      "data_domain": "maritime"
+      "data_domain": "maritime",
+      "provenance": "a static port and chokepoint reference; live AIS vessels via aisstream.io"
     },
     {
       "capabilityId": "feeds.environment",
@@ -362,7 +391,8 @@
       "method": "GET",
       "path": "/api/weather",
       "evidence": "src/app/api/weather/route.ts; src/app/api/air-quality/route.ts",
-      "data_domain": "weather"
+      "data_domain": "weather",
+      "provenance": "NASA EONET, NOAA/NWS and GDACS; OpenAQ for air quality"
     },
     {
       "capabilityId": "feeds.infrastructure",
@@ -374,7 +404,8 @@
       "method": "GET",
       "path": "/api/infrastructure",
       "evidence": "src/app/api/infrastructure/route.ts",
-      "data_domain": "infrastructure"
+      "data_domain": "infrastructure",
+      "provenance": "a curated static list of nuclear power facilities"
     },
     {
       "capabilityId": "feeds.markets",
@@ -386,7 +417,8 @@
       "method": "GET",
       "path": "/api/markets",
       "evidence": "src/app/api/markets/route.ts; src/app/api/markets/history/route.ts",
-      "data_domain": "financial-markets"
+      "data_domain": "financial-markets",
+      "provenance": "Yahoo Finance v8 chart, whose redistribution posture is internal_only"
     },
     {
       "capabilityId": "feeds.signals",
@@ -398,7 +430,8 @@
       "method": "GET",
       "path": "/api/news",
       "evidence": "src/app/api/news/route.ts; src/app/api/chain/daily/route.ts",
-      "data_domain": "risk"
+      "data_domain": "risk",
+      "provenance": "Telegram public previews with BBC and Al Jazeera RSS fallback; DefiLlama and NVD"
     },
     {
       "capabilityId": "ops.health",
@@ -410,7 +443,8 @@
       "method": "GET",
       "path": "/api/health",
       "evidence": "src/app/api/health/route.ts",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "this instance's own build identity, boot report and runtime guard verdict"
     },
     {
       "capabilityId": "ops.stats",
@@ -422,7 +456,8 @@
       "method": "GET",
       "path": "/api/stats",
       "evidence": "src/app/api/stats/route.ts",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "counters over the feeds this instance actually serves"
     },
     {
       "capabilityId": "ops.tiles.proxy",
@@ -434,7 +469,8 @@
       "method": "GET",
       "path": "/api/proxy-tiles",
       "evidence": "src/app/api/proxy-tiles/route.ts",
-      "data_domain": "local-context"
+      "data_domain": "local-context",
+      "provenance": "CARTO basemap tiles (cartocdn.com only)"
     },
     {
       "capabilityId": "ops.retired_routes",
@@ -446,7 +482,8 @@
       "method": "GET",
       "path": "/api/{retired}",
       "evidence": "src/app/api/[...retired]/route.ts; src/lib/routeGate.ts",
-      "data_domain": "architecture-invariants"
+      "data_domain": "architecture-invariants",
+      "provenance": "the route disposition map in src/lib/routeGate.ts"
     },
     {
       "capabilityId": "ops.github_webhook",
@@ -458,7 +495,8 @@
       "method": "POST",
       "path": "/api/github-webhook",
       "evidence": "src/app/api/github-webhook/route.ts",
-      "data_domain": "coordination"
+      "data_domain": "coordination",
+      "provenance": "GitHub webhook deliveries, signature-verified before the relay"
     },
     {
       "capabilityId": "sdk.ingest",
@@ -470,7 +508,8 @@
       "method": "POST",
       "path": "/api/sdk/ingest",
       "evidence": "src/app/api/sdk/ingest/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "external Polybolos platforms, into an in-memory store that is never canonical state"
     },
     {
       "capabilityId": "sdk.ingest.status",
@@ -482,7 +521,8 @@
       "method": "GET",
       "path": "/api/sdk/ingest",
       "evidence": "src/app/api/sdk/ingest/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the in-memory SDK ingest store"
     },
     {
       "capabilityId": "sdk.stream",
@@ -494,7 +534,8 @@
       "method": "GET",
       "path": "/api/sdk/stream",
       "evidence": "src/app/api/sdk/stream/route.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the in-memory SDK ingest store"
     },
     {
       "capabilityId": "mcp.bottlenecks",
@@ -504,7 +545,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "the canonical flow graph; triage signals, not validated risk"
     },
     {
       "capabilityId": "mcp.search_entities",
@@ -514,7 +556,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "/api/economy/search — the canonical register"
     },
     {
       "capabilityId": "mcp.search_evidence",
@@ -524,7 +567,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "/api/economy/search — the evidence layer"
     },
     {
       "capabilityId": "mcp.get_entity",
@@ -534,7 +578,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "ontology"
+      "data_domain": "ontology",
+      "provenance": "/api/economy/entity — one entity's canonical state"
     },
     {
       "capabilityId": "mcp.get_observations",
@@ -544,7 +589,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "/api/economy/table — the corpus rows"
     },
     {
       "capabilityId": "mcp.concentration",
@@ -554,7 +600,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "computation: HHI over attributed tonnage from the corpus"
     },
     {
       "capabilityId": "mcp.propagate",
@@ -564,7 +611,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "computation: recorded disruption events through the flow graph"
     },
     {
       "capabilityId": "mcp.scenario",
@@ -574,7 +622,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "commodity-markets"
+      "data_domain": "commodity-markets",
+      "provenance": "computation: hypothetical events on an explicit counterfactual frame"
     },
     {
       "capabilityId": "mcp.refusals_digest",
@@ -584,7 +633,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "/api/economy/refusals — the instrument's own refusals"
     },
     {
       "capabilityId": "mcp.corpus_health",
@@ -594,7 +644,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "the instrument's own cadence, degradation and plausibility signals"
     },
     {
       "capabilityId": "mcp.source_registry",
@@ -604,7 +655,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "src/lib/economy/sourceRegistry.ts, ranked by the miss log's demand"
     },
     {
       "capabilityId": "mcp.validate_claim",
@@ -614,7 +666,8 @@
       "approval": "automatic",
       "surface": "mcp",
       "evidence": "src/lib/economy/mcpTools.ts; src/mcp/server.ts",
-      "data_domain": "canonical-state"
+      "data_domain": "canonical-state",
+      "provenance": "the cited records only"
     },
     {
       "capabilityId": "ui.terminal",
@@ -625,7 +678,8 @@
       "surface": "ui",
       "path": "/",
       "evidence": "src/app/page.tsx; src/components/PayloadMap.tsx; src/components/LayerPanel.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "the canonical physical-economy corpus, rendered"
     },
     {
       "capabilityId": "ui.operations",
@@ -636,7 +690,8 @@
       "surface": "ui",
       "path": "/operations",
       "evidence": "src/app/operations/page.tsx; src/components/OperationsControlTower.tsx",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "the freight journals, rendered as an exception-first queue"
     },
     {
       "capabilityId": "ui.docs",
@@ -647,7 +702,8 @@
       "surface": "ui",
       "path": "/docs",
       "evidence": "src/app/docs/page.tsx; src/app/docs/apiCatalog.ts",
-      "data_domain": "visualisation"
+      "data_domain": "visualisation",
+      "provenance": "src/app/docs/apiCatalog.ts, hand-maintained"
     },
     {
       "capabilityId": "cli.smoke",
@@ -657,7 +713,8 @@
       "approval": "automatic",
       "surface": "cli",
       "evidence": "scripts/smoke.mjs",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "the live endpoints of a running instance"
     },
     {
       "capabilityId": "cli.archive_manifest",
@@ -667,7 +724,8 @@
       "approval": "operator",
       "surface": "cli",
       "evidence": "scripts/archive-manifest.mjs; data-archive/MANIFEST.json",
-      "data_domain": "archive-integrity"
+      "data_domain": "archive-integrity",
+      "provenance": "sha256 over the files in data-archive/"
     },
     {
       "capabilityId": "contract.ocr_candidate_intake",
@@ -677,7 +735,8 @@
       "approval": "automatic",
       "surface": "contract",
       "evidence": "src/lib/economy/ocrCandidateInbox.ts; src/lib/economy/ocrFreightReview.ts",
-      "data_domain": "trade-documents"
+      "data_domain": "trade-documents",
+      "provenance": "payload-ocr-agent bundles, staged and never written to the freight book"
     }
   ],
   "metadata": {

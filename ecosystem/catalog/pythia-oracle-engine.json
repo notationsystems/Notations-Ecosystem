@@ -14,7 +14,8 @@
       "method": "GET",
       "path": "/health",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
-      "data_domain": "network-health"
+      "data_domain": "network-health",
+      "provenance": "this process: loop state, prediction count and version"
     },
     {
       "capabilityId": "oracle.config",
@@ -26,7 +27,8 @@
       "method": "GET",
       "path": "/config",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/config.cpython-314.pyc",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the effective configuration of this process"
     },
     {
       "capabilityId": "oracle.world.read",
@@ -38,7 +40,8 @@
       "method": "GET",
       "path": "/world",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/world_state.cpython-314.pyc",
-      "data_domain": "news"
+      "data_domain": "news",
+      "provenance": "payload-terminal /api/* feeds, assembled into a brief by the LLM"
     },
     {
       "capabilityId": "oracle.state.stream",
@@ -50,7 +53,8 @@
       "method": "GET",
       "path": "/state/stream",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/state.cpython-314.pyc",
-      "data_domain": "news"
+      "data_domain": "news",
+      "provenance": "the engine's own pub/sub over the same assembled brief"
     },
     {
       "capabilityId": "oracle.agent.view",
@@ -62,7 +66,8 @@
       "method": "GET",
       "path": "/agent/view",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
-      "data_domain": "news"
+      "data_domain": "news",
+      "provenance": "the assembled brief and current forecasts, for external agents"
     },
     {
       "capabilityId": "oracle.predictions.read",
@@ -74,7 +79,8 @@
       "method": "GET",
       "path": "/predictions",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; runs/ledger.jsonl",
-      "data_domain": "prediction-markets"
+      "data_domain": "prediction-markets",
+      "provenance": "the forecast ledger (runs/ledger.jsonl)"
     },
     {
       "capabilityId": "oracle.predict.run",
@@ -86,7 +92,8 @@
       "method": "POST",
       "path": "/predict",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/pipeline.cpython-314.pyc; engine/__pycache__/oracle.cpython-314.pyc",
-      "data_domain": "prediction-markets"
+      "data_domain": "prediction-markets",
+      "provenance": "model output over payload-terminal feeds: a proposal, never a measurement"
     },
     {
       "capabilityId": "oracle.scorecard.read",
@@ -98,7 +105,8 @@
       "method": "GET",
       "path": "/scorecard",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/ledger.cpython-314.pyc",
-      "data_domain": "evaluation"
+      "data_domain": "evaluation",
+      "provenance": "resolved forecasts scored against what happened (Brier, calibration bins)"
     },
     {
       "capabilityId": "oracle.scorecard.resolve",
@@ -110,7 +118,8 @@
       "method": "POST",
       "path": "/scorecard/resolve",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
-      "data_domain": "evaluation"
+      "data_domain": "evaluation",
+      "provenance": "an LLM judging due forecasts; the verdict is recorded, not the reasoning"
     },
     {
       "capabilityId": "oracle.whatif",
@@ -122,7 +131,8 @@
       "method": "POST",
       "path": "/whatif",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
-      "data_domain": "prediction-markets"
+      "data_domain": "prediction-markets",
+      "provenance": "model output on a counterfactual; ephemeral and never ledgered"
     },
     {
       "capabilityId": "oracle.chat",
@@ -134,7 +144,8 @@
       "method": "POST",
       "path": "/chat",
       "evidence": "engine/__pycache__/server.cpython-314.pyc",
-      "data_domain": "news"
+      "data_domain": "news",
+      "provenance": "model output with the live sources and current forecasts in context"
     },
     {
       "capabilityId": "oracle.models",
@@ -146,7 +157,8 @@
       "method": "POST",
       "path": "/model",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/swarm.cpython-314.pyc",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the local Ollama installation"
     },
     {
       "capabilityId": "oracle.loop",
@@ -158,7 +170,8 @@
       "method": "POST",
       "path": "/loop",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/loop.cpython-314.pyc",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "this process's loop configuration"
     },
     {
       "capabilityId": "oracle.webhooks",
@@ -170,7 +183,8 @@
       "method": "POST",
       "path": "/webhooks",
       "evidence": "engine/__pycache__/server.cpython-314.pyc; engine/__pycache__/webhooks.cpython-314.pyc",
-      "data_domain": "automation"
+      "data_domain": "automation",
+      "provenance": "the registered hooks in this process"
     },
     {
       "capabilityId": "oracle.ledger",
@@ -180,7 +194,8 @@
       "approval": "automatic",
       "surface": "file",
       "evidence": "runs/ledger.jsonl; engine/__pycache__/ledger.cpython-314.pyc",
-      "data_domain": "prediction-markets"
+      "data_domain": "prediction-markets",
+      "provenance": "the engine's own briefs and forecasts, appended"
     }
   ],
   "metadata": {
