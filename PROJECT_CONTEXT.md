@@ -22,7 +22,9 @@ Payload OS is the shared layer, not a fourth API. See
 | Corpus doctrine and grading | **built** | `ecosystem/corpus.mjs`, all nodes graded |
 | API planes | **built** | `ecosystem/api-planes.json`, enforced on the wire |
 | Truth classes | **built** | `ecosystem/truth-classes.json`, mirrored and tested in the dock |
-| Visual dock | **built** | `dock/`, ten lenses |
+| Visual dock | **built** | `dock/`, ten lenses on the Control Plane surface |
+| Caravan product shell | **built over a fixture** | `dock/src/product/`, reading `ecosystem/caravan/fixtures.json` |
+| Tradewind / Landshark shells | **built as typed mapping views** | shape and the declared join only; no data surface, because neither line has a source |
 | Offline twin instance | **built** | `ecosystem/twin/`, reproducible byte for byte |
 | Product-line partition | **declared, checked** | `ecosystem/product-lines.json`, ten LINE invariants |
 | **Caravan API** | **building** — no bounded v1 slice yet | five implementing nodes, all reference implementations |
@@ -42,6 +44,18 @@ Payload OS is the shared layer, not a fourth API. See
   out until the field can be filled.
 - **The Caravan v1 slice is undecided.** Mode, corridor and geography are `to_decide`. A demo that
   picks one has invented it.
+
+## The surfaces, and what each reads
+
+| Surface | Reads | Standing |
+| --- | --- | --- |
+| Control Plane | governance reads from a live plane, or the sample snapshot | internal |
+| Caravan | `ecosystem/caravan/fixtures.json` — a shape fixture on synthetic identifiers | reference implementation |
+| Tradewind | nothing; the Caravan slice supplies the mapping counts only | not built |
+| Landshark | nothing; the Caravan slice supplies the mapping counts only | not built |
+
+Each product surface is linkable: `?surface=caravan`. An unrecognised value opens the Control Plane
+rather than a product, so a bad link never lands a reader on a customer surface they did not ask for.
 
 ## The one open decision
 

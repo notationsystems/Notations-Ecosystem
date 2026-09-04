@@ -15,6 +15,7 @@ import { TimelineLens } from './lenses/TimelineLens';
 import { applyFilters, type Filters } from './lenses/types';
 import { domainSummary, snapshotStats } from './model/graph';
 import { KIND_COLOR, KIND_LABEL, NODE_KINDS, RELATION_COLOR, RELATION_KINDS, RELATION_LABEL, type NodeKind, type RelationKind } from './model/types';
+import { PRODUCTS, ProductSurface, type ProductId } from './product/ProductSurface';
 
 type LensId = 'operator' | 'security' | 'corpus' | 'api' | 'solar' | 'map' | 'graph' | 'ledger' | 'timeline' | 'console';
 const LENSES: Array<{ id: LensId; label: string }> = [
@@ -23,8 +24,23 @@ const LENSES: Array<{ id: LensId; label: string }> = [
 
 export interface ConsoleIntent { action: 'request_capability' | 'record_observation' | 'resolve_coordination' | 'record_security_posture' | 'register_node'; nodeId?: string; capabilityId?: string; coordinationId?: string }
 
+type Surface = 'control-plane' | ProductId;
+
+// A surface is linkable: ?surface=caravan opens on that product. Anything unrecognised opens on the
+// control plane rather than on a product, so a bad link never lands a reader on a customer surface
+// they did not ask for.
+const SURFACES: readonly Surface[] = ['control-plane', 'caravan', 'tradewind', 'landshark'];
+const initialSurface: Surface = (() => {
+  if (typeof window === 'undefined') return 'control-plane';
+  const asked = new URLSearchParams(window.location.search).get('surface');
+  return SURFACES.find((s) => s === asked) ?? 'control-plane';
+})();
+
 export function App() {
   const dock = useControlPlane();
+  // Payload OS is the bundle these surfaces sit on. It is named in navigation and never offered as
+  // a product of its own; the control plane is internal and the three APIs are the products.
+  const [surface, setSurface] = useState<Surface>(initialSurface);
   const [lens, setLens] = useState<LensId>('operator');
   const [selected, setSelected] = useState<string | null>(null);
   const [intent, setIntent] = useState<ConsoleIntent | null>(null);
@@ -41,11 +57,33 @@ export function App() {
 
   const goConsole = (i: ConsoleIntent) => { setIntent(i); setLens('console'); };
 
+  // A product surface is its own page: no control-plane rail, no node inspector, and none of the
+  // operator affordances, because a customer-facing surface has no authority to offer them.
+  if (surface !== 'control-plane') {
+    return (
+      <div className="dock product-only">
+        <header className="topbar">
+          <div className="brand"><span className="hex" />Payload OS</div>
+          <nav className="tabs surfaces">
+            <button className="tab" onClick={() => setSurface('control-plane')}>Control Plane</button>
+            {PRODUCTS.map((p) => <button key={p.id} className={`tab ${surface === p.id ? 'active' : ''}`} onClick={() => setSurface(p.id)}>{p.name}</button>)}
+          </nav>
+        </header>
+        <ProductSurface product={surface} />
+      </div>
+    );
+  }
+
   return (
     <div className="dock">
       <header className="topbar">
-        <div className="brand"><span className="hex" />Notations Universe Dock</div>
-        <nav className="tabs">{LENSES.map((l) => <button key={l.id} className={`tab ${lens === l.id ? 'active' : ''}`} onClick={() => setLens(l.id)}>{l.label}</button>)}</nav>
+        <div className="brand"><span className="hex" />Payload OS</div>
+        <nav className="tabs surfaces">
+          <button className={`tab ${surface === 'control-plane' ? 'active' : ''}`} onClick={() => setSurface('control-plane')} title="Internal: verified architecture, capability, readiness, security and lineage state. Governance reads only.">Control Plane</button>
+          {/* On the control-plane page none of these is the active surface, by construction. */}
+          {PRODUCTS.map((p) => <button key={p.id} className="tab" onClick={() => setSurface(p.id)} title={p.standing === 'not_built' ? `${p.name} is defined, not built.` : `${p.name} — reference implementation, not a deployed service.`}>{p.name}</button>)}
+        </nav>
+        {surface === 'control-plane' && <nav className="tabs">{LENSES.map((l) => <button key={l.id} className={`tab ${lens === l.id ? 'active' : ''}`} onClick={() => setLens(l.id)}>{l.label}</button>)}</nav>}
         <input className="mono" style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 6, padding: '5px 9px', width: 260 }} placeholder="search nodes and capabilities" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
         {stats && <div className="stats"><span>nodes <b>{stats.nodes}</b></span><span>located <b>{stats.located}</b></span><span>relations <b>{stats.relations}</b></span><span>capabilities <b>{stats.capabilities}</b></span><span>execute <b>{stats.execute}</b></span><span>pending <b>{stats.pendingApprovals}</b></span></div>}
         <span className={`mode ${dock.mode}`}><span className="dot" />{dock.mode}</span>

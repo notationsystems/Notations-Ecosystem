@@ -163,3 +163,31 @@ table.grid th { color: var(--muted); font-weight: 500; font-size: 11px; text-tra
 .evidenced .lbl { color: var(--faint, #9aa5b1); font-size: 11px; }
 .frame { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--line, #d8dde3); border-radius: 4px; }
 .frame-field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: baseline; font-size: 12px; }
+
+/* Product surfaces — Caravan, Tradewind, Landshark on the Payload OS bundle. */
+.product-surface { padding: 16px 20px 28px; overflow-y: auto; }
+.product-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.product-head .os { font-family: var(--mono, ui-monospace, monospace); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted, #7b8794); }
+.product-head .sep { color: var(--faint, #9aa5b1); }
+.product-head b { font-size: 18px; }
+.standing { font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; }
+.standing-reference_implementation { color: var(--cyan, #2f8fa8); }
+.standing-release_candidate { color: var(--accent, #c07b2a); }
+.standing-deployed_service { color: var(--green, #3f8f5f); }
+.standing-not_built, .standing-fixture { color: var(--muted, #7b8794); border-style: dashed; }
+.product section { margin: 18px 0; }
+.product h3 { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint, #9aa5b1); font-weight: 500; margin: 0 0 6px; }
+.product .corridor-note { max-width: 70ch; }
+.product .cap-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+.product .exceptions { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.product .exceptions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.product .lineage { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.product .lineage li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.product .mapping { margin-top: 6px; font-size: 11px; color: var(--muted, #7b8794); border-left: 2px solid var(--line, #d8dde3); padding-left: 8px; }
+.product .join { margin: 10px 0; color: var(--text, #1e2733); }
+.product .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.notlive { display: flex; gap: 10px; align-items: flex-start; border: 1px dashed var(--line, #d8dde3); border-radius: 4px; padding: 10px 12px; margin-bottom: 4px; }
+.notlive .why { color: var(--muted, #7b8794); font-size: 12px; margin-top: 2px; max-width: 70ch; }
+.dock.product-only { display: grid; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); height: 100vh; }
+.dock.product-only .product-surface { max-width: 1080px; width: 100%; }
+.tabs.surfaces .tab { font-weight: 500; }

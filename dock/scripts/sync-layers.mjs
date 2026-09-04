@@ -47,3 +47,17 @@ for (const adapter of adapters) {
 
 await writeFile(path.join(root, 'index.json'), `${JSON.stringify({ schema: 'notations.dock.layer-adapters.v1', adapters: index }, null, 2)}\n`);
 if (!adapters.length) console.log('no ecosystem adapter carries a layers.json; the map will draw the universe alone');
+
+// Product-line tenant-read fixtures. A shell must be built against the fixture the estate declares,
+// not a copy that drifts from it, so the copy is made by the build rather than by hand.
+const fixtures = [];
+for (const entry of (await readdir(ecosystem, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+  if (!entry.isDirectory()) continue;
+  const fixture = path.join(ecosystem, entry.name, 'fixtures.json');
+  if (!(await exists(fixture))) continue;
+  const dst = path.resolve(here, `../public/${entry.name}-fixture.json`);
+  await cp(fixture, dst);
+  fixtures.push(entry.name);
+  console.log(`${entry.name}: fixtures.json -> ${path.relative(process.cwd(), dst)}`);
+}
+if (!fixtures.length) console.log('no product line carries a tenant-read fixture yet');

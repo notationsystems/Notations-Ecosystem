@@ -1,0 +1,206 @@
+{
+  "schema": "notations.caravan.tenant-read-fixture.v1",
+  "status": "fixture",
+  "not_a_service": "This is a shape fixture for the Caravan product shell. It is not a deployed customer service, not a release, and not a reading of any real corridor. Every identifier begins with FIXTURE- so it cannot be mistaken for one.",
+  "why_no_corridor": "Caravan's v1 slice — mode, corridor, geography — is undecided (LINE-007). A fixture that named one would be inventing the decision, so this fixture demonstrates response shape and truth classes on abstract identifiers instead.",
+  "frame": {
+    "release": {
+      "class": "NOT_EVIDENCED",
+      "whyUnknown": "Release identity is specified but not built; nothing issues a release yet, so no response can be release-bound."
+    },
+    "valid_time": {
+      "class": "CANONICAL_PROOF",
+      "value": "2026-09-01T00:00:00Z/2026-09-03T00:00:00Z",
+      "reference": "notation://caravan/fixture/window",
+      "proofRoot": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80"
+    },
+    "knowledge_time": {
+      "class": "CANONICAL_PROOF",
+      "value": "2026-09-03T00:00:00Z",
+      "reference": "notation://caravan/fixture/knowledge",
+      "proofRoot": "f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80"
+    },
+    "coverage": {
+      "class": "OPERATIONAL_OBSERVATION",
+      "value": "3 of 5 subjects carry admitted evidence",
+      "observedAt": "2026-09-03T00:00:00Z",
+      "source": "fixture",
+      "limitations": [
+        "Coverage is the evidence state of this slice, not a quality score.",
+        "A subject with no evidence is counted as uncovered, never as clean."
+      ]
+    }
+  },
+  "parties": [
+    {
+      "id": "FIXTURE-PARTY-1",
+      "role": "carrier",
+      "resolution": {
+        "class": "CANONICAL_PROOF",
+        "value": "FIXTURE-ORG-77",
+        "reference": "notation://payload-os/organization/FIXTURE-ORG-77",
+        "proofRoot": "a7c9e1f3b5d7092a4c6e8f0a2b4d6e8f0a2c4e6f8a0b2d4f6a8c0e2f4a6b8d0e",
+        "validTime": "2026-09-01T00:00:00Z",
+        "knowledgeTime": "2026-09-02T11:04:00Z"
+      },
+      "note": "Resolved to one organization on the Payload OS spine. The reference is the OS's, not Caravan's."
+    },
+    {
+      "id": "FIXTURE-PARTY-2",
+      "role": "consignee",
+      "resolution": {
+        "class": "UNRESOLVED",
+        "whyUnknown": "Two organizations match the name and address on the document, and no admitted evidence separates them.",
+        "detail": [
+          "FIXTURE-ORG-104 — same registered name, different registration number",
+          "FIXTURE-ORG-231 — same address, name differs by one token"
+        ]
+      },
+      "note": "Neither candidate is chosen for the reader. A resolution the corpus cannot make is not made by the frontend."
+    },
+    {
+      "id": "FIXTURE-PARTY-3",
+      "role": "notify",
+      "resolution": {
+        "class": "NOT_EVIDENCED",
+        "whyUnknown": "The document names a notify party, and no admitted source bears on who that is."
+      },
+      "note": "Answerable in principle. No evidence of an identity is not evidence of no identity."
+    }
+  ],
+  "shipments": [
+    {
+      "id": "FIXTURE-SHP-001",
+      "lot": {
+        "class": "CANONICAL_PROOF",
+        "value": "FIXTURE-LOT-9",
+        "reference": "notation://caravan/product_lot/FIXTURE-LOT-9",
+        "proofRoot": "b8d0f2a4c6e8093b5d7f9a1c3e5f7a9b1d3f5a7c9e1b3d5f7a9c1e3f5a7b9d1f"
+      },
+      "commodity_reference": {
+        "class": "CANONICAL_PROOF",
+        "value": "FIXTURE-COMMODITY-CU",
+        "reference": "notation://tradewind/commodity/FIXTURE-COMMODITY-CU",
+        "proofRoot": "c9e1f3a5b7d9004c6e8a0b2d4f6a8c0e2f4a6b8d0e2f4a6c8e0b2d4f6a8c0e2f"
+      },
+      "mapping_note": "A reference to a Tradewind-owned identity. Caravan holds the pointer and no price.",
+      "destination_site": {
+        "class": "CANONICAL_PROOF",
+        "value": "FIXTURE-SITE-42",
+        "reference": "notation://landshark/site/FIXTURE-SITE-42",
+        "proofRoot": "d0f2a4c6e8a0b2d4f6a8c0e2f4a6b8d0e2f4a6c8e0b2d4f6a8c0e2f4a6b8d0e2"
+      },
+      "status": {
+        "class": "VERIFIED_DERIVATION",
+        "value": "in transit",
+        "reference": "notation://caravan/shipment/FIXTURE-SHP-001/status",
+        "proofRoot": "e1f3a5b7d9c1e3f5a7b9d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3f5a7b9d1f3",
+        "derivationPath": [
+          "last verified milestone",
+          "no later milestone recorded",
+          "status rule: departed and not arrived"
+        ],
+        "knowledgeTime": "2026-09-03T00:00:00Z"
+      }
+    },
+    {
+      "id": "FIXTURE-SHP-002",
+      "lot": {
+        "class": "CANONICAL_PROOF",
+        "value": "FIXTURE-LOT-11",
+        "reference": "notation://caravan/product_lot/FIXTURE-LOT-11",
+        "proofRoot": "f2a4c6e8a0b2d4f6a8c0e2f4a6b8d0e2f4a6c8e0b2d4f6a8c0e2f4a6b8d0e2f4"
+      },
+      "commodity_reference": {
+        "class": "NOT_EVIDENCED",
+        "whyUnknown": "The lot's commodity classification is not on any admitted document for this shipment."
+      },
+      "destination_site": {
+        "class": "UNRESOLVED",
+        "whyUnknown": "The destination on the document resolves to two parcels that share a street address."
+      },
+      "status": {
+        "class": "UNOBSERVED",
+        "whyUnknown": "No milestone has been recorded against this shipment, so its status is not known.",
+        "detail": [
+          "A shipment with no milestones is not 'pending'; nothing has looked."
+        ]
+      }
+    }
+  ],
+  "voyages": [
+    {
+      "id": "FIXTURE-VOY-A",
+      "position": {
+        "class": "OPERATIONAL_OBSERVATION",
+        "value": "under way",
+        "observedAt": "2026-09-02T18:20:00Z",
+        "source": "position_feed",
+        "limitations": [
+          "One feed, at one moment.",
+          "A position is not a delivery, and a vessel under way is not a shipment arriving.",
+          "Redistribution of the underlying position is governed by the feed's terms; only the derived state is shown."
+        ]
+      },
+      "milestones": [
+        {
+          "id": "FIXTURE-MS-1",
+          "kind": "departure",
+          "at": {
+            "class": "CANONICAL_PROOF",
+            "value": "2026-09-01T06:00:00Z",
+            "reference": "notation://caravan/milestone/FIXTURE-MS-1",
+            "proofRoot": "a4c6e8a0b2d4f6a8c0e2f4a6b8d0e2f4a6c8e0b2d4f6a8c0e2f4a6b8d0e2f4a6"
+          }
+        },
+        {
+          "id": "FIXTURE-MS-2",
+          "kind": "discharge",
+          "at": {
+            "class": "CONFLICTING",
+            "whyUnknown": "Two admitted sources give different discharge times and nothing in the corpus settles which is right.",
+            "detail": [
+              "Carrier EDI message: 2026-09-02T21:10:00Z",
+              "Terminal document: 2026-09-03T04:35:00Z"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "FIXTURE-VOY-B",
+      "position": {
+        "class": "UNOBSERVED",
+        "whyUnknown": "No position observation has been recorded for this voyage."
+      },
+      "milestones": []
+    }
+  ],
+  "exceptions": [
+    {
+      "subject": "FIXTURE-PARTY-2",
+      "why": "Identity did not resolve to one organization.",
+      "truth_class": "UNRESOLVED"
+    },
+    {
+      "subject": "FIXTURE-SHP-002",
+      "why": "No milestone has been recorded, so status is unknown.",
+      "truth_class": "UNOBSERVED"
+    },
+    {
+      "subject": "FIXTURE-MS-2",
+      "why": "Two sources disagree on the discharge time.",
+      "truth_class": "CONFLICTING"
+    },
+    {
+      "subject": "FIXTURE-VOY-B",
+      "why": "No position observation recorded.",
+      "truth_class": "UNOBSERVED"
+    },
+    {
+      "subject": "frame.release",
+      "why": "Release identity is not built, so no response here is release-bound.",
+      "truth_class": "NOT_EVIDENCED"
+    }
+  ]
+}
