@@ -59,17 +59,20 @@ test('the fixture exercises every typed non-success, because real data does', as
   assert.equal(used.size, 7, 'all seven classes should appear, so the shell is built against the whole vocabulary');
 });
 
-test('the fixture invents no corridor, because the v1 slice is undecided', async () => {
+test('the fixture names the decided slice and still invents no traffic', async () => {
   const [fixture, lines] = await Promise.all([read('caravan/fixtures.json'), read('product-lines.json')]);
   const slice = lines.lines.caravan.v1_slice;
-  const undecided = ['mode', 'corridor', 'geography'].filter((f) => slice[f] === 'to_decide');
-  if (undecided.length) {
-    assert.match(fixture.why_no_corridor, /undecided/i, 'the fixture must say why it names no corridor');
-    // Every identifier is visibly synthetic, so a screenshot cannot be mistaken for a reading.
-    const ids = JSON.stringify(fixture).match(/"FIXTURE-[A-Z0-9-]+"/g) ?? [];
-    assert.ok(ids.length > 10, 'the fixture should be built from visibly synthetic identifiers');
-    assert.equal(/"id": "(?!FIXTURE-)/.test(JSON.stringify(fixture, null, 1)), false, 'every id must be visibly a fixture id');
-  }
+  // The slice is decided, so the fixture names it rather than pretending the question is open.
+  assert.equal(fixture.slice.mode, slice.mode);
+  assert.equal(fixture.slice.geography, slice.geography);
+  // Deciding what the slice is about is not holding records for it, and the fixture says which.
+  assert.equal(fixture.slice.evidence.truthClass, 'VERIFIED_DERIVATION');
+  assert.equal(fixture.slice.shipment_records.truthClass, 'NOT_EVIDENCED');
+  assert.match(fixture.why_no_corridor, /not the same as holding shipment records/i);
+  // Every identifier stays visibly synthetic, so a screenshot cannot be mistaken for a reading.
+  const ids = JSON.stringify(fixture).match(/"FIXTURE-[A-Z0-9-]+"/g) ?? [];
+  assert.ok(ids.length > 10, 'the fixture should be built from visibly synthetic identifiers');
+  assert.equal(/"id": "(?!FIXTURE-)/.test(JSON.stringify(fixture, null, 1)), false, 'every id must be visibly a fixture id');
 });
 
 test('the fixture hands the browser nothing it may never receive', async () => {

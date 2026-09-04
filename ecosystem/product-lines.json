@@ -246,12 +246,30 @@
       ],
       "stage": "building",
       "v1_slice": {
-        "mode": "to_decide",
-        "corridor": "to_decide",
-        "geography": "to_decide",
+        "mode": "maritime_bulk",
+        "corridor": "Peru → China · HS2603 (copper ores and concentrates)",
+        "geography": "Pacific: Peru ports to China ports",
         "events": "licensed",
-        "open_decision": "One mode, one corridor, one geography — the single decision that has to be made before this line ships. The corridor should be one where the operator already holds first-party documents and counterparty relationships, so that resolution and lineage can be demonstrated against material the estate can lawfully return.",
-        "note": "Marked to_decide rather than guessed. LINE-007 warns until the three fields are named."
+        "decided_by": "derivation",
+        "basis": "ecosystem/payload/layers/comtrade-flows.json — the estate's only real trade capture (UN Comtrade, known_at 2026-08-27). Derived by node ecosystem/caravan/slice.mjs, not written by hand.",
+        "why": "The capture is entirely HS2603, so the commodity was never open. Ranking its 54 corridors by currency first and magnitude second leaves one answer: Peru → China is among the 20 that reach the latest vintage (2022), and leads them at 16.1 B USD and 9.04 Mt — 7.6× the runner-up by value. The mode follows from the cargo and the endpoints: 9 Mt of ore across the Pacific has no land option.",
+        "what_the_evidence_is_not": [
+          "Annual national trade statistics, not shipment records.",
+          "It names no counterparty, no vessel and no milestone.",
+          "It bounds the slice; it does not make the slice shippable."
+        ],
+        "readiness": {
+          "gate": "A bounded slice and a shippable slice are different questions. LINE-007 asks the first; node ecosystem/caravan/slice.mjs score() holds the second.",
+          "still_needed": [
+            "first_party_documents — shipment-level documents on this corridor that the operator holds.",
+            "counterparty_relationships — resolvable shippers, carriers and consignees; national statistics name countries, not parties.",
+            "movement_events — milestones from a source whose terms permit the derived state to be served."
+          ],
+          "already_held": [
+            "returnable_evidence — the Comtrade capture is already served by the estate with its provenance and vintage.",
+            "bounded_extent — the corridor, commodity and vintage window are stated and checkable."
+          ]
+        }
       },
       "implemented_by": [
         "payload-terminal",

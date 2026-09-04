@@ -99,15 +99,16 @@ Three APIs is the product map. It is not the year-one build.
 LINE-006 enforces the shape of this: exactly one line carries `stage: building` at a time. Three
 lines building in parallel spends the year on venue and vendor connectors and ships no spine.
 
-## The one open decision
+## The v1 slice
 
-Caravan is `building` and its v1 slice is not yet bounded: **mode, corridor and geography are all
-`to_decide`.** LINE-007 warns on exactly this, and will keep warning until the three are named. It is
-recorded as an open decision rather than guessed, because it is the decision that determines which
-sources can be licensed, which counterparties can be resolved, and which parcels Landshark later
-inherits. The criterion is written into the file: choose a corridor where the operator already holds
-first-party documents and counterparty relationships, so resolution and lineage can be demonstrated
-on material the estate can lawfully return.
+Caravan's v1 slice is **Peru → China, HS2603 (copper ores and concentrates)**, maritime bulk, on the
+Pacific — derived by `node ecosystem/caravan/slice.mjs` from the estate's only real trade capture,
+and recorded in `product-lines.json` with its basis and its limits. LINE-007 is satisfied, and a test
+fails if the file drifts from the derivation.
+
+Bounding the slice is not the same as being able to ship it. The capture fixes commodity, direction,
+geography and magnitude; it names no counterparty, no vessel and no milestone. The readiness gate is
+held separately, in `score()`, and it is not passed.
 
 ## The invariants
 

@@ -27,17 +27,29 @@ answer that walks back to the document or event it came from, and refuses when i
 
 ## The v1 slice
 
-One mode, one corridor, one geography, licensed events.
+The v1 slice is **Peru → China, HS2603 — copper ores and concentrates**, maritime bulk, Pacific.
 
-**These three are not yet decided.** `mode`, `corridor` and `geography` are `to_decide` in
-[`ecosystem/product-lines.json`](../ecosystem/product-lines.json), and LINE-007 warns on every run of
-`node ecosystem/product-lines.mjs` until they are named. This is recorded as an open decision rather
-than guessed, because it determines which sources can be licensed, which counterparties can be
-resolved, and which parcels Landshark later inherits.
+It was derived, not chosen. `ecosystem/payload/layers/comtrade-flows.json` is the estate's only real
+trade capture (UN Comtrade, `known_at` 2026-08-27, bitemporal, provenance per row). It is *entirely*
+HS2603, so the commodity was never open. Ranking its 54 corridors by currency first and magnitude
+second leaves one answer: Peru → China is among the 20 that reach the latest vintage (2022), and
+leads them at $16.1 B and 9.04 Mt — 7.6× the runner-up. The mode follows from the cargo and the
+endpoints: 9 Mt of ore across the Pacific has no land option.
 
-The criterion is written into the file: **choose a corridor where the operator already holds
-first-party documents and counterparty relationships**, so resolution and lineage can be
-demonstrated against material the estate can lawfully return.
+`node ecosystem/caravan/slice.mjs` recomputes it, and a test fails if the recorded slice ever drifts
+from the derivation.
+
+**What that evidence is not.** Annual national trade statistics, not shipment records. It names no
+counterparty, no vessel and no milestone. It bounds the slice; it does not make the slice shippable.
+Those are two different questions, and only the first is now answered:
+
+| Requirement | Standing |
+| --- | --- |
+| returnable evidence | held — the capture is already served with its provenance and vintage |
+| bounded extent | held — corridor, commodity and vintage window are stated and checkable |
+| first-party documents | **needed** — shipment-level documents on this corridor |
+| counterparty relationships | **needed** — national statistics name countries; a counterparty is not a country |
+| movement events | **needed** — milestones from a source whose terms permit serving the derived state |
 
 ## The migration boundary
 

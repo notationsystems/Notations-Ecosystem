@@ -6,12 +6,18 @@ const clone = (doc) => JSON.parse(JSON.stringify(doc));
 const only = (result, invariant) => result.errors.filter((e) => e.startsWith(`${invariant}:`));
 
 test('the partition holds as written', async () => {
-  const { errors, warnings, building } = await report();
+  const { doc, errors, warnings, building } = await report();
   assert.deepEqual(errors, [], 'the declared partition must satisfy every LINE invariant');
   assert.equal(building, 'caravan', 'PAYLOAD is the line being built');
-  // The one open decision is surfaced, not hidden and not invented.
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /^LINE-007: caravan is building with an unbounded v1/);
+  // LINE-007 is satisfied: the building line names its mode, corridor and geography, and names them
+  // from a derivation over the estate's own capture rather than from a preference.
+  assert.deepEqual(warnings, [], 'the partition should carry no open warning');
+  const slice = doc.lines.caravan.v1_slice;
+  for (const field of ['mode', 'corridor', 'geography']) {
+    assert.ok(slice[field] && slice[field] !== 'to_decide', `${field} is still undecided`);
+  }
+  assert.equal(slice.decided_by, 'derivation');
+  assert.ok(slice.basis && slice.what_the_evidence_is_not?.length, 'a decision states its basis and the limits of that basis');
 });
 
 test('LINE-001 refuses a second owner for a spine type', async () => {
@@ -75,6 +81,14 @@ test('LINE-006 refuses two lines building at once', async () => {
   doc.lines.tradewind.stage = 'building';
   const r = checkProductLines(doc);
   assert.ok(only(r, 'LINE-006').some((e) => /caravan and tradewind are both building/.test(e)));
+});
+
+test('LINE-007 still refuses an unbounded v1, now that nothing is unbounded', async () => {
+  const doc = clone(await loadProductLines());
+  doc.lines.caravan.v1_slice.corridor = 'to_decide';
+  const r = checkProductLines(doc);
+  assert.ok(r.warnings.some((w) => /^LINE-007: caravan is building with an unbounded v1/.test(w)),
+    'the invariant that was satisfied must still fire when it is not');
 });
 
 test('LINE-008 refuses a source admitted without a rights profile', async () => {

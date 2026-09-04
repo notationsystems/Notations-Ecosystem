@@ -48,11 +48,21 @@ export interface CaravanException {
   truth_class: string;
 }
 
+/** What the v1 slice is about, and — separately — whether records for it exist. */
+export interface CaravanSliceIdentity {
+  corridor: string;
+  mode: string;
+  geography: string;
+  evidence: { truthClass: string; basis: string };
+  shipment_records: { truthClass: string; whyUnknown: string };
+}
+
 export interface CaravanSlice {
   schema: string;
   status: 'fixture' | 'release_candidate' | 'service';
   not_a_service?: string;
   why_no_corridor?: string;
+  slice?: CaravanSliceIdentity;
   frame: CaravanFrame;
   parties: CaravanParty[];
   shipments: CaravanShipment[];

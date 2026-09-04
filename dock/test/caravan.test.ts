@@ -74,9 +74,13 @@ describe('the product surfaces state what they are', () => {
 });
 
 describe('the fixture the shell is built against', () => {
-  it('is labelled a fixture and names no corridor', () => {
+  it('is labelled a fixture, names the decided slice, and still invents no traffic', () => {
     expect(slice.status).toBe('fixture');
-    expect(slice.why_no_corridor).toMatch(/undecided/i);
+    // The slice is decided, so the fixture names it — and separates that from holding records for it.
+    expect(slice.slice?.mode).toBe('maritime_bulk');
+    expect(slice.slice?.evidence.truthClass).toBe('VERIFIED_DERIVATION');
+    expect(slice.slice?.shipment_records.truthClass).toBe('NOT_EVIDENCED');
+    expect(slice.why_no_corridor).toMatch(/not the same as holding shipment records/i);
     expect(JSON.stringify(slice)).not.toMatch(/"id": "(?!FIXTURE-)/);
   });
 

@@ -27,7 +27,7 @@ Payload OS is the shared layer, not a fourth API. See
 | Tradewind / Landshark shells | **built as typed mapping views** | shape and the declared join only; no data surface, because neither line has a source |
 | Offline twin instance | **built** | `ecosystem/twin/`, reproducible byte for byte |
 | Product-line partition | **declared, checked** | `ecosystem/product-lines.json`, ten LINE invariants |
-| **Caravan API** | **building** — no bounded v1 slice yet | five implementing nodes, all reference implementations |
+| **Caravan API** | **building** — v1 slice bounded, not yet shippable | five implementing nodes, all reference implementations |
 | **Tradewind API** | **defined, not built** | zero implementing nodes |
 | **Landshark API** | **defined, not built** | zero implementing nodes |
 | Release identity and release-bound reads | **specified, not built** | the frame is in `truth-classes.json`; nothing issues a release yet |
@@ -42,8 +42,67 @@ Payload OS is the shared layer, not a fourth API. See
 - **Release-bound reads are not available yet.** A view that shows a release field today is showing a
   frame with nothing in it. Show the field as `NOT_EVIDENCED` rather than blank, or leave the frame
   out until the field can be filled.
-- **The Caravan v1 slice is undecided.** Mode, corridor and geography are `to_decide`. A demo that
-  picks one has invented it.
+- **The Caravan v1 slice is decided** — Peru → China, HS2603, maritime bulk — and derived from the
+  estate's own capture. A demo may name it. A demo may not imply shipment-level evidence behind it.
+
+## The surfaces, and what each reads
+
+| Surface | Reads | Standing |
+| --- | --- | --- |
+| Control Plane | governance reads from a live plane, or the sample snapshot | internal |
+| Caravan | `ecosystem/caravan/fixtures.json` — a shape fixture on synthetic identifiers | reference implementation |
+| Tradewind | nothing; the Caravan slice supplies the mapping counts only | not built |
+| Landshark | nothing; the Caravan slice supplies the mapping counts only | not built |
+
+Each product surface is linkable: `?surface=caravan`. An unrecognised value opens the Control Plane
+rather than a product, so a bad link never lands a reader on a customer surface they did not ask for.
+
+## Capability cost and latency
+
+`node ecosystem/capability-profile.mjs` derives a work class per capability from what the catalog
+already declares, because a latency figure is a property of a deployment and inventing one would be
+the unsupported claim this estate refuses everywhere else.
+
+| Work class | Capabilities |
+| --- | --- |
+| in-process read | 28 |
+| journal fold | 269 |
+| local compute | 59 |
+| external fetch | 92 |
+| model inference | 13 |
+| heavy compute | 9 |
+| **unclassified** | **175** — declare neither provenance nor a module family |
+
+**92 reach a third party to answer, 114 spend something, and 61 both spend and let the caller widen
+the work.** That last shape is how a caller becomes a spender of the operator's money; the count is
+asserted in a test so it cannot grow unnoticed. **Nothing has had its cost or latency measured**, and
+every profile says so rather than carrying a number that would be read as a service level.
+
+## The v1 slice, decided
+
+The v1 slice is **Peru → China, HS2603 — copper ores and concentrates**, maritime bulk, Pacific.
+
+It was derived, not chosen. `ecosystem/payload/layers/comtrade-flows.json` is the estate's only real
+trade capture (UN Comtrade, `known_at` 2026-08-27, bitemporal, provenance per row). It is *entirely*
+HS2603, so the commodity was never open. Ranking its 54 corridors by currency first and magnitude
+second leaves one answer: Peru → China is among the 20 that reach the latest vintage (2022), and
+leads them at $16.1 B and 9.04 Mt — 7.6× the runner-up. The mode follows from the cargo and the
+endpoints: 9 Mt of ore across the Pacific has no land option.
+
+`node ecosystem/caravan/slice.mjs` recomputes it, and a test fails if the recorded slice ever drifts
+from the derivation.
+
+**What that evidence is not.** Annual national trade statistics, not shipment records. It names no
+counterparty, no vessel and no milestone. It bounds the slice; it does not make the slice shippable.
+Those are two different questions, and only the first is now answered:
+
+| Requirement | Standing |
+| --- | --- |
+| returnable evidence | held — the capture is already served with its provenance and vintage |
+| bounded extent | held — corridor, commodity and vintage window are stated and checkable |
+| first-party documents | **needed** — shipment-level documents on this corridor |
+| counterparty relationships | **needed** — national statistics name countries; a counterparty is not a country |
+| movement events | **needed** — milestones from a source whose terms permit serving the derived state |
 
 ## The surfaces, and what each reads
 

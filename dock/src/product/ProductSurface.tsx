@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { TruthBadge } from '../components/Evidence';
 import { Caravan } from './Caravan';
 import { LANDSHARK, LineSurface, TRADEWIND } from './Mapping';
 import { STANDING_LABEL, type CaravanSlice, type SurfaceStanding } from './types';
@@ -57,6 +58,22 @@ export function ProductSurface({ product }: { product: ProductId }) {
             saying they read a fixture would overstate what they show. */}
         {product === 'caravan' && slice.status === 'fixture' && <span className="standing standing-fixture" title={slice.not_a_service}>reading a shape fixture</span>}
       </div>
+      {product === 'caravan' && slice.slice && (
+        <div className="slice-id">
+          <div className="frame-field"><span className="lbl">corridor</span><b>{slice.slice.corridor}</b></div>
+          <div className="frame-field"><span className="lbl">mode</span><b>{slice.slice.mode}</b></div>
+          <div className="frame-field"><span className="lbl">geography</span><b>{slice.slice.geography}</b></div>
+          <div className="frame-field">
+            <span className="lbl">basis</span>
+            <span className="evidenced"><TruthBadge truth="VERIFIED_DERIVATION" /><span className="why">{slice.slice.evidence.basis}</span></span>
+          </div>
+          {/* Deciding what the slice is about is not holding records for it, and the surface says which. */}
+          <div className="frame-field">
+            <span className="lbl">records</span>
+            <span className="evidenced"><TruthBadge truth="NOT_EVIDENCED" /><span className="why">{slice.slice.shipment_records.whyUnknown}</span></span>
+          </div>
+        </div>
+      )}
       {product === 'caravan' && slice.why_no_corridor && (
         <p className="sub corridor-note">{slice.why_no_corridor}</p>
       )}

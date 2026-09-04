@@ -2,7 +2,7 @@
   "schema": "notations.caravan.tenant-read-fixture.v1",
   "status": "fixture",
   "not_a_service": "This is a shape fixture for the Caravan product shell. It is not a deployed customer service, not a release, and not a reading of any real corridor. Every identifier begins with FIXTURE- so it cannot be mistaken for one.",
-  "why_no_corridor": "Caravan's v1 slice — mode, corridor, geography — is undecided (LINE-007). A fixture that named one would be inventing the decision, so this fixture demonstrates response shape and truth classes on abstract identifiers instead.",
+  "why_no_corridor": "The v1 slice is now decided — Peru to China, HS2603, maritime bulk — but this fixture still carries no real lane data, because deciding what the slice is about is not the same as holding shipment records for it. The estate's evidence for the corridor is annual national trade statistics; it names no party, vessel or milestone. So the fixture keeps visibly synthetic FIXTURE- identifiers and demonstrates response shape and truth classes, rather than dressing statistics up as shipments.",
   "frame": {
     "release": {
       "class": "NOT_EVIDENCED",
@@ -202,5 +202,18 @@
       "why": "Release identity is not built, so no response here is release-bound.",
       "truth_class": "NOT_EVIDENCED"
     }
-  ]
+  ],
+  "slice": {
+    "corridor": "Peru → China · HS2603 (copper ores and concentrates)",
+    "mode": "maritime_bulk",
+    "geography": "Pacific: Peru ports to China ports",
+    "evidence": {
+      "truthClass": "VERIFIED_DERIVATION",
+      "basis": "ecosystem/payload/layers/comtrade-flows.json — UN Comtrade capture, known_at 2026-08-27"
+    },
+    "shipment_records": {
+      "truthClass": "NOT_EVIDENCED",
+      "whyUnknown": "No shipment-level record exists for this corridor in the estate. The rows below are shape, not traffic."
+    }
+  }
 }
