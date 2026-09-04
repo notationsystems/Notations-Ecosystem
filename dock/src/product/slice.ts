@@ -22,20 +22,38 @@ const isTruth = (v: unknown): v is Truth<unknown> =>
   typeof v === 'object' && v !== null && typeof (v as { class?: unknown }).class === 'string'
   && (TRUTH as Record<string, unknown>)[(v as { class: string }).class] !== undefined;
 
+/**
+ * How deep the surface will walk a response.
+ *
+ * A response is attacker-influenced the moment it crosses a boundary, and an unbounded recursive
+ * walk turns a nested document into a denial of the whole surface. The bound is generous relative
+ * to the shape the contract describes, and exceeding it is reported rather than silently truncated:
+ * a surface that quietly stopped looking would be claiming it had looked.
+ */
+export const MAX_DEPTH = 64;
+
 /** Every typed non-success in the slice, in the order it appears. */
 export function unanswered(slice: CaravanSlice): Unanswered[] {
   const found: Unanswered[] = [];
-  const walk = (node: unknown, path: string) => {
+  const walk = (node: unknown, path: string, depth: number) => {
+    if (depth > MAX_DEPTH) {
+      found.push({
+        path,
+        truthClass: 'NOT_EVIDENCED',
+        whyUnknown: `This response nests deeper than ${MAX_DEPTH} levels, past what this surface will walk. What is below was not read, and is not reported as answered.`,
+      });
+      return;
+    }
     if (isTruth(node)) {
       if (isUnknown(node)) found.push({ path, truthClass: node.class, whyUnknown: node.whyUnknown, detail: node.detail });
       return; // a truth is a leaf; its own fields are not separate subjects
     }
-    if (Array.isArray(node)) { node.forEach((v, i) => walk(v, `${path}[${i}]`)); return; }
+    if (Array.isArray(node)) { node.forEach((v, i) => walk(v, `${path}[${i}]`, depth + 1)); return; }
     if (typeof node === 'object' && node !== null) {
-      for (const [k, v] of Object.entries(node)) walk(v, path ? `${path}.${k}` : k);
+      for (const [k, v] of Object.entries(node)) walk(v, path ? `${path}.${k}` : k, depth + 1);
     }
   };
-  walk({ frame: slice.frame, parties: slice.parties, shipments: slice.shipments, voyages: slice.voyages }, '');
+  walk({ frame: slice.frame, parties: slice.parties, shipments: slice.shipments, voyages: slice.voyages }, '', 0);
   return found;
 }
 
@@ -53,12 +71,13 @@ export function coverage(slice: CaravanSlice): { answered: number; unanswered: n
 
 function countTruths(slice: CaravanSlice): number {
   let n = 0;
-  const walk = (node: unknown) => {
+  const walk = (node: unknown, depth: number) => {
+    if (depth > MAX_DEPTH) { n += 1; return; } // the depth marker is itself a subject, and an unanswered one
     if (isTruth(node)) { n += 1; return; }
-    if (Array.isArray(node)) { node.forEach(walk); return; }
-    if (typeof node === 'object' && node !== null) Object.values(node).forEach(walk);
+    if (Array.isArray(node)) { node.forEach((v) => walk(v, depth + 1)); return; }
+    if (typeof node === 'object' && node !== null) Object.values(node).forEach((v) => walk(v, depth + 1));
   };
-  walk({ frame: slice.frame, parties: slice.parties, shipments: slice.shipments, voyages: slice.voyages });
+  walk({ frame: slice.frame, parties: slice.parties, shipments: slice.shipments, voyages: slice.voyages }, 0);
   return n;
 }
 

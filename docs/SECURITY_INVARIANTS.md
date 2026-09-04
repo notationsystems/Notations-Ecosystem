@@ -67,6 +67,41 @@ sound.
 A truncated journal is the case worth understanding: the remaining prefix still
 *verifies as a chain*. Only the anchor catches it.
 
+## Published surfaces
+
+The estate publishes a self-contained instance of the Control Universe and serves product surfaces
+in a browser. Both execute code and render text that originates elsewhere, so both carry invariants
+of their own.
+
+**SEC-047 — every third-party script a published surface executes is pinned by version and bound by
+subresource integrity.**
+
+The renderer runs with full DOM access in a page that is published and shared. Pinning a version
+stops an upgrade from changing behaviour; integrity stops the same URL from serving different bytes.
+Without the second the first is a naming convention, not a control — and `crossorigin` is required
+alongside it, because a browser does not enforce integrity on a cross-origin script fetched in
+no-cors mode. Checked by `ecosystem/test/twin-security.test.mjs`, which also re-fetches the pinned
+bundle and compares its digest to the one in the page.
+
+**SEC-048 — no catalog text reaches a published page as markup.**
+
+Names, descriptions, capability labels and observation detail are written by people and assembled by
+tooling, and all of them are rendered. Text that became markup would be stored XSS in a page built
+to be shared. Verified by attack: 2,868 string fields across the fold were replaced with six XSS
+payloads, the instance was rebuilt and rendered headlessly, and nothing executed — every payload
+arrived as characters. The test asserts the escaping helper survives and that no `innerHTML`
+template interpolates a snapshot field without routing it through one.
+
+**SEC-049 — a walk over an externally supplied document is depth-bounded, and the bound is
+reported rather than silently applied.**
+
+A response is attacker-influenced the moment it crosses a boundary. The Caravan surface walks a
+slice to find what it could not answer, and that walk was unbounded: a nested document overflowed
+the stack and took the surface down. It is bounded at 64 levels now, and exceeding the bound emits a
+typed `NOT_EVIDENCED` rather than stopping quietly — a surface that silently stopped looking would
+be claiming it had looked, which is the same failure as rendering an unknown as a zero. Found by
+attack, fixed, and held by `dock/test/attack.test.ts`.
+
 ## Invariants that are architectural rather than testable
 
 Some properties are held by the shape of the system rather than by a check. They are

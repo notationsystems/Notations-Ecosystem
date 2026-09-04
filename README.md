@@ -64,7 +64,7 @@ Checks: `cd control-plane && npm test` (59, of which 46 are named security
 invariants), `node ecosystem/validate.mjs` (31 nodes, 645 capabilities, 46 relations),
 `node ecosystem/corpus.mjs`, `node ecosystem/product-lines.mjs`, `node ecosystem/capability-profile.mjs`,
 `node ecosystem/caravan/slice.mjs`, `node security/scan-secrets.mjs`,
-`cd ecosystem && npm test` (105), `cd dock && npm run check && npm test && npm run build` (103),
+`cd ecosystem && npm test` (108), `cd dock && npm run check && npm test && npm run build` (108),
 `node platform/migrate.mjs --reset && node --test platform/test/*.mjs` (9 invariants, 9 proofs, against a live PostgreSQL).
 
 Serving the dock: the build is static, but `frame-ancestors` and `X-Frame-Options`

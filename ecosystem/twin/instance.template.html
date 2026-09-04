@@ -271,7 +271,12 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"></script>
+<!-- The renderer is a third party with full DOM access, so the version is pinned and the bytes are
+     checked: a different file at this URL fails the integrity check and does not run. crossorigin is
+     required for the browser to enforce the check on a cross-origin script. -->
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.14/dist.min.js"
+        integrity="sha384-9Qz9Vg68oxSJ8alpsDVG3eFNLSZ8P16UxKNQyVheKTcnTlbnueGTD7D0MRd6Na0z"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="application/json" id="twin-data">__DATA__</script>
 <script>
 (() => {
