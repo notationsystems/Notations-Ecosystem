@@ -159,7 +159,7 @@ not infrastructure sprawl.
 
 ## Invariants
 
-Checked live by `node platform/check.mjs`; proved by `node --test platform/test/`.
+Checked live by `node platform/check.mjs`; proved by `node --test platform/test/*.mjs`.
 
 | Id | Invariant | Why it is checked rather than assumed |
 | --- | --- | --- |
@@ -212,7 +212,7 @@ bytes have moved, because nothing here is deployed.
 export NOTATIONS_PLATFORM_DSN='postgresql://postgres@/notations?host=/tmp/pgsock&port=5433'
 node platform/migrate.mjs --reset     # apply platform/sql/*.sql, then check
 node platform/check.mjs               # the nine invariants, against the live database
-node --test platform/test/            # tenant isolation, proved; both RLS bypasses, demonstrated
+node --test platform/test/*.mjs            # tenant isolation, proved; both RLS bypasses, demonstrated
 ```
 
 Both the check and the tests skip with a stated reason when no database is reachable. They

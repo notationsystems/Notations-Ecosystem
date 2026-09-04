@@ -1,4 +1,5 @@
 import type { Coordination, SnapshotNode } from '../model/types';
+import { isObserved } from '../model/truth';
 
 /**
  * The four states an intent can pass through in the Notations Universe:
@@ -26,7 +27,8 @@ export function stageOfCoordination(c: Coordination): PipelineState {
 }
 
 export function stageOfNode(n: SnapshotNode): PipelineState {
-  return { reached: n.health === 'unknown' ? null : 'observed' };
+  // Reached means something looked, whatever it found — an observation of 'unknown' is still one.
+  return { reached: isObserved(n) ? 'observed' : null };
 }
 
 const LABEL: Record<Stage, string> = { observed: 'observed', proposed: 'proposed', approved: 'approved', dispatched: 'dispatched' };

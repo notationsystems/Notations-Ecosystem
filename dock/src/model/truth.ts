@@ -179,3 +179,13 @@ export function postureTruth(node: { security?: { attestedAt: string; method: st
     derivationPath: ['posture statement', `signed by ${s.signer.signerId}`],
   };
 }
+
+/**
+ * Whether anything has looked at this node.
+ *
+ * The snapshot's `health` is derived from the last observation, so an absent observation shows as
+ * `unknown` — but `unknown` is also a health an operator can *record*, meaning "I looked, and the
+ * state is not determinable". Testing the enum therefore erases a real observation into an absence,
+ * which is the failure API-001 exists to prevent. Observation is `lastObservedAt`, and only that.
+ */
+export const isObserved = (node: { lastObservedAt: string | null }): boolean => node.lastObservedAt !== null;

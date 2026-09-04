@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Pipeline, stageOfCoordination } from '../components/Pipeline';
 import { KIND_LABEL, type Coordination, type SnapshotNode } from '../model/types';
 import type { LensProps } from './types';
+import { isObserved } from '../model/truth';
 
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
 
@@ -32,7 +33,8 @@ export function OperatorLens({ snapshot, filtered, onSelect, onResolve, onObserv
     }
     const blockedNodes = nodes.filter((n) => n.health === 'offline' || n.health === 'degraded').map((n) => ({ node: n, blocking: dependents.get(n.nodeId) ?? [] }));
     const rejected = snapshot.coordination.filter((c) => c.status === 'rejected');
-    const observed = snapshot.nodes.filter((n) => n.health !== 'unknown').length;
+    // A node observed *as* unknown has still been observed; counting the enum would erase it.
+    const observed = snapshot.nodes.filter(isObserved).length;
     const proposed = snapshot.coordination.length;
     const approved = snapshot.coordination.filter((c) => c.status === 'approved').length;
     return { healthy, stale, needsApproval, blockedNodes, rejected, observed, proposed, approved };

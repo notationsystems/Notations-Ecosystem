@@ -144,3 +144,17 @@ test('the dock renders what its README says it renders', async () => {
   const { POSTURE_DIMENSIONS } = await import('../../control-plane/src/security/evidence.js');
   assert.equal(Number(readme.match(/the constellation: (\d+) posture dimensions/)[1]), Object.keys(POSTURE_DIMENSIONS).length);
 });
+
+test('a command the documents quote can actually be run', async () => {
+  // `node --test <dir>/` does not run the tests in a directory: node imports the path as a module
+  // and fails. Every document quoted that form for the platform suite, so the command the README
+  // told a contributor to run had never worked. A count test cannot catch that; a shape test can.
+  const docs = ['README.md', 'PROJECT_CONTEXT.md', 'AGENTS.md', 'platform/README.md', 'docs/PLATFORM.md'];
+  for (const doc of docs) {
+    const body = await read(doc);
+    for (const [, target] of body.matchAll(/node --test ([^\s`)]+)/g)) {
+      assert.equal(target.endsWith('/'), false, `${doc} quotes "node --test ${target}", and node cannot run a directory that way`);
+      assert.ok(/\*|\.(mjs|js|ts)$/.test(target), `${doc} quotes "node --test ${target}", which names neither a file nor a glob`);
+    }
+  }
+});

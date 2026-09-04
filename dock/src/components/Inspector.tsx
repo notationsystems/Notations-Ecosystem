@@ -1,7 +1,7 @@
 import type { Snapshot, SnapshotNode } from '../model/types';
 import { CORPUS_GRADE_COLOR, CORPUS_ROLE_LABEL, FABRIC_AUTHORITY_COLOR, FABRIC_AUTHORITY_LABEL, KIND_LABEL, MATURITY_COLOR, PERSON_DATA_COLOR, PERSON_DATA_LABEL, POSTURE_DIMENSION_LABEL, POSTURE_STATE_COLOR, RELATION_LABEL, collectionStanding, corpusStanding } from '../model/types';
 import { githubRepoUrl } from '../model/links';
-import { healthTruth, postureTruth } from '../model/truth';
+import { healthTruth, isObserved, postureTruth } from '../model/truth';
 import { Evidenced } from './Evidence';
 
 export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
@@ -39,7 +39,10 @@ export function Inspector({ snapshot, node, onSelect, onRequest, onObserve }: {
       </div>
       <div style={{ marginBottom: 10 }}>
         <span className="badge">{KIND_LABEL[node.kind]}</span>
-        <span className={`badge ${node.health}`}>{node.health}</span>
+        {/* A node nothing has looked at gets no health badge at all: the health field is a
+            registry default, and a badge would read as a finding. The evidence block below
+            carries the truth class instead. */}
+        {isObserved(node) && <span className={`badge ${node.health}`}>{node.health}</span>}
         {typeof md.domain === 'string' && <span className="badge">{md.domain}</span>}
         {typeof md.maturity === 'string' && md.maturity && <span className="badge">{md.maturity}</span>}
         {node.location && <span className="badge">{node.location.latitude.toFixed(2)}, {node.location.longitude.toFixed(2)}</span>}

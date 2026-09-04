@@ -31,7 +31,7 @@ of how good it looks.
 | API planes and response shape | [docs/API_PLANES.md](docs/API_PLANES.md) | enforced in `json()` on the wire |
 | Truth classes and the frontend boundary | [docs/API_SURFACE.md](docs/API_SURFACE.md) | `dock/test/truth.test.ts` |
 | Product-line partition | [docs/PRODUCT_LINES.md](docs/PRODUCT_LINES.md) | `node ecosystem/product-lines.mjs` |
-| Data platform invariants | [docs/PLATFORM.md](docs/PLATFORM.md) | `node --test platform/test/` against live PostgreSQL |
+| Data platform invariants | [docs/PLATFORM.md](docs/PLATFORM.md) | `node --test platform/test/*.mjs` against live PostgreSQL |
 | Frontend visual contract | [docs/CONTROL_PLANE_UNIVERSE.md](docs/CONTROL_PLANE_UNIVERSE.md) | review, and the dock's own tests |
 | Collection policy | [docs/COLLECTION_POLICY.md](docs/COLLECTION_POLICY.md) | `node ecosystem/validate.mjs` |
 

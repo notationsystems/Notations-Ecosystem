@@ -57,10 +57,39 @@ Payload OS is the shared layer, not a fourth API. See
 Each product surface is linkable: `?surface=caravan`. An unrecognised value opens the Control Plane
 rather than a product, so a bad link never lands a reader on a customer surface they did not ask for.
 
+## Capability cost and latency
+
+`node ecosystem/capability-profile.mjs` derives a work class per capability from what the catalog
+already declares, because a latency figure is a property of a deployment and inventing one would be
+the unsupported claim this estate refuses everywhere else.
+
+| Work class | Capabilities |
+| --- | --- |
+| in-process read | 28 |
+| journal fold | 269 |
+| local compute | 59 |
+| external fetch | 92 |
+| model inference | 13 |
+| heavy compute | 9 |
+| **unclassified** | **175** — declare neither provenance nor a module family |
+
+**92 reach a third party to answer, 114 spend something, and 61 both spend and let the caller widen
+the work.** That last shape is how a caller becomes a spender of the operator's money; the count is
+asserted in a test so it cannot grow unnoticed. **Nothing has had its cost or latency measured**, and
+every profile says so rather than carrying a number that would be read as a service level.
+
 ## The one open decision
 
 Caravan's v1 slice. `node ecosystem/product-lines.mjs` warns until mode, corridor and geography are
 named. The criterion is in [docs/CARAVAN_API_PRODUCT.md](docs/CARAVAN_API_PRODUCT.md).
+
+`node ecosystem/caravan/slice.mjs` is the instrument for it. It reports what the estate can say —
+163 capabilities across the five Caravan nodes, 46 handling documents, 13 handling movement events —
+and refuses the corridor question as `NOT_EVIDENCED`: the catalog describes machinery, not traffic,
+so nothing here records which lanes the operator moves goods on. Supply candidates and it scores them
+against the five written requirements, refusing any candidate that does not state all five. Two of
+the five — first-party documents and resolvable counterparties — are not tradeable against the other
+three, because they are what the wedge rests on.
 
 ## Checks
 
@@ -72,5 +101,5 @@ node ecosystem/product-lines.mjs                   # ten LINE invariants
 node security/scan-secrets.mjs
 cd ecosystem && npm test
 cd dock && npm run check && npm test && npm run build
-node platform/migrate.mjs --reset && node --test platform/test/   # needs a live PostgreSQL
+node platform/migrate.mjs --reset && node --test platform/test/*.mjs   # needs a live PostgreSQL
 ```

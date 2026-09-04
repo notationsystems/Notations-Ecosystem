@@ -27,7 +27,7 @@ where it matters.
 export NOTATIONS_PLATFORM_DSN='postgresql://postgres@/notations?host=/tmp/pgsock&port=5433'
 node platform/migrate.mjs --reset
 node platform/check.mjs
-node --test platform/test/
+node --test platform/test/*.mjs
 ```
 
 No database reachable → the check exits 2 with the DSN it tried, and the tests skip with

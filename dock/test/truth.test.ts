@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { TRUTH, TRUTH_CLASSES, healthTruth, isNonSuccess, isRenderable, isSuccess, postureTruth, valueOf, type Truth } from '../src/model/truth';
+import { TRUTH, TRUTH_CLASSES, healthTruth, isNonSuccess, isObserved, isRenderable, isSuccess, postureTruth, valueOf, type Truth } from '../src/model/truth';
 
 const declared = JSON.parse(readFileSync(path.join(__dirname, '../../ecosystem/truth-classes.json'), 'utf8'));
 
@@ -109,5 +109,29 @@ describe('an attested posture', () => {
     const t = postureTruth({});
     expect(t.class).toBe('NOT_EVIDENCED');
     expect(valueOf(t)).toBeUndefined();
+  });
+});
+
+describe('an observation of "unknown" is still an observation', () => {
+  // The snapshot's health is derived from the last observation, so an absent observation shows as
+  // `unknown` — but `unknown` is also a health an operator can record. Any code that tests the enum
+  // instead of `lastObservedAt` erases that operator's finding into an absence.
+  const lookedAndFoundNothing = { health: 'unknown', lastObservedAt: '2026-09-03T00:00:00Z', lastObservation: { source: 'health_check', detail: 'reachable, state not determinable' } };
+  const neverLooked = { health: 'unknown', lastObservedAt: null };
+
+  it('counts as observed', () => {
+    expect(isObserved(lookedAndFoundNothing)).toBe(true);
+    expect(isObserved(neverLooked)).toBe(false);
+  });
+
+  it('renders as an observation, not as an unknown', () => {
+    expect(healthTruth(lookedAndFoundNothing).class).toBe('OPERATIONAL_OBSERVATION');
+    expect(healthTruth(neverLooked).class).toBe('UNOBSERVED');
+  });
+
+  it('would have been erased by testing the enum, which is why nothing does', () => {
+    // The defect this guards: `health !== 'unknown'` says false for a node that was observed.
+    expect(lookedAndFoundNothing.health !== 'unknown').toBe(false);
+    expect(isObserved(lookedAndFoundNothing)).toBe(true);
   });
 });
