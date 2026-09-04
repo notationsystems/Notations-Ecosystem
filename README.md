@@ -97,6 +97,7 @@ add_header Referrer-Policy no-referrer always;
 | How does Payload plug in? | `ecosystem/payload/README.md` (seed, probe, layer extractors) |
 | Why is it modelled this way? | `docs/PAYLOAD_FIRST.md`, `ecosystem/UNIVERSE.md` |
 | What does the estate collect, and what does it refuse? | [docs/COLLECTION_POLICY.md](docs/COLLECTION_POLICY.md) — three standings, declared per node and validated |
+| What is the attack surface, and what is left open? | [docs/SECURITY_MATRIX.md](docs/SECURITY_MATRIX.md) — 15 paths, every one with a test, two medium residuals stated |
 | What is the security model, and what proves it? | [SECURITY.md](SECURITY.md), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), [docs/SECURITY_INVARIANTS.md](docs/SECURITY_INVARIANTS.md) |
 | Where does this sit in the wider Notation substrate? | [docs/SUBSTRATE.md](docs/SUBSTRATE.md) |
 | Who may reach each module, and in what shape? | [docs/API_PLANES.md](docs/API_PLANES.md) — four roles, four planes, thirteen families, one invariant |

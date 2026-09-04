@@ -14,7 +14,25 @@ import { available, literal, query, refuses, scalar } from '../pg.mjs';
  * So these tests connect as the application role, set a tenant, and look.
  */
 const RUN = available();
-const options = { skip: RUN ? false : 'no database reachable — start one and apply platform/sql/*.sql' };
+
+// Fail closed, not silent.
+//
+// These are the proofs that tenant isolation holds. When the database is unreachable they used to
+// skip, and a skipped test reports as a passing job: the suite said "0 failed" while proving
+// nothing, which is the same defect as a command that never ran. A proof that did not run is not a
+// proof that passed.
+//
+// A developer without a database opts out explicitly. Everywhere else — CI included, where a
+// service container guarantees one — an unreachable database is a failure.
+const OPTIONAL = process.env.NOTATIONS_PLATFORM_TESTS_OPTIONAL === '1';
+if (!RUN && !OPTIONAL) {
+  throw new Error(
+    'No database is reachable, so tenant isolation is unproven and this suite fails rather than skipping. '
+    + 'Start PostgreSQL, set NOTATIONS_PLATFORM_DSN and run platform/migrate.mjs --reset. '
+    + 'To run without one deliberately, set NOTATIONS_PLATFORM_TESTS_OPTIONAL=1 and accept that nothing here is proved.',
+  );
+}
+const options = { skip: RUN ? false : 'no database reachable — explicitly opted out via NOTATIONS_PLATFORM_TESTS_OPTIONAL' };
 
 /** Two tenants and one piece of evidence each, torn down and rebuilt per test file. */
 function fixture() {

@@ -12,6 +12,7 @@
 // fetches nothing (docs/SUBSTRATE.md) — not what it refuses.
 import path from 'node:path';
 import { HttpControlPlane } from '../../control-plane/src/client.js';
+import { OutboundRefusal, checkUrl, outboundFetch } from '../../security/outbound.mjs';
 import { fileURLToPath } from 'node:url';
 
 export const MAX_HEALTH_BYTES = 64 * 1024;
@@ -33,6 +34,27 @@ export function configuredBase(value, name = 'PAYLOAD_URL') {
   if (url.username || url.password || url.search || url.hash) throw new Error(`${name} must be a bare origin, with no credentials, query or fragment.`);
   if (url.protocol !== 'https:' && !LOOPBACK.has(url.hostname)) throw new Error(`${name} must use HTTPS outside loopback; a health verdict fetched in plaintext from a network the probe does not control is not a verdict.`);
   return url.origin;
+}
+
+/**
+ * The address check, which the origin check above cannot make.
+ *
+ * A bare HTTPS origin passes every syntactic rule and can still name the cloud metadata service or
+ * an internal host: `https://169.254.169.254` is a well-formed origin. The probe's target is
+ * configuration rather than a request parameter, so this is defence in depth rather than the last
+ * line — but a probe is exactly the shape an attacker wants when they can influence configuration,
+ * and the check costs one resolution. Loopback stays allowed, because probing a service on the same
+ * host is the probe's normal local profile.
+ */
+export async function assertReachable(base, name = 'PAYLOAD_URL') {
+  const origin = configuredBase(base, name);
+  try {
+    await checkUrl(origin, { allowLoopback: true, schemes: ['https:'] });
+  } catch (e) {
+    if (e instanceof OutboundRefusal) throw new Error(`${name} is refused by the outbound policy: ${e.message} ${e.remedy}`);
+    throw e;
+  }
+  return origin;
 }
 
 export const TARGETS = [
@@ -62,7 +84,18 @@ export function evaluateGenericHealth(status, body) {
   return { health: 'healthy', detail: `health endpoint answered ${status}${body?.status ? `; status=${body.status}` : ''}.`.slice(0, 600) };
 }
 
-export async function probeTarget(target, base, fetchImpl = fetch, timeoutMs = 5000) {
+/**
+ * The probe's default transport: the outbound policy, which resolves the host, refuses every
+ * non-public address, and then pins the connection to the address it verified. A caller may inject
+ * a transport instead — the tests do — and that injection is the seam, not a way around the policy.
+ */
+export async function policyFetch(url, init = {}) {
+  const timeoutMs = 5000;
+  const r = await outboundFetch(url, { allowLoopback: true, schemes: ['https:'], maxBytes: MAX_HEALTH_BYTES, timeoutMs });
+  return { status: r.status, text: async () => r.body };
+}
+
+export async function probeTarget(target, base, fetchImpl = policyFetch, timeoutMs = 5000) {
   const url = `${configuredBase(base, target.env)}${target.path}`;
   const started = Date.now();
   try {
@@ -113,7 +146,19 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const configured = TARGETS.filter((t) => process.env[t.env]);
   if (!configured.length) { console.error(`no targets configured; set ${TARGETS.map((t) => t.env).join(' and/or ')}`); process.exit(2); }
   // Refuse a bad origin before the first probe, not as an "offline" observation after it.
-  for (const t of configured) configuredBase(process.env[t.env], t.env);
+  for (const t of configured) {
+    configuredBase(process.env[t.env], t.env);
+    try {
+      await checkUrl(new URL(process.env[t.env]).origin, { allowLoopback: true, schemes: ['https:'] });
+    } catch (e) {
+      // A host that does not resolve at startup is left to the probe, which records it as offline.
+      // An address that resolves into private or link-local space is a configuration the probe
+      // refuses to start with, because a probe pointed at the metadata service is not a probe.
+      if (e instanceof OutboundRefusal && e.code === 'OUTBOUND_ADDRESS_REFUSED') {
+        throw new Error(`${t.env} is refused by the outbound policy: ${e.message} ${e.remedy}`);
+      }
+    }
+  }
   const once = async () => {
     const observations = await Promise.all(configured.map((t) => probeTarget(t, process.env[t.env])));
     await recordObservations(plane, observations, { actorId, log: (l) => console.log(`${new Date().toISOString()} ${l}`) });

@@ -102,6 +102,30 @@ typed `NOT_EVIDENCED` rather than stopping quietly — a surface that silently s
 be claiming it had looked, which is the same failure as rendering an unknown as a zero. Found by
 attack, fixed, and held by `dock/test/attack.test.ts`.
 
+**SEC-050 — an outbound request is checked at the address it will connect to, and connects only
+to the address that was checked.**
+
+A hostname is not an address. Validating a URL and then handing the name to the socket leaves two
+holes: the name may resolve into private space, and it may resolve differently between the check and
+the connection. So `security/outbound.mjs` resolves first, refuses every address outside public
+unicast — loopback, RFC1918, carrier-grade NAT, unique-local, multicast, reserved, and above all
+link-local, which carries the cloud metadata service and hands instance credentials to anything that
+can make a request from inside — and then pins the connection to the addresses it verified.
+
+Refused with it: schemes that are not outbound HTTP, credentials in the URL, redirects (a second
+request to an address nothing checked), unbounded bodies and unbounded time. A name that resolves to
+one public and one private address is refused rather than partly accepted, because taking the public
+answer is taking the attacker's better half.
+
+Thirteen attacks hold it in `security/test-outbound.mjs`, including a live server reached through
+the policy and a resolver that flips from public to private between the check and the connect. One
+defect was found in the control itself while attacking it: a bracketed IPv6 literal was being sent
+to the resolver instead of classified, which fail-closed caught and the test now prevents.
+
+The estate's exposure is wider than the control: 92 catalogued capabilities answer by reaching a
+third party, and only this repository's health probe is held to the policy today. See
+[SECURITY_MATRIX.md](SECURITY_MATRIX.md).
+
 ## Invariants that are architectural rather than testable
 
 Some properties are held by the shape of the system rather than by a check. They are

@@ -1,0 +1,146 @@
+{
+  "schema": "notations.security.matrix.v1",
+  "description": "Asset, threat, boundary, control, implementation, test, residual risk. One row per attack path the estate has actually closed or knowingly left open. A row whose implementation or test path does not exist fails security/test-matrix.mjs, so this cannot drift into a description of a system that is not here.",
+  "rows": [
+    {
+      "asset": "canonical state",
+      "threat": "unauthorized mutation",
+      "boundary": "API → control plane",
+      "control": "every state-changing action requires a named permission on a bound principal",
+      "implementation": "control-plane/src/security/policy.js",
+      "test": "control-plane/test/security.test.js",
+      "residual": "low"
+    },
+    {
+      "asset": "canonical state",
+      "threat": "a projection writes truth",
+      "boundary": "serving layer → canonical layer",
+      "control": "the projection role holds no write grant; enforced by the database, not the application",
+      "implementation": "platform/sql/006_rls.sql",
+      "test": "platform/test/rls.test.mjs",
+      "residual": "low"
+    },
+    {
+      "asset": "tenant data",
+      "threat": "cross-tenant read or write",
+      "boundary": "application → PostgreSQL",
+      "control": "row security ENABLED and FORCED, no application role carries BYPASSRLS",
+      "implementation": "platform/sql/006_rls.sql",
+      "test": "platform/test/rls.test.mjs",
+      "residual": "low"
+    },
+    {
+      "asset": "journal",
+      "threat": "silent history rewrite",
+      "boundary": "operator → journal file",
+      "control": "append-only hash chain, Ed25519 signatures, and an anchor that catches truncation",
+      "implementation": "control-plane/src/journal.js",
+      "test": "control-plane/test/security.test.js",
+      "residual": "low"
+    },
+    {
+      "asset": "security posture evidence",
+      "threat": "the visualiser becomes a vulnerability map",
+      "boundary": "attestor → control plane",
+      "control": "the producer sees paths and advisory ids; the plane receives counts and states only",
+      "implementation": "security/attest.mjs",
+      "test": "control-plane/test/security.test.js",
+      "residual": "low"
+    },
+    {
+      "asset": "operator infrastructure",
+      "threat": "SSRF into the cloud metadata service",
+      "boundary": "probe / acquisition adapter → network",
+      "control": "resolve first, refuse every non-public address, then pin the socket to the verified address",
+      "implementation": "security/outbound.mjs",
+      "test": "security/test-outbound.mjs",
+      "residual": "medium",
+      "residual_note": "The policy is implemented and wired into the one outbound path in this repository. The 92 catalogued capabilities that reach third parties live in other repositories and are not yet held to it."
+    },
+    {
+      "asset": "published twin",
+      "threat": "a compromised CDN replaces the renderer",
+      "boundary": "browser → jsdelivr",
+      "control": "version pinned, bytes bound by sha384, crossorigin so the check is enforced",
+      "implementation": "ecosystem/twin/instance.template.html",
+      "test": "ecosystem/test/twin-security.test.mjs",
+      "residual": "low"
+    },
+    {
+      "asset": "published twin",
+      "threat": "catalog text executes as markup",
+      "boundary": "catalog → published page",
+      "control": "every data interpolation routes through an escaping helper; proved by injecting 2,868 payloads",
+      "implementation": "ecosystem/twin/instance.template.html",
+      "test": "ecosystem/test/twin-security.test.mjs",
+      "residual": "low"
+    },
+    {
+      "asset": "product surface",
+      "threat": "a nested response denies the surface",
+      "boundary": "API response → frontend walker",
+      "control": "depth-bounded walk that reports the bound as a typed non-success",
+      "implementation": "dock/src/product/slice.ts",
+      "test": "dock/test/attack.test.ts",
+      "residual": "low"
+    },
+    {
+      "asset": "reader's judgement",
+      "threat": "an unknown renders as a value",
+      "boundary": "API response → rendered view",
+      "control": "a non-success carries no value field, so there is nowhere to put a zero",
+      "implementation": "dock/src/model/truth.ts",
+      "test": "dock/test/truth.test.ts",
+      "residual": "low"
+    },
+    {
+      "asset": "build",
+      "threat": "a dependency install script runs with the runner's access",
+      "boundary": "npm registry → CI runner",
+      "control": "npm ci --ignore-scripts in every job that installs",
+      "implementation": ".github/workflows/ci.yml",
+      "test": "security/test-matrix.mjs",
+      "residual": "low",
+      "residual_note": "Checked rather than reviewed: every npm install line in the workflow must carry --ignore-scripts."
+    },
+    {
+      "asset": "build",
+      "threat": "an action tag is repointed at new code",
+      "boundary": "GitHub Actions → CI runner",
+      "control": "every action pinned by commit SHA; the workflow token is contents:read and not persisted",
+      "implementation": ".github/workflows/ci.yml",
+      "test": "security/test-matrix.mjs",
+      "residual": "low",
+      "residual_note": "Checked rather than reviewed: every action must be pinned by a 40-character commit, the token must be contents:read, and every checkout must drop it."
+    },
+    {
+      "asset": "dependency tree",
+      "threat": "a known vulnerability ships unnoticed",
+      "boundary": "npm registry → bundle",
+      "control": "audit at high, with assessed exceptions that expire; unassessed, expired and stale entries all fail",
+      "implementation": "security/audit-gate.mjs",
+      "test": "security/test-audit-gate.mjs",
+      "residual": "medium",
+      "residual_note": "17 advisories are accepted on a reachability assessment rather than fixed. All are transitive through kepler.gl with no non-breaking upgrade."
+    },
+    {
+      "asset": "credentials",
+      "threat": "a secret is committed",
+      "boundary": "developer → source control",
+      "control": "shape-based scanner over every file, exemptions written in place",
+      "implementation": "security/scan-secrets.mjs",
+      "test": "security/test-scan-secrets.mjs",
+      "residual": "low",
+      "residual_note": "The scanner now has a test of its own behaviour: planted credential material is found, an in-place exemption is honoured, and ordinary code is not a finding."
+    },
+    {
+      "asset": "tenant isolation proof",
+      "threat": "the proof silently does not run",
+      "boundary": "CI → database",
+      "control": "the suite fails when no database is reachable rather than skipping",
+      "implementation": "platform/test/rls.test.mjs",
+      "test": "platform/test/rls.test.mjs",
+      "residual": "low"
+    }
+  ]
+}
