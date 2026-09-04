@@ -62,6 +62,19 @@ carries. So the sky moves under a law applied to declared facts, never under a m
 because the elements are a function of the committed catalog, the same corpus always builds the same
 system.
 
+## The design language
+
+The instance uses the Payload OS surface language, the same one the dock's product surfaces use, so
+the bundle reads as one system rather than two products that happen to share a subject: the amber
+mark and the `PAYLOAD OS / <surface>` breadcrumb, system faces with no display serif, mono uppercase
+section headings, and the truth-class tone system — verified green, observation cyan, unknown muted
+and dashed, conflict red.
+
+The counters are said in that vocabulary too. A body nothing has looked at is **unobserved**, not
+healthy and not a zero. An unsigned attestation is the principal's own word. The exception panel is
+titled **could not answer**, counts distinct bodies rather than summing overlapping categories, and
+says it is derived from the fold rather than read from a digest.
+
 ## What it refuses
 
 The instance is a read of a corpus, so it inherits the corpus's refusals rather than inventing new

@@ -1,29 +1,29 @@
 <title>Notations Control Universe</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root {
-    --ground: #070B14; --sky: #0B1020; --panel: #0F1626; --panel-2: #141D31; --line: #22304A; --line-soft: #182339;
-    --text: #E6EAF2; --muted: #8D99B1; --faint: #5F6B82;
-    --accent: #F5B942; --accent-ink: #0B1020;
+    /* Payload OS tokens: the values the dock's product surfaces use, so the instance and the bundle
+       read as one system rather than two products that happen to share a subject. */
+    --ground: #07090F; --sky: #0A0E17; --panel: #0D1119; --panel-2: #131927; --line: #1F2736; --line-soft: #161D2A;
+    --text: #E6E9EF; --muted: #8B94A5; --faint: #5C6577;
+    --accent: #F5B942; --accent-ink: #07090F;
     --cyan: #39C6D8; --green: #5AC77A; --violet: #8B7CF6; --red: #E8536A; --orange: #F0642F; --grey: #6B7280;
-    --sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-    --mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-    --serif: "Instrument Serif", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: var(--sans);
     color-scheme: dark;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --ground: #E9EDF3; --sky: #EEF2F8; --panel: #FFFFFF; --panel-2: #F3F6FA; --line: #C9D2E0; --line-soft: #DCE3EE;
-      --text: #121A2B; --muted: #56637A; --faint: #7B879B;
+      --ground: #E8EBF1; --sky: #EEF1F6; --panel: #FFFFFF; --panel-2: #F4F6FA; --line: #D2D8E2; --line-soft: #E2E7EF;
+      --text: #12161F; --muted: #5A6377; --faint: #7C8598;
       --accent: #9A6407; --accent-ink: #FFFFFF;
       --cyan: #127E8C; --green: #2E8A4C; --violet: #5B4BC4; --red: #B92E45; --orange: #B8461C; --grey: #7D889C;
       color-scheme: light;
     }
   }
   :root[data-theme="light"] {
-    --ground: #E9EDF3; --sky: #EEF2F8; --panel: #FFFFFF; --panel-2: #F3F6FA; --line: #C9D2E0; --line-soft: #DCE3EE;
-    --text: #121A2B; --muted: #56637A; --faint: #7B879B;
+    --ground: #E8EBF1; --sky: #EEF1F6; --panel: #FFFFFF; --panel-2: #F4F6FA; --line: #D2D8E2; --line-soft: #E2E7EF;
+    --text: #12161F; --muted: #5A6377; --faint: #7C8598;
     --accent: #9A6407; --accent-ink: #FFFFFF;
     --cyan: #127E8C; --green: #2E8A4C; --violet: #5B4BC4; --red: #B92E45; --orange: #B8461C; --grey: #7D889C;
     color-scheme: light;
@@ -37,9 +37,19 @@
   .mono { font-family: var(--mono); font-size: 0.92em; }
   .app { display: grid; grid-template-rows: 40px minmax(0, 1fr) auto; grid-template-columns: 236px 1fr 352px; height: 100vh; }
   .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 12px; min-width: 0; border-bottom: 1px solid var(--line); background: var(--panel); }
-  .brand { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
-  .brand b { color: var(--accent); font-weight: 500; }
-  .chip { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); white-space: nowrap; }
+  .brand { display: flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+  .brand .hex { width: 13px; height: 13px; background: var(--accent); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); align-self: center; flex: none; }
+  .brand .os { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .brand .sep { color: var(--faint); }
+  .brand b { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .chip { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; padding: 1px 7px; border: 1px solid currentColor; border-radius: 999px; color: var(--muted); white-space: nowrap; }
+  /* Truth classes in the bundle's tone system: verified reads green, an observation cyan, an unknown
+     muted and dashed so it is never mistaken for a value, a conflict red. */
+  .truth { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+  .truth-verified { color: var(--green); }
+  .truth-observed { color: var(--cyan); }
+  .truth-unknown { color: var(--muted); border-style: dashed; }
+  .truth-conflict { color: var(--red); }
   .chip.warn { color: var(--accent); border-color: var(--accent); }
   .chip.ok { color: var(--green); border-color: var(--green); }
   .chip.bad { color: var(--red); border-color: var(--red); }
@@ -177,19 +187,20 @@
   .edge { background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 12px; line-height: 1; padding: 5px 7px; flex: none; }
   .edge:hover { color: var(--text); border-color: var(--muted); }
   .edge[aria-expanded="false"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  .strip h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+  .strip h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
   .strip h4 span { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--muted); }
   input[type=range] { width: 100%; accent-color: var(--cyan); margin: 6px 0 2px; }
   input[type=range].past { accent-color: var(--accent); }
   .axis-info { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .axis-info b { color: var(--text); font-weight: 500; }
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px 8px; }
-  .stats .n { font-family: var(--serif); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
-  .stats .n.warn { color: var(--accent); } .stats .n.bad { color: var(--red); }
+  .stats .n { font-family: var(--mono); font-size: 21px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tone-verified { color: var(--green); } .tone-observed { color: var(--cyan); }
+  .tone-unknown { color: var(--muted); } .tone-conflict { color: var(--red); }
   .stats .l { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
   .note { font-size: 11px; color: var(--faint); margin-top: 6px; }
   .drafts { display: grid; gap: 6px; }
-  .drafts .n { font-family: var(--serif); font-size: 24px; line-height: 1; }
+  .drafts .n { font-family: var(--mono); font-size: 21px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
   .drafts .l { font-size: 10.5px; color: var(--muted); }
   .modal { position: fixed; inset: 0; background: rgba(4,8,16,.6); display: none; align-items: center; justify-content: center; z-index: 20; }
   .modal.on { display: flex; }
@@ -201,8 +212,8 @@
 
 <div class="app">
   <header class="top">
-    <div class="brand"><b>Notations</b> · Control Universe</div>
-    <span class="chip warn" id="mode-chip" title="This instance folds an exported journal itself, because there is no control plane here. A live twin asks the plane for every fold.">offline instance · sample fold</span>
+    <div class="brand"><span class="hex"></span><span class="os">Payload OS</span><span class="sep">/</span><b>Control Universe</b></div>
+    <span class="chip truth-unknown" id="mode-chip" title="This instance folds an exported journal itself, because there is no control plane here. A live twin asks the plane for every fold.">internal · governance reads · sample fold</span>
     <span class="chip mono" id="rev-chip" title="The record hash the sky is drawn at — the plane's own, from the exported journal">—</span>
     <span class="chip" id="fold-chip" title="Whether this page's fold of the journal at its head matches the snapshot the plane exported">fold: checking</span>
     <div class="counts" id="counts"></div>
@@ -246,8 +257,8 @@
       <div class="axis-info"><span id="axis-kind"></span><span id="axis-at"></span></div>
       <div class="note" id="axis-note"></div>
     </div>
-    <div><h4>what this twin knows</h4><div class="stats" id="fidelity"></div><div class="note" id="fidelity-note"></div></div>
-    <div><h4>needs attention <span>exception-first</span></h4><div class="stats" id="signals"></div><div class="note">Stale is judged at 24 h for an observation and 7 d for an attestation, against the time of the record the sky is drawn at.</div></div>
+    <div><h4>evidence state</h4><div class="stats" id="fidelity"></div><div class="note" id="fidelity-note"></div></div>
+    <div><h4>could not answer <span id="signals-count"></span></h4><div class="stats" id="signals"></div><div class="note">Derived from the fold itself, not from a digest. Stale is judged at 24 h for an observation and 7 d for an attestation, against the time of the record the sky is drawn at.</div></div>
     <div><h4>drafts <span id="drift-chip"></span></h4><div class="drafts" id="drafts"></div></div>
   </footer>
 </div>
@@ -1074,9 +1085,22 @@ function renderStrip() {
   $('axis-at').textContent = r ? fmt(r.event.recordedAt) : '';
   $('axis-note').textContent = past ? 'The sky is drawn from the journal prefix ending at this record, at that record’s own hash. Drafts still act on now.' : 'Scrub left to see the estate as it was known at any record. A live twin asks the plane for each fold; this instance folds the exported journal itself.';
   $('rev-chip').textContent = `${past ? 'as of' : 'head'} · ${short(snap.revision)}`;
-  $('fidelity').innerHTML = [['observed', f.observed], ['attested', f.attested], ['signed', f.signed, f.attested && !f.signed ? 'warn' : ''], ['bound', f.bound], ['blind', f.blind, f.blind ? 'warn' : ''], ['total', f.total]].map(([l, n, cls]) => `<div><div class="n ${cls ?? ''}">${n}</div><div class="l">${l}</div></div>`).join('');
-  $('fidelity-note').textContent = f.blind ? `${f.blind} of ${f.total} bodies have never been observed or attested: the twin knows they exist and nothing else.${f.attested && !f.signed ? ' No attestation carries an independent signature.' : ''}` : 'Every body has been observed or attested at least once.';
-  $('signals').innerHTML = [['unobserved', sg.unobserved.length, 'warn'], ['stale', sg.stale.length, 'warn'], ['unavailable', sg.unavailable.length, 'bad'], ['failing', sg.failing.length, 'bad'], ['unsigned', sg.unsigned.length, 'warn'], ['unbound', sg.unbound.length, 'warn'], ['deciding', sg.pending.length, 'warn']].map(([l, n, cls]) => `<div><div class="n ${n ? cls : ''}">${n}</div><div class="l">${l}</div></div>`).join('');
+  const TONE = { verified: 'tone-verified', observed: 'tone-observed', unknown: 'tone-unknown', conflict: 'tone-conflict' };
+  const stat = (label, n, tone) => `<div><div class="n ${tone && n ? TONE[tone] : ''}">${n}</div><div class="l">${label}</div></div>`;
+  $('fidelity').innerHTML = [
+    ['observed', f.observed, 'observed'], ['attested', f.attested, 'observed'], ['signed', f.signed, f.signed ? 'verified' : 'unknown'],
+    ['bound', f.bound, 'verified'], ['unobserved', f.blind, 'unknown'], ['total', f.total, null],
+  ].map(([l, n, tone]) => stat(l, n, tone)).join('');
+  $('fidelity-note').innerHTML = f.blind
+    ? `<span class="truth truth-unknown">unobserved</span> ${f.blind} of ${f.total} bodies have never been observed or attested: the twin knows they exist and nothing else.${f.attested && !f.signed ? ' No attestation carries an independent signature, so every posture here is the principal’s own word.' : ''}`
+    : 'Every body has been observed or attested at least once.';
+  const unanswered = new Set([...sg.unobserved, ...sg.stale, ...sg.unavailable, ...sg.failing, ...sg.unsigned, ...sg.unbound]);
+  $('signals-count').textContent = `${unanswered.size} of ${f.total} bodies${sg.pending.length ? ` · ${sg.pending.length} deciding` : ''}`;
+  $('signals').innerHTML = [
+    ['unobserved', sg.unobserved.length, 'unknown'], ['stale', sg.stale.length, 'unknown'],
+    ['unavailable', sg.unavailable.length, 'conflict'], ['failing', sg.failing.length, 'conflict'],
+    ['unsigned', sg.unsigned.length, 'observed'], ['unbound', sg.unbound.length, 'unknown'], ['deciding', sg.pending.length, 'unknown'],
+  ].map(([l, n, tone]) => stat(l, n, tone)).join('');
   const d = driftOf(HEAD, snap);
   $('drift-chip').textContent = past ? `drift from now: ${d.missing.length} missing · ${d.syncsMissing} bindings` : (d.clean ? 'this sky is the plane’s head' : 'drift from head');
   $('drafts').innerHTML = `<div><div class="n">${state.drafts.length}</div><div class="l">commands drafted, none sent</div></div><div style="display:flex;gap:6px"><button class="btn small" id="dr-show" ${state.drafts.length ? '' : 'disabled'}>show</button><button class="btn small" id="dr-add">+ body</button></div><div class="l">${state.refusals.length} refused this session · in the control tower</div>`;
